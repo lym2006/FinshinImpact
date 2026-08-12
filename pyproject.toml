@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "finshin-impact"
-version = "0.1.0"
+version = "0.1.1"
 description = "一个基于 aiogram 的机器人"
 requires-python = ">=3.11,<4.0"
 dependencies = [
