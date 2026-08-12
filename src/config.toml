@@ -1,0 +1,5 @@
+[network]
+proxy="http://127.0.0.1:port"
+
+[api_keys]
+telegram_token="123456:abcedfgh"
