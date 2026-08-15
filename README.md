@@ -35,6 +35,7 @@
   > - **首次安装**：请将 `install.bat` 放在一个**新建的空文件夹**中双击运行（脚本会自动创建 `TelegramBot` 项目文件夹）。
   > - **日常更新**：请将 `update.bat` 放在与 `TelegramBot` 文件夹**同级的目录**下双击运行。
   > - **路径要求**：整个路径中**请勿包含中文或特殊字符**，以免引发环境报错。
+  > - **环境要求**：请参照 **[🖥️ 环境准备（`Windows` 用户必读）](#️-环境准备windows-用户必读)** 安装环境，若旧版本 `CMD` 出现问题，请尝试在 `Windows Terminal` 中执行脚本。
 
 [⤴️ 返回目录](#-目录)
 
@@ -81,7 +82,7 @@
 
 ## 🖥️ 环境准备（`Windows` 用户必读）
 
-本项目在控制台输出中大量使用了 Emoji 表情。传统的 CMD 或旧版 PowerShell 可能会导致 Emoji 显示为乱码或空白方块。
+本项目在控制台输出中大量使用了 Emoji 表情。传统的 `CMD` 或旧版 `PowerShell` 可能会导致 Emoji 显示为乱码或空白方块。
 为了获得最佳的运行体验，**强烈建议安装并使用微软官方的 [`Windows Terminal`] + [`Git Bash`]**。
 
 1. **安装 `Windows Terminal`**：请在 Microsoft Store 中搜索 `Windows Terminal` 并安装，或使用命令行安装：
