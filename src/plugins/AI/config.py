@@ -1,14 +1,15 @@
 from pathlib import Path
 
-from utils import CONFIG
+from src.utils import CONFIG
 
 rc = lambda role, content: {"role": role, "content": content}
 
 BASE_DIR = Path(__file__).parent
 RECORD_DIR = BASE_DIR / "record"
 RECORD_DIR.mkdir(parents=True, exist_ok=True)
+cupa = RECORD_DIR
 
-INITIAL = [rc("system", CONFIG["personality"]["default"])]
+ini = [rc("system", CONFIG["personality"]["default"])]
 MODEL_NAME = CONFIG["api"]["model_name"]
 API_KEY = CONFIG["api"]["api_key"]
 TEMPERATURE = CONFIG["api"]["temperature"]
