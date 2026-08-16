@@ -4,8 +4,8 @@ from aiogram import Bot, Dispatcher
 from aiogram.exceptions import TelegramNetworkError
 from tenacity import retry, retry_if_exception_type, stop_after_delay, wait_exponential
 
-from .plugins.AI.services import cleanup_loop
-from .utils import AuthMiddleware, LoggingMiddleware, register_routers, setup_logger
+from plugins.AI.services import cleanup_loop
+from utils import AuthMiddleware, LoggingMiddleware, register_routers, setup_logger
 
 logger = setup_logger()
 
@@ -32,7 +32,7 @@ async def main():
     logger.info("🤖 TelegramBot 正在启动...")
 
     # 导入配置
-    from .utils import CONFIG, SafeSession
+    from utils import CONFIG, SafeSession
 
     # 初始化 Bot
     session = SafeSession(proxy=CONFIG["network"]["proxy"])
