@@ -5,7 +5,13 @@ from aiogram.exceptions import TelegramNetworkError
 from tenacity import retry, retry_if_exception_type, stop_after_delay, wait_exponential
 
 from plugins.AI.services import cleanup_loop
-from utils import AuthMiddleware, LoggingMiddleware, register_routers, setup_logger
+from utils import (
+    AuthMiddleware,
+    LoggingMiddleware,
+    init_project_files,
+    register_routers,
+    setup_logger,
+)
 
 logger = setup_logger()
 
@@ -30,6 +36,9 @@ async def start(dp: Dispatcher, bot: Bot):
 async def main():
     # 初始化日志
     logger.info("🤖 TelegramBot 正在启动...")
+
+    # 初始化文件
+    init_project_files()
 
     # 导入配置
     from utils import CONFIG, SafeSession

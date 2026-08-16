@@ -1,6 +1,7 @@
 from aiogram.client.session.aiohttp import AiohttpSession
 
 from .config_loader import CONFIG
+from .init_files import init_project_files
 from .logger_setup import setup_logger
 from .middleware import AuthMiddleware, LoggingMiddleware
 from .plugins_register import register_routers
@@ -17,6 +18,7 @@ __all__ = [
     "ROOT_DIR",
     "CONFIG",
     "AuthMiddleware",
+    "init_project_files",
     "LoggingMiddleware",
     "SafeSession",
     "register_routers",
