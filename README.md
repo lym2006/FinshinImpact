@@ -38,7 +38,7 @@
 - **配置自动检测**: 每次启动机器人会自动检测是否更新了新配置项并提醒用户在 `config.toml` 中填写。
 - **一键安装与更新**: 提供 `install.bat` 和 `update.bat` 自动化脚本，请在项目的 [Releases 发布页面](../../releases) 下载最新版本。
   > **重要提示**：
-  > - **首次安装**：请将 `install.bat` 放在一个**新建的空文件夹**中双击运行（脚本会自动创建 `TelegramBot` 项目文件夹）。
+  > - **首次安装**：请将 `install.bat` 放在一个**新建的空文件夹**中双击运行，请确保路径下 **没有** 名为 `TelegramBot` 文件夹，脚本会自动创建 `TelegramBot` 项目文件夹。
   > - **日常更新**：请将 `update.bat` 放在与 `TelegramBot` 文件夹**同级的目录**下双击运行。
   > - **路径要求**：整个路径中**请勿包含中文或特殊字符**，以免引发环境报错。
   > - **环境要求**：请参照 **[️ 环境准备（Windows 用户必读）](#️-环境准备windows-用户必读)** 安装环境，若旧版本 CMD 出现问题，请尝试在 Windows Terminal 中执行脚本。
@@ -99,14 +99,19 @@
 本项目在控制台输出中大量使用了 Emoji 表情。传统的 `CMD` 或旧版 `PowerShell` 可能会导致 Emoji 显示为乱码或空白方块。
 为了获得最佳的运行体验，**强烈建议安装并使用微软官方的 [`Windows Terminal`] + [`Git Bash`]**。
 
-1. **安装 `Windows Terminal`**：请在 Microsoft Store 中搜索 `Windows Terminal` 并安装，或使用命令行安装：
+1. **安装 `Windows Terminal`**：请在 Microsoft Store 中搜索 `Windows Terminal` 并安装，或使用 `PowerShell` 安装：
    ```powershell
    winget install --id Microsoft.WindowsTerminal -e
    ```
 
 2. **安装 `Git for Windows`**：前往 [`Git` 官网](https://git-scm.com) 下载并安装，安装时保持默认选项即可。
+   > **重要提示**：如果安装后仍提示没有 `Git` 环境，请尝试重启，如果仍未解决，自行询问 **AI 工具**如何将 `git` 加入 **环境变量**
 
-3. **设置默认终端**：打开 `Windows Terminal`，点击标签页旁边的下拉箭头，选择 **设置** -> **启动** -> 将"默认配置文件"设置为 **Windows PowerShell**，然后点击保存。后续所有命令均在此环境中执行。
+3. **设置默认终端**：
+   1. 打开 Windows Terminal（可在开始菜单搜索 **终端**，或按 `Win + R` 输入 `wt` 并回车）。
+   2. 点击标签栏右侧的 **下拉箭头**，选择 **设置**。
+   3. 在左侧选择 **启动**，将“默认配置文件”设置为 **Windows PowerShell**。
+   4. 点击右下角的 **保存**，后续所有命令均在此环境中执行。
 
 [⤴️ 返回目录](#-目录)
 
@@ -181,7 +186,7 @@ python -m bot
 | **方式二：手动更新** | 少量改动 | 在 `TelegramBot` 目录下执行 `git pull origin main`，然后执行 `pip install -e .` 同步依赖 |
 | **方式三：彻底重建** | 重大架构更新 | 执行 **重建环境的 bash 命令** |
 
-> **重建环境的 `bash` 命令参考**：
+> **重建环境的 `PowerShell` 命令参考**：
 > ```powershell
 > Remove-Item -Recurse -Force .venv
 > python -m venv .venv
