@@ -1,5 +1,8 @@
 import asyncio
 
+# import logging
+import sys
+
 from aiogram import Bot, Dispatcher
 from aiogram.exceptions import TelegramNetworkError
 from tenacity import retry, retry_if_exception_type, stop_after_delay, wait_exponential
@@ -12,8 +15,10 @@ from utils import (
     register_routers,
     setup_logger,
 )
+from utils.check_version import check_updates
 
 logger = setup_logger()
+# logging.getLogger("aiogram").setLevel(logging.CRITICAL)
 
 
 @retry(
@@ -43,9 +48,17 @@ async def main():
     # 导入配置
     from utils import CONFIG, SafeSession
 
+    _proxy = CONFIG["network"]["proxy"]
+    _token = CONFIG["api_keys"]["telegram_token"]
+
+    # 检查版本
+    _is_newest = check_updates(_proxy)
+    if not _is_newest:
+        sys.exit(1)
+
     # 初始化 Bot
-    session = SafeSession(proxy=CONFIG["network"]["proxy"])
-    bot = Bot(token=CONFIG["api_keys"]["telegram_token"], session=session)
+    _session = SafeSession(proxy=_proxy)
+    bot = Bot(token=_token, session=_session)
 
     # 注册插件和中间件
     dp = Dispatcher()
@@ -58,11 +71,13 @@ async def main():
 
     # ⚪️神启动！
     logger.info("🚀 机器人启动中...")
+    logger.info("🎉 机器人连接成功，开始轮询更新...")
     try:
-        logger.info("🎉 机器人连接成功，开始轮询更新...")
         await start(dp, bot)
-    except KeyboardInterrupt:
-        logger.info("👋 收到中断信号，正在关闭...")
+    except (KeyboardInterrupt, asyncio.CancelledError):
+        logger.info("👋 收到中断信号，正在安全关闭机器人...")
+    except Exception as e:
+        logger.error(f"🚨 发生未预期的错误: {e}")
     finally:
         await bot.session.close()
         logger.info("💤 机器人已关闭")
