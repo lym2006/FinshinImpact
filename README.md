@@ -235,6 +235,8 @@
 > python -m venv .venv
 > .venv\Scripts\activate
 > ```
+>
+> 若无法完成更新，可选择在备份 `data/` 目录、`config.toml`配置、自定义插件以及其他重要内容后，删除整个 `TelegramBot` 项目文件夹，再重新安装。
 
 [⤴️返回目录](#-目录)
 
@@ -288,8 +290,7 @@
 | [13] | [WARNING] Code pull failed! Please check your network connection or if there are conflicts. | [警告] 代码拉取失败！请检查你的网络连接或是否存在冲突 |
 | [14] | [TIP] If there are conflicts, please resolve them manually and run this script again. | [提示] 如果存在冲突，请手动解决后重新运行本脚本。 |
 | [15] | Syncing project dependencies... | 正在同步项目依赖... |
-| [16] | [WARNING] Since code pull failed, dependencies may be incomplete. Please check manually. | [警告] 由于代码拉取失败，依赖可能不完整，建议手动检查。 |
-| [17] | Update Completed! | 更新完成！ |
+| [16] | Update Completed! | 更新完成！ |
 
 ### start.bat
 
