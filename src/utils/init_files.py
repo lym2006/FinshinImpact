@@ -1,65 +1,60 @@
+# src/utils/init_files.py
+"""
+项目文件初始化工具
+
+提供：
+- 项目必要文件检查与初始化
+- 临时目录清理
+"""
+
 import logging
-import tomllib
+import shutil
 
 from .root_dir import ROOT_DIR
 
 logger = logging.getLogger("Bot.Init")
 
 
-def ensure_file_exists(target_path: str, template_path: str | None = None):
+# ==================== 1. 文件创建 ====================
+def ensure_file_exists(target_path: str, template_path: str | None = None) -> None:
+    """确保文件存在，若不存在则从模板创建或创建空文件"""
     target = ROOT_DIR / target_path
     if target.exists():
         return
+
     target.parent.mkdir(parents=True, exist_ok=True)
+
     if template_path and (ROOT_DIR / template_path).exists():
         target.write_bytes((ROOT_DIR / template_path).read_bytes())
-        logger.info(f"[初始化] 已从模板创建: {target}")
+        logger.info(f"已从模板创建: {target}")
     else:
         target.touch()
-        logger.info(f"[初始化] 已创建空文件: {target}")
+        logger.info(f"已创建空文件: {target}")
 
 
-def merge_config(config_path: str, example_path: str) -> bool:
-    config = ROOT_DIR / config_path
-    example = ROOT_DIR / example_path
-    if not example.exists() or not config.exists():
-        return False
-    try:
-        with open(example, "rb") as f:
-            example_data = tomllib.load(f)
-        with open(config, "rb") as f:
-            config_data = tomllib.load(f)
-        missing_keys = []
-
-        def merge_dicts(base, update, path=""):
-            for key, value in update.items():
-                current_path = f"{path}.{key}" if path else key
-                if key not in base:
-                    base[key] = value
-                    missing_keys.append(current_path)
-                elif isinstance(value, dict) and isinstance(base.get(key), dict):
-                    merge_dicts(base[key], value, current_path)
-
-        merge_dicts(config_data, example_data)
-        if missing_keys:
-            import tomlkit
-
-            with open(config, "w", encoding="utf-8") as f:
-                tomlkit.dump(config_data, f)
-            logger.warning(
-                "[配置更新] 检测到以下新增配置项，已自动合并到 config.toml："
-            )
-            for key in missing_keys:
-                logger.warning(f"  - {key}")
-            return True
-        return False
-    except Exception as e:
-        logger.error(f"❌ 错误: 检查配置更新时发生异常: {e}")
-        return False
+# ==================== 2. 目录创建 ====================
+def _ensure_dir_exists(dir_path: str) -> None:
+    """确保目录存在，不存在则创建"""
+    target = ROOT_DIR / dir_path
+    target.mkdir(parents=True, exist_ok=True)
 
 
-def init_project_files():
-    logger.info("[初始化] 开始检查项目必要文件...")
-    ensure_file_exists("assets/blacklist.txt")
-    ensure_file_exists("src/plugins/AI/record/black.txt")
-    logger.info("[初始化] 文件检查与初始化完成。")
+# ==================== 3. 项目文件初始化 ====================
+def init_project_files() -> None:
+    """检查并初始化项目运行所需的必要文件"""
+    # 1. 清理临时目录
+    temp_dir = "data/ai_records/temp"
+    logger.info("正在删除残留临时文件...")
+    shutil.rmtree(temp_dir, ignore_errors=True)
+
+    logger.info("开始检查项目必要文件...")
+
+    # 2. 初始化必要目录
+    _ensure_dir_exists(temp_dir)
+    _ensure_dir_exists("data/docs")
+    _ensure_dir_exists("data/ai_records/staged")
+
+    # 3. 初始化必要文件
+    ensure_file_exists("data/blacklists/blacklist.txt")
+
+    logger.info("文件检查与初始化完成。")
