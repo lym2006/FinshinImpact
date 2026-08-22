@@ -1,102 +1,88 @@
-import re
-from pathlib import Path
-from PIL import Image,ImageDraw,ImageFont
+# src/plugins/help/help.py
+"""
+帮助指令路由层
+
+提供：
+- /help 命令查询帮助，图文渲染
+- 单命令帮助查询
+- 未知命令拦截
+"""
 
 from aiogram import Router
-from aiogram.types import Message,FSInputFile
-from aiogram.filters import Command,Filter
+from aiogram.filters import Command, Filter
+from aiogram.types import FSInputFile, Message
 
-router=Router()
+from .services import generate_image, help_list, resolve_single_help
 
-cupa=Path.cwd()/'src/plugins/help'
-fontp=Path.cwd()/'assets/font.ttf'
-notice={#命令和空格共占10位，其中中文占2位
-    0:"Fool的功能列表\n注：只有少量命令后可带参数\n请不要删除机器人发出的提示消息",
-    "help":"查看帮助文档，命令后接-h可以单独查看该命令帮助",
-    1:"\nAI部分\n独立会话和思考过程",
-    "on":"开启AI对话",
-    "off":"关闭AI对话",
-    "md":"以markdown格式输出上一次回复内容（图片）",
-    "history":"显示历史记录（包括思考过程）",
-    "clear":"清空记忆",
-    "balance":"查看账户余额",
-    #"change":"更改AI人设",
-    #"system":"以system身份输入数据，用于添加人设、背景等",
-    2:"\n未完待续"
-}
+router = Router()
 
-#############################################################################################################################################################
+# ==================== 常量配置 ====================
+HELP_FLAG = "-h"  # 单命令帮助查询参数
+COMMAND_PREFIX = "/"  # 命令前缀
 
-class startwithslash(Filter):
-    async def __call__(self,message:Message)->bool:
-        if not message.text:
-            return False
-        if not message.text.startswith('/'):
-            return False
-        mes=message.text[1:].split()
-        return not any(c in notice for c in mes)
-@router.message(startwithslash())
-async def command_check(message:Message):
-    st=message.text
-    if not st:
+
+# ==================== 1. 内部辅助函数 ====================
+def _is_command(text: str | None) -> bool:
+    """判断消息是否为命令"""
+    return text is not None and text.startswith(COMMAND_PREFIX)
+
+
+def _get_words(message: Message) -> list[str]:
+    """拆分消息文本"""
+    text = message.text
+    if not _is_command(text) or text is None:
+        return []
+
+    return text[1:].split()
+
+
+# ==================== 2. 自定义过滤器 ====================
+class StartWithSlash(Filter):
+    """匹配 / 开头的未知命令"""
+
+    async def __call__(self, message: Message) -> bool:
+        """如果消息以 / 开头且不在已知命令列表中，返回 True"""
+        words = _get_words(message)
+        return len(words) != 0 and not any(w in help_list for w in words)
+
+
+class KeywordFilter(Filter):
+    """匹配 /命令 -h 格式（查看单个命令帮助）"""
+
+    async def __call__(self, message: Message) -> bool:
+        """如果消息包含 -h 参数且命令存在于已知列表中，返回 True"""
+        words = _get_words(message)
+        return (HELP_FLAG in words) and any(w in help_list for w in words)
+
+
+# ==================== 3. 未知命令提示路由处理函数 ====================
+@router.message(StartWithSlash())
+async def command_check(message: Message) -> None:
+    """检查未知命令并提示使用 /help"""
+    text = message.text
+    if text is None:
         return
-    st=re.sub(' ','',st)
-    st=re.sub('/','',st)
-    if st not in notice:
+    cmd = text.replace(" ", "").replace(COMMAND_PREFIX, "")
+    if cmd not in help_list:
         await message.answer("命令不存在，请使用 /help ")
 
-#############################################################################################################################################################
 
-class keywordfilter(Filter):
-    async def __call__(self,message:Message)->bool:
-        if not message.text:
-            return False
-        if not message.text.startswith('/'):
-            return False
-        mes=message.text[1:].split()
-        return ('-h' in mes) and any(c in notice for c in mes)
-@router.message(keywordfilter())
-async def command_help(message:Message):
-    st=message.text
-    if not st:
+# ==================== 4. 单命令帮助路由处理函数 ====================
+@router.message(KeywordFilter())
+async def command_help(message: Message) -> None:
+    """发送单个命令的帮助说明"""
+    text = message.text
+    if text is None:
         await message.answer("格式错误")
         return
-    t=st.index('-')
-    st=st[:t]
-    st=re.sub(' ','',st)
-    st=re.sub('/','',st)
-    if st in notice:
-        await message.answer(notice[st])
-    else:
-        await message.answer("格式错误")
 
-#############################################################################################################################################################
+    result = resolve_single_help(text)
+    await message.answer(result)
 
-def count(text):
-    pattern=re.compile(r'[\u4e00-\u9fa5]')
-    Chinese=re.findall(pattern, text)
-    return len(Chinese)*2+(len(text)-len(Chinese))
 
-@router.message(Command('help'))
-async def show_help_list(message:Message):
-    msg=''
-    m=0
-    for k,v in notice.items():
-        if(type(k)==str):
-            p=f'/{k}'
-            t=count(k)+1
-            msg+=p
-            m=max(m,len(p+v))
-            v=' '*(10-t)+v
-        msg+=f'{v}\n'
-    fonts=30
-    line=msg.split('\n')
-    img=Image.new('RGB',((fonts+5)*m,len(line)*(fonts+5)),(255,255,255))
-    dr=ImageDraw.Draw(img)
-    font=ImageFont.truetype(fontp,fonts)
-    dr.text((20,20),msg,font=font,fill="#000000")
-    pa=cupa/'out.jpg'
-    Path(pa).unlink(missing_ok=True)
-    img.save(pa)
-    await message.answer_photo(FSInputFile(str(pa)))
-    Path(pa).unlink
+# ==================== 5. /help 帮助查询命令 ====================
+@router.message(Command("help"))
+async def show_help_list(message: Message) -> None:
+    """以图片形式发送帮助菜单"""
+    path = generate_image()
+    await message.answer_photo(FSInputFile(str(path)))
