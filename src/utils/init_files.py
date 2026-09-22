@@ -1,60 +1,57 @@
 # src/utils/init_files.py
-"""
-项目文件初始化工具
+"""路径与文件初始化（内部实现）
 
-提供：
-- 项目必要文件检查与初始化
-- 临时目录清理
+- 定义 data/logs 与配置文件唯一路径
+- 实现必要文件检查与模板落盘
 """
 
-import logging
-import shutil
+from pathlib import Path
 
-from .root_dir import ROOT_DIR
+from exceptions import ConfigTemplateMissingError
 
-logger = logging.getLogger("Bot.Init")
+from ._root_dir import ROOT_DIR
+
+# ==================== 路径单一来源 ====================
+
+RECORDS_DIR = ROOT_DIR / "data/ai_records"
+TEMP_DIR = RECORDS_DIR / "temp"
+STAGED_DIR = RECORDS_DIR / "staged"
+DOCS_DIR = ROOT_DIR / "data/docs"
+BLACKLIST_DIR = ROOT_DIR / "data/blacklists"
+BLACKLIST_FILE = BLACKLIST_DIR / "blacklist.txt"
+CONFIG_FILE = ROOT_DIR / "config.toml"
+CONFIG_EXAMPLE = ROOT_DIR / "config.example.toml"
+LOGS_DIR = ROOT_DIR / "logs"
+BOT_LOG = LOGS_DIR / "bot.log"
+DEBUG_LOG = LOGS_DIR / "debug.log"
+
+# ==================== 文件创建 ====================
 
 
-# ==================== 1. 文件创建 ====================
-def ensure_file_exists(target_path: str, template_path: str | None = None) -> None:
-    """确保文件存在，若不存在则从模板创建或创建空文件"""
-    target = ROOT_DIR / target_path
+def ensure_file_exists(target: Path, template: Path | None = None) -> None:
+    """确保文件存在"""
     if target.exists():
         return
 
     target.parent.mkdir(parents=True, exist_ok=True)
 
-    if template_path and (ROOT_DIR / template_path).exists():
-        target.write_bytes((ROOT_DIR / template_path).read_bytes())
-        logger.info(f"已从模板创建: {target}")
-    else:
-        target.touch()
-        logger.info(f"已创建空文件: {target}")
+    if template and template.exists():
+        target.write_bytes(template.read_bytes())
+        return
+
+    if template is not None:
+        # 只有检查配置文件时会传入模板路径，其他时候不会抛出这个异常
+        raise ConfigTemplateMissingError() from None
 
 
-# ==================== 2. 目录创建 ====================
-def _ensure_dir_exists(dir_path: str) -> None:
-    """确保目录存在，不存在则创建"""
-    target = ROOT_DIR / dir_path
-    target.mkdir(parents=True, exist_ok=True)
+# ==================== 项目文件初始化 ====================
 
 
-# ==================== 3. 项目文件初始化 ====================
 def init_project_files() -> None:
-    """检查并初始化项目运行所需的必要文件"""
-    # 1. 清理临时目录
-    temp_dir = "data/ai_records/temp"
-    logger.info("正在删除残留临时文件...")
-    shutil.rmtree(temp_dir, ignore_errors=True)
+    """初始化项目必要文件"""
+    for d in (TEMP_DIR, DOCS_DIR, STAGED_DIR):
+        d.mkdir(parents=True, exist_ok=True)
 
-    logger.info("开始检查项目必要文件...")
-
-    # 2. 初始化必要目录
-    _ensure_dir_exists(temp_dir)
-    _ensure_dir_exists("data/docs")
-    _ensure_dir_exists("data/ai_records/staged")
-
-    # 3. 初始化必要文件
-    ensure_file_exists("data/blacklists/blacklist.txt")
-
-    logger.info("文件检查与初始化完成。")
+    ensure_file_exists(BLACKLIST_FILE)
+    ensure_file_exists(BOT_LOG)
+    ensure_file_exists(DEBUG_LOG)
