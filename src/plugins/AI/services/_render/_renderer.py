@@ -1,10 +1,8 @@
-# src/plugins/AI/services/render/renderer.py
-"""
-Markdown 渲染服务
+# src/plugins/AI/services/_render/_renderer.py
+"""渲染核心（内部实现）
 
-负责：
-- Markdown 转 HTML 渲染（含 XSS 清洗）
-- Prism.js 语法高亮脚本动态注入
+- 实现 Markdown 转 HTML 与清洗
+- 提供 Prism 高亮脚本注入
 """
 
 import re
@@ -12,12 +10,13 @@ import re
 import bleach
 from markdown import markdown as md
 
-from .css import ALLOWED_ATTRS, ALLOWED_TAGS, CDN_BASE, HEAD, PRISM_COMPONENTS, TAIL
+from ._css import ALLOWED_ATTRS, ALLOWED_TAGS, CDN_BASE, HEAD, PRISM_COMPONENTS, TAIL
+
+# ==================== Markdown 转 HTML ====================
 
 
-# ==================== 1. Markdown 转 HTML ====================
 def _generate_html(text: str) -> str:
-    """将 Markdown 文本转换为包含完整 HTML 结构的字符串"""
+    """组装完整 HTML 文档"""
     html_body = md(
         text,
         extensions=["fenced_code", "tables", "nl2br", "codehilite"],
@@ -36,11 +35,13 @@ def _generate_html(text: str) -> str:
     return html_body
 
 
-# ==================== 2. Prism 脚本注入 ====================
+# ==================== Prism 脚本注入 ====================
+
+
 def _build_prism_scripts(langs_found: set[str]) -> str:
-    """根据检测到的代码语言构建 Prism.js 的 <script> 标签，未检测到代码时返回空字符串"""
+    """构建高亮脚本标签"""
+    # 未检测到代码时返回空串
     # 提取所有代码块的语言标识
-    # langs_found = set(re.findall(r"language-([\w-]+)", html_body))
     if not langs_found:
         return ""
     scripts = [
@@ -55,12 +56,13 @@ def _build_prism_scripts(langs_found: set[str]) -> str:
     return "\n".join(scripts)
 
 
-# ==================== 3. 渲染主入口 ====================
-def render_html(text: str) -> str:
-    """将 Markdown 文本渲染为完整的 HTML 页面（含样式 + 语法高亮）
+# ==================== 渲染主入口 ====================
 
-    对外暴露的统一入口，内部自动完成：Markdown 转 HTML → XSS 清洗 →
-    检测代码语言 → 注入 Prism 脚本 → 拼装完整页面。
+
+def render_html(text: str) -> str:
+    """渲染完整 HTML 页面
+
+    MD→HTML→XSS 清洗→高亮注入流水线。
     """
     html_body = _generate_html(text)
     # 将 re.findall 返回的 list 转换为 set，去除重复的语言标识

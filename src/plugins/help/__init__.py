@@ -1,11 +1,12 @@
 # src/plugins/help/__init__.py
-"""
-帮助指令插件
+"""帮助插件门面
 
-导出：
-- /help 命令的路由处理
+- /help：帮助命令路由出口
 """
 
-from .help import router
+from ._help import router
+from ._services import prewarm
+
+prewarm()  # 引擎启动前重画一次帮助图
 
 __all__ = ["router"]
