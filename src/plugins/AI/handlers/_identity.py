@@ -1,10 +1,8 @@
-# src/plugins/AI/handlers/identity.py
-"""
-身份更改与系统指令路由层
+# src/plugins/AI/handlers/_identity.py
+"""身份命令（内部实现）
 
-负责：
-- /change 命令：通过 FSM 多步修改 AI 身份与名字
-- /system 命令：以 system 角色注入系统指令
+- /change：多步修改 AI 名字与人设
+- /system：以 system 角色注入指令
 """
 
 from aiogram import Router
@@ -14,12 +12,16 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message, User
 
-from ..core import build_message, get_name, session_guard, user_sessions
+from ... import messages as msgs
+from ..core import session_guard, user_sessions
+from ..utils import build_message, get_name
 
 identity = Router()
 
 
-# ==================== 1. FSM 状态定义 ====================
+# ==================== FSM 状态定义 ====================
+
+
 class Chg(StatesGroup):
     """身份修改流程状态组"""
 
@@ -33,9 +35,11 @@ class Sys(StatesGroup):
     input = State()
 
 
-# ==================== 2. 内部辅助函数 ====================
+# ==================== 内部辅助函数 ====================
+
+
 def _make_mention(user: User) -> str:
-    """生成安全的 Markdown V2 提及链接"""
+    """生成提及链接"""
     user_name = user.username or user.full_name
     safe_name = (
         user_name.replace("_", "\\_")
@@ -46,11 +50,13 @@ def _make_mention(user: User) -> str:
     return f"[{safe_name}](tg://user?id={user.id})"
 
 
-# ==================== 3. /change 身份修改命令 ====================
+# ==================== /change 身份修改命令 ====================
+
+
 @identity.message(Command("change"))
 async def input_name(message: Message, state: FSMContext) -> None:
     """触发修改身份流程"""
-    await message.answer("🎭 请输入新身份的名字")
+    await message.answer(msgs.ASK_IDENTITY_NAME)
     await state.set_state(Chg.name)
 
 
@@ -58,11 +64,11 @@ async def input_name(message: Message, state: FSMContext) -> None:
 async def input_identity(message: Message, state: FSMContext) -> None:
     """接收名字，等待描述"""
     if (new_name := message.text) is None:
-        await message.answer("⚠️ 请输入有效的文本")
+        await message.answer(msgs.ASK_TEXT)
         return
 
     await state.update_data(name=new_name)
-    await message.answer("📝 请输入新身份的描述")
+    await message.answer(msgs.ASK_IDENTITY_DESC)
     await state.set_state(Chg.identity)
 
 
@@ -71,7 +77,7 @@ async def input_identity(message: Message, state: FSMContext) -> None:
 async def change_identity(message: Message, state: FSMContext) -> None:
     """接收描述，完成身份设置"""
     if (new_identity := message.text) is None:
-        await message.answer("⚠️ 请输入有效的文本")
+        await message.answer(msgs.ASK_TEXT)
         return
 
     # 防御性获取，防止 FSM 状态丢失导致 KeyError
@@ -85,22 +91,24 @@ async def change_identity(message: Message, state: FSMContext) -> None:
     )
 
     if (from_user := message.from_user) is None:
-        await message.answer("✅ 身份设置成功")
+        await message.answer(msgs.IDENTITY_SET)
     else:
         mention = _make_mention(from_user)
         await message.answer(
-            f"{mention}，你的机器人「{name}」已准备好，可以开始对话。",
+            msgs.IDENTITY_READY.format(mention=mention, name=name),
             parse_mode=ParseMode.MARKDOWN_V2,
         )
 
     await state.clear()
 
 
-# ==================== 4. /system 系统注入命令 ====================
+# ==================== /system 系统注入命令 ====================
+
+
 @identity.message(Command("system"))
 async def pre_system(message: Message, state: FSMContext) -> None:
     """触发系统指令输入"""
-    await message.answer("💻 你想以system身份输入什么内容")
+    await message.answer(msgs.ASK_SYSTEM_INPUT)
     await state.set_state(Sys.input)
 
 
@@ -109,10 +117,10 @@ async def pre_system(message: Message, state: FSMContext) -> None:
 async def post_to_system(message: Message, state: FSMContext) -> None:
     """接收并注入系统指令"""
     if (text := message.text) is None:
-        await message.answer("⚠️ 请重新输入文本")
+        await message.answer(msgs.ASK_RETEXT)
         return
 
     user = get_name(message)
     user_sessions[user].message.append(build_message("system", text))
-    await message.answer("✅ 系统指令注入成功")
+    await message.answer(msgs.SYSTEM_INJECTED)
     await state.clear()
