@@ -1,11 +1,7 @@
 # src/plugins/AI/state.py
-"""
-AI 模块全局状态管理
+"""并发状态（内部实现）
 
-集中存放跨请求共享的状态数据
-
-提供：
-- 用户级并发控制锁
+- 定义用户级并发锁与全局注册表
 """
 
 from asyncio import Lock

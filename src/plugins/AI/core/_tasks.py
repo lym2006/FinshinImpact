@@ -1,10 +1,8 @@
-# src/plugins/AI/core/task.py
-"""
-AI 核心任务执行与队列管理
+# src/plugins/AI/core/_tasks.py
+"""任务队列（内部实现）
 
-提供：
-- Telegram 消息安全操作封装（编辑/回复/删除/草稿）
-- 异步安全的任务队列管理
+- 定义 Telegram 消息安全操作
+- 实现异步任务队列管理
 """
 
 import asyncio
@@ -14,16 +12,17 @@ from aiogram import Bot
 from aiogram.exceptions import TelegramAPIError
 from aiogram.types import Message
 
-from utils.exceptions import TaskStoppedError
+from exceptions import AITaskStoppedError
 
 from .models import TaskItem
 
+# ==================== Telegram 任务执行器 ====================
 
-# ==================== 1. Telegram 任务执行器 ====================
+
 class TelegramTaskItem(TaskItem):
-    """Telegram 任务执行器，继承 TaskItem 的所有数据并注入 bot 实例以执行操作"""
+    """注入 bot 的任务载体"""
 
-    def __init__(self, message: Message, bot: Bot):
+    def __init__(self, message: Message, bot: Bot) -> None:
         super().__init__(
             message=message,
             chat_id=message.chat.id,
@@ -33,7 +32,7 @@ class TelegramTaskItem(TaskItem):
         self.bot = bot
 
     async def is_deleted(self) -> bool:
-        """通过尝试编辑原消息来探测消息是否已被删除"""
+        """探测消息是否已删除"""
         try:
             await self.bot.edit_message_text(
                 text="dummy", chat_id=self.chat_id, message_id=self.ori_id
@@ -43,7 +42,10 @@ class TelegramTaskItem(TaskItem):
             return "message to edit not found" in str(e)
 
     async def safe_delete(self) -> None:
-        """安全删除状态消息，若消息已不存在则静默失败"""
+        """删除状态消息
+
+        消息已不存在则静默失败。
+        """
         try:
             await self.safe_draft("用户主动停止，正在清除消息...")
             await self.bot.delete_message(
@@ -54,9 +56,12 @@ class TelegramTaskItem(TaskItem):
             pass
 
     async def safe_reply(self, msg: str) -> Message:
-        """安全回复原消息，若原消息被删除则抛出 TaskStoppedError"""
+        """回复原消息
+
+        原消息被删除则抛出 TaskStoppedError。
+        """
         if await self.is_deleted():
-            raise TaskStoppedError()
+            raise AITaskStoppedError() from None
 
         try:
             return await self.message.reply(msg)
@@ -65,14 +70,17 @@ class TelegramTaskItem(TaskItem):
                 i in str(e).lower()
                 for i in ["message to be replied not found", "message_invalid_id"]
             ):
-                raise TaskStoppedError() from None
+                raise AITaskStoppedError() from None
             else:
                 raise
 
     async def safe_edit(self, msg: str) -> None:
-        """安全编辑状态消息，若编辑失败则降级为回复新消息"""
+        """编辑状态消息
+
+        编辑失败则降级为回复新消息。
+        """
         if await self.is_deleted():
-            raise TaskStoppedError()
+            raise AITaskStoppedError() from None
 
         try:
             await self.bot.edit_message_text(
@@ -94,7 +102,10 @@ class TelegramTaskItem(TaskItem):
                 raise
 
     async def safe_draft(self, text: str) -> bool:
-        """安全发送草稿，失败时静默返回 False"""
+        """发送草稿消息
+
+        失败时静默返回 False。
+        """
         try:
             return await self.bot.send_message_draft(
                 chat_id=self.chat_id, draft_id=self.draft_id, text=text
@@ -103,11 +114,13 @@ class TelegramTaskItem(TaskItem):
             return False
 
 
-# ==================== 2. 异步安全任务队列 ====================
-class TaskQueue:
-    """异步安全的任务队列，用于管理待处理的 Telegram 消息任务"""
+# ==================== 异步安全任务队列 ====================
 
-    def __init__(self):
+
+class TaskQueue:
+    """管理消息任务的队列"""
+
+    def __init__(self) -> None:
         self._queue: deque[TelegramTaskItem] = deque()
         self._lock = asyncio.Lock()
 

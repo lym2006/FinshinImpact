@@ -1,10 +1,7 @@
 # src/plugins/AI/__init__.py
-"""
-AI 智能对话插件
+"""AI 插件门面
 
-导出：
-- AI 核心对话与状态管理
-- 渲染、截图与权限服务
+- 提供对话、渲染与权限服务出口
 """
 
 from .handlers import get_router

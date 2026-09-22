@@ -1,22 +1,36 @@
-# src/plugins/help/services.py
-"""
-帮助指令业务逻辑层
+# src/plugins/help/_services.py
+"""帮助服务（内部实现）
 
-负责：
-- 帮助菜单的数据源与自动构建
-- 单命令帮助解析
-- 帮助菜单图片渲染
+- 定义帮助菜单数据源与自动构建
+- 提供单命令解析与图片渲染
 """
 
+import threading
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-from utils import ROOT_DIR
+from utils import DOCS_DIR, ROOT_DIR, get_logger
 
-# ==================== 1. 全局配置与数据源 ====================
-_save_path = ROOT_DIR / "data/docs/out.png"
-_font_path = ROOT_DIR / "assets/font.ttf"
+# ==================== 内部配置与数据源 ====================
+
+_SAVE_PATH = DOCS_DIR / "help.png"
+_RENDER_LOCK = threading.Lock()
+_FONT_PATH = ROOT_DIR / "assets/font.ttf"
+
+_logger = get_logger("Plg.Help")
+
+
+class HelpRenderConfig:
+    """帮助菜单图片渲染配置"""
+
+    font_size: int = 30
+    line_spacing: int = 10  # 行间距
+    padding: int = 15  # 画布边距
+    cmd_desc_gap: int = 20  # 命令与描述间距
+    bg_color: str = "#FFFFFF"  # 背景色
+    text_color: str = "#000000"  # 文字颜色
+
 
 # 帮助菜单的单一数据源
 _HELP_MENU_DATA: list[dict[str, str]] = [
@@ -47,10 +61,13 @@ _HELP_MENU_DATA: list[dict[str, str]] = [
     {"type": "section", "content": "未完待续"},
 ]
 
+_HELP = HelpRenderConfig()
 
-# ==================== 2. 自动构建器 ====================
+# ==================== 自动构建器 ====================
+
+
 def _build_help_menu() -> tuple[dict[str, str], list[tuple[str, str]]]:
-    """根据 _HELP_MENU_DATA 自动构建命令字典和渲染顺序列表"""
+    """构建帮助菜单数据"""
     help_list: dict[str, str] = {}
     display_order: list[tuple[str, str]] = []
 
@@ -69,17 +86,11 @@ def _build_help_menu() -> tuple[dict[str, str], list[tuple[str, str]]]:
 
 help_list, _display_order = _build_help_menu()
 
+# ==================== 业务处理函数 ====================
 
-# ==================== 3. 业务处理函数 ====================
+
 def resolve_single_help(text: str) -> str:
-    """解析用户输入的单命令帮助请求
-
-    Args:
-        text: 包含命令的原始文本
-
-    Returns:
-        对应的帮助说明文本或错误提示
-    """
+    """解析单命令请求"""
     try:
         cmd_part = text[: text.index("-")]
     except ValueError:
@@ -89,16 +100,41 @@ def resolve_single_help(text: str) -> str:
     return help_list.get(cmd, "格式错误")
 
 
+def prewarm() -> None:
+    """启动前强制重画帮助图
+
+    每进程恰好一次；失败不阻断，首次请求补画。
+    """
+    try:
+        with _RENDER_LOCK:
+            _render_menu()
+        _logger.debug("帮助菜单图片已刷新")
+    except Exception as e:
+        _logger.send_error("帮助菜单预热失败，首次请求时重试", e)
+
+
 def generate_image() -> Path:
-    """根据配置渲染帮助菜单图片"""
-    font_size = 30
-    line_height = font_size + 10
-    padding = 15
+    """渲染或命中缓存帮助图
 
+    锁双重检查保证只画一次。
+    """
+    if _SAVE_PATH.exists():
+        return _SAVE_PATH
+    with _RENDER_LOCK:
+        if _SAVE_PATH.exists():
+            return _SAVE_PATH
+        return _render_menu()
+
+
+def _render_menu() -> Path:
+    """绘制菜单图片
+
+    仅缓存未命中时调用。
+    """
     # 使用字体对象获取真实的像素宽度
-    font = ImageFont.truetype(_font_path, font_size)
+    font = ImageFont.truetype(_FONT_PATH, _HELP.font_size)
 
-    # 1. 预计算所有行的文本和最大宽度
+    # 预计算所有行的文本和最大宽度
     lines: list[str] = []
     max_width: float = 0.0
 
@@ -110,22 +146,26 @@ def generate_image() -> Path:
             case "command":
                 desc = help_list[content]
                 prefix = f"/{content}"
-                gap = 20
-                line = f"{prefix}{' ' * gap}{desc}"
+                line = f"{prefix:<{_HELP.cmd_desc_gap}}{desc}"
                 lines.append(line)
                 max_width = max(max_width, font.getlength(line))
 
-    # 2. 创建画布并绘制
+    # 创建画布并绘制
+    line_height = _HELP.line_spacing + _HELP.font_size
+    padding = _HELP.padding
+
     img_width = int(max_width) + padding * 2
     img_height = len(lines) * line_height + padding * 2
 
-    img = Image.new("RGB", (img_width, img_height), (255, 255, 255))
+    img = Image.new("RGB", (img_width, img_height), _HELP.bg_color)
     dr = ImageDraw.Draw(img)
 
     for i, line in enumerate(lines):
-        dr.text((padding, padding + i * line_height), line, font=font, fill="#000000")
+        dr.text(
+            (padding, padding + i * line_height), line, font=font, fill=_HELP.text_color
+        )
 
-    # 3. 保存并返回路径
-    Path(_save_path).unlink(missing_ok=True)
-    img.save(_save_path)
-    return _save_path
+    # 保存并返回路径（常驻缓存，命中复用不删）
+    _SAVE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    img.save(_SAVE_PATH)
+    return _SAVE_PATH

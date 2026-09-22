@@ -1,21 +1,19 @@
 # src/plugins/AI/core/models.py
-"""
-AI 核心数据模型
+"""核心数据模型（内部实现）
 
-提供：
-- 任务载体
-- 用户会话状态
+- 定义任务载体与会话状态结构
 """
 
 from dataclasses import dataclass, field
 
 from aiogram.types import Message
 
+# ==================== 任务数据模型 ====================
 
-# ==================== 1. 任务数据模型 ====================
+
 @dataclass
 class TaskItem:
-    """任务数据载体（纯数据），只负责存储任务信息，不包含执行逻辑"""
+    """任务数据载体（纯数据）"""
 
     message: Message
     chat_id: int
@@ -26,10 +24,12 @@ class TaskItem:
     last_draft_time: float = 0.0  # 上次更新草稿时间
 
 
-# ==================== 2. 用户会话模型 ====================
+# ==================== 用户会话模型 ====================
+
+
 @dataclass
 class UserSession:
-    """用户会话数据结构（纯数据），只负责存储用户的聊天状态和历史，不包含执行逻辑"""
+    """用户会话数据结构（纯数据）"""
 
     message: list[dict[str, str]] = field(default_factory=list)
     md_status: bool = False  # 是否有 Markdown 内容可以输出
