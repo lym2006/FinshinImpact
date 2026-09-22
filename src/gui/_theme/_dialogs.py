@@ -173,7 +173,7 @@ class WaitDialogConfig:
 
     # === 尺寸配置 ===
     width: int = 360
-    height: int = 150
+    height: int = 200
     pad: int = 24
     spinner_font_size: int = 26
 
