@@ -1,18 +1,16 @@
 # src/utils/plugins_register.py
-"""
-插件注册与加载工具
+"""插件注册表（内部实现）
 
-提供：
-- 基于白名单的插件顺序控制
-- 插件路由的动态注册与状态监控
+- 实现白名单加载顺序控制
+- 实现路由注册与逐项结果上报
+- 纯工具层：零日志，加载结果以报告列表返回上层记录
 """
 
 import importlib
-import logging
 
 from aiogram import Dispatcher
 
-logger = logging.getLogger("Bot.Plugins.Setup")
+from exceptions import PluginsMissingError
 
 # 插件加载白名单（严格按此顺序注册）
 # 注意：欢迎与帮助类插件应置于前端，核心 AI 插件必须置于最后
@@ -25,41 +23,55 @@ _PLUGIN_ORDER = [
     "AI",  # AI部分
 ]
 
+# 逐项报告：(插件名, 是否成功, 失败原因)
+PluginReport = list[tuple[str, bool, str]]
 
-def register_routers(dispatcher: Dispatcher) -> None:
-    """按顺序注册插件"""
-    total = len(_PLUGIN_ORDER)
-    logger.info(f"🔌 开始加载 {total} 个插件...")
 
+def register_routers(dispatcher: Dispatcher) -> PluginReport:
+    """按顺序注册插件
+
+    返回逐项报告；全部失败抛 PluginsMissingError。
+    """
+    report: PluginReport = []
     success_count = 0
 
-    for index, plugin_name in enumerate(_PLUGIN_ORDER, start=1):
+    for plugin_name in _PLUGIN_ORDER:
         try:
             # 动态导入插件模块
             module = importlib.import_module(f"plugins.{plugin_name}")
 
             # 检查插件是否导出了标准的 router 对象
-            if hasattr(module, "router"):
-                dispatcher.include_router(module.router)
-                logger.info(f"✅ [{index}/{total}] 插件 {plugin_name} 注册成功")
-                success_count += 1
-            else:
-                logger.error(
-                    f"❌ [{index}/{total}] 插件 '{plugin_name}' 缺少 'router' 属性 "
-                    f"(请检查其 __init__.py 是否导出了 router)"
+            router = getattr(module, "router", None)
+            if router is None:
+                report.append(
+                    (
+                        plugin_name,
+                        False,
+                        "缺少 router 属性（检查 __init__.py 是否导出 router）",
+                    )
                 )
+                continue
 
-        except ModuleNotFoundError:
-            # 模块不存在
-            logger.error(f"❌ [{index}] 插件 '{plugin_name}' 未找到（请检查目录结构）")
+            # 清除旧的父路由引用，允许重新附加到新 Dispatcher
+            router._parent_router = None
+            dispatcher.include_router(router)
+            report.append((plugin_name, True, ""))
+            success_count += 1
+
+        except ModuleNotFoundError as e:
+            if f"plugins.{plugin_name}" in str(e):
+                # 插件本身不存在
+                reason = "未找到（检查目录结构）"
+            else:
+                # 插件内部缺少依赖
+                reason = f"内部依赖缺失: {e}"
+            report.append((plugin_name, False, reason))
 
         except Exception as e:
-            # 插件内部的其他致命错误
-            logger.error(f"❌ [{index}] 插件 '{plugin_name}' 加载异常: {e}")
+            report.append((plugin_name, False, f"{type(e).__name__}: {e}"))
 
-    # 输出最终的加载统计摘要
-    logger.info(f"🎉 插件加载完成 | 成功: {success_count} / 总计: {len(_PLUGIN_ORDER)}")
-
-    # 如果所有插件都加载失败，触发严重警告
+    # 如果所有插件都加载失败，抛出异常
     if success_count == 0:
-        logger.critical("🚨 严重警告：未加载任何插件！")
+        raise PluginsMissingError() from None
+
+    return report

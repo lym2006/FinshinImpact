@@ -1,34 +1,45 @@
 # src/utils/__init__.py
-"""
-全局通用工具
+"""通用工具门面
 
-提供：
-- 基础网络客户端与安全会话
-- 全局配置与日志初始化
-- 核心中间件与路由注册
+- 提供网络、日志、配置、生命周期出口
 """
 
-from .base_client import BaseClient
-from .config_loader import CONFIG, ConfigError
-from .init_files import init_project_files
-from .logger import setup_logger
-from .middlewares import LoggingMiddleware
-from .plugins_register import register_routers
-from .root_dir import ROOT_DIR
-from .ssl import SafeSession
+from ._base_client import BaseClient
+from ._check_version import check_updates
+from ._config_manager import config_manager
+from ._proxy_check import diagnose_plan, iter_diagnose
+from ._root_dir import ROOT_DIR
+from ._system_proxy import detect_system_proxy, scan_proxy_ports
+from .init_files import (
+    BLACKLIST_DIR,
+    BLACKLIST_FILE,
+    DOCS_DIR,
+    RECORDS_DIR,
+    STAGED_DIR,
+    TEMP_DIR,
+)
+from .lifecycle import register_lifecycle, unregister_lifecycle
+from .logger import get_logger
 
 __all__ = [
-    # 网络与基础设施
-    "BaseClient",
-    "SafeSession",
-    # 全局配置与路径
-    "CONFIG",
-    "ConfigError",
+    # 全局路径
     "ROOT_DIR",
-    # 中间件与路由
-    "LoggingMiddleware",
-    "register_routers",
-    # 初始化与日志
-    "init_project_files",
-    "setup_logger",
+    "RECORDS_DIR",
+    "TEMP_DIR",
+    "STAGED_DIR",
+    "DOCS_DIR",
+    "BLACKLIST_DIR",
+    "BLACKLIST_FILE",
+    # 基础设施
+    "BaseClient",
+    "check_updates",
+    "get_logger",
+    "config_manager",
+    "diagnose_plan",
+    "iter_diagnose",
+    "detect_system_proxy",
+    "scan_proxy_ports",
+    # 生命周期
+    "register_lifecycle",
+    "unregister_lifecycle",
 ]
