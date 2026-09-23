@@ -17,10 +17,10 @@ _PROBE_TIMEOUT = 6
 
 # 仅当配置项与系统注册表都拿不到端口时，才回退扫描这组常见默认值
 _FALLBACK_PORTS = (7890, 7897, 7898)
-PENDING = "pending"
-CHECKING = "checking"
-OK = "ok"
-FAIL = "fail"
+_PENDING = "pending"
+_CHECKING = "checking"
+_OK = "ok"
+_FAIL = "fail"
 
 # 固定骨架：id 与标题（界面与检测器共用，顺序即展示顺序）
 _ROWS = (
@@ -36,7 +36,7 @@ _ROWS = (
 def diagnose_plan() -> list[dict]:
     """生成全等待态骨架，界面打开即可渲染"""
     return [
-        {"id": rid, "title": title, "status": PENDING, "detail": ""}
+        {"id": rid, "title": title, "status": _PENDING, "detail": ""}
         for rid, title in _ROWS
     ]
 
@@ -110,10 +110,10 @@ def iter_diagnose(configured_proxy: str = ""):
     passed: list[str] = []
 
     # 系统代理开关
-    yield {"id": "sysproxy", "status": CHECKING, "detail": ""}
+    yield {"id": "sysproxy", "status": _CHECKING, "detail": ""}
     yield {
         "id": "sysproxy",
-        "status": OK if reg["enable"] else FAIL,
+        "status": _OK if reg["enable"] else _FAIL,
         "detail": (
             f"已开启（{reg['server']}）"
             if reg["enable"]
@@ -122,17 +122,17 @@ def iter_diagnose(configured_proxy: str = ""):
     }
 
     # 程序代理识别
-    yield {"id": "detect", "status": CHECKING, "detail": ""}
+    yield {"id": "detect", "status": _CHECKING, "detail": ""}
     yield {
         "id": "detect",
-        "status": OK if detected else FAIL,
+        "status": _OK if detected else _FAIL,
         "detail": (
             f"配置留空将自动使用 {detected}" if detected else "未识别到，留空即直连"
         ),
     }
 
     # 本地代理端口
-    yield {"id": "ports", "status": CHECKING, "detail": ""}
+    yield {"id": "ports", "status": _CHECKING, "detail": ""}
 
     # 端口只探"有出处"的：配置项、系统注册表；两者都拿不到才回退默认组
     sources = dict.fromkeys(
@@ -151,7 +151,7 @@ def iter_diagnose(configured_proxy: str = ""):
     suffix = "（未在配置/系统代理中发现端口，仅试默认值）" if fallback else ""
     yield {
         "id": "ports",
-        "status": OK if alive else FAIL,
+        "status": _OK if alive else _FAIL,
         "detail": prefix + "  ".join(marks) + suffix,
     }
 
@@ -165,18 +165,18 @@ def iter_diagnose(configured_proxy: str = ""):
         else "直连（代理留空且系统代理未开）"
     )
     # 当前生效通道
-    yield {"id": "current", "status": CHECKING, "detail": ""}
+    yield {"id": "current", "status": _CHECKING, "detail": ""}
     current_ok = _reach(effective or None)
     yield {
         "id": "current",
-        "status": OK if current_ok else FAIL,
+        "status": _OK if current_ok else _FAIL,
         "detail": f"{via}：{'可达' if current_ok else '不可达'}",
     }
 
     # 其他可通通道
-    yield {"id": "channel", "status": CHECKING, "detail": ""}
+    yield {"id": "channel", "status": _CHECKING, "detail": ""}
     if current_ok:
-        yield {"id": "channel", "status": OK, "detail": "当前通道已通，无需再试其他"}
+        yield {"id": "channel", "status": _OK, "detail": "当前通道已通，无需再试其他"}
     else:
         candidates: list[str] = []
         if detected and detected != effective:
@@ -189,12 +189,12 @@ def iter_diagnose(configured_proxy: str = ""):
         passed = [url for url in list(dict.fromkeys(candidates))[:3] if _reach(url)]
         yield {
             "id": "channel",
-            "status": OK if passed else FAIL,
+            "status": _OK if passed else _FAIL,
             "detail": "可改用：" + "、".join(passed) if passed else "没有其他可通通道",
         }
 
     # 诊断结论
-    yield {"id": "advice", "status": CHECKING, "detail": ""}
+    yield {"id": "advice", "status": _CHECKING, "detail": ""}
     if current_ok:
         advice = "当前配置可达 Telegram，无需修改"
     elif passed:
@@ -203,7 +203,7 @@ def iter_diagnose(configured_proxy: str = ""):
         advice = "当前配置不通且无备选：启动代理软件后重试，或开启 TUN"
     yield {
         "id": "advice",
-        "status": OK if current_ok else FAIL,
+        "status": _OK if current_ok else _FAIL,
         "detail": advice,
         "broken": not current_ok,
     }

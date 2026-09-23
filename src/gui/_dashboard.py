@@ -23,7 +23,7 @@ from exceptions import (
 
 from ._theme import FontConfig
 
-FontType = tuple[QFont, str, str]
+_FontType = tuple[QFont, str, str]
 
 # ==================== 线程安全信号桥 ====================
 
