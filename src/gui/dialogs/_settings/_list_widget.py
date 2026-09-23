@@ -36,9 +36,7 @@ class ConfigListWidget(QWidget):
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(*[DIALOG.margin] * 4)
         main_layout.setSpacing(DIALOG.desc_spacing)
-
-        # 列表区域
-        self.list_widget = QListWidget()
+        self.list_widget = QListWidget()  # 列表区域
         self.list_widget.setObjectName("list_widget")
         self._populate_items()
 
@@ -47,7 +45,6 @@ class ConfigListWidget(QWidget):
 
         # 底部工具栏 (描述 + 按钮)
         bottom_bar = self._build_bottom_bar()
-
         main_layout.addWidget(self.list_widget)
         main_layout.addWidget(bottom_bar)
 
@@ -70,8 +67,7 @@ class ConfigListWidget(QWidget):
             label = self._create_desc_label(self._desc_text)
             layout.addWidget(label, stretch=1)
 
-        # 按钮
-        btn_add = QPushButton("添加新项")
+        btn_add = QPushButton("添加新项")  # 按钮
         btn_del = QPushButton("删除选中")
 
         # 绑定样式名
@@ -81,7 +77,6 @@ class ConfigListWidget(QWidget):
         # 绑定逻辑
         btn_add.clicked.connect(self.add_item)
         btn_del.clicked.connect(self.remove_selected)
-
         layout.addWidget(btn_add)
         layout.addWidget(btn_del)
         return bar
