@@ -131,7 +131,7 @@ class SettingsManager(BaseManager):
                 )
                 base += f"；检测到可用端口 {port_hint}，请确认后填入"
             elif len(candidates) > 1:
-                base += "，请点「网络诊断」自查"
+                base += "\n请点「网络诊断」自查"
             net_errors = {"proxy": base}
         # 结果落地：聚合错误，或标注生效通道
         self.resolved_proxy = resolved
