@@ -14,6 +14,7 @@ from .init_files import (
     BLACKLIST_DIR,
     BLACKLIST_FILE,
     DOCS_DIR,
+    LOGS_DIR,
     RECORDS_DIR,
     STAGED_DIR,
     TEMP_DIR,
@@ -28,6 +29,7 @@ __all__ = [
     "TEMP_DIR",
     "STAGED_DIR",
     "DOCS_DIR",
+    "LOGS_DIR",
     "BLACKLIST_DIR",
     "BLACKLIST_FILE",
     # 基础设施
