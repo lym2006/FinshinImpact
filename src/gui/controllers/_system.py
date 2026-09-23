@@ -13,13 +13,12 @@ from ctypes import wintypes
 from PySide6.QtCore import QThread, Signal
 
 from exceptions import MAPS, VersionError
-from utils import ROOT_DIR, check_updates
+from utils import LOGS_DIR, check_updates
 
 from .._theme import WAIT_DIALOG as PD
 from ..dialogs import WaitDialog
 from ._base import BaseController
 
-_LOGS_DIR = ROOT_DIR / "logs"
 _EXPLORER_CLASSES = {"CabinetWClass", "ExploreWClass"}
 _SW_RESTORE = 9
 
@@ -72,10 +71,10 @@ class LogsController(BaseController):
         self.logger.info("正在打开日志文件目录...")
         if sys.platform == "win32":
             try:
-                if _activate_explorer(_LOGS_DIR.name):
+                if _activate_explorer(LOGS_DIR.name):
                     self.logger.info("日志目录已打开，置前显示")
                     return
-                os.startfile(_LOGS_DIR)
+                os.startfile(LOGS_DIR)
                 self.logger.info("成功打开日志目录")
 
             except OSError as e:
