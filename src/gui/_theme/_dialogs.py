@@ -190,7 +190,7 @@ class WaitDialogConfig:
     ok_text: str = "知道了"
     check_text: str = "正在检查版本更新..."
     verify_text: str = "正在校验连通性..."
-    verify_format: str = "正在校验连通性... 已等 {n} 秒"
+    verify_format: str = "正在校验连通性...\n已等 {n} 秒"
     verified: str = "连通性校验通过"
     up_to_date: str = "已是最新版本：{ver}"
     crash_text: str = "检查异常中断，详情见日志"
