@@ -23,15 +23,15 @@ _PLUGIN_ORDER = [
 ]
 
 # 逐项报告：(插件名, 是否成功, 失败原因)
-PluginReport = list[tuple[str, bool, str]]
+_PluginReport = list[tuple[str, bool, str]]
 
 
-def register_routers(dispatcher: Dispatcher) -> PluginReport:
+def register_routers(dispatcher: Dispatcher) -> _PluginReport:
     """按顺序注册插件
 
     返回逐项报告；全部失败抛 PluginsMissingError。
     """
-    report: PluginReport = []
+    report: _PluginReport = []
     success_count = 0
 
     for plugin_name in _PLUGIN_ORDER:
