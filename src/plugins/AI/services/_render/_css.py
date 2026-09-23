@@ -10,17 +10,15 @@ from ._theme import render_theme
 # ==================== CDN 地址配置 ====================
 
 # Prism CDN 根地址
-PRISM_CDN_ROOT = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/"
-PRISM_CORE_FILE = "prism.min.js"  # 核心库
-PRISM_CORE_URL = f"{PRISM_CDN_ROOT}{PRISM_CORE_FILE}"
+_PRISM_CDN_ROOT = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/"
 
 # 子目录
-PRISM_COMPONENTS_DIR = "components/"
-PRISM_THEMES_DIR = "themes/"
+_PRISM_COMPONENTS_DIR = "components/"
+_PRISM_THEMES_DIR = "themes/"
 
 # 派生 URL
-PRISM_THEME_URL = f"{PRISM_CDN_ROOT}{PRISM_THEMES_DIR}prism-okaidia.min.css"
-CDN_BASE = f"{PRISM_CDN_ROOT}{PRISM_COMPONENTS_DIR}"
+_PRISM_THEME_URL = f"{_PRISM_CDN_ROOT}{_PRISM_THEMES_DIR}prism-okaidia.min.css"
+CDN_BASE = f"{_PRISM_CDN_ROOT}{_PRISM_COMPONENTS_DIR}"
 
 # ==================== HTML 模板样式 ====================
 
@@ -29,7 +27,7 @@ HEAD = f"""<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="{PRISM_THEME_URL}" rel="stylesheet" />
+    <link href="{_PRISM_THEME_URL}" rel="stylesheet" />
     <style>
         * {{ box-sizing: {render_theme.box_sizing}; }}
         {render_theme.font_faces_css}
