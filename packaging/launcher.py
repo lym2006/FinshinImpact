@@ -22,31 +22,34 @@ from packaging.version import Version
 
 # ==================== 常量 ====================
 
-APP_TITLE = "TelegramBot"
-PAGES_PYPROJECT_URL = "https://lym2006.github.io/TelegramBot/pyproject.toml"
-RELEASE_ZIP_URL = "https://github.com/lym2006/TelegramBot/releases/download/v{ver}/TelegramBot-v{ver}.zip"
+_APP_TITLE = "TelegramBot"
+_PAGES_PYPROJECT_URL = "https://lym2006.github.io/TelegramBot/pyproject.toml"
+_RELEASE_ZIP_URL = "https://github.com/lym2006/TelegramBot/releases/download/v{ver}/TelegramBot-v{ver}.zip"
 
 # 手动下载引导页：蓝奏云备用目录（访问密码随弹窗展示）
-DOWNLOAD_PAGE_URL = "https://wwbgy.lanzoub.com/b0pnwooed"
-DOWNLOAD_PASSWORD = "5rp0"
-REQUEST_TIMEOUT = 10.0
-DOWNLOAD_CHUNK = 65536
+_DOWNLOAD_PAGE_URL = "https://wwbgy.lanzoub.com/b0pnwooed"
+_DOWNLOAD_PASSWORD = "5rp0"
+_REQUEST_TIMEOUT = 10.0  # 版本页请求超时 10 秒
+_DOWNLOAD_CHUNK = 64 * 1024  # 分块粒度 64 KB（刷进度）
+_DOWNLOAD_TIMEOUT = 60.0  # 发布物下载超时 60 秒
+_BYTES_PER_MB = 1024 * 1024  # 1 MB
+_SPEED_EPS = 1e-6  # 0.000001 秒下限，起步防除零
 
 # 国内直连 GitHub 慢：官方源失败自动切换公共加速镜像
-RELEASE_MIRRORS = ("https://gh-proxy.com/", "https://ghproxy.net/")
+_RELEASE_MIRRORS = ("https://gh-proxy.com/", "https://ghproxy.net/")
 
 # pip 索引按序重试：国内多源轮询，最后官方源兜底
-PIP_INDEX_URLS = (
+_PIP_INDEX_URLS = (
     "https://pypi.tuna.tsinghua.edu.cn/simple",
     "https://mirrors.aliyun.com/pypi/simple",
     "https://mirrors.cloud.tencent.com/pypi/simple",
     "https://pypi.org/simple",
 )
-PLAYWRIGHT_CDN = "https://cdn.npmmirror.com/binaries/playwright"
+_PLAYWRIGHT_CDN = "https://cdn.npmmirror.com/binaries/playwright"
 
 # 升级保留：用户资产、运行环境与启动器本体
 # 壳不自动换：Windows 锁定运行中的 exe，需要升级壳时手动整包覆盖
-PRESERVE_NAMES = (
+_PRESERVE_NAMES = (
     "config.toml",
     "data",
     "logs",
@@ -67,18 +70,18 @@ _ID_YES = 6
 
 def _info(text: str) -> None:
     """信息弹窗"""
-    ctypes.windll.user32.MessageBoxW(0, text, APP_TITLE, _MB_ICON_INFO)
+    ctypes.windll.user32.MessageBoxW(0, text, _APP_TITLE, _MB_ICON_INFO)
 
 
 def _ask_yes_no(text: str) -> bool:
     """询问弹窗，返回用户是否选择「是」"""
     flags = _MB_YESNO | _MB_ICON_INFO
-    return ctypes.windll.user32.MessageBoxW(0, text, APP_TITLE, flags) == _ID_YES
+    return ctypes.windll.user32.MessageBoxW(0, text, _APP_TITLE, flags) == _ID_YES
 
 
 def _fail_exit(text: str) -> None:
     """错误弹窗并退出"""
-    ctypes.windll.user32.MessageBoxW(0, text, APP_TITLE, _MB_ICON_ERROR)
+    ctypes.windll.user32.MessageBoxW(0, text, _APP_TITLE, _MB_ICON_ERROR)
     sys.exit(1)
 
 
@@ -137,6 +140,7 @@ def _apply_system_proxy() -> None:
     if "://" not in proxy:
         proxy = f"http://{proxy}"
     os.environ["HTTP_PROXY"] = os.environ["HTTPS_PROXY"] = proxy
+    # 仅供安装期的 pip/playwright 子进程继承，_launch 会剔除
 
 
 # ==================== 版本与依赖（pyproject 单一来源） ====================
@@ -162,7 +166,7 @@ def _remote_version() -> str | None:
     """读取版本页的在线版本号，网络不通返回 None"""
     try:
         with urllib.request.urlopen(
-            PAGES_PYPROJECT_URL, timeout=REQUEST_TIMEOUT
+            _PAGES_PYPROJECT_URL, timeout=_REQUEST_TIMEOUT
         ) as resp:
             data = tomllib.loads(resp.read().decode("utf-8"))
         return str(data["project"]["version"])
@@ -202,7 +206,7 @@ def _enable_site(runtime: Path) -> None:
 
 def _pip_with_index_retry(cmd: list[str]) -> None:
     """按序尝试多镜像索引，失败换源重试直至耗尽"""
-    for i, index in enumerate(PIP_INDEX_URLS):
+    for i, index in enumerate(_PIP_INDEX_URLS):
         if i:
             print(f"换源重试（第 {i + 1} 次）：{index}")
             print("上方报错无需处理，程序正在自动切换镜像源。\n\n")
@@ -211,7 +215,7 @@ def _pip_with_index_retry(cmd: list[str]) -> None:
             return
         except subprocess.CalledProcessError:
             print("\n\n")
-            if i == len(PIP_INDEX_URLS) - 1:
+            if i == len(_PIP_INDEX_URLS) - 1:
                 raise
 
 
@@ -247,7 +251,7 @@ def _install_browser(runtime: Path) -> None:
     """
     cmd = [runtime / "python.exe", "-m", "playwright", "install", "chromium"]
     env = os.environ.copy()
-    env["PLAYWRIGHT_DOWNLOAD_HOST"] = PLAYWRIGHT_CDN
+    env["PLAYWRIGHT_DOWNLOAD_HOST"] = _PLAYWRIGHT_CDN
     try:
         subprocess.run(cmd, check=True, env=env)
     except subprocess.CalledProcessError:
@@ -294,27 +298,27 @@ def _ensure_runtime(root: Path) -> None:
 
 def _report_progress(done: int, total: int, start: float) -> None:
     """单行刷新下载进度：百分比、字节量与速率"""
-    elapsed = max(time.monotonic() - start, 1e-6)
-    speed = done / elapsed / 1048576
+    elapsed = max(time.monotonic() - start, _SPEED_EPS)
+    speed = done / elapsed / _BYTES_PER_MB
     if total:
         line = (
             f"\r  {done / total * 100:5.1f}%"
-            f"  {done / 1048576:.1f}/{total / 1048576:.1f} MB"
+            f"  {done / _BYTES_PER_MB:.1f}/{total / _BYTES_PER_MB:.1f} MB"
             f"  {speed:.1f} MB/s        "
         )
     else:
-        line = f"\r  已下载 {done / 1048576:.1f} MB  {speed:.1f} MB/s        "
+        line = f"\r  已下载 {done / _BYTES_PER_MB:.1f} MB  {speed:.1f} MB/s        "
     print(line, end="", flush=True)
 
 
 def _download_one(url: str, target: Path) -> None:
     """单源下载并实时打印进度"""
-    with urllib.request.urlopen(url, timeout=60.0) as resp:
+    with urllib.request.urlopen(url, timeout=_DOWNLOAD_TIMEOUT) as resp:
         total = int(resp.headers.get("Content-Length") or 0)
         done = 0
         start = time.monotonic()
         with open(target, "wb") as f:
-            while chunk := resp.read(DOWNLOAD_CHUNK):
+            while chunk := resp.read(_DOWNLOAD_CHUNK):
                 f.write(chunk)
                 done += len(chunk)
                 _report_progress(done, total, start)
@@ -345,9 +349,9 @@ def _apply_update(root: Path, version: str) -> bool:
         print(f"下载 v{version} 发布物…")
         shutil.rmtree(stage, ignore_errors=True)
         stage.mkdir(parents=True)
-        zip_url = RELEASE_ZIP_URL.format(ver=version)
+        zip_url = _RELEASE_ZIP_URL.format(ver=version)
         _fetch_zip(
-            [zip_url, *(m + zip_url for m in RELEASE_MIRRORS)],
+            [zip_url, *(m + zip_url for m in _RELEASE_MIRRORS)],
             stage / "package.zip",
         )
         with zipfile.ZipFile(stage / "package.zip") as zf:
@@ -359,7 +363,7 @@ def _apply_update(root: Path, version: str) -> bool:
         # 覆盖：白名单外目录整树拷、文件逐个拷
         print("应用更新（保留配置、数据与日志）…")
         for item in new_root.iterdir():
-            if item.name in PRESERVE_NAMES:
+            if item.name in _PRESERVE_NAMES:
                 continue
             target = root / item.name
             if item.is_dir():
@@ -371,9 +375,9 @@ def _apply_update(root: Path, version: str) -> bool:
         print(f"升级失败：{e}")
         if _ask_yes_no(
             "自动升级失败，是否打开蓝奏云手动下载最新版？\n"
-            f"访问密码：{DOWNLOAD_PASSWORD}，选择否则按当前版本启动。"
+            f"访问密码：{_DOWNLOAD_PASSWORD}，选择否则按当前版本启动。"
         ):
-            webbrowser.open(DOWNLOAD_PAGE_URL)
+            webbrowser.open(_DOWNLOAD_PAGE_URL)
         return False
     finally:
         shutil.rmtree(stage, ignore_errors=True)
@@ -414,9 +418,16 @@ def _launch(root: Path) -> None:
     main.py 位于包根，注入源码路径后等价 python -m bot，
     显式入口便于调试：可直接运行 main.py 复现问题。
     """
+    # 剔除安装期注入的代理变量：主程序有自己的三级解析，不该被 OS 代理绑架
+    env = {
+        k: v
+        for k, v in os.environ.items()
+        if k not in ("HTTP_PROXY", "HTTPS_PROXY")
+    }
     subprocess.Popen(
         [str(root / "runtime" / "pythonw.exe"), str(root / "main.py")],
         cwd=str(root),
+        env=env,
     )
 
 
