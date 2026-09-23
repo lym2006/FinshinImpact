@@ -23,11 +23,11 @@
 无需 Python、无需 Git、无命令行，五步完成：
 
 1. **代理**：大陆用户访问 `github` 和使用机器人需 **全程** 开启代理。
-2. **下载**：二选一，下最新版的 `TelegramBot-vX.Y.Z.zip`（认准此文件名；Releases 页标着 Source code 的压缩包不含启动器，不要下）。
+2. **下载**：二选一，下最新版的 `TelegramBot-vX.Y.Z.zip`（认准此文件名；Releases 页标着 `Source code` 的压缩包不含启动器，不要下）。
    - 🚀 [蓝奏云备用（国内推荐）](https://wwbgy.lanzoub.com/b0pnwooed)，页面顶部输入访问密码 `5rp0` 后点击下载；
-   - 📦 [GitHub Releases](https://github.com/lym2006/TelegramBot/releases)，打开最新条目在 Assets 里下载。
+   - 📦 [GitHub Releases](https://github.com/lym2006/TelegramBot/releases)，打开最新条目在 `Assets` 里下载。
 3. **解压**：解压到任意 **可写目录**（如 `D:\TelegramBot`）。
-4. **首次启动**：双击 `TelegramBot\TelegramBot.exe`，确认后自动安装运行环境（嵌入式 Python、依赖、浏览器内核，默认走国内镜像加速），进度窗口实时显示安装步骤与下载速率，期间保持网络畅通。中途出现红色报错无需处理——程序会自动换源重试，窗口会提示"已自动换源重试"。
+4. **首次启动**：双击 `TelegramBot\TelegramBot.exe`，确认后自动安装运行环境（嵌入式 Python、依赖、浏览器内核，默认走国内镜像加速），进度窗口实时显示安装步骤与下载速率，期间保持网络畅通。中途出现红色报错无需处理——镜像源失效时程序会自动换源重试，窗口会打印 `换源重试` 进度提示。
 5. **配置**：完成后管理面板弹出配置向导，填入 `telegram_token` 保存即开始收发消息（`config.toml` 自动生成，无需手编）。
 
 ---
@@ -119,9 +119,9 @@
 <details>
 <summary><b>发布流程（维护者）</b></summary>
 
-1. `pyproject.toml` 递增版本号，CHANGELOG 定稿，打 `git tag vX.Y.Z` 并推送；
+1. `pyproject.toml` 递增版本号，`CHANGELOG` 定稿，打 `git tag vX.Y.Z` 并推送；
 2. GitHub Release 上传发布物 `TelegramBot-vX.Y.Z.zip`（源码 + 启动器，不含 `.venv`）；
-3. 手动把 `pyproject.toml` 覆盖到版本页仓库（`lym2006.github.io/TelegramBot`）并 push，其 Pages workflow 自动部署，在线版本号即生效；
+3. 手动把 `pyproject.toml` 覆盖到版本页仓库（`lym2006.github.io/TelegramBot`）并 `push`，其 Pages workflow 自动部署，在线版本号即生效；
 4. 用户下次启动时，GUI 版本检查命中新版本，启动器自动完成升级。
 
 </details>
@@ -133,7 +133,7 @@
 ## 🔄 更新版本
 
 - **「检查更新」按钮**：两种版本行为一致，仅比对在线版本号并弹窗提示是否有新版，**不会** 替你更新。
-- **开发版更新方式**：手动拉取新代码（git pull 或下载源码覆盖），若依赖有变动，重跑[📦 开发版](#-开发版)的 pip 安装命令同步。
+- **开发版更新方式**：手动拉取新代码（`git pull` 或下载源码覆盖），若依赖有变动，重跑[📦 开发版](#-开发版)的 `pip` 安装命令同步。
 - **打包版更新方式**：启动器每次拉起主程序前自动比对版本，弹窗确认后完成下载升级，用户配置、数据与日志一律保留。
 
 [⤴️ 返回目录](#-目录)
