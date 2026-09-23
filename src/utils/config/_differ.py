@@ -6,18 +6,18 @@
 
 from .models import AppConfigData, AppSchema, ConfigValue
 
-LType = list[tuple[str, ConfigValue, ConfigValue]]
+_LType = list[tuple[str, ConfigValue, ConfigValue]]
 
 
 def compare_configs(
     schema: AppSchema,
     original: AppConfigData,
     modified: AppConfigData,
-) -> tuple[AppConfigData, LType]:
+) -> tuple[AppConfigData, _LType]:
     """提取配置变更"""
     # 遍历 Schema，逐字段精准比对
     changes: AppConfigData = {}
-    logs: LType = []
+    logs: _LType = []
     for tab in schema:
         ns = tab.namespace
         ns_changes = {}

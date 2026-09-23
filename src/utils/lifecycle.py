@@ -11,11 +11,11 @@ import threading
 from collections.abc import Callable
 from typing import Any, Literal, cast
 
-LifecycleType = Literal["hook_sync", "hook_async", "thread"]
-TargetType = Callable | threading.Thread | None
+_LifecycleType = Literal["hook_sync", "hook_async", "thread"]
+_TargetType = Callable | threading.Thread | None
 
 _registry: dict[
-    LifecycleType, list[tuple[TargetType, str, asyncio.AbstractEventLoop | None]]
+    _LifecycleType, list[tuple[_TargetType, str, asyncio.AbstractEventLoop | None]]
 ] = {
     "hook_sync": [],
     "hook_async": [],
@@ -26,7 +26,7 @@ _registry: dict[
 _registry_lock = threading.Lock()
 
 
-def register_lifecycle(target: TargetType, desc: str, type_: LifecycleType) -> None:
+def register_lifecycle(target: _TargetType, desc: str, type_: _LifecycleType) -> None:
     """注册生命周期资源"""
     with _registry_lock:
         # 绑定方法按 __self__ + __func__ 相等判定，同名不同实例不误伤
@@ -36,7 +36,7 @@ def register_lifecycle(target: TargetType, desc: str, type_: LifecycleType) -> N
         _registry[type_].append((target, desc, loop))
 
 
-def unregister_lifecycle(target: TargetType, type_: LifecycleType) -> None:
+def unregister_lifecycle(target: _TargetType, type_: _LifecycleType) -> None:
     """资源自行退出时注销自己"""
     with _registry_lock:
         _registry[type_] = [x for x in _registry[type_] if x[0] != target]
