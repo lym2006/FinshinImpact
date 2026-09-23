@@ -2,11 +2,9 @@
 """配置向导（内部实现）
 
 - 实现多标签页表单与错误标红
-- 提供变更二次确认与未保存提示
+- 提供复验结果原地刷新与防重入
 """
 
-import difflib
-import html
 from enum import Enum, auto
 
 from PySide6.QtCore import Qt, Signal
@@ -16,13 +14,10 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QFrame,
     QHBoxLayout,
-    QHeaderView,
     QLabel,
     QLineEdit,
     QPushButton,
     QScrollArea,
-    QTableWidget,
-    QTableWidgetItem,
     QTabWidget,
     QTextEdit,
     QVBoxLayout,
@@ -39,14 +34,12 @@ from utils.config.models import (
     TabSchema,
 )
 
-from ..._qss import build_change_dialog_qss, build_settings_dialog_qss
-from ..._theme import CHANGE_DIALOG as CHANGE
+from ..._qss import build_settings_dialog_qss
 from ..._theme import GLOBAL
-from ..._theme import HINT_DIALOG as HINT
 from ..._theme import SETTINGS_DIALOG as DIALOG
 from ...mediator import gui_bridge
 from .._base import BaseDialog
-from .._hint import HintDialog
+from ._change import ChangeConfirmDialog, NotChangedDialog
 from ._list_widget import ConfigListWidget
 
 __all__ = [
@@ -58,7 +51,7 @@ __all__ = [
 
 _ERROR_QSS = f"color: {DIALOG.error_color};"
 _PENDING_QSS = f"color: {DIALOG.pending_color};"
-_ERROR_FONT = QFont("Microsoft YaHei", DIALOG.error_font_size)
+_ERROR_FONT = QFont(DIALOG.error_font_family, DIALOG.error_font_size)
 
 
 class ConfigMode(Enum):
@@ -66,192 +59,6 @@ class ConfigMode(Enum):
 
     EDIT = auto()  # 正常编辑（用户主动点击）
     SETUP = auto()  # 缺失引导（验证失败强制弹出）
-
-
-class NotChangedDialog:
-    """配置未修改提示弹窗"""
-
-    @staticmethod
-    def show(parent=None, text: str = HINT.not_changed) -> None:
-        """家族化模态展示"""
-        HintDialog.notify(text, parent=parent)
-
-
-# ==================== diff 渲染辅助 ====================
-
-_DIFF_STYLE = {
-    "same": "",
-    "del": f"color: {CHANGE.diff_del}; text-decoration: line-through;",
-    "add": f"color: {CHANGE.diff_add}; font-weight: bold;",
-}
-
-# 一行内的 (类型, 文本) 分段序列
-_Line = list[tuple[str, str]]
-
-
-def _to_lines(value: object) -> list[str]:
-    """配置值拆行
-
-    list 逐元素，标量按文本行。
-    """
-    if isinstance(value, (list, tuple)):
-        return [str(v) for v in value]
-    return str(value).splitlines() or [""]
-
-
-def _char_diff(old: str, new: str) -> tuple[_Line, _Line]:
-    """行内字符级比对
-
-    旧/新各输出 (类型, 文本) 分段，公共部分白色。
-    """
-    sm = difflib.SequenceMatcher(a=old, b=new, autojunk=False)
-    left: _Line = []
-    right: _Line = []
-    for tag, i1, i2, j1, j2 in sm.get_opcodes():
-        if tag == "equal":
-            left.append(("same", old[i1:i2]))
-            right.append(("same", new[j1:j2]))
-        else:
-            if old[i1:i2]:
-                left.append(("del", old[i1:i2]))
-            if new[j1:j2]:
-                right.append(("add", new[j1:j2]))
-    return left, right
-
-
-def _split_diff(old: list[str], new: list[str]) -> tuple[list[_Line], list[_Line]]:
-    """行级对齐 + 配对行字符级细化
-
-    改词只亮改动处，多出的行整行删除/新增。
-    """
-    sm = difflib.SequenceMatcher(a=old, b=new, autojunk=False)
-    left: list[_Line] = []
-    right: list[_Line] = []
-    for tag, i1, i2, j1, j2 in sm.get_opcodes():
-        if tag == "equal":
-            lines = old[i1:i2]
-            left += [[("same", ln)] for ln in lines]
-            right += [[("same", ln)] for ln in lines]
-        elif tag == "delete":
-            left += [[("del", ln)] for ln in old[i1:i2]]
-        elif tag == "insert":
-            right += [[("add", ln)] for ln in new[j1:j2]]
-        else:  # replace：等长部分逐行字符级，多余部分整行
-            old_lines, new_lines = old[i1:i2], new[j1:j2]
-            pairs = min(len(old_lines), len(new_lines))
-            for a, b in zip(old_lines[:pairs], new_lines[:pairs], strict=False):
-                la, rb = _char_diff(a, b)
-                left.append(la)
-                right.append(rb)
-            left += [[("del", ln)] for ln in old_lines[pairs:]]
-            right += [[("add", ln)] for ln in new_lines[pairs:]]
-    return left, right
-
-
-def _make_diff_cell(lines: list[_Line], mono: str) -> QTextEdit:
-    """只读 diff 单元格
-
-    超行高自动出滚动条。
-    """
-    body = (
-        "".join(
-            "<div>"
-            + (
-                "".join(
-                    f"<span style='{_DIFF_STYLE[kind]}'>"
-                    f"{html.escape(text) or '&nbsp;'}</span>"
-                    for kind, text in seg
-                )
-                or "&nbsp;"
-            )
-            + "</div>"
-            for seg in lines
-        )
-        or "&nbsp;"
-    )
-    view = QTextEdit()
-    view.setObjectName("change_cell")
-    view.setReadOnly(True)
-    view.setLineWrapMode(QTextEdit.LineWrapMode.NoWrap)
-    view.setHtml(f"<div style=\"font-family: '{mono}';\">{body}</div>")
-    return view
-
-
-class ChangeConfirmDialog(BaseDialog):
-    """配置变更二次确认弹窗"""
-
-    def __init__(
-        self,
-        logs: list[tuple[str, ConfigValue, ConfigValue]],
-        parent: QWidget | None = None,
-    ) -> None:
-        super().__init__(parent=parent, title="确认变更")
-        self.setStyleSheet(build_change_dialog_qss())
-        self.setMinimumSize(CHANGE.min_width, CHANGE.min_height)
-        self._build_ui(logs)
-
-    @staticmethod
-    def confirm(
-        logs: list[tuple[str, ConfigValue, ConfigValue]],
-        parent: QWidget | None = None,
-    ) -> bool:
-        """模态展示
-
-        返回是否确认保存。
-        """
-        dialog = ChangeConfirmDialog(logs, parent=parent)
-        return dialog.exec() == dialog.DialogCode.Accepted
-
-    def _build_ui(self, logs: list[tuple[str, ConfigValue, ConfigValue]]) -> None:
-        """构建表格与按钮区"""
-        layout = QVBoxLayout(self)
-        layout.setSpacing(DIALOG.tab_spacing)
-
-        tip = QLabel(CHANGE.tip_text)
-        layout.addWidget(tip)
-
-        table = QTableWidget(len(logs), 3)
-        table.setObjectName("change_table")
-        table.setHorizontalHeaderLabels(
-            [CHANGE.col_key, CHANGE.col_ori, CHANGE.col_mod]
-        )
-        table.verticalHeader().setVisible(False)
-        table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-        table.setAlternatingRowColors(True)
-
-        header = table.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
-        header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-        header.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
-
-        mono = CHANGE.mono_family
-        line_h = QFontMetrics(QFont(mono, CHANGE.mono_font_size)).height()
-        for row, (key, ori, mod) in enumerate(logs):
-            left, right = _split_diff(_to_lines(ori), _to_lines(mod))
-            name_cell = QTableWidgetItem(str(key))
-            name_cell.setToolTip(name_cell.text())
-            table.setItem(row, 0, name_cell)
-            table.setCellWidget(row, 1, _make_diff_cell(left, mono))
-            table.setCellWidget(row, 2, _make_diff_cell(right, mono))
-            shown = min(
-                max(len(left), len(right), CHANGE.row_min_lines),
-                CHANGE.row_max_lines,
-            )
-            table.setRowHeight(row, shown * line_h + CHANGE.row_pad)
-        layout.addWidget(table)
-
-        btn_layout = QHBoxLayout()
-        btn_layout.addStretch()
-
-        btn_cancel = QPushButton(CHANGE.cancel_text)
-        btn_cancel.clicked.connect(self.reject)
-        btn_ok = QPushButton(CHANGE.confirm_text)
-        btn_ok.setObjectName("btn_primary")
-        btn_ok.clicked.connect(self.accept)
-
-        btn_layout.addWidget(btn_cancel)
-        btn_layout.addWidget(btn_ok)
-        layout.addLayout(btn_layout)
 
 
 class SettingsDialog(BaseDialog):
@@ -268,15 +75,14 @@ class SettingsDialog(BaseDialog):
         parent: QWidget | None = None,
         field_errors: dict[str, str] | None = None,
     ) -> None:
-        super().__init__(parent=parent, title="修改配置")
+        super().__init__(parent=parent, title=DIALOG.title)
 
         # SETUP 模式字段级错误：{字段键: 悬浮文案}
         self._field_errors: dict[str, str] = dict(field_errors or {})
+
         # 出错字段所在 namespace，用于标红对应标签页
         self._error_namespaces = self._resolve_error_namespaces(schema)
-
         self.setStyleSheet(build_settings_dialog_qss())
-
         self._schema = schema
         self._current = current_config
         self._mode = mode
@@ -294,9 +100,7 @@ class SettingsDialog(BaseDialog):
         self._save_btn: QPushButton | None = None
         self._save_text: str = ""
 
-        # SETUP 模式：非模态可拖动，与主窗口同级可见日志；
-        # 去掉原生关闭按钮（保留标题栏与边框），避免"点了没反应"的错觉；
-        # 任务栏/Alt+F4 仍由 closeEvent 统一拦截
+        # SETUP：非模态；去关闭按钮防误点，关窗统一走 closeEvent 拦截
         if mode == ConfigMode.SETUP:
             self.setWindowModality(Qt.WindowModality.NonModal)
             self.setWindowFlags(
@@ -364,6 +168,8 @@ class SettingsDialog(BaseDialog):
             label.setToolTip(err or "")
         for ns, (index, title) in self._tab_titles.items():
             mark = "⚠ " if ns in bad else ""
+            if self._tabs is None:
+                continue
             self._tabs.setTabText(index, f"{mark}{title}")
 
     def set_busy(self, busy: bool) -> None:
@@ -376,7 +182,7 @@ class SettingsDialog(BaseDialog):
         self._save_btn.setEnabled(not busy)
         self._save_btn.setText(DIALOG.validating_text if busy else self._save_text)
 
-    # ==================== 渲染 ====
+    # ==================== 渲染 ====================
 
     def _create_field(
         self, field: FieldSchema, namespace: str, label_width: int = 0
@@ -386,7 +192,6 @@ class SettingsDialog(BaseDialog):
         form = QFormLayout(container)
         form.setSpacing(GLOBAL.radius)
         form.setContentsMargins(*[DIALOG.margin] * 3 + [DIALOG.tab_spacing])
-
         ns_config = self._current.get(namespace)
         current_value = (
             ns_config[field.key]
@@ -422,7 +227,6 @@ class SettingsDialog(BaseDialog):
             return container
 
         # bool 配置项 → 勾选行（通用机制，避免 True/False 一行丑字）
-        checkbox: QCheckBox | None = None
         input_widget: QWidget
         if isinstance(field.default, bool):
             bool_box = QCheckBox(field.label)
@@ -445,8 +249,6 @@ class SettingsDialog(BaseDialog):
         v_layout.setContentsMargins(*[DIALOG.margin] * 4)
         v_layout.setSpacing(DIALOG.desc_spacing)
         v_layout.addWidget(input_widget)
-        if checkbox is not None:
-            v_layout.addWidget(checkbox)
         if field.desc:
             v_layout.addWidget(self._build_desc(field.desc))
 
@@ -527,7 +329,6 @@ class SettingsDialog(BaseDialog):
             tabs.addTab(tab_widget, f"{mark}{tab_schema.title}")
             self._tab_titles[tab_schema.namespace] = (index, tab_schema.title)
         self._tabs = tabs
-
         root_layout.addWidget(tabs)
         root_layout.addLayout(self._build_bottom_buttons())
 
@@ -537,19 +338,16 @@ class SettingsDialog(BaseDialog):
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setAutoFillBackground(False)
-
         container = QWidget()
         container.setStyleSheet(f"background-color: {DIALOG.tab_bg};")
         main_layout = QVBoxLayout(container)
         main_layout.setSpacing(DIALOG.tab_spacing)
-
         label_width = self._calc_label_width(tab_schema.fields)
         for field in tab_schema.fields:
             main_layout.addWidget(
                 self._create_field(field, tab_schema.namespace, label_width)
             )
         main_layout.addStretch()
-
         scroll.setWidget(container)
         return scroll
 
@@ -575,6 +373,7 @@ class SettingsDialog(BaseDialog):
                 btn_finish = QPushButton(DIALOG.finish_text)
                 btn_finish.setObjectName("btn_primary")
                 btn_finish.setMinimumWidth(DIALOG.finish_btn_min_width)
+
                 # 发信号而非 accept：校验通过才关窗，失败则原窗保留已填内容
                 btn_finish.clicked.connect(self.save_requested.emit)
                 self._save_btn, self._save_text = btn_finish, DIALOG.finish_text

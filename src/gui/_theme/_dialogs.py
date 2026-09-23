@@ -56,10 +56,14 @@ class SettingsDialogConfig:
     setup_tip: str = "检测到配置有误，请修正后继续"
     setup_hint: str = "留意带 ⚠ 的标签页，标题标红的即为出错字段"
 
+    # === 窗口标题 ===
+    title: str = "修改配置"
+
     # === 错误标注 ===
     error_color: str = "#E06C75"
     pending_color: str = "#D7BA7D"  # 验证失败字段/标签页的标红色
     error_font_size: int = 11  # SETUP 提示语字号
+    error_font_family: str = "Microsoft YaHei"  # SETUP 提示语字体
 
 
 @dataclass(frozen=True)
@@ -183,7 +187,7 @@ class WaitDialogConfig:
 
     # === 文案配置 ===
     title: str = "请稍候"
-    ok_text: str = "知道啦"
+    ok_text: str = "知道了"
     check_text: str = "正在检查版本更新..."
     verify_text: str = "正在校验连通性..."
     verify_format: str = "正在校验连通性... 已等 {n} 秒"
@@ -230,6 +234,8 @@ class ChangeDialogConfig:
     mono_font_size: int = 9  # 取值列字号
 
     # === 文案配置 ===
+    title: str = "确认变更"
+    diff_columns: int = 3  # 配置项/原配置/新配置三列
     tip_text: str = "以下配置将被修改，确认保存？"
     col_key: str = "配置项"
     col_ori: str = "原配置"
