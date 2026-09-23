@@ -15,21 +15,24 @@ import zipfile
 from pathlib import Path
 
 # 仓库根与产物目录
-ROOT = Path(__file__).resolve().parent.parent
-DIST = ROOT / "dist"
-STAGE = DIST / "TelegramBot"
+_ROOT = Path(__file__).resolve().parent.parent
+_DIST = _ROOT / "dist"
+_STAGE = _DIST / "TelegramBot"
 
 # 嵌入式发行版官方直链（构建时另有 npmmirror 兜底）与 pip 引导脚本
-EMBED_VERSION = "3.11.9"
-EMBED_URL = (
-    f"https://www.python.org/ftp/python/{EMBED_VERSION}"
-    f"/python-{EMBED_VERSION}-embed-amd64.zip"
+_EMBED_VERSION = "3.11.9"
+_EMBED_URL = (
+    f"https://www.python.org/ftp/python/{_EMBED_VERSION}"
+    f"/python-{_EMBED_VERSION}-embed-amd64.zip"
 )
-GET_PIP_URL = "https://bootstrap.pypa.io/get-pip.py"
+_GET_PIP_URL = "https://bootstrap.pypa.io/get-pip.py"
+
+_DOWNLOAD_TIMEOUT = 120.0  # 构建原料下载超时 120 秒（2 分钟）
+_CHECK_TIMEOUT = 10.0  # 版本页自检超时 10 秒
 
 # 发布 zip 的白名单：只装运行必需与用户文档，开发配置与残留全部排除
-COPY_DIRS = ("src", "assets")
-COPY_FILES = (
+_COPY_DIRS = ("src", "assets")
+_COPY_FILES = (
     "pyproject.toml",
     "config.example.toml",
     "README.md",
@@ -40,14 +43,14 @@ COPY_FILES = (
 
 def _read_version() -> str:
     """本地 pyproject.toml 的版本号"""
-    with open(ROOT / "pyproject.toml", "rb") as f:
+    with open(_ROOT / "pyproject.toml", "rb") as f:
         return str(tomllib.load(f)["project"]["version"])
 
 
 def _download(url: str, target: Path) -> None:
     """下载文件到指定路径"""
     print(f"下载 {url}")
-    with urllib.request.urlopen(url, timeout=120.0) as resp, open(target, "wb") as f:
+    with urllib.request.urlopen(url, timeout=_DOWNLOAD_TIMEOUT) as resp, open(target, "wb") as f:
         shutil.copyfileobj(resp, f)
 
 
@@ -91,23 +94,23 @@ def build_launcher() -> Path:
             "--name",
             "TelegramBot",
             "--distpath",
-            str(DIST / "_launcher"),
+            str(_DIST / "_launcher"),
             "--workpath",
-            str(DIST / "build"),
+            str(_DIST / "build"),
             "--specpath",
-            str(DIST),
-            str(ROOT / "packaging" / "launcher.py"),
+            str(_DIST),
+            str(_ROOT / "packaging" / "launcher.py"),
         ],
         check=True,
     )
-    return DIST / "_launcher" / "TelegramBot"
+    return _DIST / "_launcher" / "TelegramBot"
 
 
 # ==================== 发布物组装 ====================
 
 
 # 入口脚本模板：注入源码路径后等价 python -m bot
-MAIN_PY = """import sys
+_MAIN_PY = """import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent / "src"))
@@ -124,61 +127,61 @@ def _write_runtime_seed(launcher_dir: Path) -> None:
     组装嵌入式 Python 与 pip 引导脚本进 runtime。
     启动器 exe 与其依赖目录 _internal 放包根，用户双击即见。
     """
-    runtime = STAGE / "runtime"
+    runtime = _STAGE / "runtime"
     runtime.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(launcher_dir / "TelegramBot.exe", STAGE / "TelegramBot.exe")
+    shutil.copy2(launcher_dir / "TelegramBot.exe", _STAGE / "TelegramBot.exe")
     shutil.copytree(
         launcher_dir / "_internal",
-        STAGE / "_internal",
+        _STAGE / "_internal",
         dirs_exist_ok=True,
     )
 
     # 四源实测可达：官方 → npmmirror → 华为云 → 淘宝
     embed_candidates = [
-        EMBED_URL,
+        _EMBED_URL,
         "https://registry.npmmirror.com/-/binary/python/"
-        + f"{EMBED_VERSION}/python-{EMBED_VERSION}-embed-amd64.zip",
+        + f"{_EMBED_VERSION}/python-{_EMBED_VERSION}-embed-amd64.zip",
         "https://mirrors.huaweicloud.com/python/"
-        + f"{EMBED_VERSION}/python-{EMBED_VERSION}-embed-amd64.zip",
+        + f"{_EMBED_VERSION}/python-{_EMBED_VERSION}-embed-amd64.zip",
         "https://npmmirror.com/mirrors/python/"
-        + f"{EMBED_VERSION}/python-{EMBED_VERSION}-embed-amd64.zip",
+        + f"{_EMBED_VERSION}/python-{_EMBED_VERSION}-embed-amd64.zip",
     ]
     _download_verified(embed_candidates, runtime / "python-embed.zip")
-    _download(GET_PIP_URL, runtime / "get-pip.py")
+    _download(_GET_PIP_URL, runtime / "get-pip.py")
 
 
 def assemble(launcher_dir: Path) -> Path:
     """组装发布目录并压缩为 zip"""
     version = _read_version()
-    if STAGE.exists():
-        shutil.rmtree(STAGE)
-    STAGE.mkdir(parents=True)
+    if _STAGE.exists():
+        shutil.rmtree(_STAGE)
+    _STAGE.mkdir(parents=True)
 
-    for name in COPY_DIRS:
-        src = ROOT / name
+    for name in _COPY_DIRS:
+        src = _ROOT / name
         if src.exists():
             shutil.copytree(
                 src,
-                STAGE / name,
+                _STAGE / name,
                 ignore=shutil.ignore_patterns(
                     "__pycache__", ".pytest_cache", "*.egg-info"
                 ),
             )
-    for name in COPY_FILES:
-        src = ROOT / name
+    for name in _COPY_FILES:
+        src = _ROOT / name
         if src.exists():
-            shutil.copy2(src, STAGE / name)
+            shutil.copy2(src, _STAGE / name)
 
-    (STAGE / "main.py").write_text(MAIN_PY, encoding="utf-8")
+    (_STAGE / "main.py").write_text(_MAIN_PY, encoding="utf-8")
     _write_runtime_seed(launcher_dir)
-    zip_name = DIST / f"TelegramBot-v{version}.zip"
+    zip_name = _DIST / f"TelegramBot-v{version}.zip"
     if zip_name.exists():
         zip_name.unlink()
     with zipfile.ZipFile(zip_name, "w", zipfile.ZIP_DEFLATED) as zf:
-        for item in STAGE.rglob("*"):
+        for item in _STAGE.rglob("*"):
             if item.is_file():
-                zf.write(item, item.relative_to(DIST))
-    shutil.rmtree(STAGE)
+                zf.write(item, item.relative_to(_DIST))
+    shutil.rmtree(_STAGE)
     return zip_name
 
 
@@ -199,7 +202,7 @@ def _check_release() -> None:
             f"v{version}" if not version.endswith("-dev") else "开发号，先正式化",
         ),
         ("git tag 远端", "已推送" if tag_hit else "缺失，先 push tag"),
-        ("本地 zip", (DIST / f"TelegramBot-v{version}.zip").exists()),
+        ("本地 zip", (_DIST / f"TelegramBot-v{version}.zip").exists()),
         (
             "在线版本页一致",
             _remote_version_text(),
@@ -213,7 +216,7 @@ def _remote_version_text() -> str:
     """读取版本页版本号文本（读不到显示原因，不抛异常）"""
     try:
         with urllib.request.urlopen(
-            "https://lym2006.github.io/TelegramBot/pyproject.toml", timeout=10.0
+            "https://lym2006.github.io/TelegramBot/pyproject.toml", timeout=_CHECK_TIMEOUT
         ) as resp:
             data = tomllib.loads(resp.read().decode("utf-8"))
         return str(data["project"]["version"])
@@ -245,7 +248,7 @@ def main() -> None:
         return
 
     if args.no_launcher:
-        launcher_dir = DIST / "_launcher" / "TelegramBot"
+        launcher_dir = _DIST / "_launcher" / "TelegramBot"
         if not (launcher_dir / "TelegramBot.exe").exists():
             print("找不到已有启动器，去掉 --no-launcher 重新编译")
             return
