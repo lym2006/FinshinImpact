@@ -1,6 +1,6 @@
 # 打包教程
 
-所有命令在项目根目录（含 `pyproject.toml`）的 PowerShell 中执行。
+所有命令在项目根目录（含 `pyproject.toml`）的 `PowerShell` 中执行。首次使用需先创建并激活虚拟环境（提示符出现 `(.venv)`），未装过依赖时先跑第一步。
 
 ## 原理
 
@@ -28,47 +28,49 @@ pip install -e ".[dev]"
 python -m PyInstaller --version   # 应打印 6.22.3
 ```
 
-## 第二步：本地构建
+## 第二步：定稿并构建
+
+版本号在构建前定稿，zip 名取自 `pyproject.toml`，全程只构建这一次：
+
+1. `pyproject.toml` 的 `version` 改为发布号；`CHANGELOG.md` 的 `[Unreleased]` 改为新版本号并补空 `[Unreleased]`；
+2. 构建：
 
 ```powershell
 python packaging\build.py
 ```
 
-编译启动器 → 白名单组装（排除 egg-info 等开发残留）→ 下载嵌入式 Python（官方+3 个国内镜像轮换，逐条目校验，不过会中止）。成功标志：末行打印 `完成：dist\TelegramBot-vX.Y.Z.zip`。
+编译启动器 → 白名单组装（排除 `*.egg-info` 等开发残留）→ 下载嵌入式 `Python`（官方+3 个国内镜像轮换，逐条目校验，不过会中止）。成功标志：末行打印 `完成：dist\TelegramBot-vX.Y.Z.zip`——第三步测试与第四步上传用的都是这个包，不要再重跑构建。
 
-参数：`--no-launcher` 复用已编译启动器只重打内容；`--check` 自检四行：本地版本号、远端 tag、本地 zip、在线版本页（tag 与版本页读远端，是发布真相；推 tag 前"tag 缺失"属正常）。
+参数：`--no-launcher` 复用已编译启动器只重打内容（仅改文档后重打包用）；`--check` 自检四行：本地版本号、远端 tag、本地 zip、在线版本页（tag 与版本页读远端，是发布真相；推 tag 前"tag 缺失"属正常）。
 
 ## 第三步：本地测试（必做）
 
-1. 把 zip 复制到别处（如桌面）解压——在 dist 里测会污染构建目录；
-2. 双击 `TelegramBot.exe`，进度窗口 [1/5]～[5/5]，pip 按清华→阿里→腾讯→官方四源回退，约几分钟，别关窗口；
-   （中途出现红色报错属正常，源挂了会自动换源继续，窗口会打印"已自动换源重试"）；
-3. 验证：向导填 token 能收发消息；再开一次应几秒直达、不再出现进度窗口；测试目录只多出 config.toml、data、logs、runtime；
+拿第二步产出的 zip 走一遍用户路径：
+
+1. 把 zip 复制到别处（如桌面）解压——在 `dist\` 里测会污染构建目录；
+2. 双击 `TelegramBot.exe`，进度窗口 `[1/5]`～`[5/5]`，pip 按清华→阿里→腾讯→官方四源回退，约几分钟，别关窗口；
+3. 验证：向导填 token 能收发消息；再开一次应几秒直达、不再出现进度窗口；测试目录只多出 `config.toml`、`data\`、`logs\`、`runtime\`；
 4. 任一环节失败都不许发布。测完删掉测试目录。
 
 ## 第四步：正式发布（顺序不可乱）
 
 ```powershell
-# 1. 定稿：改 pyproject 的 version；CHANGELOG 的 Unreleased 改为新版本号并补空 Unreleased
-# 2. 提交推 tag
+# 1. 提交推 tag
 git add -A
 git commit -m "build(release): vX.Y.Z 发布定稿"
 git tag vX.Y.Z
 git push origin main vX.Y.Z
 
-# 3. 构建并上传：GitHub → Releases → 选 tag → 拖入 zip → Publish
-python packaging\build.py
-# 蓝奏云同步上传同名文件覆盖：https://wwbgy.lanzoub.com/b0pnwooed（密码 5rp0）
+# 2. 上传：GitHub → Releases → 选 tag → 拖入第二步的 zip → Publish
+#    蓝奏云同步上传同名文件覆盖：https://wwbgy.lanzoub.com/b0pnwooed（密码 5rp0）
 
-# 4. 同步版本页：把本地 pyproject.toml 覆盖到 lym2006.github.io 仓库
-python packaging\build.py --check   # 末行「在线版本页」显示新版本号即发布完成
+# 3. 同步版本页：把本地 pyproject.toml 覆盖到 lym2006.github.io 仓库
+python packaging\build.py --check   # 自检 tag 已推、zip 已生成；末行「在线版本页」显示新版本号即发布完成
 ```
-
-版本页仓库自身的 Pages workflow 负责部署，push 即生效，无需其他操作。
 
 ## 报毒
 
-已按防误报构建（onedir、无 UPX、不写注册表）。Defender 仍拦就"仍要运行"+ 微软页申诉；zip 可传 virustotal 看检出数，只应有启发式、不该有具体家族名。
+已按防误报构建（`--onedir`、无 UPX、不写注册表）。Defender 仍拦就"仍要运行"+ 微软页申诉；zip 可传 virustotal 看检出数，只应有启发式、不该有具体家族名。
 
 ## 排查
 
