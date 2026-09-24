@@ -3,9 +3,11 @@
 
 - 首次启动自动安装嵌入式 Python、依赖与浏览器内核
 - 启动前比对在线版本页，发现新版确认后整包升级，用户资产保留
+- 启动器本体可随升级自动更换：新壳暂存包根，下次启动改名换入后重启
 """
 
 import ctypes
+import filecmp
 import hashlib
 import os
 import shutil
@@ -35,7 +37,7 @@ _DOWNLOAD_TIMEOUT = 60.0  # 发布物下载超时 60 秒
 _BYTES_PER_MB = 1024 * 1024  # 1 MB
 _SPEED_EPS = 1e-6  # 0.000001 秒下限，起步防除零
 
-# 国内直连 GitHub 慢：官方源失败自动切换公共加速镜像
+# 国内直连 GitHub 慢：公共加速镜像优先，官方源兜底
 _RELEASE_MIRRORS = ("https://gh-proxy.com/", "https://ghproxy.net/")
 
 # pip 索引按序重试：国内多源轮询，最后官方源兜底
@@ -47,17 +49,15 @@ _PIP_INDEX_URLS = (
 )
 _PLAYWRIGHT_CDN = "https://cdn.npmmirror.com/binaries/playwright"
 
-# 升级保留：用户资产、运行环境与启动器本体
-# 壳不自动换：Windows 锁定运行中的 exe，需要升级壳时手动整包覆盖
-_PRESERVE_NAMES = (
-    "config.toml",
-    "data",
-    "logs",
-    "runtime",
-    "_update",
-    "TelegramBot.exe",
-    "_internal",
-)
+# 升级保留：用户资产与运行环境
+# _internal 只装二进制依赖，启动器自身字节码在 exe 尾部，换壳无需动它
+_PRESERVE_NAMES = ("config.toml", "data", "logs", "runtime", "_update", "_internal")
+
+# 换壳：Windows 锁住运行中的 exe 不许覆盖，但允许整文件改名挪走；
+# 因此升级时新壳先暂存，下次启动开头旧壳改名 .old、新壳原位放入并立即重启
+_SHELL_EXE = "TelegramBot.exe"
+_SHELL_PENDING = "_shell_update"
+_SHELL_BAK_SUFFIX = ".old"
 
 _MB_ICON_INFO = 0x40
 _MB_ICON_ERROR = 0x10
@@ -342,16 +342,19 @@ def _fetch_zip(urls: list[str], target: Path) -> None:
 
 
 def _apply_update(root: Path, version: str) -> bool:
-    """下载新版整包并覆盖源码，用户资产与启动器本体保留"""
+    """下载新版整包并覆盖源码
+
+    用户资产保留；新壳有变化则暂存包根，待下次启动换入。
+    """
     stage = root / "_update"
     try:
-        # 下载：官方源+加速镜像逐源尝试，zip 校验通过才继续
+        # 下载：镜像源优先、官方源兜底，zip 校验通过才继续
         print(f"下载 v{version} 发布物…")
         shutil.rmtree(stage, ignore_errors=True)
         stage.mkdir(parents=True)
         zip_url = _RELEASE_ZIP_URL.format(ver=version)
         _fetch_zip(
-            [zip_url, *(m + zip_url for m in _RELEASE_MIRRORS)],
+            [*(m + zip_url for m in _RELEASE_MIRRORS), zip_url],
             stage / "package.zip",
         )
         with zipfile.ZipFile(stage / "package.zip") as zf:
@@ -360,16 +363,23 @@ def _apply_update(root: Path, version: str) -> bool:
         new_root = stage / "TelegramBot"
         if not new_root.exists():
             raise FileNotFoundError("发布包缺少 TelegramBot 顶层目录")
-        # 覆盖：白名单外目录整树拷、文件逐个拷
+        # 覆盖：白名单外目录整树拷、文件逐个拷；本体走暂存不许直接覆盖
         print("应用更新（保留配置、数据与日志）…")
         for item in new_root.iterdir():
-            if item.name in _PRESERVE_NAMES:
+            if item.name in _PRESERVE_NAMES or item.name == _SHELL_EXE:
                 continue
             target = root / item.name
             if item.is_dir():
                 shutil.copytree(item, target, dirs_exist_ok=True)
             else:
                 shutil.copy2(item, target)
+        # 换壳：新 exe 与当前不同则暂存包根，下次启动开头换入
+        new_exe = new_root / _SHELL_EXE
+        if new_exe.is_file() and not filecmp.cmp(new_exe, root / _SHELL_EXE, shallow=False):
+            shutil.rmtree(root / _SHELL_PENDING, ignore_errors=True)
+            (root / _SHELL_PENDING).mkdir()
+            shutil.copy2(new_exe, root / _SHELL_PENDING / _SHELL_EXE)
+            print("新启动器已暂存，下次启动自动更换")
         return True
     except Exception as e:
         print(f"升级失败：{e}")
@@ -405,6 +415,34 @@ def _check_update(root: Path) -> None:
 # ==================== 主流程 ====================
 
 
+def _apply_shell_update(root: Path) -> None:
+    """启动器换壳
+
+    旧 exe 改名让位，暂存的新壳放入原位后立即重启。
+    自我改名后本进程句柄仍跟着旧文件走，原位放入新壳重启即完成更换。
+    """
+    pending = root / _SHELL_PENDING
+    new_exe = pending / _SHELL_EXE
+    if not new_exe.is_file():
+        return
+    old_exe = root / _SHELL_EXE
+    bak = old_exe.with_name(_SHELL_EXE + _SHELL_BAK_SUFFIX)
+    try:
+        bak.unlink(missing_ok=True)
+    except OSError:
+        pass  # 上次遗留的备份仍被占用：改名会失败，走下面的放弃分支
+    try:
+        old_exe.rename(bak)  # 旧 exe 变身 .old 让位
+    except OSError:
+        # 改名失败多半是被安全软件短暂占用：放弃本次更换，保留暂存下次再试
+        print("启动器暂被占用，本次沿用旧版继续")
+        return
+    shutil.move(str(new_exe), str(old_exe))
+    shutil.rmtree(pending, ignore_errors=True)
+    subprocess.Popen([str(old_exe)], cwd=str(root))  # 拉起新壳
+    sys.exit(0)
+
+
 def _root_dir() -> Path:
     """发布包根目录：启动器 exe 位于包根"""
     if not getattr(sys, "frozen", False):
@@ -432,8 +470,9 @@ def _launch(root: Path) -> None:
 
 
 def main() -> None:
-    """安装环境 → 检查升级 → 拉起主程序 → 回收进度窗口"""
+    """换壳 → 安装环境 → 检查升级 → 拉起主程序 → 回收进度窗口"""
     root = _root_dir()
+    _apply_shell_update(root)
     _apply_system_proxy()
     _ensure_runtime(root)
     _check_update(root)
