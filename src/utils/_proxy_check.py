@@ -164,6 +164,7 @@ def iter_diagnose(configured_proxy: str = ""):
         if effective
         else "直连（代理留空且系统代理未开）"
     )
+
     # 当前生效通道
     yield {"id": "current", "status": _CHECKING, "detail": ""}
     current_ok = _reach(effective or None)
