@@ -22,9 +22,9 @@
 无需 Python、无需 Git、无命令行，五步完成：
 
 1. **代理**：大陆用户访问 `github` 和使用机器人需 **全程** 开启代理。
-2. **下载**：二选一，下最新版的 `TelegramBot-vX.Y.Z.zip`（认准此文件名；Releases 页标着 `Source code` 的压缩包不含启动器，不要下）。
-   - 🚀 [蓝奏云备用（国内推荐）](https://wwbgy.lanzoub.com/b0pnwooed)，页面顶部输入访问密码 `5rp0` 后点击下载；
-   - 📦 [GitHub Releases](https://github.com/lym2006/TelegramBot/releases)，打开最新条目在 `Assets` 里下载。
+2. **下载**：下最新版的 `TelegramBot-vX.Y.Z.zip`（认准此文件名；Releases 页标着 `Source code` 的压缩包不含启动器，不要下）。
+   - 🚀 [国内镜像加速（推荐）](https://gh-proxy.com/#https://github.com/lym2006/TelegramBot/releases)：打开最新条目在 `Assets` 里下载，无需代理；
+   - 📦 [GitHub Releases](https://github.com/lym2006/TelegramBot/releases)：官方直连，需代理时走这条。
 3. **解压**：解压到任意 **可写目录**（如 `D:\TelegramBot`）。
 4. **首次启动**：双击 `TelegramBot\TelegramBot.exe`，确认后自动安装运行环境（嵌入式 Python、依赖、浏览器内核，默认走国内镜像加速），进度窗口实时显示安装步骤与下载速率，期间保持网络畅通。中途出现红色报错无需处理——镜像源失效时程序会自动换源重试，窗口会打印 `换源重试` 进度提示。
 5. **配置**：完成后管理面板弹出配置向导，填入 `telegram_token` 保存即开始收发消息（`config.toml` 自动生成，无需手编）。
