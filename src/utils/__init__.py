@@ -9,6 +9,7 @@ from ._check_version import check_updates
 from ._config_manager import config_manager
 from ._proxy_check import diagnose_plan, iter_diagnose
 from ._root_dir import ROOT_DIR
+from ._single_instance import acquire_instance_lock
 from ._system_proxy import detect_system_proxy, scan_proxy_ports
 from .init_files import (
     BLACKLIST_DIR,
@@ -37,6 +38,7 @@ __all__ = [
     "check_updates",
     "get_logger",
     "config_manager",
+    "acquire_instance_lock",
     "diagnose_plan",
     "iter_diagnose",
     "detect_system_proxy",
