@@ -45,6 +45,7 @@ def _build_candidates(configured: str, sys_proxy: str | None) -> list[str]:
         candidates.append(configured)
     if sys_proxy and sys_proxy not in candidates:
         candidates.append(sys_proxy)
+
     # 直连兜底：TUN 接管、或代理软件仅关系统代理开关但进程仍监听时，此步即通
     candidates.append("")
     return candidates
@@ -87,6 +88,7 @@ class SettingsManager(BaseManager):
         token, raw = self._get_config()
         configured = raw.strip()
         self._net_state = (token, configured)
+
         # 分流判定：仅 token 变则复用生效通道，不重跑候选链
         token_only = (
             self.resolved_proxy is not None
@@ -133,6 +135,7 @@ class SettingsManager(BaseManager):
             elif len(candidates) > 1:
                 base += "\n请点「网络诊断」自查"
             net_errors = {"proxy": base}
+
         # 结果落地：聚合错误，或标注生效通道
         self.resolved_proxy = resolved
         if resolved is not None:

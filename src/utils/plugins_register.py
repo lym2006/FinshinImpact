@@ -16,6 +16,7 @@ from exceptions import PluginsMissingError
 _PLUGIN_ORDER = [
     "welcome",  # 系统级命令
     "help",  # 帮助命令
+
     # "spider",  #爬虫相关
     # "image_record",  #图像音频相关
     # "emoji",  #emoji合成
