@@ -16,7 +16,6 @@ import sys
 import time
 import tomllib
 import urllib.request
-import webbrowser
 import zipfile
 from pathlib import Path
 
@@ -28,9 +27,6 @@ _APP_TITLE = "TelegramBot"
 _PAGES_PYPROJECT_URL = "https://lym2006.github.io/TelegramBot/pyproject.toml"
 _RELEASE_ZIP_URL = "https://github.com/lym2006/TelegramBot/releases/download/v{ver}/TelegramBot-v{ver}.zip"
 
-# 手动下载引导页：蓝奏云备用目录（访问密码随弹窗展示）
-_DOWNLOAD_PAGE_URL = "https://wwbgy.lanzoub.com/b0pnwooed"
-_DOWNLOAD_PASSWORD = "5rp0"
 _REQUEST_TIMEOUT = 10.0  # 版本页请求超时 10 秒
 _DOWNLOAD_CHUNK = 64 * 1024  # 分块粒度 64 KB（刷进度）
 _DOWNLOAD_TIMEOUT = 60.0  # 发布物下载超时 60 秒
@@ -342,9 +338,10 @@ def _fetch_zip(urls: list[str], target: Path) -> None:
 
 
 def _apply_update(root: Path, version: str) -> bool:
-    """下载新版整包并覆盖源码
+    """整包升级
 
-    用户资产保留；新壳有变化则暂存包根，待下次启动换入。
+    下载新版并覆盖源码，用户资产保留；新壳有变化则暂存包根，
+    待下次启动换入。
     """
     stage = root / "_update"
     try:
@@ -382,12 +379,7 @@ def _apply_update(root: Path, version: str) -> bool:
             print("新启动器已暂存，下次启动自动更换")
         return True
     except Exception as e:
-        print(f"升级失败：{e}")
-        if _ask_yes_no(
-            "自动升级失败，是否打开蓝奏云手动下载最新版？\n"
-            f"访问密码：{_DOWNLOAD_PASSWORD}，选择否则按当前版本启动。"
-        ):
-            webbrowser.open(_DOWNLOAD_PAGE_URL)
+        print(f"升级失败：{e}\n按当前版本启动，可稍后重试或到 Releases 页手动下载")
         return False
     finally:
         shutil.rmtree(stage, ignore_errors=True)
