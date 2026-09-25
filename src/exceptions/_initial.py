@@ -49,6 +49,8 @@ INITIAL_MAP = {
         LocalVersionError: "本地版本检查异常：{msg}",
         NewVersionError: "\n检测到新版本"
         "\n当前版本：{current_version}"
-        "\n最新版本：{new_version}",
+        "\n最新版本：{new_version}"
+        "\n重启程序并在弹窗点「是」即可自动更新；"
+        "\n多次失败请从 Releases 页手动下载整包",
     },
 }

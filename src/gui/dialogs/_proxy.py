@@ -24,6 +24,8 @@ _STATE = {
     "fail": (PD.fail_mark, PD.fail_color),
 }
 
+_orphan_workers: set["_DiagWorker"] = set()  # 关窗时仍在跑的线程暂养于此，finished 后自清
+
 
 class _DiagWorker(QThread):
     """诊断线程
@@ -61,6 +63,7 @@ class ProxyDialog(BaseDialog):
 
         # 运行中的探测线程集合：finished 前禁止被 GC
         self._workers: set[_DiagWorker] = set()
+
         # {行id: [标题, 状态, 详情]}：渲染的唯一数据源
         self._rows: dict[str, list] = {}
         self.setStyleSheet(build_proxy_dialog_qss())
@@ -159,21 +162,34 @@ class ProxyDialog(BaseDialog):
     # ==================== 关闭收尾 ====================
 
     def reject(self) -> None:
-        """关窗前等待检测线程收尾"""
+        """取消关闭
+
+        Esc/取消键路径；不等探测结果，在跑线程交模块级容器收尾。
+        """
         gui_bridge.config_verified.disconnect("诊断刷新")
-        self._join_workers()
+        self._release_workers()
         return super().reject()
 
     def closeEvent(self, event) -> None:  # noqa: N802
+        """点叉关闭
 
-        # 中断全部在跑线程并逐个等待：finished 前集合持有，防析构崩溃
-        for worker in self._workers:
-            worker.requestInterruption()
-        self._join_workers()
+        随时可关：线程脱离窗口继续自毁，探测最坏秒级即结束。
+        """
         gui_bridge.config_verified.disconnect("诊断刷新")
+        self._release_workers()
         super().closeEvent(event)
 
-    def _join_workers(self) -> None:
+    def _release_workers(self) -> None:
+        """放行在跑线程
+
+        Qt 禁止销毁运行中的父子线程对象：摘除父级交由模块级容器
+        暂养；requestInterruption 后生成器在下一次 yield 前退出，
+        finished 信号负责移出销毁。
+        """
         for worker in set(self._workers):
+            worker.requestInterruption()
             if worker.isRunning():
-                worker.wait(12000)
+                worker.setParent(None)  # 脱离弹窗，防弹窗析构连带杀线程
+                _orphan_workers.add(worker)
+                worker.finished.connect(lambda w=worker: _orphan_workers.discard(w))
+        self._workers.clear()
