@@ -116,10 +116,13 @@ class UpdateController(BaseController):
     def _execute(self) -> None:
         """检查版本更新
 
-        模态转圈（防重复点击），结果经用户确认后关闭；网络活在临时线程。
+        模态转圈，结果经用户确认后关闭；网络活在临时线程。
         """
         dialog = WaitDialog(PD.check_text, parent=self.gui)
         worker = _UpdateWorker()
+
+        # 线程挂主窗：用户提前关窗后仍被持有，防运行中被 GC 析构崩溃
+        worker.setParent(self.gui)
         worker.done.connect(dialog.finish)
         worker.done.connect(
             lambda msg, passed: (
@@ -128,6 +131,6 @@ class UpdateController(BaseController):
                 else self.logger.error(f"版本检查失败：{msg}")
             )
         )
+        worker.finished.connect(worker.deleteLater)
         worker.start()
         dialog.exec()
-        worker.wait()

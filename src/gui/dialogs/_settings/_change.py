@@ -87,6 +87,7 @@ class ChangeConfirmDialog(BaseDialog):
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
         header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         header.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
+
         # 行高按等宽字体度量：行数 × 字高 + 留白
         mono = CHANGE.mono_family
         line_h = QFontMetrics(QFont(mono, CHANGE.mono_font_size)).height()
