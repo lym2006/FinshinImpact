@@ -17,6 +17,7 @@ import time
 import tomllib
 import urllib.request
 import zipfile
+from ctypes import wintypes
 from pathlib import Path
 
 from packaging.version import Version
@@ -60,6 +61,13 @@ _MB_ICON_ERROR = 0x10
 _MB_YESNO = 0x04
 _ID_YES = 6
 
+# 与主程序 _single_instance 是同一把锁，两处改名必须同步
+_MUTEX_NAME = "Local\\TelegramBot-Instance"
+_ERROR_ALREADY_EXISTS = 183
+_CreateMutexW = ctypes.windll.kernel32.CreateMutexW
+_CreateMutexW.restype = wintypes.HANDLE  # 缺省 int 会在 64 位截断句柄
+_CloseHandle = ctypes.windll.kernel32.CloseHandle
+
 
 # ==================== 弹窗反馈 ====================
 
@@ -67,6 +75,21 @@ _ID_YES = 6
 def _info(text: str) -> None:
     """信息弹窗"""
     ctypes.windll.user32.MessageBoxW(0, text, _APP_TITLE, _MB_ICON_INFO)
+
+
+def _already_running() -> bool:
+    """实例锁已被占用则提示并退出
+
+    只探测不持有：真正的持锁者是随后拉起的主程序。
+    """
+    handle = _CreateMutexW(None, False, _MUTEX_NAME)
+    if not handle:
+        return False  # 创建失败属异常环境，放行优于误拒
+    busy = ctypes.GetLastError() == _ERROR_ALREADY_EXISTS
+    _CloseHandle(handle)
+    if busy:
+        _info("机器人已在运行，请勿重复启动。\n请先关闭已开的窗口。")
+    return busy
 
 
 def _ask_yes_no(text: str) -> bool:
@@ -136,6 +159,7 @@ def _apply_system_proxy() -> None:
     if "://" not in proxy:
         proxy = f"http://{proxy}"
     os.environ["HTTP_PROXY"] = os.environ["HTTPS_PROXY"] = proxy
+
     # 仅供安装期的 pip/playwright 子进程继承，_launch 会剔除
 
 
@@ -356,10 +380,12 @@ def _apply_update(root: Path, version: str) -> bool:
         )
         with zipfile.ZipFile(stage / "package.zip") as zf:
             zf.extractall(stage)
+
         # 解压：暂存目录展开，校验顶层结构
         new_root = stage / "TelegramBot"
         if not new_root.exists():
             raise FileNotFoundError("发布包缺少 TelegramBot 顶层目录")
+
         # 覆盖：白名单外目录整树拷、文件逐个拷；本体走暂存不许直接覆盖
         print("应用更新（保留配置、数据与日志）…")
         for item in new_root.iterdir():
@@ -370,9 +396,12 @@ def _apply_update(root: Path, version: str) -> bool:
                 shutil.copytree(item, target, dirs_exist_ok=True)
             else:
                 shutil.copy2(item, target)
+
         # 换壳：新 exe 与当前不同则暂存包根，下次启动开头换入
         new_exe = new_root / _SHELL_EXE
-        if new_exe.is_file() and not filecmp.cmp(new_exe, root / _SHELL_EXE, shallow=False):
+        if new_exe.is_file() and not filecmp.cmp(
+            new_exe, root / _SHELL_EXE, shallow=False
+        ):
             shutil.rmtree(root / _SHELL_PENDING, ignore_errors=True)
             (root / _SHELL_PENDING).mkdir()
             shutil.copy2(new_exe, root / _SHELL_PENDING / _SHELL_EXE)
@@ -414,15 +443,17 @@ def _apply_shell_update(root: Path) -> None:
     自我改名后本进程句柄仍跟着旧文件走，原位放入新壳重启即完成更换。
     """
     pending = root / _SHELL_PENDING
-    new_exe = pending / _SHELL_EXE
-    if not new_exe.is_file():
-        return
     old_exe = root / _SHELL_EXE
     bak = old_exe.with_name(_SHELL_EXE + _SHELL_BAK_SUFFIX)
+
+    # 每次启动先清理上次换壳的遗留备份（彼时旧壳进程已退出，可删了）
     try:
         bak.unlink(missing_ok=True)
     except OSError:
-        pass  # 上次遗留的备份仍被占用：改名会失败，走下面的放弃分支
+        pass  # 上次旧壳仍存活或备份被占用：留到下次再清
+    new_exe = pending / _SHELL_EXE
+    if not new_exe.is_file():
+        return
     try:
         old_exe.rename(bak)  # 旧 exe 变身 .old 让位
     except OSError:
@@ -450,9 +481,7 @@ def _launch(root: Path) -> None:
     """
     # 剔除安装期注入的代理变量：主程序有自己的三级解析，不该被 OS 代理绑架
     env = {
-        k: v
-        for k, v in os.environ.items()
-        if k not in ("HTTP_PROXY", "HTTPS_PROXY")
+        k: v for k, v in os.environ.items() if k not in ("HTTP_PROXY", "HTTPS_PROXY")
     }
     subprocess.Popen(
         [str(root / "runtime" / "pythonw.exe"), str(root / "main.py")],
@@ -462,7 +491,9 @@ def _launch(root: Path) -> None:
 
 
 def main() -> None:
-    """换壳 → 安装环境 → 检查升级 → 拉起主程序 → 回收进度窗口"""
+    """实例检查 → 换壳 → 安装环境 → 检查升级 → 拉起主程序 → 回收进度窗口"""
+    if _already_running():
+        sys.exit(0)
     root = _root_dir()
     _apply_shell_update(root)
     _apply_system_proxy()
