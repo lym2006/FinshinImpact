@@ -73,6 +73,9 @@ class WaitDialog(BaseDialog):
     def closeEvent(self, event) -> None:  # noqa: N802
         """关闭等待窗
 
-        随时可关：结果到达时弹窗若已亡，Qt 自动断开信号投递。
+        结果未出之前拒绝关闭，防后台线程失去宿主。
         """
-        return super().closeEvent(event)
+        if not self._done:
+            event.ignore()
+            return
+        super().closeEvent(event)
