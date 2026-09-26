@@ -3,7 +3,7 @@
 
 - 首次启动自动安装嵌入式 Python、依赖与浏览器内核
 - 启动前比对在线版本页，发现新版确认后整包升级，用户资产保留
-- 启动器本体可随升级自动更换：新壳暂存包根，下次启动改名换入后重启
+- 启动器本体随升级自动更换：升级收尾当场换入并静默重启
 """
 
 import ctypes
@@ -46,12 +46,10 @@ _PIP_INDEX_URLS = (
 )
 _PLAYWRIGHT_CDN = "https://cdn.npmmirror.com/binaries/playwright"
 
-# 升级保留：用户资产与运行环境
-# _internal 只装二进制依赖，启动器自身字节码在 exe 尾部，换壳无需动它
+# 升级保留用户资产；_internal 只装二进制依赖，换壳无需动它
 _PRESERVE_NAMES = ("config.toml", "data", "logs", "runtime", "_update", "_internal")
 
-# 换壳：Windows 锁住运行中的 exe 不许覆盖，但允许整文件改名挪走；
-# 因此升级时新壳先暂存，下次启动开头旧壳改名 .old、新壳原位放入并立即重启
+# 换壳：运行中的 exe 不许覆盖但可改名，新壳先暂存、择机换入重启
 _SHELL_EXE = "TelegramBot.exe"
 _SHELL_PENDING = "_shell_update"
 _SHELL_BAK_SUFFIX = ".old"
@@ -60,6 +58,7 @@ _MB_ICON_INFO = 0x40
 _MB_ICON_ERROR = 0x10
 _MB_YESNO = 0x04
 _ID_YES = 6
+_DETACHED_PROCESS = 0x00000008  # 新壳不继承旧进度窗口，换壳无闪窗
 
 # 与主程序 _single_instance 是同一把锁，两处改名必须同步
 _MUTEX_NAME = "Local\\TelegramBot-Instance"
@@ -365,7 +364,7 @@ def _apply_update(root: Path, version: str) -> bool:
     """整包升级
 
     下载新版并覆盖源码，用户资产保留；新壳有变化则暂存包根，
-    待下次启动换入。
+    由升级收尾当场换入。
     """
     stage = root / "_update"
     try:
@@ -397,7 +396,7 @@ def _apply_update(root: Path, version: str) -> bool:
             else:
                 shutil.copy2(item, target)
 
-        # 换壳：新 exe 与当前不同则暂存包根，下次启动开头换入
+        # 换壳：新 exe 与当前不同则暂存包根，升级收尾当场换入
         new_exe = new_root / _SHELL_EXE
         if new_exe.is_file() and not filecmp.cmp(
             new_exe, root / _SHELL_EXE, shallow=False
@@ -405,7 +404,6 @@ def _apply_update(root: Path, version: str) -> bool:
             shutil.rmtree(root / _SHELL_PENDING, ignore_errors=True)
             (root / _SHELL_PENDING).mkdir()
             shutil.copy2(new_exe, root / _SHELL_PENDING / _SHELL_EXE)
-            print("新启动器已暂存，下次启动自动更换")
         return True
     except Exception as e:
         print(f"升级失败：{e}\n按当前版本启动，可稍后重试或到 Releases 页手动下载")
@@ -432,21 +430,24 @@ def _check_update(root: Path) -> None:
         print(f"已升级到 v{remote}")
         _info(f"已升级到 v{remote}")
 
+        # 新壳当场换入并静默重启，用户无需关闭再打开
+        _apply_shell_update(root, detached=True)
+
 
 # ==================== 主流程 ====================
 
 
-def _apply_shell_update(root: Path) -> None:
+def _apply_shell_update(root: Path, detached: bool = False) -> None:
     """启动器换壳
 
-    旧 exe 改名让位，暂存的新壳放入原位后立即重启。
-    自我改名后本进程句柄仍跟着旧文件走，原位放入新壳重启即完成更换。
+    旧 exe 改名让位，暂存的新壳放入原位后立即重启；
+    升级收尾当场调用一次，启动开头再兜底一次。
     """
     pending = root / _SHELL_PENDING
     old_exe = root / _SHELL_EXE
     bak = old_exe.with_name(_SHELL_EXE + _SHELL_BAK_SUFFIX)
 
-    # 每次启动先清理上次换壳的遗留备份（彼时旧壳进程已退出，可删了）
+    # 每次执行先清理上次换壳的遗留备份（彼时旧壳进程已退出，可删了）
     try:
         bak.unlink(missing_ok=True)
     except OSError:
@@ -462,7 +463,8 @@ def _apply_shell_update(root: Path) -> None:
         return
     shutil.move(str(new_exe), str(old_exe))
     shutil.rmtree(pending, ignore_errors=True)
-    subprocess.Popen([str(old_exe)], cwd=str(root))  # 拉起新壳
+    flags = _DETACHED_PROCESS if detached else 0
+    subprocess.Popen([str(old_exe)], cwd=str(root), creationflags=flags)
     sys.exit(0)
 
 
