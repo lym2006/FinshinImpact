@@ -17,7 +17,7 @@
 
 ---
 
-## 🚀 快速开始
+## 🚀 快速开始<a id="quickstart"></a>
 
 无需 Python、无需 Git、无命令行，五步完成：
 
@@ -31,19 +31,19 @@
 
 ---
 
-## 📑 目录
+## 📑 目录<a id="menu"></a>
 
-- [🚀 快速开始](#-快速开始)
-- [✨ 功能特点](#-功能特点)
-- [💬 关于 AI 对话](#-关于-ai-对话)
-- [🛠️ 技术栈](#️-技术栈)
-- [📖 开发与维护](#-开发与维护)
-- [❗️ 温馨提示](#️-温馨提示)
-- [📄 许可证 (`LICENSE`)](#-许可证-license)
+- [🚀 快速开始](#quickstart)
+- [✨ 功能特点](#feature)
+- [💬 关于 AI 对话](#ai_chat)
+- [🛠️ 技术栈](#techniques)
+- [📖 开发与维护](#development)
+- [❗️ 温馨提示](#tips)
+- [📄 许可证 (`LICENSE`)](#license)
 
 ---
 
-## ✨ 功能特点
+## ✨ 功能特点<a id="feature"></a>
 
 - **桌面管理面板**: 基于 `PySide6` 的 GUI 窗口，仪表盘实时日志按语义标记。
 - **功能集成**:
@@ -57,9 +57,11 @@
 - **完善日志系统**: 三级日志按内容语义自动标记，异常上下文自动归集，仪表盘与日志文件各取所需。
 - **Markdown 渲染**: 对话内容可渲染，阅读体验提升。
 
+[⤴️ 返回目录](#menu)
+
 ---
 
-## 💬 关于 AI 对话
+## 💬 关于 AI 对话<a id="ai_chat"></a>
 
 目前仅支持 **私聊** 使用
 
@@ -84,11 +86,11 @@
   - 自主开关对话功能
   - 更多参见 `/help` 命令
 
-[⤴️ 返回目录](#-目录)
+[⤴️ 返回目录](#menu)
 
 ---
 
-## 🛠️ 技术栈
+## 🛠️ 技术栈<a id="techniques"></a>
 
 | 组件 | 版本/描述 |
 | :--- | :--- |
@@ -101,11 +103,11 @@
 | **HTML 清洗** | `bleach`（XSS 防御白名单清洗） |
 | **日志系统** | `logging`，强制静默第三方库噪音，增强自定义 `Logger` |
 
-[⤴️ 返回目录](#-目录)
+[⤴️ 返回目录](#menu)
 
 ---
 
-## 📖 开发与维护
+## 📖 开发与维护<a id="development"></a>
 
 - 🧭 **开发手册**（环境搭建、发布流程、更新方式）：[`docs/development.md`](docs/development.md)
 - 📐 **代码规范**（注释、docstring、命名约定）：[`docs/coding-style.md`](docs/coding-style.md)，模板 [`docs/example.py`](docs/example.py)
@@ -113,11 +115,11 @@
 - 📝 **提交规范**（commit 格式模板）：[`.gitmessage`](.gitmessage)
 - ⚙️ **配置模板**（全部可改项与注释）：[`config.example.toml`](config.example.toml)
 
-[⤴️ 返回目录](#-目录)
+[⤴️ 返回目录](#menu)
 
 ---
 
-## ❗️ 温馨提示
+## ❗️ 温馨提示<a id="tips"></a>
 
 本项目目前仍处于 **测试阶段**，如遇报错或异常行为属正常现象，请勿惊慌 😊 
 
@@ -127,13 +129,16 @@
 - 📖 **官方文档**：[`aiogram.dev`](https://docs.aiogram.dev/en/latest/)
 - 💻 **`GitHub` 仓库**：[`aiogram`](https://github.com/aiogram/aiogram)
 
-[⤴️ 返回目录](#-目录)
+[⤴️ 返回目录](#menu)
 
 ---
 
-## 📄 许可证 (`LICENSE`)
+## 📄 许可证 (`LICENSE`)<a id="license"></a>
 
 本项目采用 MIT 许可证 - 查看 [`LICENSE`](LICENSE) 文件了解详情。
 
+[⤴️ 返回目录](#menu)
+
 ---
+
 Made by **lym2006**
