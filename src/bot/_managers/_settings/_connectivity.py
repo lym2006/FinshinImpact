@@ -24,11 +24,13 @@ from exceptions import (
     TelegramServerError,
     TokenError,
 )
+from messages import CheckMessage
 from utils.config import PENDING_MARK
+from utils.net_probe import FieldKey
 from utils.ssl import SSLUnverifiedSession
 
 # 本地超时：防不可达代理挂满系统级 TCP 超时
-_CONNECT_TIMEOUT = 5.0
+_CONNECT_TIMEOUT = 3.0
 
 # 构造期异常消息 → 配置键的解析规则
 _SCHEME_RE = re.compile(r"Invalid scheme component:\s*(.*)", re.IGNORECASE)
@@ -43,7 +45,7 @@ def map_construct_error(e: Exception, proxy: str) -> ConnectivityError:
     msg = str(e)
     m = _SCHEME_RE.search(msg)
     if m:
-        scheme = m.group(1).strip() or "（空，缺少 :// 协议头）"
+        scheme = m.group(1).strip() or CheckMessage.SCHEME_EMPTY
         return ProxySchemeError(scheme=scheme, proxy=proxy)
 
     if "port" in msg.lower():
@@ -136,23 +138,25 @@ async def check_config(
         proxy_text = _err_text(e)
 
     if proxy_text:
-        errors["proxy"] = proxy_text
+        errors[FieldKey.PROXY] = proxy_text
 
         # 代理坏时请求出不了本机，getMe 结果无意义：标暂未检测而非无效
-        errors["telegram_token"] = f"{PENDING_MARK}：代理修复后复查"
+        errors[FieldKey.TOKEN] = CheckMessage.TOKEN_PENDING.format(
+            mark=PENDING_MARK
+        )
         return errors
 
     if not _is_token_wellformed(token):
-        errors["telegram_token"] = "Token 格式错误（应为 数字:密钥）"
+        errors[FieldKey.TOKEN] = CheckMessage.TOKEN_BAD_FORMAT
         return errors
 
     try:
         await get_me(token, proxy)
     except TokenError as e:
-        errors["telegram_token"] = _err_text(e)
+        errors[FieldKey.TOKEN] = _err_text(e)
     except ConnectivityError as e:
         # getMe 阶段才暴露的网络问题归到 proxy
-        errors["proxy"] = _err_text(e)
+        errors[FieldKey.PROXY] = _err_text(e)
 
     return errors
 
