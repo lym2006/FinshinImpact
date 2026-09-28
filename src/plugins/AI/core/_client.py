@@ -8,7 +8,7 @@ import json
 from collections.abc import AsyncGenerator
 from typing import Any
 
-from utils import BaseClient
+from utils.base_client import BaseClient
 
 from ..config import ai_config
 

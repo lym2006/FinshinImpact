@@ -12,7 +12,7 @@ from aiogram import Router
 from aiogram.filters import Command, Filter
 from aiogram.types import FSInputFile, Message
 
-from .. import messages as msgs
+from ..messages import BotMessage
 from ._services import generate_image, help_list, resolve_single_help
 
 router = Router()
@@ -70,7 +70,7 @@ async def command_check(message: Message) -> None:
         return
     cmd = text.replace(" ", "").replace(_COMMAND_PREFIX, "")
     if cmd not in help_list:
-        await message.answer(msgs.CMD_NOT_FOUND)
+        await message.answer(BotMessage.CMD_NOT_FOUND)
 
 
 # ==================== 单命令帮助路由处理函数 ====================
@@ -81,7 +81,7 @@ async def command_help(message: Message) -> None:
     """发送单个命令的帮助说明"""
     text = message.text
     if text is None:
-        await message.answer(msgs.CMD_FORMAT_ERROR)
+        await message.answer(BotMessage.CMD_FORMAT_ERROR)
         return
 
     result = resolve_single_help(text)

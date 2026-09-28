@@ -14,7 +14,7 @@ from aiogram.exceptions import TelegramBadRequest, TelegramRetryAfter
 
 from utils import get_logger
 
-from ... import messages as msgs
+from ...messages import BotMessage
 from ..config import ai_config
 from ..core import (
     AIClient,
@@ -236,4 +236,4 @@ async def worker_loop(task: TelegramTaskItem, user: str) -> None:
         raise
     except Exception as e:
         logger.send_error("Worker 运行时错误", e)
-        await task.safe_reply(msgs.AI_UNAVAILABLE)
+        await task.safe_reply(BotMessage.AI_UNAVAILABLE)

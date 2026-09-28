@@ -12,7 +12,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message, User
 
-from ... import messages as msgs
+from ...messages import BotMessage
 from ..core import session_guard, user_sessions
 from ..utils import build_message, get_name
 
@@ -56,7 +56,7 @@ def _make_mention(user: User) -> str:
 @identity.message(Command("change"))
 async def input_name(message: Message, state: FSMContext) -> None:
     """触发修改身份流程"""
-    await message.answer(msgs.ASK_IDENTITY_NAME)
+    await message.answer(BotMessage.IDENTITY_ASK_NAME)
     await state.set_state(Chg.name)
 
 
@@ -64,11 +64,11 @@ async def input_name(message: Message, state: FSMContext) -> None:
 async def input_identity(message: Message, state: FSMContext) -> None:
     """接收名字，等待描述"""
     if (new_name := message.text) is None:
-        await message.answer(msgs.ASK_TEXT)
+        await message.answer(BotMessage.IDENTITY_ASK_TEXT)
         return
 
     await state.update_data(name=new_name)
-    await message.answer(msgs.ASK_IDENTITY_DESC)
+    await message.answer(BotMessage.IDENTITY_ASK_DESC)
     await state.set_state(Chg.identity)
 
 
@@ -77,7 +77,7 @@ async def input_identity(message: Message, state: FSMContext) -> None:
 async def change_identity(message: Message, state: FSMContext) -> None:
     """接收描述，完成身份设置"""
     if (new_identity := message.text) is None:
-        await message.answer(msgs.ASK_TEXT)
+        await message.answer(BotMessage.IDENTITY_ASK_TEXT)
         return
 
     # 防御性获取，防止 FSM 状态丢失导致 KeyError
@@ -91,11 +91,11 @@ async def change_identity(message: Message, state: FSMContext) -> None:
     )
 
     if (from_user := message.from_user) is None:
-        await message.answer(msgs.IDENTITY_SET)
+        await message.answer(BotMessage.IDENTITY_SET)
     else:
         mention = _make_mention(from_user)
         await message.answer(
-            msgs.IDENTITY_READY.format(mention=mention, name=name),
+            BotMessage.IDENTITY_READY.format(mention=mention, name=name),
             parse_mode=ParseMode.MARKDOWN_V2,
         )
 
@@ -108,7 +108,7 @@ async def change_identity(message: Message, state: FSMContext) -> None:
 @identity.message(Command("system"))
 async def pre_system(message: Message, state: FSMContext) -> None:
     """触发系统指令输入"""
-    await message.answer(msgs.ASK_SYSTEM_INPUT)
+    await message.answer(BotMessage.IDENTITY_ASK_SYSTEM)
     await state.set_state(Sys.input)
 
 
@@ -117,10 +117,10 @@ async def pre_system(message: Message, state: FSMContext) -> None:
 async def post_to_system(message: Message, state: FSMContext) -> None:
     """接收并注入系统指令"""
     if (text := message.text) is None:
-        await message.answer(msgs.ASK_RETEXT)
+        await message.answer(BotMessage.IDENTITY_ASK_RETEXT)
         return
 
     user = get_name(message)
     user_sessions[user].message.append(build_message("system", text))
-    await message.answer(msgs.SYSTEM_INJECTED)
+    await message.answer(BotMessage.IDENTITY_SYSTEM_INJECTED)
     await state.clear()
