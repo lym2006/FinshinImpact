@@ -13,7 +13,7 @@ from aiogram.types import Message
 
 from utils import get_logger
 
-from . import messages as msgs
+from .messages import BotMessage
 
 logger = get_logger("Plg.Welcome")
 router = Router()
@@ -31,7 +31,7 @@ async def command_start_handler(message: Message) -> None:
         return
 
     # TODO: 后续可在此处调用 get_started(user_id) 初始化用户数据
-    await message.answer(msgs.WELCOME)
+    await message.answer(BotMessage.WELCOME)
     logger.info(f"用户 {user_id} 发起对话")
 
 
