@@ -38,14 +38,6 @@ from ._gui import (
     FontRegisterError,
     GUIError,
 )
-from ._initial import (
-    INITIAL_MAP,
-    InitError,
-    LocalVersionError,
-    NewVersionError,
-    RemoteVersionError,
-    VersionError,
-)
 from ._network import (
     NETWORK_MAP,
     ConnectionFailedError,
@@ -54,11 +46,18 @@ from ._network import (
     RequestTimeoutError,
 )
 from ._plugins import AIError, AITaskStoppedError, PluginsMissingError
+from ._version import (
+    VERSION_MAP,
+    LocalVersionError,
+    NewVersionError,
+    RemoteVersionError,
+    VersionError,
+)
 
 MAPS = {
     "GUI": GUI_MAP,
     "Config": CONFIG_MAP,
-    "Init": INITIAL_MAP,
+    "Version": VERSION_MAP,
     "Network": NETWORK_MAP,
     "Connectivity": CONNECTIVITY_MAP,
 }
@@ -68,8 +67,7 @@ __all__ = [
     "MAPS",
     # 基类
     "BotError",
-    # 初始化
-    "InitError",
+    # 版本
     "VersionError",
     "NewVersionError",
     "RemoteVersionError",
