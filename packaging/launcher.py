@@ -32,7 +32,7 @@ _REQUEST_TIMEOUT = 10.0  # 版本页请求超时 10 秒
 _DOWNLOAD_CHUNK = 64 * 1024  # 分块粒度 64 KB（刷进度）
 _DOWNLOAD_TIMEOUT = 60.0  # 发布物下载超时 60 秒
 _BYTES_PER_MB = 1024 * 1024  # 1 MB
-_SPEED_EPS = 1e-6  # 0.000001 秒下限，起步防除零
+_SPEED_EPS = 1e-6  # 1 微秒下限，起步防除零
 
 # 国内直连 GitHub 慢：公共加速镜像优先，官方源兜底
 _RELEASE_MIRRORS = ("https://gh-proxy.com/", "https://ghproxy.net/")
@@ -120,12 +120,28 @@ def _open_console() -> None:
 
 
 def _close_console() -> None:
-    """回收控制台窗口（主程序拉起后调用）"""
+    """回收控制台窗口
+
+    主程序拉起后调用。
+    """
     global _console_open
     if not _console_open:
         return
     ctypes.windll.kernel32.FreeConsole()
     _console_open = False
+
+
+def _hold_console() -> None:
+    """驻留进度窗口供查阅报错
+
+    等回车放行；输入不可用时直接放行，防无人值守卡死。
+    """
+    print("\n以上为失败详情，按回车继续…")
+    try:
+        with open("CONIN$", encoding="oem", errors="replace") as f:
+            f.readline()
+    except OSError:
+        pass
 
 
 # ==================== 系统代理透传 ====================
@@ -264,8 +280,9 @@ def _install_deps(runtime: Path, deps: list[str]) -> None:
 
 
 def _install_browser(runtime: Path) -> None:
-    """下载 Playwright 的 chromium 内核（装到用户目录，多程序共享）
+    """下载 Playwright 的 chromium 内核
 
+    装到用户目录，多程序共享。
     默认走 npmmirror 加速，失败清掉镜像变量回退官方源重试。
     """
     cmd = [runtime / "python.exe", "-m", "playwright", "install", "chromium"]
@@ -363,8 +380,8 @@ def _fetch_zip(urls: list[str], target: Path) -> None:
 def _apply_update(root: Path, version: str) -> bool:
     """整包升级
 
-    下载新版并覆盖源码，用户资产保留；新壳有变化则暂存包根，
-    由升级收尾当场换入。
+    下载新版并覆盖源码，用户资产保留。
+    新壳有变化则暂存包根，由升级收尾当场换入。
     """
     stage = root / "_update"
     try:
@@ -406,24 +423,27 @@ def _apply_update(root: Path, version: str) -> bool:
             shutil.copy2(new_exe, root / _SHELL_PENDING / _SHELL_EXE)
         return True
     except Exception as e:
-        print(f"升级失败：{e}\n按当前版本启动，可稍后重试或到 Releases 页手动下载")
+        print(f"升级失败：{e}")
+        _hold_console()
         return False
     finally:
         shutil.rmtree(stage, ignore_errors=True)
 
 
 def _check_update(root: Path) -> None:
-    """版本比对与确认后升级；网络不通静默跳过（GUI 内可手动检查）"""
+    """升级检查
+
+    比对在线版本并确认后升级；网络不通静默跳过，GUI 内可手动检查。
+    """
     local = _local_version(root)
     remote = _remote_version()
     if remote is None or Version(remote) <= Version(local):
         return
-    if not _ask_yes_no(
-        f"发现新版本 v{remote}（当前 v{local}），立即升级？\n选择否则按当前版本启动。"
-    ):
+    new_msg = f"新版本可用 v{local} -> v{remote}"
+    if not _ask_yes_no(f"{new_msg}，立即升级？\n选择否则按当前版本启动。"):
         return
     _open_console()
-    print(f"发现新版本 v{remote}（当前 v{local}），开始升级…")
+    print(f"{new_msg}，开始升级…")
     if _apply_update(root, remote):
         # 依赖清单已随包更新：重走安装检查，仅补装变动部分
         _ensure_runtime(root)
@@ -432,6 +452,10 @@ def _check_update(root: Path) -> None:
 
         # 新壳当场换入并静默重启，用户无需关闭再打开
         _apply_shell_update(root, detached=True)
+    elif not _ask_yes_no(
+        "升级失败，详情见进度窗口。\n仍以当前版本启动？选否则退出程序。"
+    ):
+        sys.exit(1)
 
 
 # ==================== 主流程 ====================
