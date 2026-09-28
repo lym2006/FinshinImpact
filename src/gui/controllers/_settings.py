@@ -268,9 +268,7 @@ class SettingsController(BaseController):
         if busy is not None and busy.is_running:
             return
         self.logger.info(
-            CheckMessage.VERIFY_START.format(
-                reason=CheckMessage.REASON_STARTUP
-            )
+            CheckMessage.VERIFY_START.format(reason=CheckMessage.REASON_STARTUP)
         )
         self._start_verify_wait(aborts=False)
 
@@ -334,9 +332,7 @@ class SettingsController(BaseController):
             self._validating = True
             dialog.set_busy(True)
             self.logger.info(
-                CheckMessage.VERIFY_START.format(
-                    reason=CheckMessage.REASON_RECHECK
-                )
+                CheckMessage.VERIFY_START.format(reason=CheckMessage.REASON_RECHECK)
             )
             if not self._start_verify_wait(aborts=True):
                 self._validating = False
