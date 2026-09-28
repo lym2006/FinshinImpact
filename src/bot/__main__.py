@@ -16,8 +16,9 @@ from gui import create_gui
 from gui._theme import GLOBAL, WINDOW
 from gui.controllers import SettingsController, ShutdownController
 from gui.mediator import gui_bridge
-from utils import acquire_instance_lock, get_logger
+from utils import get_logger
 from utils.lifecycle import shutdown_all
+from utils.single_instance import acquire_instance_lock
 
 from ._managers import BotManager
 
@@ -61,6 +62,14 @@ class Main:
             # 配置保存信号：唤醒验证循环或触发热重载
             gui_bridge.config_saved.connect(self._manager.on_config_saved, "配置唤醒")
 
+            # 候选校验信号：候选已在内存，通过才落盘
+            gui_bridge.config_candidate.connect(
+                self._manager.on_config_candidate, "候选唤醒"
+            )
+
+            # 取消校验信号：中止在途校验并回退候选
+            gui_bridge.config_abort.connect(self._manager.on_config_abort, "取消校验")
+
             # 关闭请求信号：Manager 层统一处理服务停止与清理放行
             gui_bridge.request_shutdown.connect(
                 self._manager.on_shutdown_request, "关闭唤醒"
@@ -71,8 +80,10 @@ class Main:
                 self._manager.on_shutdown_cancelled, "取消关闭"
             )
 
-            # 致命错误信号：Queued 投递到 GUI 线程
-            gui_bridge.request_fatal.connect(window.show_fatal, "致命错误", queued=True)
+            # 通知弹窗：(文案, 是否致命) Queued 投递到 GUI 线程，致命确认后直退
+            gui_bridge.request_notice.connect(
+                window.show_notice, "通知弹窗", queued=True
+            )
 
             # 向导内"退出程序"按钮：携带向导窗口，确认框以其为父级
             gui_bridge.request_exit.connect(
@@ -126,7 +137,7 @@ class Main:
         if not self._loop.is_closed() and not self._loop.is_running():
             self._loop.close()
 
-        self.logger.debug("清理完成")
+        self.logger.debug("资源已清理")
 
 
 if __name__ == "__main__":
