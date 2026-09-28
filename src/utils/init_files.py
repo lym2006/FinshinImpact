@@ -16,7 +16,6 @@ from ._root_dir import ROOT_DIR
 RECORDS_DIR = ROOT_DIR / "data/ai_records"
 TEMP_DIR = RECORDS_DIR / "temp"
 STAGED_DIR = RECORDS_DIR / "staged"
-DOCS_DIR = ROOT_DIR / "data/docs"
 BLACKLIST_DIR = ROOT_DIR / "data/blacklists"
 BLACKLIST_FILE = BLACKLIST_DIR / "blacklist.txt"
 CONFIG_FILE = ROOT_DIR / "config.toml"
@@ -49,7 +48,7 @@ def ensure_file_exists(target: Path, template: Path | None = None) -> None:
 
 def init_project_files() -> None:
     """初始化项目必要文件"""
-    for d in (TEMP_DIR, DOCS_DIR, STAGED_DIR):
+    for d in (TEMP_DIR, STAGED_DIR):
         d.mkdir(parents=True, exist_ok=True)
 
     ensure_file_exists(BLACKLIST_FILE)

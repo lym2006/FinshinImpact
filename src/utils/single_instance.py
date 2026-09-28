@@ -1,5 +1,5 @@
-# src/utils/_single_instance.py
-"""单实例守卫（内部实现）
+# src/utils/single_instance.py
+"""单实例守卫
 
 - 命名互斥体锁定整机唯一实例，防双开互踩配置与 Telegram 长轮询
 """
