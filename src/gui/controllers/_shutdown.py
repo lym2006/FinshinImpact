@@ -109,7 +109,7 @@ class ShutdownController(BaseController):
         if gui_bridge.shutdown_completed_event.is_set():
             # 停掉定时器与超时定时器（如果有）
             self._stop_timers()
-            self.logger.info("资源清理完成，1 秒后退出...")
+            self.logger.info("资源已清理，1 秒后退出...")
             QTimer.singleShot(1000, lambda: os._exit(0))
 
     def _force_exit(self) -> None:

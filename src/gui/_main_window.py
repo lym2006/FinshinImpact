@@ -7,6 +7,7 @@
 import logging
 from collections.abc import Callable
 
+from PySide6.QtCore import QTimer
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import (
     QHBoxLayout,
@@ -147,15 +148,28 @@ class BotGUI(QMainWindow):
         """注入致命错误后的直退句柄"""
         self._shutdown_handler = handler
 
-    def show_fatal(self, message: str) -> None:
-        """弹出致命错误提示
+    def show_notice(self, message: str, critical: bool = False) -> None:
+        """弹出统一通知
 
-        确认后直接退出，跳过二次关闭确认。
+        critical 区分致命语义：致命确认后直退，跳过二次关闭确认。
+        存在活动模态窗时延后重试，防被模态环吞掉一闪而退。
+        版本检测等多行结果只进弹窗，面板不重复。
         """
-        from .dialogs import FatalDialog
+        from PySide6.QtWidgets import QApplication
 
-        self._logger.error(f"致命错误: {message}")
-        FatalDialog(message, parent=self).exec()
+        from .dialogs import NoticeDialog
 
-        if self._shutdown_handler is not None:
+        if QApplication.activeModalWidget() is not None:
+            QTimer.singleShot(800, lambda: self.show_notice(message, critical))
+            return
+
+        if critical:
+            self._logger.error(f"致命错误: {message}")
+
+        box = NoticeDialog(message, critical=critical, parent=self)
+        box.raise_()
+        box.activateWindow()
+        box.exec()
+
+        if critical and self._shutdown_handler is not None:
             self._shutdown_handler()

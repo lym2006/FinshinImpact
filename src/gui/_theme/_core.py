@@ -7,6 +7,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 
+from messages import MiscMessage
 from utils import ROOT_DIR
 
 # ==================== 窗口配置 ====================
@@ -34,7 +35,7 @@ class GlobalConfig:
     """
 
     radius: int = 4  # 全局默认圆角
-    already_running: str = "机器人已在运行，请勿重复启动。\n请先关闭已开的窗口，或使用「网络诊断」查看状态。"
+    already_running: str = MiscMessage.ALREADY_RUNNING
 
 
 # ==================== 字体配置 ====================

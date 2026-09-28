@@ -4,13 +4,16 @@
 - 提供全部弹窗组件导出
 """
 
-from ._fatal import FatalDialog
-from ._hint import HintDialog
-from ._proxy import ProxyDialog
+from ._check import (
+    CheckDialog,
+    Round,
+    current_check_window,
+    open_check_window,
+)
+from ._notice import NoticeDialog
 from ._settings import (
     ChangeConfirmDialog,
     ConfigMode,
-    NotChangedDialog,
     SettingsDialog,
 )
 from ._shutdown import ShutdownDialog
@@ -20,16 +23,16 @@ __all__ = [
     # 配置修改
     "ChangeConfirmDialog",
     "ConfigMode",
-    "NotChangedDialog",
     "SettingsDialog",
     # 关闭事件
     "ShutdownDialog",
-    # 致命错误
-    "FatalDialog",
-    # 通用提示
-    "HintDialog",
-    # 网络诊断
-    "ProxyDialog",
+    # 通用通知
+    "NoticeDialog",
+    # 检查进度（单实例）
+    "CheckDialog",
+    "Round",
+    "current_check_window",
+    "open_check_window",
     # 忙碌等待
     "WaitDialog",
 ]
