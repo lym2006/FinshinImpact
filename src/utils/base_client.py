@@ -1,5 +1,5 @@
-# src/utils/_base_client.py
-"""HTTP 基类客户端（内部实现）
+# src/utils/base_client.py
+"""HTTP 基类客户端
 
 - 定义会话生命周期与 GET/POST 封装
 - 实现 SSE 解析与代理注入
@@ -32,10 +32,11 @@ class BaseClient:
         headers: dict[str, Any] | None = None,
         proxy: str | None = None,
         timeout: float = _DEFAULT_TIMEOUT,
+        connect_timeout: float = _CONNECT_TIMEOUT,
     ) -> AsyncGenerator[httpx.AsyncClient, None]:
         """创建异步客户端上下文管理器"""
         timeout_config = httpx.Timeout(
-            connect=_CONNECT_TIMEOUT,
+            connect=connect_timeout,
             read=timeout,
             write=timeout,
             pool=timeout,
@@ -94,6 +95,8 @@ class BaseClient:
         request_path: str = "",
         headers: dict[str, Any] | None = None,
         proxy: str | None = None,
+        timeout: float = _DEFAULT_TIMEOUT,
+        connect_timeout: float = _CONNECT_TIMEOUT,
         max_retries: int = 3,  # 最多重试次数
         retry_delay: float = 1.0,  # 重试间隔时间（单位：秒）
     ) -> dict[str, Any] | str | None:
@@ -101,7 +104,11 @@ class BaseClient:
         for attempt in range(1, max_retries + 1):
             try:
                 async with cls._create_client(
-                    base_url=base_url, headers=headers, proxy=proxy
+                    base_url=base_url,
+                    headers=headers,
+                    proxy=proxy,
+                    timeout=timeout,
+                    connect_timeout=connect_timeout,
                 ) as client:
                     response = await client.get(request_path)
                     cls._deal_with_exception(response, "GET")
