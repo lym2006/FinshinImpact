@@ -10,6 +10,7 @@ from collections.abc import Callable
 
 from gui.mediator import gui_bridge
 from utils import config_manager, get_logger
+from utils.config import load_config
 
 from ..error_guard import error_guard
 from ._initialization import InitializationManager
@@ -36,6 +37,9 @@ class BotManager:
         self._shutdown = False
         self._apply_task: asyncio.Task[None] | None = None
 
+        # 候选校验轮标记：内存已是候选值，本轮跳过磁盘重载
+        self._skip_reload = False
+
         # 最近一次生效并重启过引擎的参数指纹：一致则跳过重启防闪断
         self._last_applied: tuple[str, str, float] | None = None
 
@@ -53,6 +57,14 @@ class BotManager:
     def on_config_saved(self) -> None:
         """配置保存回调（Qt 侧投递）"""
         self._loop.call_soon_threadsafe(self._handle_config_saved)
+
+    def on_config_candidate(self) -> None:
+        """候选配置待验回调（Qt 侧投递，候选已进内存）"""
+        self._loop.call_soon_threadsafe(self._handle_candidate)
+
+    def on_config_abort(self) -> None:
+        """中止在途校验回调（Qt 侧投递）"""
+        self._loop.call_soon_threadsafe(self._handle_abort)
 
     def on_shutdown_request(self) -> None:
         """关闭请求回调（Qt 侧投递）"""
@@ -84,6 +96,32 @@ class BotManager:
             return
         self._apply_task = self._loop.create_task(self._apply_config())
 
+    def _handle_candidate(self) -> None:
+        """候选入队：候选已由 GUI 载入内存，本轮跳过磁盘重载
+
+        守卫与 _handle_config_saved 同构：任务在途时不置位，防标记串轮。
+        """
+        if self._shutdown:
+            self._logger.info("关闭流程中忽略候选校验请求")
+            return
+        if self._apply_task is not None and not self._apply_task.done():
+            self._logger.debug("上一次配置应用尚未完成，跳过本次触发")
+            return
+        self._skip_reload = True
+        self._apply_task = self._loop.create_task(self._apply_config())
+
+    def _handle_abort(self) -> None:
+        """真取消：中止在途校验，内存回退可信值，当场宣告就绪
+
+        回退后的内存就是刚验证通过、引擎正在跑的那份，无物可验，不必再跑一轮。
+        能点取消说明校验仍在探测阶段，引擎尚未被触碰，回退与就绪即时安全。
+        """
+        if self._apply_task is not None and not self._apply_task.done():
+            self._apply_task.cancel()
+        self._skip_reload = False
+        config_manager.load(load_config())
+        gui_bridge.config_ready_changed.emit(True)
+
     def _handle_shutdown_cancel(self) -> None:
         """在 loop 线程复位关闭标志"""
         if self._shutdown:
@@ -112,7 +150,11 @@ class BotManager:
 
         # 重验期间先收回就绪，阻止 EDIT 弹窗读到半新半旧的配置
         gui_bridge.config_ready_changed.emit(False)
-        await self._settings_manager.execute()
+        if self._skip_reload:
+            # 候选轮：内存已是候选值，从盘重载会把它冲掉
+            self._skip_reload = False
+        else:
+            await self._settings_manager.execute()
         if not await self._settings_manager.verify_connectivity():
             self._resolved_proxy = None
 
