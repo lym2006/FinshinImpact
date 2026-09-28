@@ -4,7 +4,7 @@
 - 定义标签页内的字段列表布局
 """
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QModelIndex, Qt
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
 )
 
 from ..._qss import build_settings_list_qss
-from ..._theme import SETTINGS_DIALOG as DIALOG
+from ..._theme import SETTINGS_DIALOG
 
 
 class ConfigListWidget(QWidget):
@@ -34,8 +34,8 @@ class ConfigListWidget(QWidget):
     def _setup_ui(self) -> None:
         """构建界面"""
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(*[DIALOG.margin] * 4)
-        main_layout.setSpacing(DIALOG.desc_spacing)
+        main_layout.setContentsMargins(*[SETTINGS_DIALOG.margin] * 4)
+        main_layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
         self.list_widget = QListWidget()  # 列表区域
         self.list_widget.setObjectName("list_widget")
         self._populate_items()
@@ -59,8 +59,8 @@ class ConfigListWidget(QWidget):
         """构建底部操作栏"""
         bar = QWidget()
         layout = QHBoxLayout(bar)
-        layout.setContentsMargins(*[DIALOG.margin] * 4)
-        layout.setSpacing(DIALOG.desc_spacing)
+        layout.setContentsMargins(*[SETTINGS_DIALOG.margin] * 4)
+        layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
 
         # 描述文字
         if self._desc_text:
@@ -88,7 +88,7 @@ class ConfigListWidget(QWidget):
         label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         return label
 
-    def _on_double_clicked(self, index) -> None:
+    def _on_double_clicked(self, index: QModelIndex) -> None:
         """双击编辑"""
         item = self.list_widget.itemFromIndex(index)
         if item:

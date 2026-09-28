@@ -1,7 +1,7 @@
 # src/gui/mediator.py
 """GUI 中介者（内部实现）
 
-- 定义 GUI 与 Bot 的通信协议
+- 定义 GUI 与 Bot 的通信协议，信号按流向分组声明
 - 提供跨线程屏障与关闭竞态协调
 """
 
@@ -13,42 +13,47 @@ from .signal import SafeSignal
 
 
 class GUIBridge(QObject):
-    """GUI 与 Bot 通信桥梁"""
+    """GUI 与 Bot 通信桥梁
+
+    关闭链三信号接力：request_exit（弹确认，不过 Bot）→ 确认后 request_shutdown（Bot 清理）
+    → 确认框反悔 request_shutdown_cancel（Bot 复位）；命名与 cancel 成对的是 shutdown 而非 exit。
+    """
 
     # ==================== 真实信号声明（元类注册，槽彼此隔离） ====================
 
+    # GUI → Bot：配置事件与关闭指令
+    _signal_config_candidate = Signal()  # 候选已在内存：校验通过才落盘
+    _signal_config_abort = Signal()  # 中止在途校验：候选回退，未触磁盘
+    _signal_config_saved = Signal()
     _signal_request_shutdown = Signal()
     _signal_request_shutdown_cancel = Signal()
+
+    # Bot → GUI：状态广播与弹窗调度
+    _signal_config_ready_changed = Signal(bool)  # True 验证通过，False 加载中或重验中
+    _signal_verify_progress = Signal(object)  # 校验进度帧：rows 整表 / id 单行
     _signal_request_force_setup = Signal(object)  # {配置键: 错误文案}
-    _signal_config_saved = Signal()
-    _signal_request_exit = Signal(object)  # 携带请求退出的来源窗口，可为 None
-    _signal_request_fatal = Signal(str)  # 致命错误：携带展示文案
-    _signal_config_ready_changed = Signal(bool)  # 配置就绪状态变更
-    _signal_config_verified = Signal()  # 配置校验刚通过（诊断窗原地刷绿用）
+    _signal_request_notice = Signal(str, bool)  # (展示文案，是否致命)
+
+    # GUI → GUI：退出入口
+    _signal_request_exit = Signal(object)  # source 作确认框父级，可为 None
 
     # ==================== 防重连包装（对外的连接/发射入口） ====================
 
-    # GUI 请求退出，Bot 收到后开始清理
-    request_shutdown = SafeSignal()
+    # GUI → Bot：配置事件与关闭指令
+    config_candidate = SafeSignal()  # 候选配置进内存待验，通过才落盘
+    config_abort = SafeSignal()  # 中止在途校验，候选回退不触磁盘
+    config_saved = SafeSignal()  # 配置已落盘，唤醒验证循环热重载
+    request_shutdown = SafeSignal()  # 退出确认后发，Bot 停服务并清理放行
+    request_shutdown_cancel = SafeSignal()  # 确认框取消，Bot 复位关闭状态
 
-    # GUI 取消退出，Bot 复位关闭状态
-    request_shutdown_cancel = SafeSignal()
+    # Bot → GUI：状态广播与弹窗调度
+    config_ready_changed = SafeSignal()  # 就绪态变更；通过即全绿，消费方自行过滤
+    verify_progress = SafeSignal()  # 校验进度帧，渲染校验表格窗
+    request_force_setup = SafeSignal()  # 呼出强制配置向导并标红出错字段
+    request_notice = SafeSignal()  # 弹通知窗，致命确认后直退
 
-    # 请求打开强制配置窗口（参数：{配置键: 上次验证失败文案}）
-    request_force_setup = SafeSignal()
-    config_saved = SafeSignal()  # 配置窗口保存
-
-    # 请求走完整退出流程（向导退出按钮用，携带来源窗口作确认框父级）
-    request_exit = SafeSignal()
-
-    # 致命错误：GUI 弹出提示窗，用户确认后退出进程
-    request_fatal = SafeSignal()
-
-    # 配置就绪状态变更：True 表示加载并验证通过，False 表示加载中或重验中
-    config_ready_changed = SafeSignal()
-
-    # 配置校验刚通过：诊断窗据此原地把通道行刷成可达，免重跑探测
-    config_verified = SafeSignal()
+    # GUI → GUI：退出入口
+    request_exit = SafeSignal()  # 向导退出按钮/主窗关闭：只弹确认框，未确认不触 Bot
 
     # ==================== 跨线程同步屏障 ====================
 

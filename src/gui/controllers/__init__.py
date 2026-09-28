@@ -9,10 +9,11 @@ from typing import TYPE_CHECKING
 
 from ._base import BaseController
 from ._dashboard import DashboardController
-from ._proxy import ProxyController
+from ._diagnose import DiagnoseController
 from ._settings import SettingsController
 from ._shutdown import ShutdownController
-from ._system import LogsController, UpdateController
+from ._system import LogsController
+from ._version import VersionController
 
 if TYPE_CHECKING:
     from gui import BotGUI
@@ -30,10 +31,10 @@ __all__ = [
 _ALL_CONTROLLER_CLASSES = (
     DashboardController,
     LogsController,
-    ProxyController,
+    DiagnoseController,
     SettingsController,
     ShutdownController,
-    UpdateController,
+    VersionController,
 )
 
 

@@ -8,17 +8,14 @@ from ._theme import (
     BODY,
     BTN,
     BTN_DANGER,
+    CHANGE_DIALOG,
     GLOBAL,
     LIST_DIALOG,
-    PROXY_DIALOG,  # noqa: F401 诊断弹窗构建器使用
     SCROLLBAR,
+    SETTINGS_DIALOG,
     TOOLBAR,
+    WAIT_DIALOG,
 )
-from ._theme import (
-    CHANGE_DIALOG as CHANGE,
-)
-from ._theme import SETTINGS_DIALOG as DIALOG
-from ._theme import WAIT_DIALOG as WAIT
 
 # ==================== QSS 样式表 ====================
 
@@ -131,15 +128,15 @@ QDialog {{
 # 标签页
 _DIALOG_TAB_QSS = f"""\
 QTabWidget::pane {{
-    border: {DIALOG.border_width}px solid {DIALOG.border_color};
+    border: {SETTINGS_DIALOG.border_width}px solid {SETTINGS_DIALOG.border_color};
     background-color: {BODY.bg};
 }}
 
 QTabBar::tab {{
-    background-color: {DIALOG.tab_bg};
+    background-color: {SETTINGS_DIALOG.tab_bg};
     color: {BODY.color};
-    padding: {DIALOG.tab_padding_v}px {DIALOG.tab_padding_h}px;
-    min-width: {DIALOG.tab_min_width}px;
+    padding: {SETTINGS_DIALOG.tab_padding_v}px {SETTINGS_DIALOG.tab_padding_h}px;
+    min-width: {SETTINGS_DIALOG.tab_min_width}px;
     border-top-left-radius: {GLOBAL.radius}px;
     border-top-right-radius: {GLOBAL.radius}px;
 }}
@@ -162,13 +159,13 @@ QTabBar::tab:selected {{
 _DIALOG_CHECK_QSS = f"""\
 QCheckBox {{
     color: {BODY.color};
-    spacing: {DIALOG.check_spacing}px;
+    spacing: {SETTINGS_DIALOG.check_spacing}px;
 }}
 
 QCheckBox::indicator {{
-    width: {DIALOG.check_size}px;
-    height: {DIALOG.check_size}px;
-    border: {DIALOG.border_width}px solid {DIALOG.border_color};
+    width: {SETTINGS_DIALOG.check_size}px;
+    height: {SETTINGS_DIALOG.check_size}px;
+    border: {SETTINGS_DIALOG.border_width}px solid {SETTINGS_DIALOG.border_color};
     border-radius: {GLOBAL.radius}px;
     background-color: {TOOLBAR.bg};
 }}
@@ -181,8 +178,8 @@ QCheckBox::indicator:checked {{
 # 忙碌等待弹窗
 _WAIT_QSS = f"""\
 QLabel#wait_spinner {{
-    font-size: {WAIT.spinner_font_size}px;
-    color: {WAIT.spinner_color};
+    font-size: {WAIT_DIALOG.spinner_font_size}px;
+    color: {WAIT_DIALOG.spinner_color};
 }}"""
 
 # 标题
@@ -196,13 +193,13 @@ _DIALOG_LINEEDIT_QSS = f"""\
 QLineEdit {{
     background-color: {TOOLBAR.bg};
     color: {BODY.color};
-    border: {DIALOG.border_width}px solid {DIALOG.border_color};
+    border: {SETTINGS_DIALOG.border_width}px solid {SETTINGS_DIALOG.border_color};
     border-radius: {GLOBAL.radius}px;
-    padding: {DIALOG.input_padding_v}px {DIALOG.input_padding_h}px;
+    padding: {SETTINGS_DIALOG.input_padding_v}px {SETTINGS_DIALOG.input_padding_h}px;
 }}
 
 QLineEdit:focus {{
-    border: {DIALOG.border_width}px solid {BODY.selection_bg};
+    border: {SETTINGS_DIALOG.border_width}px solid {BODY.selection_bg};
 }}"""
 
 # 文字编辑
@@ -210,15 +207,15 @@ _DIALOG_TEXTEDIT_QSS = f"""\
 QTextEdit {{
     background-color: {TOOLBAR.bg};
     color: {BODY.color};
-    border: {DIALOG.border_width}px solid {DIALOG.border_color};
+    border: {SETTINGS_DIALOG.border_width}px solid {SETTINGS_DIALOG.border_color};
     border-radius: {GLOBAL.radius}px;
-    padding: {DIALOG.input_padding_v}px {DIALOG.input_padding_h}px;
+    padding: {SETTINGS_DIALOG.input_padding_v}px {SETTINGS_DIALOG.input_padding_h}px;
     selection-background-color: {BODY.selection_bg};
     selection-color: {BODY.selection_color};
 }}
 
 QTextEdit:focus {{
-    border: {DIALOG.border_width}px solid {BODY.selection_bg};
+    border: {SETTINGS_DIALOG.border_width}px solid {BODY.selection_bg};
 }}"""
 
 # 主按钮（高亮）
@@ -229,15 +226,15 @@ QPushButton#btn_primary {{
     border: none;
     border-radius: {GLOBAL.radius}px;
     padding: {BTN.padding_v}px {BTN.padding_h}px;
-    min-width: {DIALOG.btn_min_width}px;
+    min-width: {SETTINGS_DIALOG.btn_min_width}px;
 }}
 
 QPushButton#btn_primary:hover {{
-    background-color: {DIALOG.btn_hover_bg};
+    background-color: {SETTINGS_DIALOG.btn_hover_bg};
 }}
 
 QPushButton#btn_primary:pressed {{
-    background-color: {DIALOG.btn_pressed_bg};
+    background-color: {SETTINGS_DIALOG.btn_pressed_bg};
 }}"""
 
 # 弹窗滚动条
@@ -304,7 +301,7 @@ _LIST_ITEM_QSS = f"""\
 QListWidget#list_widget {{
     background-color: {LIST_DIALOG.item_border_color};
     color: {BODY.color};
-    border: {DIALOG.border_width}px solid {DIALOG.border_color};
+    border: {SETTINGS_DIALOG.border_width}px solid {SETTINGS_DIALOG.border_color};
     border-radius: {GLOBAL.radius}px;
     outline: none;
     margin: {LIST_DIALOG.container_inner_margin}px;
@@ -343,11 +340,11 @@ _DIALOG_QSS = "\n".join(  # 弹窗 QSS 拼接
 _CHANGE_TABLE_QSS = f"""\
 QTableWidget#change_table {{
     background-color: {BODY.bg};
-    alternate-background-color: {CHANGE.alt_bg};
+    alternate-background-color: {CHANGE_DIALOG.alt_bg};
     color: {BODY.color};
-    border: {DIALOG.border_width}px solid {DIALOG.border_color};
+    border: {SETTINGS_DIALOG.border_width}px solid {SETTINGS_DIALOG.border_color};
     border-radius: {GLOBAL.radius}px;
-    gridline-color: {CHANGE.grid_color};
+    gridline-color: {CHANGE_DIALOG.grid_color};
 }}
 
 QTableWidget#change_table::item {{
@@ -355,31 +352,31 @@ QTableWidget#change_table::item {{
 }}
 
 QTextEdit#change_cell {{
-    background-color: {CHANGE.alt_bg};
+    background-color: {CHANGE_DIALOG.alt_bg};
     color: {BODY.color};
     border: none;
-    padding: {CHANGE.cell_padding_v}px {CHANGE.cell_padding_h}px;
+    padding: {CHANGE_DIALOG.cell_padding_v}px {CHANGE_DIALOG.cell_padding_h}px;
 }}
 
 QHeaderView::section {{
-    background-color: {DIALOG.tab_bg};
+    background-color: {SETTINGS_DIALOG.tab_bg};
     color: {BODY.hover_color};
     border: none;
     padding: {LIST_DIALOG.item_padding_v}px {LIST_DIALOG.item_padding_h}px;
 }}"""
 
-# 网络诊断弹窗
-_PROXY_QSS = f"""\
+# 检查进度窗表格区（原诊断窗同款，随两窗合并改名）
+_CHECK_TABLE_QSS = f"""\
 QDialog {{
     background-color: {BODY.bg};
 }}
 
-QTextEdit#proxy_view {{
+QTextEdit#row_view {{
     background-color: {TOOLBAR.bg};
     color: {BODY.color};
-    border: {DIALOG.border_width}px solid {DIALOG.border_color};
+    border: {SETTINGS_DIALOG.border_width}px solid {SETTINGS_DIALOG.border_color};
     border-radius: {GLOBAL.radius}px;
-    padding: {DIALOG.input_padding_v}px {DIALOG.input_padding_h}px;
+    padding: {SETTINGS_DIALOG.input_padding_v}px {SETTINGS_DIALOG.input_padding_h}px;
 }}"""
 
 # 列表项 QSS 拼接
@@ -403,19 +400,8 @@ def build_settings_list_qss() -> str:
     return _LIST_QSS
 
 
-def build_proxy_dialog_qss() -> str:
-    """构建网络诊断弹窗 QSS"""
-    return "\n".join(
-        [
-            _DIALOG_BASE_QSS,
-            _DIALOG_BUTTON_QSS,
-            _PROXY_QSS,
-        ]
-    )
-
-
-def build_hint_dialog_qss() -> str:
-    """构建通用提示弹窗 QSS"""
+def build_notice_dialog_qss() -> str:
+    """构建通知弹窗 QSS"""
     return "\n".join(
         [
             _DIALOG_BASE_QSS,
@@ -445,5 +431,18 @@ def build_wait_dialog_qss() -> str:
             _DIALOG_LABEL_QSS,
             _DIALOG_BUTTON_QSS,
             _WAIT_QSS,
+        ]
+    )
+
+
+def build_check_dialog_qss() -> str:
+    """构建检查进度窗 QSS（校验轮与诊断轮共用同一皮肤）"""
+    return "\n".join(
+        [
+            _DIALOG_BASE_QSS,
+            _DIALOG_LABEL_QSS,
+            _DIALOG_BUTTON_QSS,
+            _WAIT_QSS,
+            _CHECK_TABLE_QSS,
         ]
     )
