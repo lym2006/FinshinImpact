@@ -35,23 +35,29 @@ from utils.config.models import (
 )
 
 from ..._qss import build_settings_dialog_qss
-from ..._theme import GLOBAL
-from ..._theme import SETTINGS_DIALOG as DIALOG
+from ..._theme import GLOBAL, SETTINGS_DIALOG
 from ...mediator import gui_bridge
 from .._base import BaseDialog
-from ._change import ChangeConfirmDialog, NotChangedDialog
+from ._change import ChangeConfirmDialog
 from ._list_widget import ConfigListWidget
 
 __all__ = [
     "ChangeConfirmDialog",
     "ConfigMode",
-    "NotChangedDialog",
     "SettingsDialog",
 ]
 
-_ERROR_QSS = f"color: {DIALOG.error_color};"
-_PENDING_QSS = f"color: {DIALOG.pending_color};"
-_ERROR_FONT = QFont(DIALOG.error_font_family, DIALOG.error_font_size)
+_ERROR_QSS = f"color: {SETTINGS_DIALOG.error_color};"
+_PENDING_QSS = f"color: {SETTINGS_DIALOG.pending_color};"
+_ERROR_FONT = QFont(SETTINGS_DIALOG.error_font_family, SETTINGS_DIALOG.error_font_size)
+
+
+def _clear_layout(layout: QHBoxLayout) -> None:
+    """腾空按钮条：逐项摘控件交还 GC，容器自身由调用方 removeItem"""
+    while layout.count():
+        item = layout.takeAt(0)
+        if item.widget():
+            item.widget().deleteLater()
 
 
 class ConfigMode(Enum):
@@ -75,7 +81,7 @@ class SettingsDialog(BaseDialog):
         parent: QWidget | None = None,
         field_errors: dict[str, str] | None = None,
     ) -> None:
-        super().__init__(parent=parent, title=DIALOG.title)
+        super().__init__(parent=parent, title=SETTINGS_DIALOG.title)
 
         # SETUP 模式字段级错误：{字段键: 悬浮文案}
         self._field_errors: dict[str, str] = dict(field_errors or {})
@@ -100,14 +106,19 @@ class SettingsDialog(BaseDialog):
         self._save_btn: QPushButton | None = None
         self._save_text: str = ""
 
-        # SETUP：非模态；去关闭按钮防误点，关窗统一走 closeEvent 拦截
-        if mode == ConfigMode.SETUP:
-            self.setWindowModality(Qt.WindowModality.NonModal)
-            self.setWindowFlags(
-                self.windowFlags() & ~Qt.WindowType.WindowCloseButtonHint
-            )
+        # 根布局/按钮条/提示行引用：原地切模式只拆可再生部件，表单永不重建
+        self._root_layout: QVBoxLayout | None = None
+        self._bottom_layout: QHBoxLayout | None = None
+        self._tip_labels: list[QLabel] = []
 
-        self.setMinimumSize(DIALOG.min_width, DIALOG.min_height)
+        # 非模态 + 灰×：两模式同款，×开关只在 flags 上，出生定死终身不碰
+        # 摘×防误点错觉；EDIT 退出走取消/Esc，SETUP 走 closeEvent 拦截
+        self.setWindowModality(Qt.WindowModality.NonModal)
+        self.setWindowFlags(
+            self.windowFlags() & ~Qt.WindowType.WindowCloseButtonHint
+        )
+
+        self.setMinimumSize(SETTINGS_DIALOG.min_width, SETTINGS_DIALOG.min_height)
         self._build_ui()
 
     # ==================== 关闭与退出 ====================
@@ -175,12 +186,50 @@ class SettingsDialog(BaseDialog):
     def set_busy(self, busy: bool) -> None:
         """校验进行中的防重入
 
-        禁用保存按钮并改文案提示
+        锁表单与保存按钮：校验结果只对应按下瞬间的配置，改不动才不会被吞。
         """
         if self._save_btn is None:
             return
         self._save_btn.setEnabled(not busy)
-        self._save_btn.setText(DIALOG.validating_text if busy else self._save_text)
+        self._save_btn.setText(
+            SETTINGS_DIALOG.validating_text if busy else self._save_text
+        )
+        if self._tabs is not None:
+            self._tabs.setEnabled(not busy)
+
+    def switch_to_setup(self, field_errors: dict[str, str] | None) -> None:
+        """EDIT 原地转 SETUP：保内容、换按钮、挂提示
+
+        只拆提示行与按钮条两个可再生部件；模态与×两模式同款出生定死，无需动。
+        """
+        self._mode = ConfigMode.SETUP
+        self._field_errors = dict(field_errors or {})
+        self._error_namespaces = self._resolve_error_namespaces(self._schema)
+        self._rebuild_chrome()
+        self.apply_errors(self._field_errors)
+
+    def _rebuild_chrome(self) -> None:
+        """拆建提示行与底部按钮条"""
+        if self._root_layout is None:
+            return
+        for tip in self._tip_labels:
+            self._root_layout.removeWidget(tip)
+            tip.deleteLater()
+        self._tip_labels.clear()
+        if self._bottom_layout is not None:
+            self._root_layout.removeItem(self._bottom_layout)
+            _clear_layout(self._bottom_layout)
+        if self._mode == ConfigMode.SETUP:
+            tip_label = QLabel(SETTINGS_DIALOG.setup_tip)
+            tip_label.setStyleSheet(_ERROR_QSS)
+            tip_label.setFont(_ERROR_FONT)
+            hint_label = QLabel(SETTINGS_DIALOG.setup_hint)
+            hint_label.setStyleSheet(_ERROR_QSS)
+            self._root_layout.insertWidget(0, tip_label)
+            self._root_layout.insertWidget(1, hint_label)
+            self._tip_labels = [tip_label, hint_label]
+        self._bottom_layout = self._build_bottom_buttons()
+        self._root_layout.addLayout(self._bottom_layout)
 
     # ==================== 渲染 ====================
 
@@ -191,7 +240,9 @@ class SettingsDialog(BaseDialog):
         container = QWidget()
         form = QFormLayout(container)
         form.setSpacing(GLOBAL.radius)
-        form.setContentsMargins(*[DIALOG.margin] * 3 + [DIALOG.tab_spacing])
+        form.setContentsMargins(
+            *[SETTINGS_DIALOG.margin] * 3 + [SETTINGS_DIALOG.tab_spacing]
+        )
         ns_config = self._current.get(namespace)
         current_value = (
             ns_config[field.key]
@@ -246,8 +297,8 @@ class SettingsDialog(BaseDialog):
         # 右侧区域：输入框 + 说明文字
         right_wrapper = QWidget()
         v_layout = QVBoxLayout(right_wrapper)
-        v_layout.setContentsMargins(*[DIALOG.margin] * 4)
-        v_layout.setSpacing(DIALOG.desc_spacing)
+        v_layout.setContentsMargins(*[SETTINGS_DIALOG.margin] * 4)
+        v_layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
         v_layout.addWidget(input_widget)
         if field.desc:
             v_layout.addWidget(self._build_desc(field.desc))
@@ -307,20 +358,22 @@ class SettingsDialog(BaseDialog):
     def _build_ui(self) -> None:
         """构建界面"""
         root_layout = QVBoxLayout(self)
+        self._root_layout = root_layout
         root_layout.setContentsMargins(
-            *([DIALOG.input_padding_h, DIALOG.input_padding_v] * 2)
+            *([SETTINGS_DIALOG.input_padding_h, SETTINGS_DIALOG.input_padding_v] * 2)
         )
-        root_layout.setSpacing(DIALOG.tab_spacing)
+        root_layout.setSpacing(SETTINGS_DIALOG.tab_spacing)
 
         # SETUP 提示：出错标签页带 ⚠，出错字段标题标红
         if self._mode == ConfigMode.SETUP:
-            tip_label = QLabel(DIALOG.setup_tip)
+            tip_label = QLabel(SETTINGS_DIALOG.setup_tip)
             tip_label.setStyleSheet(_ERROR_QSS)
             tip_label.setFont(_ERROR_FONT)
-            hint_label = QLabel(DIALOG.setup_hint)
+            hint_label = QLabel(SETTINGS_DIALOG.setup_hint)
             hint_label.setStyleSheet(_ERROR_QSS)
             root_layout.addWidget(tip_label)
             root_layout.addWidget(hint_label)
+            self._tip_labels = [tip_label, hint_label]
 
         tabs = QTabWidget()
         for index, tab_schema in enumerate(self._schema):
@@ -330,7 +383,8 @@ class SettingsDialog(BaseDialog):
             self._tab_titles[tab_schema.namespace] = (index, tab_schema.title)
         self._tabs = tabs
         root_layout.addWidget(tabs)
-        root_layout.addLayout(self._build_bottom_buttons())
+        self._bottom_layout = self._build_bottom_buttons()
+        root_layout.addLayout(self._bottom_layout)
 
     def _create_tab(self, tab_schema: TabSchema) -> QWidget:
         """创建一个 Tab"""
@@ -339,9 +393,9 @@ class SettingsDialog(BaseDialog):
         scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setAutoFillBackground(False)
         container = QWidget()
-        container.setStyleSheet(f"background-color: {DIALOG.tab_bg};")
+        container.setStyleSheet(f"background-color: {SETTINGS_DIALOG.tab_bg};")
         main_layout = QVBoxLayout(container)
-        main_layout.setSpacing(DIALOG.tab_spacing)
+        main_layout.setSpacing(SETTINGS_DIALOG.tab_spacing)
         label_width = self._calc_label_width(tab_schema.fields)
         for field in tab_schema.fields:
             main_layout.addWidget(
@@ -359,24 +413,27 @@ class SettingsDialog(BaseDialog):
 
         match self._mode:
             case ConfigMode.EDIT:
-                btn_cancel = QPushButton(DIALOG.cancel_text)
+                btn_cancel = QPushButton(SETTINGS_DIALOG.cancel_text)
                 btn_cancel.clicked.connect(self.reject)
-                btn_save = QPushButton(DIALOG.save_text)
+                btn_save = QPushButton(SETTINGS_DIALOG.save_text)
                 btn_save.setObjectName("btn_primary")
                 btn_save.clicked.connect(self.save_requested.emit)
-                self._save_btn, self._save_text = btn_save, DIALOG.save_text
+                self._save_btn, self._save_text = btn_save, SETTINGS_DIALOG.save_text
                 btn_layout.addWidget(btn_cancel)
                 btn_layout.addWidget(btn_save)
             case ConfigMode.SETUP:
-                btn_exit = QPushButton(DIALOG.exit_text)
+                btn_exit = QPushButton(SETTINGS_DIALOG.exit_text)
                 btn_exit.clicked.connect(self._on_exit_clicked)
-                btn_finish = QPushButton(DIALOG.finish_text)
+                btn_finish = QPushButton(SETTINGS_DIALOG.finish_text)
                 btn_finish.setObjectName("btn_primary")
-                btn_finish.setMinimumWidth(DIALOG.finish_btn_min_width)
+                btn_finish.setMinimumWidth(SETTINGS_DIALOG.finish_btn_min_width)
 
                 # 发信号而非 accept：校验通过才关窗，失败则原窗保留已填内容
                 btn_finish.clicked.connect(self.save_requested.emit)
-                self._save_btn, self._save_text = btn_finish, DIALOG.finish_text
+                self._save_btn, self._save_text = (
+                    btn_finish,
+                    SETTINGS_DIALOG.finish_text,
+                )
                 btn_layout.addWidget(btn_exit)
                 btn_layout.addWidget(btn_finish)
 

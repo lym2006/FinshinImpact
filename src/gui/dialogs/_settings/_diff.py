@@ -10,12 +10,12 @@ import html
 
 from PySide6.QtWidgets import QTextEdit
 
-from ..._theme import CHANGE_DIALOG as CHANGE
+from ..._theme import CHANGE_DIALOG
 
 _DIFF_STYLE = {
     "same": "",
-    "del": f"color: {CHANGE.diff_del}; text-decoration: line-through;",
-    "add": f"color: {CHANGE.diff_add}; font-weight: bold;",
+    "del": f"color: {CHANGE_DIALOG.diff_del}; text-decoration: line-through;",
+    "add": f"color: {CHANGE_DIALOG.diff_add}; font-weight: bold;",
 }
 
 # 一行内的 (类型, 文本) 分段序列

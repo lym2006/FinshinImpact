@@ -2,9 +2,20 @@
 """弹窗令牌（内部实现）
 
 - 定义各专属弹窗的尺寸、文案与配色
+- 弹窗话术字段一律代理引用 messages，令牌不持有话术字面量
+- 诊断窗与校验窗共用五态基类，同款渲染令牌一处一源
 """
 
 from dataclasses import dataclass
+
+from messages import DialogMessage, VersionMessage
+
+# 五态渲染色：诊断窗与校验窗同款（一处一源）
+_PENDING_COLOR = "#808080"  # 等待检测
+_CHECKING_COLOR = "#FFFFFF"  # 正在检测
+_OK_COLOR = "#4EC97B"  # 正常
+_SKIP_COLOR = "#4EC97B"  # 前级已连通，同样绿显
+_FAIL_COLOR = "#F44E4E"  # 异常
 
 
 @dataclass(frozen=True)
@@ -43,21 +54,21 @@ class SettingsDialogConfig:
     check_spacing: int = 6  # 指示器与文字间距
 
     # === 提示文案 ===
-    verified_ok: str = "无改动，连通性验证通过"
+    verified_ok: str = DialogMessage.SETUP_VERIFIED_OK
 
     # === 按钮文案 ===
-    cancel_text: str = "取消"
-    save_text: str = "保存"
-    exit_text: str = "退出程序"
-    finish_text: str = "完成并保存"
-    validating_text: str = "校验中..."
+    cancel_text: str = DialogMessage.BTN_CANCEL
+    save_text: str = DialogMessage.BTN_SAVE
+    exit_text: str = DialogMessage.BTN_EXIT
+    finish_text: str = DialogMessage.BTN_FINISH
+    validating_text: str = DialogMessage.BTN_VALIDATING
 
     # === SETUP 提示文案 ===
-    setup_tip: str = "检测到配置有误，请修正后继续"
-    setup_hint: str = "留意带 ⚠ 的标签页，标题标红的即为出错字段"
+    setup_tip: str = DialogMessage.SETUP_TIP
+    setup_hint: str = DialogMessage.SETUP_HINT
 
     # === 窗口标题 ===
-    title: str = "修改配置"
+    title: str = DialogMessage.SETUP_TITLE
 
     # === 错误标注 ===
     error_color: str = "#E06C75"
@@ -114,10 +125,10 @@ class ShutdownDialogConfig:
     font_size: int = 14  # 弹窗字号
 
     # === 文案配置 ===
-    title: str = "确认退出"
-    message: str = "确定要关闭机器人并退出程序吗？"
-    cancel_text: str = "取消"
-    confirm_text: str = "确认"
+    title: str = DialogMessage.SHUTDOWN_TITLE
+    message: str = DialogMessage.SHUTDOWN_MSG
+    cancel_text: str = DialogMessage.BTN_CANCEL
+    confirm_text: str = DialogMessage.BTN_CONFIRM
 
     # === 颜色配置 ===
     bg_color: str = "#2b2b2b"  # 弹窗背景色
@@ -128,47 +139,60 @@ class ShutdownDialogConfig:
     confirm_color: str = "#ffffff"  # 确认按钮文字
 
 
-@dataclass(frozen=True)
-class FatalDialogConfig:
-    """致命错误弹窗专属配置"""
-
-    # === 尺寸配置 ===
-    width: int = 420  # 宽度
-    height: int = 180  # 高度
-    padding: int = 20  # 内边距
-    spacing: int = 12  # 元素间距
-
-    # === 文案配置 ===
-    title: str = "程序遇到无法恢复的错误，即将退出"
-    confirm_text: str = "确认并退出"
+# ==================== 五态表格弹窗共用基类 ====================
 
 
 @dataclass(frozen=True)
-class ProxyDialogConfig:
-    """网络诊断弹窗专属配置"""
+class FiveStateDialogConfig:
+    """五态行表格弹窗共用配置
+
+    诊断窗与校验窗同款表格、同款符号与颜色，渲染令牌收在基类一处。
+    """
 
     # === 尺寸配置 ===
-    width: int = 460
+    width: int = 520
     height: int = 320
     pad: int = 16
     row_margin: int = 4  # HTML 行距
 
-    # === 文案配置 ===
-    title: str = "网络诊断"
-    btn_text: str = "开始诊断"
-    running_text: str = "诊断中..."
-    retry_text: str = "重新检测"
-    pending_mark: str = "•"
-    checking_mark: str = "…"
-    ok_mark: str = "✓"
-    fail_mark: str = "✗"
+    # === 五态符号 ===
+    pending_mark: str = DialogMessage.MARK_PENDING
+    checking_mark: str = DialogMessage.MARK_CHECKING
+    ok_mark: str = DialogMessage.MARK_OK
+    skip_mark: str = DialogMessage.MARK_SKIP
+    fail_mark: str = DialogMessage.MARK_FAIL
 
-    # === 状态颜色 ===
-    pending_color: str = "#808080"  # 等待检测
-    checking_color: str = "#FFFFFF"  # 正在检测
-    ok_color: str = "#4EC97B"  # 正常
-    fail_color: str = "#F44E4E"  # 异常
-    section_color: str = "#569CD6"  # 分组标题
+    # === 五态颜色 ===
+    pending_color: str = _PENDING_COLOR
+    checking_color: str = _CHECKING_COLOR
+    ok_color: str = _OK_COLOR
+    skip_color: str = _SKIP_COLOR
+    fail_color: str = _FAIL_COLOR
+
+
+@dataclass(frozen=True)
+class CheckDialogConfig(FiveStateDialogConfig):
+    """检查进度窗专属配置（校验轮与诊断轮共用同一实例）"""
+
+    # === 动画配置 ===
+    spinner_frames: str = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
+    tick_ms: int = 120
+
+    # === 共用文案 ===
+    ok_text: str = DialogMessage.NOTICE_OK
+    cancel_text: str = DialogMessage.BTN_CANCEL
+
+    # === 校验轮文案 ===
+    verify_title: str = DialogMessage.CHECK_VERIFY_TITLE
+    verify_head: str = DialogMessage.CHECK_VERIFY_HEAD
+    verify_head_pass: str = DialogMessage.CHECK_VERIFY_HEAD_PASS
+    verify_head_fail: str = DialogMessage.CHECK_VERIFY_HEAD_FAIL
+
+    # === 诊断轮文案 ===
+    diagnose_title: str = DialogMessage.CHECK_DIAG_TITLE
+    diagnose_head: str = DialogMessage.CHECK_DIAG_HEAD
+    diagnose_head_pass: str = DialogMessage.CHECK_DIAG_HEAD_PASS
+    diagnose_head_fail: str = DialogMessage.CHECK_DIAG_HEAD_FAIL
 
 
 @dataclass(frozen=True)
@@ -180,20 +204,19 @@ class WaitDialogConfig:
     height: int = 200
     pad: int = 24
     spinner_font_size: int = 26
+    line_height: int = 24  # 多行结果的每行高度
 
     # === 动画配置 ===
     spinner_frames: str = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
     tick_ms: int = 120
 
     # === 文案配置 ===
-    title: str = "请稍候"
-    ok_text: str = "知道了"
-    check_text: str = "正在检查版本更新..."
-    verify_text: str = "正在校验连通性..."
-    verify_format: str = "正在校验连通性...\n已等 {n} 秒"
-    verified: str = "连通性校验通过"
-    up_to_date: str = "已是最新版本：{ver}"
-    crash_text: str = "检查异常中断，详情见日志"
+    title: str = DialogMessage.WAIT_TITLE
+    ok_text: str = DialogMessage.NOTICE_OK
+    cancel_text: str = DialogMessage.BTN_CANCEL
+    check_text: str = DialogMessage.WAIT_CHECK
+    up_to_date: str = VersionMessage.UP_TO_DATE
+    crash_text: str = VersionMessage.CRASH
 
     # === 颜色与符号 ===
     spinner_color: str = "#569CD6"
@@ -202,8 +225,8 @@ class WaitDialogConfig:
 
 
 @dataclass(frozen=True)
-class HintDialogConfig:
-    """通用提示弹窗专属配置"""
+class NoticeDialogConfig:
+    """通知弹窗专属配置（提示/致命共用，critical 区分）"""
 
     # === 尺寸配置 ===
     width: int = 380
@@ -212,9 +235,13 @@ class HintDialogConfig:
     spacing: int = 14
 
     # === 文案配置 ===
-    title: str = "提示"
-    ok_text: str = "知道了"
-    not_changed: str = "您未修改任何配置"
+    title: str = DialogMessage.NOTICE_TITLE
+    ok_text: str = DialogMessage.NOTICE_OK
+    fatal_title: str = DialogMessage.NOTICE_FATAL_TITLE
+    fatal_head: str = DialogMessage.NOTICE_FATAL_HEAD
+    fatal_ok: str = DialogMessage.NOTICE_FATAL_OK
+    line_height: int = 24  # 多行通知的每行高度
+    not_changed: str = DialogMessage.NOTICE_NOT_CHANGED
 
 
 @dataclass(frozen=True)
@@ -234,17 +261,17 @@ class ChangeDialogConfig:
     mono_font_size: int = 9  # 取值列字号
 
     # === 文案配置 ===
-    title: str = "确认变更"
+    title: str = DialogMessage.CHANGE_TITLE
     diff_columns: int = 3  # 配置项/原配置/新配置三列
-    tip_text: str = "以下配置将被修改，确认保存？"
-    col_key: str = "配置项"
-    col_ori: str = "原配置"
-    col_mod: str = "新配置"
-    cancel_text: str = "返回修改"
-    confirm_text: str = "确认保存"
+    tip_text: str = DialogMessage.CHANGE_TIP
+    col_key: str = DialogMessage.CHANGE_COL_KEY
+    col_ori: str = DialogMessage.CHANGE_COL_ORI
+    col_mod: str = DialogMessage.CHANGE_COL_MOD
+    cancel_text: str = DialogMessage.CHANGE_RETURN
+    confirm_text: str = DialogMessage.CHANGE_CONFIRM
 
     # === 颜色配置 ===
     grid_color: str = "#3C3C3C"  # 表格分割线
     alt_bg: str = "#252526"  # 隔行背景
-    diff_del: str = "#F44E4E"  # 删除行红色（带删除线）
-    diff_add: str = "#4EC97B"  # 新增行绿色加粗
+    diff_del: str = _FAIL_COLOR  # 删除行红色（带删除线）
+    diff_add: str = _OK_COLOR  # 新增行绿色加粗

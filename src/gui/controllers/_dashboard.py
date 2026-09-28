@@ -20,4 +20,4 @@ class DashboardController(BaseController):
     def _execute(self) -> None:
         """清空仪表盘内容"""
         self.gui.clear_dashboard()
-        self.logger.info("仪表盘清理完成")
+        self.logger.info("仪表盘已清理")

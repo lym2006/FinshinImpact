@@ -10,7 +10,7 @@ from pathlib import Path
 
 from PySide6.QtCore import QObject, Signal, Slot
 from PySide6.QtGui import QFont, QFontDatabase, QTextCursor
-from PySide6.QtWidgets import QTextEdit
+from PySide6.QtWidgets import QTextEdit, QWidget
 
 from exceptions import (
     DashboardWriteError,
@@ -80,7 +80,7 @@ class TextHandler(logging.Handler):
 class DashboardWidget(QTextEdit):
     """仪表盘纯展示组件"""
 
-    def __init__(self, fonts: FontConfig, parent=None) -> None:
+    def __init__(self, fonts: FontConfig, parent: QWidget | None = None) -> None:
         super().__init__(parent)
 
         self.setReadOnly(True)  # 基础属性设置
