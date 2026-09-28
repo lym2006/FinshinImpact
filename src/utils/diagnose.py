@@ -154,9 +154,7 @@ async def diagnose_flow(
                     "detail": CheckMessage.DIAG_TUN_OK,
                 }
             )
-        frame(
-            {"id": RowId.PORT, "status": RowStatus.SKIP, "detail": CheckMessage.SKIP}
-        )
+        frame({"id": RowId.PORT, "status": RowStatus.SKIP, "detail": CheckMessage.SKIP})
         frame(
             {
                 "id": RowId.ADVICE,

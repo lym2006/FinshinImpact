@@ -202,7 +202,9 @@ class SettingsManager(BaseManager):
             self._warn_stale(configured, resolved)
 
         # 并入本地类型校验，全绿才返回 True；local 先 advice 后，收口认 advice
-        type_errors = run_local(schema, config_manager.get_all(), gui_bridge.verify_progress.emit)
+        type_errors = run_local(
+            schema, config_manager.get_all(), gui_bridge.verify_progress.emit
+        )
         self.last_errors = {**net_errors, **type_errors}
 
         # 结论帧收口：表格 HTML 吞换行，失败只报计数，明细由字段标红与悬浮承载
@@ -214,9 +216,7 @@ class SettingsManager(BaseManager):
                 "detail": (
                     CheckMessage.VERIFY_ADVICE_OK
                     if passed
-                    else CheckMessage.VERIFY_ADVICE_FAIL.format(
-                        n=len(self.last_errors)
-                    )
+                    else CheckMessage.VERIFY_ADVICE_FAIL.format(n=len(self.last_errors))
                 ),
             }
         )
@@ -238,9 +238,7 @@ class SettingsManager(BaseManager):
                 check_config(token, proxy), timeout=_VERIFY_TIMEOUT
             )
         except TimeoutError:
-            attempt = {
-                FieldKey.PROXY: CheckMessage.TIMEOUT.format(sec=_VERIFY_TIMEOUT)
-            }
+            attempt = {FieldKey.PROXY: CheckMessage.TIMEOUT.format(sec=_VERIFY_TIMEOUT)}
         if not attempt:
             return proxy, {}
         return None, attempt
