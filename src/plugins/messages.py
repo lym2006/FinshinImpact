@@ -5,43 +5,50 @@
 - 定义命名占位与 .format() 约定
 """
 
-# ==================== 欢迎与基础 ====================
 
-WELCOME = (
-    "你好，我是基于aiogram开发的机器人Fool\n"
-    '你可以输入"/help"获取功能列表，现在与我开始对话吧~'
-)
+class BotMessage:
+    """Telegram 对话话术
 
-# ==================== 帮助 ====================
+    机器人侧用户可见文案单源，成员按功能子域前缀归类。
+    """
 
-CMD_NOT_FOUND = "命令不存在，请使用 /help "
-CMD_FORMAT_ERROR = "格式错误"
+    # ==================== 欢迎 ====================
 
-# ==================== 黑名单 ====================
+    WELCOME = (
+        "你好，我是基于aiogram开发的机器人Fool\n"
+        '你可以输入"/help"获取功能列表，现在与我开始对话吧~'
+    )
 
-BLACKLIST_ADDED = "🚫 成功将用户 [{user}] 写入黑名单"
-BLACKLIST_EXISTS = "🚫 用户 [{user}] 已存在黑名单内"
-BLACKLIST_REMOVED = "成功将用户 [{user}] 移出黑名单"
-BLACKLIST_ABSENT = "用户 [{user}] 不存在黑名单内"
+    # ==================== 命令 ====================
 
-# ==================== 历史记录 ====================
+    CMD_NOT_FOUND = "命令不存在，请使用 /help "
+    CMD_FORMAT_ERROR = "格式错误"
 
-NO_HISTORY = "暂无历史记录"
-HISTORY_CAPTION = "📄 这是您最近的对话历史记录"
-MEMORY_CLEARED = "记忆清除成功"
-NO_MD_CONTENT = "没有可展示的对话"
+    # ==================== 黑名单 ====================
 
-# ==================== 身份与系统指令 ====================
+    BLACKLIST_ADDED = "🚫 成功将用户 [{user}] 写入黑名单"
+    BLACKLIST_EXISTS = "🚫 用户 [{user}] 已存在黑名单内"
+    BLACKLIST_REMOVED = "成功将用户 [{user}] 移出黑名单"
+    BLACKLIST_ABSENT = "用户 [{user}] 不存在黑名单内"
 
-ASK_IDENTITY_NAME = "🎭 请输入新身份的名字"
-ASK_IDENTITY_DESC = "📝 请输入新身份的描述"
-ASK_SYSTEM_INPUT = "💻 你想以system身份输入什么内容"
-ASK_TEXT = "请输入有效的文本"
-ASK_RETEXT = "请重新输入文本"
-IDENTITY_SET = "身份设置成功"
-IDENTITY_READY = "{mention}，你的机器人「{name}」已准备好，可以开始对话。"
-SYSTEM_INJECTED = "系统指令注入成功"
+    # ==================== 历史记录 ====================
 
-# ==================== AI 对话 ====================
+    HISTORY_EMPTY = "暂无历史记录"
+    HISTORY_CAPTION = "📄 这是您最近的对话历史记录"
+    HISTORY_MEMORY_CLEARED = "记忆清除成功"
+    HISTORY_NO_CONTENT = "没有可展示的对话"
 
-AI_UNAVAILABLE = "AI 对话服务暂不可用"
+    # ==================== 身份与系统指令 ====================
+
+    IDENTITY_ASK_NAME = "🎭 请输入新身份的名字"
+    IDENTITY_ASK_DESC = "📝 请输入新身份的描述"
+    IDENTITY_ASK_SYSTEM = "💻 你想以system身份输入什么内容"
+    IDENTITY_ASK_TEXT = "请输入有效的文本"
+    IDENTITY_ASK_RETEXT = "请重新输入文本"
+    IDENTITY_SET = "身份设置成功"
+    IDENTITY_READY = "{mention}，你的机器人「{name}」已准备好，可以开始对话。"
+    IDENTITY_SYSTEM_INJECTED = "系统指令注入成功"
+
+    # ==================== AI 对话 ====================
+
+    AI_UNAVAILABLE = "AI 对话服务暂不可用"

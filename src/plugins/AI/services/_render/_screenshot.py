@@ -4,6 +4,7 @@
 - 实现懒加载浏览器与并发控制
 - 提供网页截图与边框裁剪
 """
+
 import asyncio
 from pathlib import Path
 
@@ -24,6 +25,7 @@ logger = get_logger("Plg.AI.Render")
 _semaphore = asyncio.Semaphore(render_config.max_concurrent_screenshots)
 
 # ==================== 底层截图逻辑 ====
+
 
 async def _get_screenshot(file_name: str, html_path: Path) -> Path | None:
     """执行截图逻辑"""
@@ -81,7 +83,9 @@ async def _get_screenshot(file_name: str, html_path: Path) -> Path | None:
                 pass
     return new_path
 
+
 # ==================== 智能裁剪逻辑 ====================
+
 
 def _crop_screenshot(file_path: Path) -> None:
     """按像素裁剪截图
@@ -105,13 +109,14 @@ def _crop_screenshot(file_path: Path) -> None:
         cropped_array = img_array[top:bottom, left:right]
         cropped_img = Image.fromarray(cropped_array)
         cropped_img.save(file_path)
-        logger.info(
-            f"裁剪成功！\n原尺寸: {img.size}\n新尺寸: {cropped_img.size}\n区域: ({left}, {top}) 到 ({right}, {bottom})"
-        )
+        logger.info(f"裁剪成功：{img.size} → {cropped_img.size}")
+        logger.debug(f"裁剪区域：({left}, {top}) 到 ({right}, {bottom})")
     except (OSError, ValueError) as e:
         logger.send_error("裁剪出错", e)
 
+
 # ==================== 截图主入口 ====================
+
 
 async def screenshot(file_name: str, html_path: Path) -> None:
     """截图主入口，带并发控制与异常兜底"""

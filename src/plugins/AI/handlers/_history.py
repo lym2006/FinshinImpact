@@ -12,7 +12,7 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import FSInputFile, Message
 
-from ... import messages as msgs
+from ...messages import BotMessage
 from ..config import ai_config
 from ..core import session_guard, user_sessions
 from ..utils import get_name
@@ -37,11 +37,11 @@ async def show_history(message: Message) -> None:
     file_path = _get_file_path(user)
 
     if not file_path.exists():
-        await message.answer(msgs.NO_HISTORY)
+        await message.answer(BotMessage.HISTORY_EMPTY)
         return
 
     await message.answer_document(
-        document=FSInputFile(file_path), caption=msgs.HISTORY_CAPTION
+        document=FSInputFile(file_path), caption=BotMessage.HISTORY_CAPTION
     )
 
 
@@ -56,7 +56,7 @@ async def clear_history(message: Message) -> None:
     file_path = _get_file_path(user)
     user_sessions[user].message = list(ai_config.init)
     file_path.unlink(missing_ok=True)
-    await message.answer(msgs.MEMORY_CLEARED)
+    await message.answer(BotMessage.HISTORY_MEMORY_CLEARED)
 
 
 # ==================== /md 图片发送命令 ====================
@@ -72,4 +72,4 @@ async def send_markdown(message: Message) -> None:
     if user_sessions[user].md_status and img_path.exists():
         await message.answer_photo(FSInputFile(img_path))
     else:
-        await message.answer(msgs.NO_MD_CONTENT)
+        await message.answer(BotMessage.HISTORY_NO_CONTENT)

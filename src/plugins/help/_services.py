@@ -10,11 +10,11 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-from utils import DOCS_DIR, ROOT_DIR, get_logger
+from utils import ROOT_DIR, get_logger
 
 # ==================== 内部配置与数据源 ====================
 
-_SAVE_PATH = DOCS_DIR / "help.png"
+_SAVE_PATH = ROOT_DIR / "data/help.png"
 _RENDER_LOCK = threading.Lock()
 _FONT_PATH = ROOT_DIR / "assets/font.ttf"
 _logger = get_logger("Plg.Help")

@@ -9,7 +9,7 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
 
-from ... import messages as msgs
+from ...messages import BotMessage
 from ..services import get_black_list, save_black_list
 from ..utils import get_name
 
@@ -27,9 +27,9 @@ async def turn_off(message: Message) -> None:
     if user not in black_list:
         black_list.append(user)
         await save_black_list(black_list)
-        await message.answer(msgs.BLACKLIST_ADDED.format(user=user))
+        await message.answer(BotMessage.BLACKLIST_ADDED.format(user=user))
     else:
-        await message.answer(msgs.BLACKLIST_EXISTS.format(user=user))
+        await message.answer(BotMessage.BLACKLIST_EXISTS.format(user=user))
 
 
 # ==================== /on 对话开启命令 ====================
@@ -43,6 +43,6 @@ async def turn_on(message: Message) -> None:
     if user in black_list:
         black_list.remove(user)
         await save_black_list(black_list)
-        await message.answer(msgs.BLACKLIST_REMOVED.format(user=user))
+        await message.answer(BotMessage.BLACKLIST_REMOVED.format(user=user))
     else:
-        await message.answer(msgs.BLACKLIST_ABSENT.format(user=user))
+        await message.answer(BotMessage.BLACKLIST_ABSENT.format(user=user))
