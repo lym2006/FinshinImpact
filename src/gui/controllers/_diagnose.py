@@ -76,9 +76,7 @@ class DiagnoseController(BaseController):
         self._workers: set[_DiagnoseWorker] = set()
 
         # 两条独立事件都算"启动黑盒结束"：通过转真、失败弹向导
-        gui_bridge.config_ready_changed.connect(
-            self._on_ready, "诊断刷新", queued=True
-        )
+        gui_bridge.config_ready_changed.connect(self._on_ready, "诊断刷新", queued=True)
         gui_bridge.request_force_setup.connect(
             self._settle_startup, "启动结论", queued=True
         )
@@ -109,9 +107,7 @@ class DiagnoseController(BaseController):
         # 窗出现即证据，面板不重复灌
         self.logger.debug("打开网络诊断")
         win = open_check_window(self.gui)
-        win.begin_round(
-            Round.DIAGNOSE, True, diagnose_plan(), self._on_round_closed
-        )
+        win.begin_round(Round.DIAGNOSE, True, diagnose_plan(), self._on_round_closed)
         self._run(configured, win)
 
     # ==================== 轮次驱动 ====================

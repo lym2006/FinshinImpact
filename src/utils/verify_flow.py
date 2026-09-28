@@ -39,6 +39,7 @@ def _never_stop() -> bool:
 
 # ==================== 核心业务逻辑 ====================
 
+
 async def run_channels(
     channels: Sequence[Channel],
     probe: _Probe,
@@ -61,9 +62,7 @@ async def run_channels(
         outcome.errors = errors
         ch_ok = resolved is not None or bool(errors and FieldKey.PROXY not in errors)
         detail = (
-            CheckMessage.REACH.format(
-                via=via_label(ch), state=CheckMessage.REACH_OK
-            )
+            CheckMessage.REACH.format(via=via_label(ch), state=CheckMessage.REACH_OK)
             if ch_ok
             else errors.get(FieldKey.PROXY, CheckMessage.REACH_FAIL)
         )
