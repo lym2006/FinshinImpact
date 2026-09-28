@@ -44,7 +44,7 @@ def _route(exc: BotError, stage: str) -> None:
     detail = _describe(exc)
     if exc.fatal:
         logger.error(f"{stage}发生致命错误: {detail}")
-        gui_bridge.request_fatal.emit(f"{stage}\n{detail}")
+        gui_bridge.request_notice.emit(f"{stage}\n{detail}", True)
     else:
         logger.error(f"{stage}发生配置错误: {detail}")
         gui_bridge.request_force_setup.emit({})
@@ -58,7 +58,7 @@ def _route_unexpected(exc: Exception, stage: str) -> None:
         return
     detail = f"{type(exc).__name__}: {exc}"
     logger.error(f"{stage}发生未预期错误: {detail}")
-    gui_bridge.request_fatal.emit(f"{stage}\n{detail}")
+    gui_bridge.request_notice.emit(f"{stage}\n{detail}", True)
 
 
 def error_guard(
