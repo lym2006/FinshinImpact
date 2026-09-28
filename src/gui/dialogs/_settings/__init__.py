@@ -114,9 +114,7 @@ class SettingsDialog(BaseDialog):
         # 非模态 + 灰×：两模式同款，×开关只在 flags 上，出生定死终身不碰
         # 摘×防误点错觉；EDIT 退出走取消/Esc，SETUP 走 closeEvent 拦截
         self.setWindowModality(Qt.WindowModality.NonModal)
-        self.setWindowFlags(
-            self.windowFlags() & ~Qt.WindowType.WindowCloseButtonHint
-        )
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowCloseButtonHint)
 
         self.setMinimumSize(SETTINGS_DIALOG.min_width, SETTINGS_DIALOG.min_height)
         self._build_ui()
