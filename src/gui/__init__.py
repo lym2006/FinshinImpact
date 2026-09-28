@@ -4,11 +4,12 @@
 - 提供 BotGUI 类型与装配入口
 """
 
+from messages import MiscMessage
 from utils.logger import GUI_FORMATTER, get_logger
 
 from ._main_window import BotGUI
 from ._qss import build_global_qss
-from ._theme import BODY, FONT, TOOLBAR, TOOLBAR_BUTTONS, WINDOW
+from ._theme import BODY, FONT, TOOLBAR, WINDOW
 from .controllers import BaseController, build_controllers
 
 logger = get_logger("GUI")
@@ -24,7 +25,7 @@ def create_gui() -> tuple[BotGUI, dict[str, BaseController]]:
     """创建并装配 BotGUI 实例"""
     botgui = BotGUI(
         qss=build_global_qss(),
-        buttons=TOOLBAR_BUTTONS,
+        buttons=MiscMessage.TOOLBAR_BUTTONS,
         configs=(FONT, WINDOW, BODY, TOOLBAR),
         formatter=GUI_FORMATTER,
     )
@@ -34,7 +35,7 @@ def create_gui() -> tuple[BotGUI, dict[str, BaseController]]:
 
     # ==================== 防呆校验 ====================
 
-    valid_ui_keys = {key for _, key in TOOLBAR_BUTTONS}
+    valid_ui_keys = {key for _, key in MiscMessage.TOOLBAR_BUTTONS}
     registered_keys = {btn_id.replace("btn_", "", 1) for btn_id, _ in controllers}
 
     if unregistered := registered_keys - valid_ui_keys:
