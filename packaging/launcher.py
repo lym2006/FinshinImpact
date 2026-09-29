@@ -468,8 +468,8 @@ def _apply_shell_update(root: Path, detached: bool = False) -> None:
     升级收尾当场调用一次，启动开头再兜底一次。
     """
     pending = root / _SHELL_PENDING
-    old_exe = root / _SHELL_EXE
-    bak = old_exe.with_name(_SHELL_EXE + _SHELL_BAK_SUFFIX)
+    exe_path = root / _SHELL_EXE
+    bak = exe_path.with_name(_SHELL_EXE + _SHELL_BAK_SUFFIX)
 
     # 每次执行先清理上次换壳的遗留备份（彼时旧壳进程已退出，可删了）
     try:
@@ -480,15 +480,15 @@ def _apply_shell_update(root: Path, detached: bool = False) -> None:
     if not new_exe.is_file():
         return
     try:
-        old_exe.rename(bak)  # 旧 exe 变身 .old 让位
+        exe_path.rename(bak)  # 旧 exe 变身 .old 让位
     except OSError:
         # 改名失败多半是被安全软件短暂占用：放弃本次更换，保留暂存下次再试
         print("启动器暂被占用，本次沿用旧版继续")
         return
-    shutil.move(str(new_exe), str(old_exe))
+    shutil.move(str(new_exe), str(exe_path))  # 新壳移入规范路径
     shutil.rmtree(pending, ignore_errors=True)
     flags = _DETACHED_PROCESS if detached else 0
-    subprocess.Popen([str(old_exe)], cwd=str(root), creationflags=flags)
+    subprocess.Popen([str(exe_path)], cwd=str(root), creationflags=flags)
     sys.exit(0)
 
 
