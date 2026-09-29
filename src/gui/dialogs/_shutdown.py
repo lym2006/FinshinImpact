@@ -17,6 +17,7 @@ class ShutdownDialog(BaseDialog):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent=parent, title=SHUTDOWN_DIALOG.title)
+        self.set_always_on_top()
 
         # 固定大小
         self.setFixedSize(SHUTDOWN_DIALOG.width, SHUTDOWN_DIALOG.height)
