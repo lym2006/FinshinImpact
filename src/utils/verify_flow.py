@@ -14,8 +14,9 @@ from messages import CheckMessage
 from .config import AppConfigData, AppSchema, validate_types
 from .net_probe import Channel, FieldKey, RowId, RowStatus
 
-# 探针契约：返回 (生效地址或 None, 错误字典)，与 _attempt_channel 同形
-_Probe = Callable[[Channel], Awaitable[tuple[str | None, dict[str, str]]]]
+# 探针契约：返回 (生效地址或 None, 字段错误字典, 表格展示句)
+# 表格展示句留空时由核心按"称谓：可达/不可达"统一拼装；缺席句等特例才显式覆盖
+_Probe = Callable[[Channel], Awaitable[tuple[str | None, dict[str, str], str]]]
 _Emit = Callable[[dict], None]
 _StopCheck = Callable[[], bool]
 _ViaLabel = Callable[[Channel], str]
@@ -50,6 +51,8 @@ async def run_channels(
     """逐通道走阶梯，每行先 checking 再结果，与两窗同款帧协议
 
     探针返回 None 且错误含 proxy 键即通道不通；"通道通仅 token 错"判 OK 不换道。
+    表格展示句留空即由本核心按"称谓：可达/不可达"统一拼装，两轮同款；
+    probe 显式给句（缺席占位等特例）才覆盖。
     首个 OK 后剩余通道整行标跳过并短路收尾，stop_check 置真则中途静默返回。
     """
     stop = stop_check or _never_stop
@@ -58,13 +61,12 @@ async def run_channels(
         if stop():
             return outcome
         emit({"id": ch.kind, "status": RowStatus.CHECKING, "detail": ""})
-        resolved, errors = await probe(ch)
+        resolved, errors, detail_override = await probe(ch)
         outcome.errors = errors
         ch_ok = resolved is not None or bool(errors and FieldKey.PROXY not in errors)
-        detail = (
-            CheckMessage.REACH.format(via=via_label(ch), state=CheckMessage.REACH_OK)
-            if ch_ok
-            else errors.get(FieldKey.PROXY, CheckMessage.REACH_FAIL)
+        detail = detail_override or CheckMessage.REACH.format(
+            via=via_label(ch),
+            state=CheckMessage.REACH_OK if ch_ok else CheckMessage.REACH_FAIL,
         )
         emit(
             {
