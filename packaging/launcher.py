@@ -39,9 +39,9 @@ _RELEASE_MIRRORS = ("https://gh-proxy.com/", "https://ghproxy.net/")
 
 # pip 索引按序重试：国内多源轮询，最后官方源兜底
 _PIP_INDEX_URLS = (
-    "https://pypi.tuna.tsinghua.edu.cn/simple",
     "https://mirrors.aliyun.com/pypi/simple",
     "https://mirrors.cloud.tencent.com/pypi/simple",
+    "https://pypi.tuna.tsinghua.edu.cn/simple",
     "https://pypi.org/simple",
 )
 _PLAYWRIGHT_CDN = "https://cdn.npmmirror.com/binaries/playwright"
@@ -59,6 +59,8 @@ _MB_ICON_ERROR = 0x10
 _MB_YESNO = 0x04
 _ID_YES = 6
 _DETACHED_PROCESS = 0x00000008  # 新壳不继承旧进度窗口，换壳无闪窗
+_CREATE_NO_WINDOW = 0x08000000  # 后台命令不弹控制台窗口
+_ICON_REFRESH_TIMEOUT = 5.0  # 图标缓存刷新超时 5 秒
 
 # 与主程序 _single_instance 是同一把锁，两处改名必须同步
 _MUTEX_NAME = "Local\\TelegramBot-Instance"
@@ -243,7 +245,7 @@ def _pip_with_index_retry(cmd: list[str]) -> None:
     """按序尝试多镜像索引，失败换源重试直至耗尽"""
     for i, index in enumerate(_PIP_INDEX_URLS):
         if i:
-            print(f"换源重试（第 {i + 1} 次）：{index}")
+            print(f"换源重试（第 {i} 次）：{index}")
             print("上方报错无需处理，程序正在自动切换镜像源。\n\n")
         try:
             subprocess.run([*cmd, "--index-url", index], check=True)
@@ -487,6 +489,17 @@ def _apply_shell_update(root: Path, detached: bool = False) -> None:
         return
     shutil.move(str(new_exe), str(exe_path))  # 新壳移入规范路径
     shutil.rmtree(pending, ignore_errors=True)
+
+    # 换壳后 exe 路径与文件名未变，Shell 图标缓存认路径不认内容，不刷新则用户端沿用旧图标
+    try:
+        subprocess.run(
+            ["ie4uinit.exe", "-show"],
+            creationflags=_CREATE_NO_WINDOW,
+            timeout=_ICON_REFRESH_TIMEOUT,
+        )
+    except Exception:
+        pass  # 系统裁剪或刷新超时都不值得拦换壳
+
     flags = _DETACHED_PROCESS if detached else 0
     subprocess.Popen([str(exe_path)], cwd=str(root), creationflags=flags)
     sys.exit(0)
