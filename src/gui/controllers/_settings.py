@@ -72,6 +72,9 @@ class SettingsController(BaseController):
         # 待落盘候选：校验通过才写入磁盘，关面板/取消即弃
         self._pending_candidate: AppConfigData | None = None
 
+        # 迟滞开窗前的帧缓存：启动轮后台先跑，计划帧先到窗未开，开轮后补播
+        self._pre_frames: list[dict] = []
+
         # 信号携带最新状态，经 Queued 投递后在本线程写入私有字段
         gui_bridge.config_ready_changed.connect(
             self._on_config_ready_changed, "配置就绪", queued=True
@@ -202,6 +205,10 @@ class SettingsController(BaseController):
         wait.begin_round(
             Round.VERIFY, aborts, verify_skeleton(), self._on_verify_closed
         )
+        # 补播迟滞期缓存的帧：计划帧带缺席结论重建表格，逐行帧按序点亮
+        for frame in self._pre_frames:
+            wait.apply(frame)
+        self._pre_frames = []
         self._attach_transient()
         return True
 
@@ -252,10 +259,12 @@ class SettingsController(BaseController):
         wait.windowHandle().setTransientParent(owner.windowHandle())
 
     def _on_verify_frame(self, frame: dict) -> None:
-        """进度帧转发：非校验轮（他轮占用或窗未开）则静默丢弃"""
+        """进度帧转发：窗未开先缓存（开轮补播），他轮占用则静默丢弃"""
         wait = self._verify_window()
         if wait is not None:
             wait.apply(frame)
+        elif current_check_window() is None:
+            self._pre_frames.append(frame)
 
     def _open_startup_wait(self) -> None:
         """启动校验迟滞弹窗（快路径不闪窗，他轮占用则静默让位）
@@ -338,7 +347,8 @@ class SettingsController(BaseController):
                 self._validating = False
                 dialog.set_busy(False)
                 return
-            gui_bridge.config_saved.emit()
+            # 复验走候选通道：校验对象必须是面板上屏值，禁走磁盘重载
+            gui_bridge.config_candidate.emit()
             return
 
         # 二次确认以面板为父级：取消后面板仍在，无需重建
