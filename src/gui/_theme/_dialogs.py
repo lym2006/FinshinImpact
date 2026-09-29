@@ -151,7 +151,6 @@ class FiveStateDialogConfig:
 
     # === 尺寸配置 ===
     width: int = 520
-    height: int = 320
     pad: int = 16
     row_margin: int = 4  # HTML 行距
 

@@ -81,7 +81,8 @@ class CheckDialog(BaseDialog):
         self._idx = 0
         self._frames = CHECK_DIALOG.spinner_frames
         self.setStyleSheet(build_check_dialog_qss())
-        self.resize(CHECK_DIALOG.width, CHECK_DIALOG.height)
+        # 宽度定死、高度交给布局最小值：表格随行数收紧，默认尺寸即最小尺寸
+        self.setFixedWidth(CHECK_DIALOG.width)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(*[CHECK_DIALOG.pad] * 4)
 
