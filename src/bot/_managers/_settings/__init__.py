@@ -41,11 +41,11 @@ __all__ = ["SettingsManager"]
 
 
 def _via_label(ch: Channel) -> str:
-    """通道行的展示称谓：直连/配置代理/系统代理+地址"""
+    """通道行的展示称谓：直连裸称，代理类一律带地址，与诊断域同款"""
     if not ch.url:
         return CheckMessage.VIA_DIRECT
     if ch.kind == RowId.CFG:
-        return CheckMessage.VIA_CONFIG
+        return CheckMessage.VIA_CFG.format(proxy=ch.url)
     return CheckMessage.VIA_SYSTEM.format(proxy=ch.url)
 
 
@@ -119,16 +119,16 @@ class SettingsManager(BaseManager):
         )
 
         # 逐通道调度交给公共核心：先通者生效，token 错不换道，成本日志留在探针闭包里
-        async def probe(ch: Channel) -> tuple[str | None, dict[str, str]]:
+        async def probe(ch: Channel) -> tuple[str | None, dict[str, str], str]:
             start = time.monotonic()
-            attempt = await self._attempt_channel(token, ch.url)
+            resolved, errors = await self._attempt_channel(token, ch.url)
             self.logger.debug(
                 CheckMessage.COST.format(
-                    via=ch.url or CheckMessage.VIA_DIRECT,
-                    cost=time.monotonic() - start,
+                    via=_via_label(ch), cost=time.monotonic() - start
                 )
             )
-            return attempt
+            # 表格句留空由核心统一拼"称谓：可达/不可达"；errors 长句留给字段标红
+            return resolved, errors, ""
 
         outcome = await run_channels(
             channels,
@@ -194,7 +194,7 @@ class SettingsManager(BaseManager):
             via = (
                 CheckMessage.VIA_DIRECT
                 if not resolved
-                else CheckMessage.VIA_CONFIG
+                else CheckMessage.VIA_CFG.format(proxy=resolved)
                 if resolved == configured
                 else CheckMessage.VIA_SYSTEM.format(proxy=resolved)
             )
@@ -214,7 +214,7 @@ class SettingsManager(BaseManager):
                 "id": RowId.ADVICE,
                 "status": RowStatus.OK if passed else RowStatus.FAIL,
                 "detail": (
-                    CheckMessage.VERIFY_ADVICE_OK
+                    CheckMessage.ADVICE_OK
                     if passed
                     else CheckMessage.VERIFY_ADVICE_FAIL.format(n=len(self.last_errors))
                 ),
@@ -238,7 +238,7 @@ class SettingsManager(BaseManager):
                 check_config(token, proxy), timeout=_VERIFY_TIMEOUT
             )
         except TimeoutError:
-            attempt = {FieldKey.PROXY: CheckMessage.TIMEOUT.format(sec=_VERIFY_TIMEOUT)}
+            attempt = {FieldKey.PROXY: CheckMessage.TIMEOUT}
         if not attempt:
             return proxy, {}
         return None, attempt
