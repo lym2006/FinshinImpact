@@ -22,6 +22,7 @@ class NoticeDialog(BaseDialog):
             parent=parent,
             title=NOTICE_DIALOG.fatal_title if critical else NOTICE_DIALOG.title,
         )
+        self.set_always_on_top()
         self.setStyleSheet(build_notice_dialog_qss())
 
         extra = max(0, text.count("\n") - 1) * NOTICE_DIALOG.line_height
