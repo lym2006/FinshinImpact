@@ -3,7 +3,7 @@
 
 - 首次启动自动安装嵌入式 Python、依赖与浏览器内核
 - 启动前比对在线版本页，发现新版确认后整包升级，用户资产保留
-- 启动器本体随升级自动更换：升级收尾当场换入并静默重启
+- 启动器本体随升级自动更换：当场换入并拉起新壳，主程序抢锁确认后旧壳退场
 """
 
 import ctypes
@@ -61,6 +61,9 @@ _ID_YES = 6
 _DETACHED_PROCESS = 0x00000008  # 新壳不继承旧进度窗口，换壳无闪窗
 _CREATE_NO_WINDOW = 0x08000000  # 后台命令不弹控制台窗口
 _ICON_REFRESH_TIMEOUT = 5.0  # 图标缓存刷新超时 5 秒
+_SWAP_FAST_TIMEOUT = 5.0  # 快交接静默等待上限 5 秒
+_SWAP_SOOTHE_MS = 20_000  # 慢路径安抚弹窗驻留 20 秒
+_HANDOFF_POLL_TICK = 0.5  # 抢锁轮询间隔 0.5 秒
 
 # 与主程序 _single_instance 是同一把锁，两处改名必须同步
 _MUTEX_NAME = "Local\\TelegramBot-Instance"
@@ -68,6 +71,7 @@ _ERROR_ALREADY_EXISTS = 183
 _CreateMutexW = ctypes.windll.kernel32.CreateMutexW
 _CreateMutexW.restype = wintypes.HANDLE  # 缺省 int 会在 64 位截断句柄
 _CloseHandle = ctypes.windll.kernel32.CloseHandle
+_MessageBoxTimeoutW = ctypes.windll.user32.MessageBoxTimeoutW
 
 
 # ==================== 弹窗反馈 ====================
@@ -78,16 +82,33 @@ def _info(text: str) -> None:
     ctypes.windll.user32.MessageBoxW(0, text, _APP_TITLE, _MB_ICON_INFO)
 
 
+def _wait_info(text: str, ms: int) -> None:
+    """限时信息弹窗
+
+    超时自动关闭，换壳交接不能赌有人在屏幕前点确定。
+    """
+    _MessageBoxTimeoutW(0, text, _APP_TITLE, _MB_ICON_INFO, ms, 0)
+
+
+def _instance_taken() -> bool:
+    """实例锁占用探测（静默）
+
+    锁在手即主程序已在跑，是换壳交接成功的唯一硬证据。
+    """
+    handle = _CreateMutexW(None, False, _MUTEX_NAME)
+    if not handle:
+        return False
+    busy = ctypes.GetLastError() == _ERROR_ALREADY_EXISTS
+    _CloseHandle(handle)
+    return busy
+
+
 def _already_running() -> bool:
     """实例锁已被占用则提示并退出
 
     只探测不持有：真正的持锁者是随后拉起的主程序。
     """
-    handle = _CreateMutexW(None, False, _MUTEX_NAME)
-    if not handle:
-        return False  # 创建失败属异常环境，放行优于误拒
-    busy = ctypes.GetLastError() == _ERROR_ALREADY_EXISTS
-    _CloseHandle(handle)
+    busy = _instance_taken()
     if busy:
         _info("机器人已在运行，请勿重复启动。\n请先关闭已开的窗口。")
     return busy
@@ -452,8 +473,8 @@ def _check_update(root: Path) -> None:
         print(f"已升级到 v{remote}")
         _info(f"已升级到 v{remote}")
 
-        # 新壳当场换入并静默重启，用户无需关闭再打开
-        _apply_shell_update(root, detached=True)
+        # 新壳当场换入并拉起，主程序抢锁后旧壳退场，用户无需关闭再打开
+        _apply_shell_update(root, handoff=True)
     elif not _ask_yes_no(
         "升级失败，详情见进度窗口。\n仍以当前版本启动？选否则退出程序。"
     ):
@@ -463,11 +484,12 @@ def _check_update(root: Path) -> None:
 # ==================== 主流程 ====================
 
 
-def _apply_shell_update(root: Path, detached: bool = False) -> None:
+def _apply_shell_update(root: Path, handoff: bool = False) -> None:
     """启动器换壳
 
-    旧 exe 改名让位，暂存的新壳放入原位后立即重启；
-    升级收尾当场调用一次，启动开头再兜底一次。
+    旧 exe 改名让位，新壳移入规范路径；
+    启动开头调用只换壳沿用本次流程，升级收尾带 handoff 则拉起新壳、
+    以主程序持锁确认接管后旧壳退场，等不到就回退旧壳直接启动。
     """
     pending = root / _SHELL_PENDING
     exe_path = root / _SHELL_EXE
@@ -499,10 +521,36 @@ def _apply_shell_update(root: Path, detached: bool = False) -> None:
         )
     except Exception:
         pass  # 系统裁剪或刷新超时都不值得拦换壳
+    if not handoff:
+        return
 
-    flags = _DETACHED_PROCESS if detached else 0
-    subprocess.Popen([str(exe_path)], cwd=str(root), creationflags=flags)
-    sys.exit(0)
+    subprocess.Popen([str(exe_path)], cwd=str(root), creationflags=_DETACHED_PROCESS)
+
+    # 快交接：新壳数秒内抢锁则用户全程无感
+    if _handoff_wait(_SWAP_FAST_TIMEOUT):
+        sys.exit(0)
+
+    # 慢路径：新壳多半卡在杀软首扫，安抚窗顶住这段无反馈时间
+    _wait_info(
+        "更新完成，正在自动重新启动。\n首次启动需要安全软件扫描，可能要等一会儿…",
+        _SWAP_SOOTHE_MS,
+    )
+    if _handoff_wait(_SWAP_FAST_TIMEOUT + _SWAP_SOOTHE_MS / 1000):
+        sys.exit(0)
+    print("新壳迟迟未接管（多半是被安全软件首扫拦下），本次由旧壳直接启动")
+
+
+def _handoff_wait(timeout: float) -> bool:
+    """抢锁轮询
+
+    锁在新壳主程序手里，抢到即证明新版真的跑起来了。
+    """
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if _instance_taken():
+            return True
+        time.sleep(_HANDOFF_POLL_TICK)
+    return False
 
 
 def _root_dir() -> Path:
