@@ -61,7 +61,7 @@ class RowTable(QTextEdit):
         self._render()
 
     def _render(self) -> None:
-        """按当前状态全量重绘 HTML"""
+        """按当前状态全量重绘 HTML，并把控件高度收紧到内容"""
         lines: list[str] = []
         for title, status, detail in self._rows.values():
             mark, color = self._states[status]
@@ -76,3 +76,21 @@ class RowTable(QTextEdit):
                 f"<b>{html.escape(title)}</b></span>  {detail_html}</p>"
             )
         self.setHtml("".join(lines))
+        self._fit_height()
+
+    def _fit_height(self) -> None:
+        """固定高度=文档实际高：窗随行数与换行自动收紧，不出滚动条"""
+        doc = self.document()
+        doc.setTextWidth(self.viewport().width())
+        height = (
+            int(doc.size().height())
+            + 2 * int(doc.documentMargin())
+            + 2 * self.frameWidth()
+            + 2
+        )
+        self.setFixedHeight(height)
+
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        """宽度变化会改变换行，高度须跟着重算"""
+        super().resizeEvent(event)
+        self._fit_height()
