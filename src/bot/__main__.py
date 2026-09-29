@@ -15,6 +15,7 @@ from PySide6.QtWidgets import QApplication, QMessageBox
 from gui import create_gui
 from gui._theme import GLOBAL, WINDOW
 from gui.controllers import SettingsController, ShutdownController
+from gui.icon import apply_icon
 from gui.mediator import gui_bridge
 from utils import get_logger
 from utils.lifecycle import shutdown_all
@@ -39,11 +40,13 @@ class Main:
             # 0. 单实例守卫：同目录双开会互踩配置与数据，先到先得
             if not acquire_instance_lock():
                 app = QApplication(sys.argv)
+                apply_icon(app)
                 QMessageBox.warning(None, WINDOW.title, GLOBAL.already_running)
                 return 0
 
             # 1. 启动 GUI
             app = QApplication(sys.argv)
+            apply_icon(app)
             window, instances = create_gui()
             window.show()
             app.processEvents()

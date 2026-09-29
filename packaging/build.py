@@ -21,6 +21,9 @@ _DIST = _ROOT / "dist"
 _STAGE = _DIST / "TelegramBot"
 _CACHE = _DIST / "_cache"
 
+# 应用图标唯一来源：随 assets 白名单进发布包，exe 与 GUI 任务栏同源
+_ICON = _ROOT / "assets" / "app.ico"
+
 # 构建原料下载源：镜像优先、官方兜底；版本页是在线版本比对唯一真相
 _EMBED_VERSION = "3.11.9"
 _EMBED_FILE = f"python-{_EMBED_VERSION}-embed-amd64.zip"
@@ -121,20 +124,31 @@ def _fetch_to_cache(urls: list[str], name: str) -> Path:
 # ==================== 启动器编译 ====================
 
 
-def _launcher_fingerprint() -> str:
-    """启动器源码指纹
+def _require_icon() -> bytes:
+    """图标原料校验
 
-    编译动作与源码变更绑定，免受 PyInstaller 输出自带时间戳干扰。
+    缺图标 exe 仍会编成默认 Python 图标，静默放行等于发布废包。
+    """
+    if not _ICON.is_file():
+        raise SystemExit(f"缺少图标文件 {_ICON}，先生成 app.ico 再构建（见 docs/packaging.md 图标一节）")
+    return _ICON.read_bytes()
+
+
+def _launcher_fingerprint() -> str:
+    """启动器产物指纹
+
+    源码与图标一并绑定，只换图标也能触发重编译下发新壳。
+    编译动作与产物来源变更绑定，免受 PyInstaller 输出自带时间戳干扰。
     """
     src = (_ROOT / "packaging" / "launcher.py").read_bytes()
-    return hashlib.sha256(src).hexdigest()
+    return hashlib.sha256(src + _require_icon()).hexdigest()
 
 
 def build_launcher() -> Path:
     """创建启动器
 
     编译启动器源码为无控制台单目录 exe；onedir 不自我解压、
-    默认不压缩，显著降低杀软启发式误报。源码指纹未变时复用
+    默认不压缩，显著降低杀软启发式误报。产物指纹未变时复用
     已编译产物，exe 哈希不随无关构建漂移，用户端不触发无谓换壳。
     """
     out = _DIST / "_launcher" / "TelegramBot"
@@ -145,7 +159,7 @@ def build_launcher() -> Path:
         and stamp.exists()
         and stamp.read_text() == fp
     ):
-        print("launcher.py 未变，复用已编译启动器")
+        print("启动器源码与图标未变，复用已编译启动器")
         return out
     subprocess.run(
         [
@@ -158,6 +172,8 @@ def build_launcher() -> Path:
             "--noconsole",
             "--name",
             "TelegramBot",
+            "--icon",
+            str(_ICON),
             "--distpath",
             str(_DIST / "_launcher"),
             "--workpath",
