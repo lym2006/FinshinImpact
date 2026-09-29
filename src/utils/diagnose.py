@@ -21,6 +21,7 @@ from .net_probe import (
     RowStatus,
     extract_port,
     port_alive,
+    via_label,
 )
 from .system_proxy import detect_system_proxy, registry_proxy
 from .verify_flow import run_channels
@@ -38,7 +39,7 @@ _ALT_RETEST_LIMIT = 3
 _ROWS = (
     (RowId.CFG, CheckMessage.ROW_CFG),
     (RowId.SYS, CheckMessage.ROW_SYS),
-    (RowId.TUN, CheckMessage.ROW_TUN),
+    (RowId.DIRECT, CheckMessage.ROW_DIRECT),
     (RowId.PORT, CheckMessage.ROW_PORT),
     (RowId.ADVICE, CheckMessage.ROW_ADVICE),
 )
@@ -83,16 +84,6 @@ def _reach(proxy: str | None) -> bool:
 # ==================== 核心诊断逻辑 ====================
 
 
-def _diag_via(ch: Channel) -> str:
-    """诊断表的通道称谓：比校验域多显示配置代理地址"""
-    match ch.kind:
-        case RowId.CFG:
-            return CheckMessage.DIAG_VIA_CFG.format(proxy=ch.url)
-        case RowId.SYS:
-            return CheckMessage.VIA_SYSTEM.format(proxy=ch.url)
-    return CheckMessage.VIA_DIRECT
-
-
 async def diagnose_flow(
     configured_proxy: str = "",
     emit: Callable[[dict], None] | None = None,
@@ -101,8 +92,7 @@ async def diagnose_flow(
     """跑一轮诊断：阶梯调度进公共核心，诊断独有收口在本地补齐
 
     缺席通道带预置结论入梯，被前级短路时亮跳过、短路不到才给缺席句。
-    tun 行成功换专属"可直出"措辞；全挂才扫端口并复测可用地址。
-    stop_check 在两处网络间隙检查，置真即静默收尾。
+    全挂才扫端口并复测可用地址。stop_check 在两处网络间隙检查，置真即静默收尾。
     """
     frame = emit or _never_emit
     stop = stop_check or _never_stop
@@ -120,46 +110,32 @@ async def diagnose_flow(
         preset[RowId.CFG] = CheckMessage.CFG_EMPTY
     channels.append(Channel(RowId.SYS, detected or ""))
     if not detected:
-        preset[RowId.SYS] = (
-            CheckMessage.DIAG_SYS_OFF
-            if not reg["enable"]
-            else CheckMessage.DIAG_SYS_BROKEN.format(server=reg["server"])
-        )
-    channels.append(Channel(RowId.TUN, ""))
+        preset[RowId.SYS] = CheckMessage.SYS_UNAVAILABLE
+    channels.append(Channel(RowId.DIRECT, ""))
 
-    async def probe(ch: Channel) -> tuple[str | None, dict[str, str]]:
+    async def probe(ch: Channel) -> tuple[str | None, dict[str, str], str]:
         """探针分派：缺席给预置句，在场走 urllib 假 token 实测"""
         if ch.kind in preset:
-            return None, {FieldKey.PROXY: preset[ch.kind]}
+            # 缺席通道：预置句作表格显式覆盖，同时进字段错误
+            return None, {FieldKey.PROXY: preset[ch.kind]}, preset[ch.kind]
         ok = await asyncio.to_thread(_reach, ch.url or None)
         if ok:
-            return ch.url, {}
-        return None, {
-            FieldKey.PROXY: CheckMessage.REACH.format(
-                via=_diag_via(ch), state=CheckMessage.REACH_FAIL
-            )
-        }
+            return ch.url, {}, ""
+        # 在场失败：表格句留空，由核心统一拼"称谓：不可达"
+        return None, {FieldKey.PROXY: CheckMessage.REACH_FAIL}, ""
 
-    outcome = await run_channels(channels, probe, frame, _diag_via, stop)
+    outcome = await run_channels(channels, probe, frame, via_label, stop)
     if stop():
         return
 
     if outcome.passed:
-        if not outcome.resolved:
-            # 直连救场：核心给通用"可达"措辞，诊断域换本行专属句
-            frame(
-                {
-                    "id": RowId.TUN,
-                    "status": RowStatus.OK,
-                    "detail": CheckMessage.DIAG_TUN_OK,
-                }
-            )
+        # 直连救场的"可达"帧已由公共核心发出，这里只补收尾两行
         frame({"id": RowId.PORT, "status": RowStatus.SKIP, "detail": CheckMessage.SKIP})
         frame(
             {
                 "id": RowId.ADVICE,
                 "status": RowStatus.OK,
-                "detail": CheckMessage.DIAG_ADVICE_OK,
+                "detail": CheckMessage.ADVICE_OK,
             }
         )
         return

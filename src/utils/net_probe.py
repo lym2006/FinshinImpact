@@ -36,7 +36,6 @@ class RowId:
     CFG = "cfg"
     SYS = "sys"
     DIRECT = "direct"
-    TUN = "tun"
     LOCAL = "local"
     PORT = "port"
     ADVICE = "advice"
@@ -76,10 +75,19 @@ def plan_channels(configured: str, sys_proxy: str | None) -> list[Channel]:
     return channels
 
 
+def via_label(ch: Channel) -> str:
+    """通道称谓：直连裸称，代理类一律带地址，两轮表格与日志共用"""
+    if not ch.url:
+        return CheckMessage.VIA_DIRECT
+    if ch.kind == RowId.CFG:
+        return CheckMessage.VIA_CFG.format(proxy=ch.url)
+    return CheckMessage.VIA_SYSTEM.format(proxy=ch.url)
+
+
 # 校验表行序：行 id 即 Channel.kind，port/local/advice 为收尾行，与发帧顺序一致
 _VERIFY_ROWS = (
     (RowId.CFG, CheckMessage.ROW_CFG, CheckMessage.CFG_EMPTY),
-    (RowId.SYS, CheckMessage.ROW_SYS, CheckMessage.VERIFY_SYS_NONE),
+    (RowId.SYS, CheckMessage.ROW_SYS, CheckMessage.SYS_UNAVAILABLE),
     (RowId.DIRECT, CheckMessage.ROW_DIRECT, ""),
     (RowId.PORT, CheckMessage.ROW_PORT, ""),
     (RowId.LOCAL, CheckMessage.ROW_LOCAL, ""),
