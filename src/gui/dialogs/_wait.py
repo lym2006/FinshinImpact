@@ -22,6 +22,7 @@ class WaitDialog(BaseDialog):
         self, text: str, parent: QWidget | None = None, cancelable: bool = False
     ) -> None:
         super().__init__(parent=parent, title=WAIT_DIALOG.title)
+        self.set_always_on_top()
         self._cancelable = cancelable
         self._done = False
         self._idx = 0

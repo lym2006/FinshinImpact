@@ -11,6 +11,7 @@ from collections.abc import Callable
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QCloseEvent, QKeyEvent
 from PySide6.QtWidgets import (
+    QApplication,
     QHBoxLayout,
     QLabel,
     QPushButton,
@@ -152,8 +153,10 @@ class CheckDialog(BaseDialog):
         self._btn.clicked.connect(self.reject)
         self._tick.start()
         self.show()
-        self.raise_()
-        self.activateWindow()
+        # 模态在演则让位：同档 raise 只插队，会把抓握输入的确认框重新盖没
+        if QApplication.activeModalWidget() is None:
+            self.raise_()
+            self.activateWindow()
 
     @staticmethod
     def _texts(round_id: str) -> tuple[str, str, str, str]:
