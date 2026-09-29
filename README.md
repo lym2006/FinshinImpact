@@ -9,11 +9,6 @@
 > 一个基于 `Python` 和 `aiogram 3.x` 构建的异步 Telegram 机器人，采用模块化插件设计。
 >
 > **本项目仅限 `Windows` 用户使用。**
->
-> ❗️ **v0.4.0 升级须知（破坏性变更）**：
-> - **必须手动整包更新**：旧版启动器不支持换壳，v0.4.0 无法经自动升级到达。请删除旧目录，重新下载解压新包；想保留的 `config.toml`、`data\`、`logs\` 先备份再放回。
-> - **此后启动器随升级自动更换**：从 v0.4.0 起，启动器本体的修复跟着自动升级走，不再需要手动整包。
-> - **GUI 桌面化（v0.3.1 沿革）**：程序入口为 `PySide6` 桌面窗口，日志、配置修改、关闭确认全部在窗口内完成；关窗并在弹窗确认即安全退出，不再使用 `Ctrl + C`。
 
 ---
 
@@ -38,6 +33,7 @@
 - [💬 关于 AI 对话](#ai_chat)
 - [🛠️ 技术栈](#techniques)
 - [📖 开发与维护](#development)
+- [⬆️ 旧版迁移](#previous)
 - [❗️ 温馨提示](#tips)
 - [📄 许可证 (`LICENSE`)](#license)
 
@@ -113,7 +109,18 @@
 - 📐 **代码规范**（注释、docstring、命名约定）：[`docs/coding-style.md`](docs/coding-style.md)，模板 [`docs/example.py`](docs/example.py)
 - 📦 **打包教程**（发布原理与操作）：[`docs/packaging.md`](docs/packaging.md)
 - 📝 **提交规范**（commit 格式模板）：[`.gitmessage`](.gitmessage)
+- 🚀 **发布工作流**（CHANGELOG、tag、release 四件套）：[`docs/release-workflow.md`](docs/release-workflow.md)
 - ⚙️ **配置模板**（全部可改项与注释）：[`config.example.toml`](config.example.toml)
+
+[⤴️ 返回目录](#menu)
+
+---
+
+## ⬆️ 旧版迁移<a id="previous"></a>
+
+- 从 v0.3.x 及之前升级需手动整包。请删除旧目录，重新下载解压新包，想保留的 `config.toml`、`data\`、`logs\` 先备份再放回。
+- 从 v0.4.0 起，启动器本体的修复跟着自动升级走，不再需要手动整包。
+- 从 v0.4.3 起，启动器升级时会自动重启换壳，请耐心等待程序自动打开，多余的 `.old` 文件会在下一次启动时自动删除。
 
 [⤴️ 返回目录](#menu)
 
