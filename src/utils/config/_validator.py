@@ -2,9 +2,16 @@
 """配置校验（内部实现）
 
 - 实现按默认值类型的校验
+- 实现必填项的存在与非空判定
 """
 
-from .models import AppConfigData, AppSchema
+from .models import (
+    REQUIRED_KEYS,
+    REQUIRED_MARK,
+    AppConfigData,
+    AppSchema,
+    is_blank,
+)
 
 # schema default 类型 → 校验规则说明
 _TYPE_NAMES = {
@@ -24,17 +31,32 @@ _BOUNDS: dict[str, tuple[float, float]] = {
 
 
 def validate_types(schema: AppSchema, data: AppConfigData) -> dict[str, str]:
-    """按 schema 校验各字段类型与数值区间"""
+    """按 schema 校验各字段类型与数值区间
+
+    必填键缺键或留空报必填文案。
+    非必填键缺失静默放行，由运行期回退模板默认值。
+    """
     errors: dict[str, str] = {}
 
     for tab in schema:
         ns_data = data.get(tab.namespace, {})
         for fld in tab.fields:
+            required = f"{tab.namespace}.{fld.key}" in REQUIRED_KEYS
+
+            if fld.key not in ns_data:
+                if required:
+                    errors[fld.key] = REQUIRED_MARK
+                continue
+
+            value = ns_data[fld.key]
+            if required and is_blank(value):
+                errors[fld.key] = REQUIRED_MARK
+                continue
+
             expected = type(fld.default)
             if fld.default is None or expected not in _TYPE_NAMES:
                 continue  # 无默认值的字段不强制类型
 
-            value = ns_data.get(fld.key)
             if not _match(value, expected):
                 tname = _TYPE_NAMES[expected]
                 errors[fld.key] = f"类型应为 {tname}，当前 {value!r}"

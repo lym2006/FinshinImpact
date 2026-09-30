@@ -16,6 +16,8 @@ class DialogMessage:
     SETUP_TIP = "检测到配置有误，请修正后继续"
     SETUP_HINT = "留意带 ⚠ 的标签页，标题标红的即为出错字段"
     SETUP_VERIFIED_OK = "配置已验证通过"
+    SETUP_RESET = "恢复默认"
+    SETUP_RESET_ICON = "↺"
 
     # ==================== 通用按钮文案 ====================
 

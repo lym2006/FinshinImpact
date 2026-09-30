@@ -46,6 +46,8 @@ class SettingsDialogConfig:
     # === 按钮 ===
     finish_btn_min_width: int = 150  # "完成"按钮最小宽度
     btn_min_width: int = 90  # 普通按钮最小宽度
+    reset_btn_size: int = 26  # 恢复默认图标按钮边长
+    reset_btn_font: int = 15  # 恢复默认图标字号
     btn_hover_bg: str = "#2B5A8A"  # 主按钮悬停背景色
     btn_pressed_bg: str = "#1A4060"  # 主按钮按下背景色
 
@@ -62,6 +64,8 @@ class SettingsDialogConfig:
     exit_text: str = DialogMessage.BTN_EXIT
     finish_text: str = DialogMessage.BTN_FINISH
     validating_text: str = DialogMessage.BTN_VALIDATING
+    reset_text: str = DialogMessage.SETUP_RESET
+    reset_icon: str = DialogMessage.SETUP_RESET_ICON
 
     # === SETUP 提示文案 ===
     setup_tip: str = DialogMessage.SETUP_TIP
