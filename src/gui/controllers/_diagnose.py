@@ -12,8 +12,8 @@ from PySide6.QtWidgets import QDialog, QWidget
 
 from messages import CheckMessage
 from utils import config_manager
-from utils.diagnose import diagnose_flow, diagnose_plan
-from utils.net_probe import FieldKey, FrameKey, RowId, RowStatus
+from utils.diagnose import diagnose_flow
+from utils.net_probe import FieldKey, FrameKey, RowId, RowStatus, verify_skeleton
 
 from ..dialogs import (
     Round,
@@ -104,10 +104,10 @@ class DiagnoseController(BaseController):
         except Exception:  # 配置未就绪按留空处理，不阻塞诊断
             pass
 
-        # 窗出现即证据，面板不重复灌
+        # 窗出现即证据，面板不重复灌；开局整表由公共核心算好随线程首帧发出
         self.logger.debug("打开网络诊断")
         win = open_check_window(self.gui)
-        win.begin_round(Round.DIAGNOSE, True, diagnose_plan(), self._on_round_closed)
+        win.begin_round(Round.DIAGNOSE, True, verify_skeleton(), self._on_round_closed)
         self._run(configured, win)
 
     # ==================== 轮次驱动 ====================

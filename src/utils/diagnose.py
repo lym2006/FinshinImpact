@@ -1,15 +1,15 @@
 # src/utils/diagnose.py
 """网络连通诊断
 
-- 通道阶梯调度复用 verify_flow 公共核心，探测用假 token 只判网络层
-- 缺席通道以占位入梯：前级已通时照常亮"跳过"，未被短路才给缺席结论
+- 通道并行调度复用 verify_flow 公共核心，探测用假 token 只判网络层
+- 缺席通道开局静态给定态：留空/未开启当场落定，同址合并绿色带过
 - 端口复测与直连专属措辞是诊断独有语义，收口逻辑留在本模块
 """
 
 import asyncio
 import urllib.error
 import urllib.request
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from messages import CheckMessage
 
@@ -27,14 +27,14 @@ from .system_proxy import detect_system_proxy, registry_proxy
 from .verify_flow import run_channels
 
 _PROBE_URL = "https://api.telegram.org/bot0:probe/getMe"
-_PROBE_TIMEOUT = 2.0  # 单通道出网探测上限：通亚秒级返回，不通快速放弃
+_PROBE_TIMEOUT = 4.5  # 单通道出网探测上限：与校验轮同判据，防两窗结论打架
 
 # 仅当配置项与系统注册表都拿不到端口时，才回退扫描这组常见默认值
 _FALLBACK_PORTS = (7890, 7897, 7898)
 # 结论行最多复测几个存活端口，防全挂场景串行等待过长
 _ALT_RETEST_LIMIT = 3
 
-# 固定骨架：id 与标题（界面与生成器共用，顺序即展示与探测的短路顺序）
+# 固定骨架：id 与标题（界面与生成器共用，顺序即阶梯优先级）
 # 本地配置行只属校验轮：诊断职责是网络排查，渲染本地结果会误导语义
 _ROWS = (
     (RowId.CFG, CheckMessage.ROW_CFG),
@@ -55,12 +55,30 @@ def _never_emit(_frame: dict) -> None:
     return None
 
 
-def diagnose_plan() -> list[dict]:
-    """生成全等待态骨架，界面打开即可渲染"""
-    return [
-        {"id": rid, "title": title, "status": RowStatus.PENDING, "detail": ""}
-        for rid, title in _ROWS
-    ]
+def diagnose_plan(channels: Sequence[Channel], sys_dedup: bool = False) -> list[dict]:
+    """开局整表：在场通道标进行中，缺席/合并行直接给定态
+
+    在场判据以实际入梯为准，缺席成因静态可知（留空/未开启/同址合并）。
+    """
+    present = {ch.kind for ch in channels}
+    absent = {
+        RowId.CFG: (RowStatus.FAIL, CheckMessage.CFG_EMPTY),
+        RowId.SYS: (
+            (RowStatus.SKIP, CheckMessage.SYS_DEDUP)
+            if sys_dedup
+            else (RowStatus.FAIL, CheckMessage.SYS_UNAVAILABLE)
+        ),
+    }
+    rows: list[dict] = []
+    for rid, title in _ROWS:
+        if rid in present:
+            status, detail = RowStatus.CHECKING, ""
+        elif rid in absent:
+            status, detail = absent[rid]
+        else:
+            status, detail = RowStatus.PENDING, ""
+        rows.append({"id": rid, "title": title, "status": status, "detail": detail})
+    return rows
 
 
 def _reach(proxy: str | None) -> bool:
@@ -89,39 +107,32 @@ async def diagnose_flow(
     emit: Callable[[dict], None] | None = None,
     stop_check: Callable[[], bool] | None = None,
 ) -> None:
-    """跑一轮诊断：阶梯调度进公共核心，诊断独有收口在本地补齐
+    """跑一轮诊断：并行调度进公共核心，诊断独有收口在本地补齐
 
-    缺席通道带预置结论入梯，被前级短路时亮跳过、短路不到才给缺席句。
-    全挂才扫端口并复测可用地址。stop_check 在两处网络间隙检查，置真即静默收尾。
+    缺席通道静态给定态不入梯；全挂才扫端口并复测可用地址。
+    stop_check 置真即静默收尾，公共核心掐掉全部在途探测。
     """
     frame = emit or _never_emit
     stop = stop_check or _never_stop
-    frame({FrameKey.ROWS: diagnose_plan()})
 
     reg = registry_proxy()
     detected = detect_system_proxy()
     cfg = configured_proxy.strip()
+    sys_dedup = bool(cfg and detected == cfg)
 
-    # 缺席通道的预置失败句：探针命中即直接返回，不发网络请求
-    preset: dict[str, str] = {}
-    channels: list[Channel] = []
-    channels.append(Channel(RowId.CFG, cfg))
-    if not cfg:
-        preset[RowId.CFG] = CheckMessage.CFG_EMPTY
-    channels.append(Channel(RowId.SYS, detected or ""))
-    if not detected:
-        preset[RowId.SYS] = CheckMessage.SYS_UNAVAILABLE
+    # 在场通道入梯并行探测；缺席行由开局帧直接给定态
+    channels = [Channel(RowId.CFG, cfg)] if cfg else []
+    if detected and not sys_dedup:
+        channels.append(Channel(RowId.SYS, detected))
     channels.append(Channel(RowId.DIRECT, ""))
+    frame({FrameKey.ROWS: diagnose_plan(channels, sys_dedup)})
 
     async def probe(ch: Channel) -> tuple[str | None, dict[str, str], str]:
-        """探针分派：缺席给预置句，在场走 urllib 假 token 实测"""
-        if ch.kind in preset:
-            # 缺席通道：预置句作表格显式覆盖，同时进字段错误
-            return None, {FieldKey.PROXY: preset[ch.kind]}, preset[ch.kind]
+        """Urllib 假 token 实测：只判网络层可达"""
         ok = await asyncio.to_thread(_reach, ch.url or None)
         if ok:
             return ch.url, {}, ""
-        # 在场失败：表格句留空，由核心统一拼"称谓：不可达"
+        # 失败：表格句留空，由核心统一拼"称谓：不可达"
         return None, {FieldKey.PROXY: CheckMessage.REACH_FAIL}, ""
 
     outcome = await run_channels(channels, probe, frame, via_label, stop)
