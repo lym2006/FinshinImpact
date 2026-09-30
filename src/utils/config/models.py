@@ -27,6 +27,33 @@ PENDING_MARK = "暂未检测"
 # 代理三级解析（配置→系统→直连）：模式不落盘、GUI 不代填，交给启动校验与诊断
 PROXY_FIELD = "proxy"
 
+# 必填项缺失或留空的校验文案；GUI 红标与校验器共用，判语义不判文案
+REQUIRED_MARK = "必填项未填写"
+
+# 必填项点分路径清单：硬编码防用户改配置绕过，也防模板占位假值当真值上屏
+# 新增必填项须同步模板与本表，tests 有对账用例兜底
+REQUIRED_KEYS: frozenset[str] = frozenset(
+    {
+        "basic.telegram_token",
+        "ai.api_key",
+        "chore.triggers",
+    }
+)
+
+
+def is_blank(value: object) -> bool:
+    """必填项空值判定
+
+    空白字符串与空列表视为未填写。
+    数值与布尔无空态：0 和 False 都是合法填写，不许误伤。
+    """
+    if isinstance(value, str):
+        return not value.strip()
+    if isinstance(value, list):
+        return not value
+    return False
+
+
 # ==================== UI Schema 结构契约 ====================
 
 

@@ -5,10 +5,11 @@
 - 提供复验结果原地刷新与防重入
 """
 
+from copy import deepcopy
 from enum import Enum, auto
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QCloseEvent, QFont, QFontMetrics, QKeyEvent
+from PySide6.QtGui import QCloseEvent, QFont, QFontMetrics, QKeyEvent, QShowEvent
 from PySide6.QtWidgets import (
     QCheckBox,
     QFormLayout,
@@ -26,12 +27,14 @@ from PySide6.QtWidgets import (
 
 from utils.config import PENDING_MARK
 from utils.config.models import (
+    REQUIRED_KEYS,
     AppConfigData,
     AppSchema,
     ConfigValue,
     FieldSchema,
     TabData,
     TabSchema,
+    is_blank,
 )
 
 from ..._qss import build_settings_dialog_qss
@@ -50,6 +53,14 @@ __all__ = [
 _ERROR_QSS = f"color: {SETTINGS_DIALOG.error_color};"
 _PENDING_QSS = f"color: {SETTINGS_DIALOG.pending_color};"
 _ERROR_FONT = QFont(SETTINGS_DIALOG.error_font_family, SETTINGS_DIALOG.error_font_size)
+
+# 必填项空态渲染值：按模板默认类型呈现"未填写"的样子
+_BLANK_BY_TYPE: dict[type, ConfigValue] = {
+    str: "",
+    float: "",
+    bool: False,
+    list: [],
+}
 
 
 def _clear_layout(layout: QHBoxLayout) -> None:
@@ -99,6 +110,9 @@ class SettingsDialog(BaseDialog):
             ConfigListWidget | QLineEdit | QTextEdit | QCheckBox,
         ] = {}
 
+        # 恢复按钮登记：{字段键: (按钮, 字段, 恢复目标)}；显隐随刷新时机重估
+        self._reset_rows: dict[str, tuple[QPushButton, FieldSchema, ConfigValue]] = {}
+
         # 标签/页签/按钮引用：复验结果原地刷新用（免关窗重开的闪烁）
         self._labels: dict[str, tuple[QLabel, str]] = {}
         self._tab_titles: dict[str, tuple[int, str]] = {}
@@ -127,6 +141,14 @@ class SettingsDialog(BaseDialog):
             event.ignore()
         else:
             super().closeEvent(event)
+
+    def showEvent(self, event: QShowEvent) -> None:  # noqa: N802
+        """每次显示重估恢复按钮显隐
+
+        以控件当前值判定，覆盖首次打开与已开后置前两条路径。
+        """
+        super().showEvent(event)
+        self._refresh_resets()
 
     def keyPressEvent(self, event: QKeyEvent) -> None:  # noqa: N802
         """SETUP 屏蔽 Esc
@@ -180,6 +202,7 @@ class SettingsDialog(BaseDialog):
             if self._tabs is None:
                 continue
             self._tabs.setTabText(index, f"{mark}{title}")
+        self._refresh_resets()
 
     def set_busy(self, busy: bool) -> None:
         """校验进行中的防重入
@@ -234,7 +257,11 @@ class SettingsDialog(BaseDialog):
     def _create_field(
         self, field: FieldSchema, namespace: str, label_width: int = 0
     ) -> QWidget:
-        """渲染表单控件"""
+        """渲染表单控件
+
+        必填键缺失或留空一律空态上屏，禁模板占位假值冒充用户配置。
+        非必填键缺失回退模板默认值，用户不改即沿用。
+        """
         container = QWidget()
         form = QFormLayout(container)
         form.setSpacing(GLOBAL.radius)
@@ -242,11 +269,21 @@ class SettingsDialog(BaseDialog):
             *[SETTINGS_DIALOG.margin] * 3 + [SETTINGS_DIALOG.tab_spacing]
         )
         ns_config = self._current.get(namespace)
-        current_value = (
-            ns_config[field.key]
-            if ns_config and field.key in ns_config
-            else field.default
-        )
+        present = ns_config is not None and field.key in ns_config
+        current_value: ConfigValue = ns_config[field.key] if present else field.default
+
+        # 非必填项：恢复目标是模板默认值；按钮常建，显隐随刷新时机重估
+        required = f"{namespace}.{field.key}" in REQUIRED_KEYS
+        if required:
+            # 必填项空态上屏，不挂恢复按钮（占位假值不是可恢复的默认）
+            if not present or is_blank(current_value):
+                current_value = _BLANK_BY_TYPE.get(type(field.default), "")
+        else:
+            restore_target: ConfigValue = (
+                deepcopy(field.default)
+                if isinstance(field.default, list)
+                else field.default
+            )
 
         # 标签：出错字段标红
         label_widget = QLabel(field.label)
@@ -265,25 +302,30 @@ class SettingsDialog(BaseDialog):
             label_widget.setToolTip(err)
         self._labels[field.key] = (label_widget, field.label)
 
-        # 列表型字段
+        # 列表型字段：恢复按钮挂进列表底栏
         if isinstance(field.default, list):
             list_widget = ConfigListWidget(
                 items=current_value if isinstance(current_value, list) else [],
                 description=field.desc,
             )
             self._inputs[field.key] = list_widget
+            if not required:
+                btn = list_widget.add_reset_button(
+                    SETTINGS_DIALOG.reset_icon,
+                    SETTINGS_DIALOG.reset_text,
+                    lambda: self._reset_widget(field.key, restore_target),
+                )
+                self._register_reset(btn, field.key, field, restore_target)
             form.addRow(label_widget, list_widget)
             return container
 
-        # bool 配置项 → 勾选行（通用机制，避免 True/False 一行丑字）
+        # bool 配置项 → 勾选框：标签与说明走通用右侧结构，勾选框自身不再挂文字
         input_widget: QWidget
         if isinstance(field.default, bool):
-            bool_box = QCheckBox(field.label)
+            bool_box = QCheckBox()
             bool_box.setChecked(bool(current_value))
-            self._inputs[field.key] = bool_box
-            form.addRow(field.label, bool_box)
-            return container
-        if isinstance(current_value, str) and "\n" in current_value:
+            input_widget = bool_box
+        elif isinstance(current_value, str) and "\n" in current_value:
             input_widget = QTextEdit()
             input_widget.setPlainText(current_value)
         else:
@@ -292,17 +334,107 @@ class SettingsDialog(BaseDialog):
 
         self._inputs[field.key] = input_widget
 
-        # 右侧区域：输入框 + 说明文字
+        # 右侧区域：输入框（可带恢复按钮） + 说明文字
         right_wrapper = QWidget()
         v_layout = QVBoxLayout(right_wrapper)
         v_layout.setContentsMargins(*[SETTINGS_DIALOG.margin] * 4)
         v_layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
-        v_layout.addWidget(input_widget)
+        if not required:
+            row, btn = self._wrap_with_reset(input_widget, field.key, restore_target)
+            self._register_reset(btn, field.key, field, restore_target)
+            v_layout.addWidget(row)
+        else:
+            v_layout.addWidget(input_widget)
         if field.desc:
             v_layout.addWidget(self._build_desc(field.desc))
 
         form.addRow(label_widget, right_wrapper)
         return container
+
+    def _register_reset(
+        self,
+        btn: QPushButton,
+        field_key: str,
+        field: FieldSchema,
+        restore_target: ConfigValue,
+    ) -> None:
+        """登记恢复按钮：初始隐藏，显隐统一交给刷新时机判定"""
+        btn.setVisible(False)
+        self._reset_rows[field_key] = (btn, field, restore_target)
+
+    def _wrap_with_reset(
+        self, widget: QWidget, field_key: str, restore_target: ConfigValue
+    ) -> tuple[QWidget, QPushButton]:
+        """输入控件右侧挂恢复按钮（图标态，悬停出提示）"""
+        row = QWidget()
+        h_layout = QHBoxLayout(row)
+        h_layout.setContentsMargins(*[SETTINGS_DIALOG.margin] * 4)
+        h_layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
+        h_layout.addWidget(widget, stretch=1)
+        btn = QPushButton(SETTINGS_DIALOG.reset_icon)
+        btn.setObjectName("btn_reset")
+        btn.setToolTip(SETTINGS_DIALOG.reset_text)
+
+        # 恢复只回填控件：落盘仍走正常保存链路，diff 窗就是唯一确认点
+        btn.clicked.connect(lambda: self._reset_widget(field_key, restore_target))
+        h_layout.addWidget(btn)
+        return row, btn
+
+    def _value_of(
+        self, field_key: str, field: FieldSchema
+    ) -> ConfigValue:
+        """从控件提取字段当前值
+
+        与 get_modified_config 同款口径；float 解析失败返回原文，判定必不等于默认。
+        """
+        widget = self._inputs.get(field_key)
+        if widget is None:
+            return None
+        match widget:
+            case ConfigListWidget():
+                return widget.get_values()
+            case QCheckBox():
+                return widget.isChecked()
+            case QTextEdit():
+                return widget.toPlainText().strip()
+            case QLineEdit():
+                text = widget.text().strip()
+                if isinstance(field.default, float):
+                    try:
+                        return float(text)
+                    except ValueError:
+                        return text
+                return text
+        return None
+
+    def _refresh_resets(self) -> None:
+        """重估全部恢复按钮显隐：面板打开与校验回传时各刷一次
+
+        判定对象是控件里的当前值而非磁盘快照，手改待保存的偏离同样亮钮。
+        """
+        for field_key, (btn, field, restore_target) in self._reset_rows.items():
+            btn.setVisible(self._value_of(field_key, field) != restore_target)
+
+    def _reset_widget(self, field_key: str, restore_target: ConfigValue) -> None:
+        """按控件类型回填恢复目标值
+
+        回填即等于默认：重估显隐，本行按钮随之消失。
+        """
+        widget = self._inputs.get(field_key)
+        if widget is None:
+            return
+        text = "" if restore_target is None else str(restore_target)
+        match widget:
+            case ConfigListWidget():
+                items = list(restore_target) if isinstance(restore_target, list) else []
+                widget.set_items(items)
+            case QCheckBox():
+                widget.setChecked(bool(restore_target))
+            case QTextEdit():
+                widget.setPlainText(text)
+            case QLineEdit():
+                widget.setText(text)
+        self._refresh_resets()
 
     def _calc_label_width(self, fields: list[FieldSchema]) -> int:
         """计算标签统一列宽"""

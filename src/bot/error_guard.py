@@ -10,12 +10,23 @@ import inspect
 from collections.abc import Callable
 from typing import Any, ParamSpec, TypeVar, cast
 
-from exceptions import MAPS, BotError, ConfigError, ProxyError
+from exceptions import MAPS, BotError, ConfigError, ConfigPathMissingError, ProxyError
 from gui.mediator import gui_bridge
+from utils.config.models import REQUIRED_MARK
 from utils.logger import get_logger
 
 P = ParamSpec("P")
 T = TypeVar("T")
+
+
+def _setup_errors(exc: BotError) -> dict[str, str]:
+    """向导字段级错误：缺键异常须带字段标识，否则面板弹而无红
+
+    整段缺失时 missing_key 是 section 名，字段键取点路径尾段。
+    """
+    if isinstance(exc, ConfigPathMissingError):
+        return {exc.key_path.rpartition(".")[2]: REQUIRED_MARK}
+    return {}
 
 
 def _describe(exc: BotError) -> str:
@@ -47,7 +58,7 @@ def _route(exc: BotError, stage: str) -> None:
         gui_bridge.request_notice.emit(f"{stage}\n{detail}", True)
     else:
         logger.error(f"{stage}发生配置错误: {detail}")
-        gui_bridge.request_force_setup.emit({})
+        gui_bridge.request_force_setup.emit(_setup_errors(exc))
 
 
 def _route_unexpected(exc: Exception, stage: str) -> None:
