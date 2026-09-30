@@ -235,6 +235,29 @@ QPushButton#btn_primary:hover {{
 
 QPushButton#btn_primary:pressed {{
     background-color: {SETTINGS_DIALOG.btn_pressed_bg};
+}}
+
+QPushButton#btn_reset {{
+    background-color: transparent;
+    color: {LIST_DIALOG.secondary_color};
+    border: {LIST_DIALOG.item_border_width}px solid {LIST_DIALOG.secondary_border_color};
+    border-radius: {GLOBAL.radius}px;
+    padding: 0px;
+    min-width: {SETTINGS_DIALOG.reset_btn_size}px;
+    max-width: {SETTINGS_DIALOG.reset_btn_size}px;
+    min-height: {SETTINGS_DIALOG.reset_btn_size}px;
+    max-height: {SETTINGS_DIALOG.reset_btn_size}px;
+    font-size: {SETTINGS_DIALOG.reset_btn_font}px;
+}}
+
+QPushButton#btn_reset:hover {{
+    background-color: {BTN.hover_bg};
+    color: {BODY.hover_color};
+    border-color: {BTN.hover_bg};
+}}
+
+QPushButton#btn_reset:pressed {{
+    background-color: {BTN.pressed_bg};
 }}"""
 
 # 弹窗滚动条

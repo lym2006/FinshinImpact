@@ -9,7 +9,7 @@
 
 # 代理
 # 优先尝试该项配置，不通则依次系统代理、直连（TUN），均不通则报错并引导网络诊断
-proxy = "http://127.0.0.1:port"
+proxy = ""
 
 # Bot Token
 # 从 @BotFather 获取的机器人凭证
