@@ -20,33 +20,26 @@ from utils.config import (
     load_config,
 )
 from utils.net_probe import (
+    PROBE_BUDGET,
+    PROBE_BUDGET_DIRECT,
     Channel,
     FieldKey,
     FrameKey,
     RowId,
     RowStatus,
+    channels_dedup_sys,
     plan_channels,
     scan_proxy_ports,
     verify_plan,
+    via_label,
 )
 from utils.system_proxy import detect_system_proxy
-from utils.verify_flow import run_channels, run_local
+from utils.verify_flow import local_row, run_channels
 
 from .._base import BaseManager
 from ._connectivity import check_config
 
-_VERIFY_TIMEOUT = 4.0  # 单次验证的硬超时：早于内层 3 秒探测＋握手余量
-
 __all__ = ["SettingsManager"]
-
-
-def _via_label(ch: Channel) -> str:
-    """通道行的展示称谓：直连裸称，代理类一律带地址，与诊断域同款"""
-    if not ch.url:
-        return CheckMessage.VIA_DIRECT
-    if ch.kind == RowId.CFG:
-        return CheckMessage.VIA_CFG.format(proxy=ch.url)
-    return CheckMessage.VIA_SYSTEM.format(proxy=ch.url)
 
 
 def _label_of(schema: AppSchema, key: str) -> str:
@@ -102,6 +95,7 @@ class SettingsManager(BaseManager):
             and configured == prev_cfg
             and token != prev_token
         )
+        sys_proxy = None if token_only else detect_system_proxy()
         if token_only:
             # 代理字段未动：通道已验证过，只对 token 单点复查
             reuse = cast(str, self.resolved_proxy)
@@ -112,20 +106,27 @@ class SettingsManager(BaseManager):
             )
             channels = [Channel(kind, reuse)]
         else:
-            channels = plan_channels(configured, detect_system_proxy())
+            channels = plan_channels(configured, sys_proxy)
 
+        # 本地校验纯函数零耗时：先落定再发开局整表，网络在跑时本地已亮
+        local_frame, type_errors = local_row(schema, config_manager.get_all())
         gui_bridge.verify_progress.emit(
-            {FrameKey.ROWS: verify_plan(channels, reuse=token_only)}
+            {
+                FrameKey.ROWS: verify_plan(
+                    channels,
+                    reuse=token_only,
+                    sys_dedup=channels_dedup_sys(configured, sys_proxy),
+                    local_frame=local_frame,
+                )
+            }
         )
 
-        # 逐通道调度交给公共核心：先通者生效，token 错不换道，成本日志留在探针闭包里
+        # 并行调度交给公共核心：首成裁决，token 错不换道，成本日志留在探针闭包里
         async def probe(ch: Channel) -> tuple[str | None, dict[str, str], str]:
             start = time.monotonic()
             resolved, errors = await self._attempt_channel(token, ch.url)
             self.logger.debug(
-                CheckMessage.COST.format(
-                    via=_via_label(ch), cost=time.monotonic() - start
-                )
+                CheckMessage.COST.format(via=via_label(ch), cost=time.monotonic() - start)
             )
             # 表格句留空由核心统一拼"称谓：可达/不可达"；errors 长句留给字段标红
             return resolved, errors, ""
@@ -134,7 +135,7 @@ class SettingsManager(BaseManager):
             channels,
             probe,
             gui_bridge.verify_progress.emit,
-            _via_label,
+            via_label,
         )
         resolved = outcome.resolved
         net_errors = outcome.errors
@@ -149,7 +150,7 @@ class SettingsManager(BaseManager):
                 }
             )
 
-        # 三通道全挂才扫本机端口：仅探测复测，不自动采用、不写配置
+        # 全挂才扫本机端口：仅探测复测，不自动采用、不写配置
         port_hint = ""
         if not outcome.passed and FieldKey.PROXY in net_errors and not token_only:
             gui_bridge.verify_progress.emit(
@@ -201,10 +202,7 @@ class SettingsManager(BaseManager):
             self.logger.info(CheckMessage.PASS.format(via=via))
             self._warn_stale(configured, resolved)
 
-        # 并入本地类型校验，全绿才返回 True；local 先 advice 后，收口认 advice
-        type_errors = run_local(
-            schema, config_manager.get_all(), gui_bridge.verify_progress.emit
-        )
+        # 网络与本地两路错误合并，全绿才返回 True；收口认 advice
         self.last_errors = {**net_errors, **type_errors}
 
         # 结论帧收口：表格 HTML 吞换行，失败只报计数，明细由字段标红与悬浮承载
@@ -232,11 +230,11 @@ class SettingsManager(BaseManager):
         """单通道探测一次
 
         返回 (生效通道或 None, 错误字典)；空错误即该通道通过。
+        预算按通道分层：直连是墙内黑洞快进快出，代理罩得住冷启动慢握手。
         """
+        budget = PROBE_BUDGET_DIRECT if not proxy else PROBE_BUDGET
         try:
-            attempt = await asyncio.wait_for(
-                check_config(token, proxy), timeout=_VERIFY_TIMEOUT
-            )
+            attempt = await asyncio.wait_for(check_config(token, proxy), timeout=budget)
         except TimeoutError:
             attempt = {FieldKey.PROXY: CheckMessage.TIMEOUT}
         if not attempt:

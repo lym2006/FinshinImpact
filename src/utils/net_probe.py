@@ -50,6 +50,10 @@ class FrameKey:
 
 _PORT_TIMEOUT = 0.5  # 回环 TCP 探活上限：本机进程秒回，半秒已极宽
 
+# 并行探测的通道级超时预算（秒）：罩得住代理冷启动的慢 TLS 握手
+PROBE_BUDGET = 6.0  # 代理通道全程上限：SOCKS 握手 + TLS + getMe
+PROBE_BUDGET_DIRECT = 2.0  # 直连预算：墙内黑洞必吃满，快进快出不陪跑
+
 # 常见本地代理软件默认监听端口（Clash/v2rayN/mihomo 等）
 _PROXY_PORTS = (7890, 7897, 7898, 7893, 10808, 10809, 8118, 20171, 20172)
 
@@ -65,14 +69,20 @@ class Channel:
 def plan_channels(configured: str, sys_proxy: str | None) -> list[Channel]:
     """规划通道阶梯：配置代理 → 系统代理 → 直连
 
-    配置为空不出 cfg 项，系统代理与配置同址去重，直连恒为末位兜底。
+    配置为空不出 cfg 项，系统代理与配置同址去重合并，直连恒为末位兜底。
     """
     cfg = configured.strip()
     channels = [Channel(RowId.CFG, cfg)] if cfg else []
-    if sys_proxy and sys_proxy != cfg:
+    dedup = bool(cfg and sys_proxy and sys_proxy == cfg)
+    if sys_proxy and not dedup:
         channels.append(Channel(RowId.SYS, sys_proxy))
     channels.append(Channel(RowId.DIRECT, ""))
     return channels
+
+
+def channels_dedup_sys(configured: str, sys_proxy: str | None) -> bool:
+    """判定系统代理是否因与配置同址被去重：在场判据决定缺席句撒谎与否"""
+    return bool(configured.strip() and sys_proxy and sys_proxy == configured.strip())
 
 
 def via_label(ch: Channel) -> str:
@@ -86,12 +96,12 @@ def via_label(ch: Channel) -> str:
 
 # 校验表行序：行 id 即 Channel.kind，port/local/advice 为收尾行，与发帧顺序一致
 _VERIFY_ROWS = (
-    (RowId.CFG, CheckMessage.ROW_CFG, CheckMessage.CFG_EMPTY),
-    (RowId.SYS, CheckMessage.ROW_SYS, CheckMessage.SYS_UNAVAILABLE),
-    (RowId.DIRECT, CheckMessage.ROW_DIRECT, ""),
-    (RowId.PORT, CheckMessage.ROW_PORT, ""),
-    (RowId.LOCAL, CheckMessage.ROW_LOCAL, ""),
-    (RowId.ADVICE, CheckMessage.ROW_ADVICE, ""),
+    (RowId.CFG, CheckMessage.ROW_CFG, RowStatus.FAIL, CheckMessage.CFG_EMPTY),
+    (RowId.SYS, CheckMessage.ROW_SYS, RowStatus.FAIL, CheckMessage.SYS_UNAVAILABLE),
+    (RowId.DIRECT, CheckMessage.ROW_DIRECT, RowStatus.PENDING, ""),
+    (RowId.PORT, CheckMessage.ROW_PORT, RowStatus.PENDING, ""),
+    (RowId.LOCAL, CheckMessage.ROW_LOCAL, RowStatus.PENDING, ""),
+    (RowId.ADVICE, CheckMessage.ROW_ADVICE, RowStatus.PENDING, ""),
 )
 
 
@@ -99,30 +109,41 @@ def verify_skeleton() -> list[dict]:
     """全等待态六行骨架：校验计划到达前的占位"""
     return [
         {"id": rid, "title": title, "status": RowStatus.PENDING, "detail": ""}
-        for rid, title, _ in _VERIFY_ROWS
+        for rid, title, _, _ in _VERIFY_ROWS
     ]
 
 
 _TAIL_ROWS = (RowId.LOCAL, RowId.PORT, RowId.ADVICE)
 
 
-def verify_plan(channels: Sequence[Channel], reuse: bool = False) -> list[dict]:
-    """生成校验进度表骨架
+def verify_plan(
+    channels: Sequence[Channel],
+    reuse: bool = False,
+    sys_dedup: bool = False,
+    local_frame: dict | None = None,
+) -> list[dict]:
+    """生成校验开局整表：在场通道标进行中，缺席/复用/合并行直接给定态
 
-    与诊断窗同款五态；阶梯里没有的通道行直接给定态，不再发探测帧。
+    与诊断窗同款五态；阶梯里没有的通道行不再探测，按成因当场落定。
     reuse=True 表示仅复查 token：未涉及的通道行标"复用已验证通道"。
-    收尾行不参与通道阶梯，恒为等待态由调用方逐帧点亮。
+    sys_dedup=True 时系统代理只是与配置同址被合并，绝非不可用，落绿色带过。
+    local_frame 传入则本地行随开局帧先行落定，网络在跑时本地已亮。
     """
     kinds = {ch.kind for ch in channels}
     rows: list[dict] = []
-    for rid, title, missing in _VERIFY_ROWS:
-        # 收尾行恒为等待态；未出现的通道行按复查/缺席给定态
-        if rid in kinds or rid in _TAIL_ROWS:
+    for rid, title, absent_status, absent_detail in _VERIFY_ROWS:
+        if rid in kinds:
+            status, detail = RowStatus.CHECKING, ""
+        elif rid == RowId.SYS and sys_dedup:
+            status, detail = RowStatus.SKIP, CheckMessage.SYS_DEDUP
+        elif rid == RowId.LOCAL and local_frame is not None:
+            status, detail = local_frame["status"], local_frame["detail"]
+        elif rid in _TAIL_ROWS:
             status, detail = RowStatus.PENDING, ""
         elif reuse:
             status, detail = RowStatus.SKIP, CheckMessage.VERIFY_REUSE
         else:
-            status, detail = RowStatus.FAIL, missing
+            status, detail = absent_status, absent_detail
         rows.append({"id": rid, "title": title, "status": status, "detail": detail})
     return rows
 

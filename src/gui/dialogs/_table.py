@@ -49,12 +49,15 @@ class RowTable(QTextEdit):
         self._render()
 
     def apply(self, frame: dict[str, Any]) -> None:
-        """消费一帧：rows 键整表重建，id 键单行点亮；未知 id 忽略"""
+        """消费一帧：rows 键整表重建，id 键单行点亮；未知 id 与已定案行忽略
+
+        定案行拒改是并行版的迟到帧闸门：被取消探测的线程结果后到也不许翻案。
+        """
         if FrameKey.ROWS in frame:
             self.reset(frame[FrameKey.ROWS])
             return
         entry = self._rows.get(frame["id"])
-        if entry is None:
+        if entry is None or entry[1] not in (RowStatus.PENDING, RowStatus.CHECKING):
             return
         entry[1] = frame.get("status", entry[1])
         entry[2] = frame.get("detail", entry[2])
