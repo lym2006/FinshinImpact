@@ -2,7 +2,10 @@
 """配置列表组件（内部实现）
 
 - 定义标签页内的字段列表布局
+- 提供恢复默认所需的整体重置与按钮挂载口
 """
+
+from collections.abc import Callable
 
 from PySide6.QtCore import QModelIndex, Qt
 from PySide6.QtWidgets import (
@@ -56,11 +59,15 @@ class ConfigListWidget(QWidget):
             self.list_widget.addItem(item)
 
     def _build_bottom_bar(self) -> QWidget:
-        """构建底部操作栏"""
+        """构建底部操作栏
+
+        布局留引用：恢复默认按钮由调用方事后挂入。
+        """
         bar = QWidget()
         layout = QHBoxLayout(bar)
         layout.setContentsMargins(*[SETTINGS_DIALOG.margin] * 4)
         layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
+        self._bar_layout = layout
 
         # 描述文字
         if self._desc_text:
@@ -120,3 +127,26 @@ class ConfigListWidget(QWidget):
             for i in range(self.list_widget.count())
             if (text := self.list_widget.item(i).text().strip())
         ]
+
+    def set_items(self, items: list[str]) -> None:
+        """整体替换列表内容
+
+        恢复默认专用：清空后按新列表重建行。
+        """
+        self.list_widget.clear()
+        self._items = items
+        self._populate_items()
+
+    def add_reset_button(
+        self, icon: str, tooltip: str, on_click: Callable[[], None]
+    ) -> QPushButton:
+        """底栏追加恢复默认按钮（图标态，悬停出提示）
+
+        样式不在本控件 skin 内：btn_reset 规则随弹窗 QSS 从祖先传播生效。
+        """
+        btn = QPushButton(icon)
+        btn.setObjectName("btn_reset")
+        btn.setToolTip(tooltip)
+        btn.clicked.connect(on_click)
+        self._bar_layout.addWidget(btn)
+        return btn
