@@ -54,6 +54,9 @@ _SHELL_EXE = "TelegramBot.exe"
 _SHELL_PENDING = "_shell_update"
 _SHELL_BAK_SUFFIX = ".old"
 
+# 与 GUI icon.py 是同一份约定，两处改名必须同步：任务栏身份锚定到壳 exe 路径
+_AUMID_ANCHOR_VAR = "TELEGRAMBOT_EXE_PATH"
+
 _MB_ICON_INFO = 0x40
 _MB_ICON_ERROR = 0x10
 _MB_YESNO = 0x04
@@ -570,6 +573,7 @@ def _launch(root: Path) -> None:
     env = {
         k: v for k, v in os.environ.items() if k not in ("HTTP_PROXY", "HTTPS_PROXY")
     }
+    env[_AUMID_ANCHOR_VAR] = str(Path(sys.executable))  # 任务栏图标解析指向壳自身
     subprocess.Popen(
         [str(root / "runtime" / "pythonw.exe"), str(root / "main.py")],
         cwd=str(root),
