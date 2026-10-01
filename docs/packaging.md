@@ -12,7 +12,7 @@ TelegramBot\
 ├── _internal\        启动器运行库
 ├── main.py           主程序入口（调试可单跑：runtime\python.exe main.py）
 ├── runtime\          嵌入式 Python 原料，首启自装于此
-├── src\              pyproject.toml 等
+├── src\              代码文件
 ```
 
 启动器首启：解压嵌入式 Python → 放开 site-packages → 装 pip → 装依赖 → 拉浏览器内核 → 拉起主程序。此后每次启动比对在线版本页，弹窗确认后整包升级。
@@ -55,26 +55,14 @@ python packaging\build.py
 拿第二步产出的 zip 走一遍用户路径：
 
 1. 把 zip 复制到别处（如桌面）解压——在 `dist\` 里测会污染构建目录。
-2. 双击 `TelegramBot.exe`，进度窗口 `[1/5]`～`[5/5]`，pip 按清华→阿里→腾讯→官方四源回退，约几分钟，别关窗口。
+2. 双击 `TelegramBot.exe`，进度窗口 `[1/5]`～`[5/5]`，pip 按阿里→腾讯→清华→官方四源回退，约几分钟，别关窗口。
 3. 验证：向导填 token 能收发消息；再开一次应几秒直达、不再出现进度窗口；测试目录只多出 `config.toml`、`data\`、`logs\`、`runtime\`。
 4. 任一环节失败都不许发布。测完删掉测试目录。
 
-## 第四步：正式发布（顺序不可乱）
+## 第四步：正式发布
 
-```powershell
-# 1. 提交推 tag
-git add -A
-git commit -m "build(release): vX.Y.Z 发布定稿"
-git tag vX.Y.Z
-git push origin main vX.Y.Z
+详见 [release-workflow](release-workflow.md) 要求。
 
-# 2. 上传：GitHub → Releases → 选 tag → 拖入第二步的 zip → Publish
-#    正文下载行给双链（镜像优先）：
-#    https://gh-proxy.com/https://github.com/lym2006/TelegramBot/releases/download/vX.Y.Z/TelegramBot-vX.Y.Z.zip
-
-# 3. 同步版本页：把本地 pyproject.toml 覆盖到 lym2006.github.io 仓库
-python packaging\build.py --check   # 自检 tag 已推、zip 已生成；末行「在线版本页」显示新版本号即发布完成
-```
 
 ## 报毒
 
