@@ -1,5 +1,5 @@
 # src/gui/controllers/_diagnose.py
-"""网络诊断控制器（内部实现）
+"""网络诊断控制器
 
 - 提供连通性自助排查入口
 - 诊断轮驱动进程级唯一 CheckDialog，与他轮互斥不并发
@@ -29,22 +29,29 @@ _orphans: set["_DiagnoseWorker"] = set()  # 关窗放行的线程暂养于此，
 class _DiagnoseWorker(QThread):
     """诊断线程
 
-    网络探测有秒级阻塞，不占 GUI 线程。
-    异步流程每产出一帧就经信号发出，界面逐行点亮。
+    - 异步流程每产出一帧就经信号发出
     """
 
-    row_update = Signal(dict)
+    row_update = Signal(dict)  # 逐行点亮
 
-    def __init__(self, configured_proxy: str, parent: QWidget | None = None) -> None:
+    def __init__(
+        self, configured_proxy: str, token: str, parent: QWidget | None = None
+    ) -> None:
         super().__init__(parent)
         self._proxy = configured_proxy
+        self._token = token
 
     def run(self) -> None:
-        """线程内私有事件循环驱动公共核心，帧经信号 queued 回主线程"""
+        """诊断线程主循环
+
+        - 私有事件循环驱动公共核心
+        - 帧经信号 queued 回主线程
+        """
         try:
             asyncio.run(
                 diagnose_flow(
                     self._proxy,
+                    token=self._token,
                     emit=self.row_update.emit,
                     stop_check=self.isInterruptionRequested,
                 )
@@ -69,7 +76,6 @@ class DiagnoseController(BaseController):
         super().__init__(*args, **kwargs)
 
         # 启动校验结论闩锁：未出结论前拒点诊断防误判半新配置
-        # 不复用 ready 态——向导驻留期 ready 长期为 False，恰是最该排查的时候
         self._startup_settled: bool = False
 
         # 当前在跑的诊断线程集合：finished 前禁止被 GC
@@ -82,13 +88,16 @@ class DiagnoseController(BaseController):
         )
 
     def _settle_startup(self, *_args: object) -> None:
-        """启动校验已出结论（成功或失败），诊断入口解锁"""
+        """启动校验结论落闩"""
         self._startup_settled = True
 
     # ==================== 业务逻辑实现 ====================
 
     def _execute(self) -> None:
-        """在唯一窗上开诊断轮；启动期与他轮在途一律日志拦截"""
+        """在唯一窗上开诊断轮
+
+        - 启动期与他轮在途一律日志拦截
+        """
         if not self._startup_settled:
             self.logger.info(CheckMessage.STARTUP_BUSY)
             return
@@ -99,31 +108,41 @@ class DiagnoseController(BaseController):
             return
 
         configured = ""
+        token = ""
         try:
             configured = config_manager.get("basic.proxy", str)
+            token = config_manager.get("basic.telegram_token", str)
         except Exception:  # 配置未就绪按留空处理，不阻塞诊断
             pass
 
-        # 窗出现即证据，面板不重复灌；开局整表由公共核心算好随线程首帧发出
+        # 窗出现即证据，面板不重复灌，开局整表由公共核心算好随线程首帧发出
         self.logger.debug("打开网络诊断")
         win = open_check_window(self.gui)
         win.begin_round(Round.DIAGNOSE, True, verify_skeleton(), self._on_round_closed)
-        self._run(configured, win)
+        self._run(configured, token, win)
 
     # ==================== 轮次驱动 ====================
 
-    def _run(self, configured: str, win: QWidget) -> None:
-        """起线程跑一轮诊断，帧转发进窗"""
+    def _run(self, configured: str, token: str, win: QWidget) -> None:
+        """诊断轮线程启动
+
+        - 起线程跑一轮诊断
+        - 帧转发进窗
+        """
         if any(w.isRunning() for w in self._workers):
             return
-        worker = _DiagnoseWorker(configured, parent=win)
+        worker = _DiagnoseWorker(configured, token, parent=win)
         worker.row_update.connect(lambda f: self._on_frame(f))
         worker.finished.connect(lambda w=worker: self._workers.discard(w))
         self._workers.add(worker)
         worker.start()
 
     def _on_frame(self, frame: dict) -> None:
-        """帧转发：仅诊断轮消费；结论帧带断链标记则拉起强制向导"""
+        """帧转发
+
+        - 仅诊断轮消费
+        - 结论帧带断链标记则拉起强制向导
+        """
         win = current_check_window()
         if win is None or win.round != Round.DIAGNOSE:
             return
@@ -136,15 +155,19 @@ class DiagnoseController(BaseController):
             gui_bridge.request_force_setup.emit({FieldKey.PROXY: frame["detail"]})
 
     def _on_round_closed(self, result: int) -> None:
-        """窗收场：进行中被中断则抛弃在跑线程
+        """窗收场
 
-        单例只 hide 不销毁——deleteLater 会让下次 open 拿到死对象。
+        - 进行中被中断则抛弃在跑线程
+        - 单例只 hide 不销毁
         """
         if result == QDialog.DialogCode.Rejected:
             self._abandon_workers()
 
     def _on_ready(self, ready: bool) -> None:
-        """启动结论之一（通过）落闩；正停驻诊断轮时结论行原地刷绿"""
+        """启动通过落闩
+
+        - 正停驻诊断轮时结论行原地刷绿
+        """
         if not ready:
             return
         self._startup_settled = True
@@ -162,8 +185,7 @@ class DiagnoseController(BaseController):
     def _abandon_workers(self) -> None:
         """抛弃在跑线程
 
-        Qt 禁毁运行中的父子线程：断开结果信号，摘除父级后交模块容器暂养。
-        中断请求由异步流程在探测间隙响应，finished 负责出容器并销毁。
+        - 断开结果信号，摘除父级后交模块容器暂养
         """
         for worker in self._workers:
             worker.requestInterruption()

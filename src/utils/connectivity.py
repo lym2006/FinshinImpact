@@ -1,8 +1,8 @@
-# src/bot/_managers/_settings/_connectivity.py
-"""连接性检查（内部实现）
+# src/utils/connectivity.py
+"""连接性探测
 
-- 实现代理与 Token 双重探测
-- 定义构造期与请求期异常的映射规则
+- 代理与 Token 双重探测及构造期/请求期异常映射，校验轮与诊断轮共用
+- attempt_channel 为预算内单次探测的唯一入口，超时折成字段错误不上抛
 """
 
 import asyncio
@@ -25,15 +25,15 @@ from exceptions import (
     TokenError,
 )
 from messages import CheckMessage
-from utils.config import PENDING_MARK
-from utils.net_probe import FieldKey
-from utils.ssl import SSLUnverifiedSession
 
-# 本地超时：防不可达代理挂满系统级 TCP 超时
-_CONNECT_TIMEOUT = 3.0
+from .config import PENDING_MARK
+from .net_probe import FieldKey, probe_budget
+from .ssl import SSLUnverifiedSession
 
 # 构造期异常消息 → 配置键的解析规则
 _SCHEME_RE = re.compile(r"Invalid scheme component:\s*(.*)", re.IGNORECASE)
+
+__all__ = ["attempt_channel", "check_config", "map_construct_error"]
 
 
 def map_construct_error(e: Exception, proxy: str) -> ConnectivityError:
@@ -80,7 +80,7 @@ def _map_request_error(e: Exception, proxy: str) -> ConnectivityError:
 async def probe_proxy(proxy: str) -> None:
     """纯代理探测
 
-    构造期异常须映射为业务异常，防上层误判致命。
+    - 构造期异常须映射为业务异常，防上层误判致命
     """
     try:
         SSLUnverifiedSession(proxy=proxy)
@@ -91,13 +91,13 @@ async def probe_proxy(proxy: str) -> None:
 async def get_me(token: str, proxy: str) -> None:
     """探测 Token 有效性
 
-    失败抛 ConnectivityError 族。
+    - 失败抛 ConnectivityError 族
     """
     bot: Bot | None = None
     try:
         session = SSLUnverifiedSession(proxy=proxy)
         bot = Bot(token=token, session=session)
-        await asyncio.wait_for(bot.get_me(), timeout=_CONNECT_TIMEOUT)
+        await bot.get_me()
     except TimeoutError as e:
         # 无代理时超时是直连不通，不能报"连接代理超时"的空地址文案
         raise (ProxyTimeoutError(proxy=proxy) if proxy else DirectTimeoutError()) from e
@@ -127,7 +127,8 @@ async def check_config(
 ) -> dict[str, str]:
     """双探测聚合
 
-    proxy 先测，通过后再测 token；proxy 坏时 token 标记"暂未检测"而非"无效"。
+    - proxy 先测，通过后再测 token
+    - proxy 坏时 token 标记"暂未检测"而非"无效"
     """
     errors: dict[str, str] = {}
     proxy_text = ""
@@ -157,6 +158,24 @@ async def check_config(
         errors[FieldKey.PROXY] = _err_text(e)
 
     return errors
+
+
+async def attempt_channel(token: str, proxy: str) -> tuple[str | None, dict[str, str]]:
+    """预算内单通道探测一次
+
+    - 返回 (生效通道或 None, 错误字典)
+    - 空错误即该通道通过
+    - 预算按通道分层：直连是墙内黑洞快进快出，代理罩得住冷启动慢握手
+    """
+    try:
+        errors = await asyncio.wait_for(
+            check_config(token, proxy), timeout=probe_budget(proxy)
+        )
+    except TimeoutError:
+        errors = {FieldKey.PROXY: CheckMessage.TIMEOUT}
+    if not errors:
+        return proxy, {}
+    return None, errors
 
 
 def _err_text(e: ConnectivityError) -> str:
