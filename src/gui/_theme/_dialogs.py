@@ -1,5 +1,5 @@
 # src/gui/_theme/_dialogs.py
-"""弹窗令牌（内部实现）
+"""弹窗令牌
 
 - 定义各专属弹窗的尺寸、文案与配色
 - 弹窗话术字段一律代理引用 messages，令牌不持有话术字面量
@@ -8,7 +8,7 @@
 
 from dataclasses import dataclass
 
-from messages import DialogMessage, VersionMessage
+from messages import CheckMessage, DialogMessage, VersionMessage
 
 # 五态渲染色：诊断窗与校验窗同款（一处一源）
 _PENDING_COLOR = "#808080"  # 等待检测
@@ -150,13 +150,16 @@ class ShutdownDialogConfig:
 class FiveStateDialogConfig:
     """五态行表格弹窗共用配置
 
-    诊断窗与校验窗同款表格、同款符号与颜色，渲染令牌收在基类一处。
+    - 诊断窗与校验窗同款表格、同款符号与颜色，渲染令牌收在基类一处
     """
 
     # === 尺寸配置 ===
     width: int = 520
     pad: int = 16
     row_margin: int = 4  # HTML 行距
+
+    # === 进行中行计时 ===
+    countdown: str = CheckMessage.COUNTDOWN
 
     # === 五态符号 ===
     pending_mark: str = DialogMessage.MARK_PENDING
@@ -175,7 +178,10 @@ class FiveStateDialogConfig:
 
 @dataclass(frozen=True)
 class CheckDialogConfig(FiveStateDialogConfig):
-    """检查进度窗专属配置（校验轮与诊断轮共用同一实例）"""
+    """检查进度窗专属配置
+
+    - 校验轮与诊断轮共用同一实例
+    """
 
     # === 动画配置 ===
     spinner_frames: str = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
@@ -229,7 +235,10 @@ class WaitDialogConfig:
 
 @dataclass(frozen=True)
 class NoticeDialogConfig:
-    """通知弹窗专属配置（提示/致命共用，critical 区分）"""
+    """通知弹窗专属配置
+
+    - 提示/致命共用，critical 区分
+    """
 
     # === 尺寸配置 ===
     width: int = 380
