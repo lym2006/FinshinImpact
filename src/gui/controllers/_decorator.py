@@ -1,5 +1,5 @@
 # src/gui/controllers/_decorator.py
-"""控制器异常装饰器（内部实现）
+"""控制器异常装饰器
 
 - 实现业务异常拦截，保障 GUI 线程存活
 """
@@ -18,7 +18,7 @@ T = TypeVar("T")
 def gui_guard(func: Callable[P, T]) -> Callable[P, T]:
     """GUI 按钮事件安全装饰器
 
-    拦截业务异常并记日志，防 GUI 线程卡死。
+    - 拦截业务异常并记日志
     """
 
     @wraps(func)

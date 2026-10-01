@@ -1,5 +1,5 @@
 # src/utils/config/_differ.py
-"""配置比对（内部实现）
+"""配置比对
 
 - 实现新旧配置精准 diff
 """
@@ -14,8 +14,10 @@ def compare_configs(
     original: AppConfigData,
     modified: AppConfigData,
 ) -> tuple[AppConfigData, _LType]:
-    """提取配置变更"""
-    # 遍历 Schema，逐字段精准比对
+    """提取配置变更
+
+    - 遍历 Schema，逐字段精准比对
+    """
     changes: AppConfigData = {}
     logs: _LType = []
     for tab in schema:

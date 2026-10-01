@@ -1,5 +1,5 @@
 # src/gui/_theme/_core.py
-"""全局视觉令牌（内部实现）
+"""全局视觉令牌
 
 - 定义窗口、字体、配色与通用控件令牌
 """
@@ -31,7 +31,7 @@ class WindowConfig:
 class GlobalConfig:
     """全局基础配置
 
-    仅存放整个 App 共享的视觉基因与全局文案
+    - 仅存放整个 App 共享的视觉基因与全局文案
     """
 
     radius: int = 4  # 全局默认圆角

@@ -1,5 +1,5 @@
 # src/gui/_qss.py
-"""QSS 拼装（内部实现）
+"""QSS 拼装
 
 - 实现组件样式渲染与 QSS 拼接
 """
@@ -459,7 +459,10 @@ def build_wait_dialog_qss() -> str:
 
 
 def build_check_dialog_qss() -> str:
-    """构建检查进度窗 QSS（校验轮与诊断轮共用同一皮肤）"""
+    """构建检查进度窗 QSS
+
+    - 校验轮与诊断轮共用同一皮肤
+    """
     return "\n".join(
         [
             _DIALOG_BASE_QSS,

@@ -24,7 +24,7 @@ _CACHE = _DIST / "_cache"
 # 应用图标唯一来源：随 assets 白名单进发布包，exe 与 GUI 任务栏同源
 _ICON = _ROOT / "assets" / "app.ico"
 
-# 构建原料下载源：镜像优先、官方兜底；版本页是在线版本比对唯一真相
+# 构建原料下载源：镜像优先、官方兜底
 _EMBED_VERSION = "3.11.9"
 _EMBED_FILE = f"python-{_EMBED_VERSION}-embed-amd64.zip"
 _EMBED_URL_SUFFIX = f"python/{_EMBED_VERSION}/{_EMBED_FILE}"
@@ -64,10 +64,10 @@ def _read_version() -> str:
 def _download(url: str, target: Path) -> None:
     """下载文件到指定路径
 
-    中断的半截文件不许以正式名存在，故原子落盘、失败清残留。
+    - 先写 .part 临时名，成功后改名落盘
     """
     print(f"下载 {url}")
-    part = target.with_name(target.name + ".part")  # 半成品用临时名
+    part = target.with_name(target.name + ".part")
     try:
         with (
             urllib.request.urlopen(url, timeout=_DOWNLOAD_TIMEOUT) as resp,
@@ -76,6 +76,7 @@ def _download(url: str, target: Path) -> None:
             shutil.copyfileobj(resp, f)
         part.replace(target)
     except Exception:
+        # 中断的半截文件不许以正式名存在，失败即清残留
         part.unlink(missing_ok=True)
         raise
 
@@ -83,8 +84,7 @@ def _download(url: str, target: Path) -> None:
 def _download_verified(urls: list[str], target: Path) -> None:
     """构建原料多源下载
 
-    半截文件也能正常落盘，出厂前必须验完整性：zip 验条目、
-    脚本验头，任一校验不过即视为该源失败，换下一源。
+    - zip 验条目、脚本验头，任一不过即该源失败换下一源
     """
     last_error: Exception | None = None
     for url in urls:
@@ -110,7 +110,8 @@ def _download_verified(urls: list[str], target: Path) -> None:
 def _fetch_to_cache(urls: list[str], name: str) -> Path:
     """构建原料取用缓存
 
-    原料跨构建复用，清 dist 目录即清缓存。
+    - 原料跨构建复用
+    - 清 dist 目录即清缓存
     """
     _CACHE.mkdir(parents=True, exist_ok=True)
     cached = _CACHE / name
@@ -127,19 +128,21 @@ def _fetch_to_cache(urls: list[str], name: str) -> Path:
 def _require_icon() -> bytes:
     """图标原料校验
 
-    缺图标 exe 仍会编成默认 Python 图标，静默放行等于发布废包。
+    - 缺图标即中止构建，不静默放行
     """
     if not _ICON.is_file():
-        raise SystemExit(f"缺少图标文件 {_ICON}，先生成 app.ico 再构建（见 docs/packaging.md 图标一节）")
+        raise SystemExit(
+            f"缺少图标文件 {_ICON}，先生成 app.ico 再构建（见 docs/packaging.md 图标一节）"
+        )
     return _ICON.read_bytes()
 
 
 def _launcher_fingerprint() -> str:
     """启动器产物指纹
 
-    源码与图标一并绑定，只换图标也能触发重编译下发新壳。
-    编译动作与产物来源变更绑定，免受 PyInstaller 输出自带时间戳干扰。
+    - 源码与图标一并绑定，只换图标也能触发重编译下发新壳
     """
+    # 编译动作与产物来源变更绑定
     src = (_ROOT / "packaging" / "launcher.py").read_bytes()
     return hashlib.sha256(src + _require_icon()).hexdigest()
 
@@ -147,9 +150,9 @@ def _launcher_fingerprint() -> str:
 def build_launcher() -> Path:
     """创建启动器
 
-    编译启动器源码为无控制台单目录 exe；onedir 不自我解压、
-    默认不压缩，显著降低杀软启发式误报。产物指纹未变时复用
-    已编译产物，exe 哈希不随无关构建漂移，用户端不触发无谓换壳。
+    - 编译启动器源码为无控制台单目录 exe
+    - onedir 不自我解压、默认不压缩，显著降低杀软启发式误报
+    - 产物指纹未变时复用已编译产物，exe 哈希不随无关构建漂移，用户端不触发无谓换壳
     """
     out = _DIST / "_launcher" / "TelegramBot"
     stamp = _DIST / "_launcher" / ".launcher_sha"
@@ -207,7 +210,7 @@ sys.exit(Main().main())
 def _write_runtime_seed(launcher_dir: Path) -> None:
     """组装运行原料
 
-    启动器 exe 与其依赖目录 _internal 放包根，用户双击即见。
+    - 启动器 exe 与依赖目录 _internal 放包根，用户双击即见
     """
     runtime = _STAGE / "runtime"
     runtime.mkdir(parents=True, exist_ok=True)
@@ -266,7 +269,10 @@ def assemble(launcher_dir: Path) -> Path:
 
 
 def _check_release() -> None:
-    """发布前四项核对：版本号、远端 tag、发布物、在线版本页"""
+    """发布前四项核对
+
+    - 版本号、远端 tag、发布物、在线版本页
+    """
     version = _read_version()
     tag_hit = subprocess.run(
         ["git", "ls-remote", "--tags", "origin", f"v{version}"],
@@ -292,7 +298,7 @@ def _check_release() -> None:
 def _remote_version_text() -> str:
     """读取版本页版本号文本
 
-    读不到显示异常类型而不抛错，供自检行降级输出。
+    - 读不到不抛错，返回异常类型文本
     """
     try:
         with urllib.request.urlopen(
@@ -301,6 +307,7 @@ def _remote_version_text() -> str:
             data = tomllib.loads(resp.read().decode("utf-8"))
         return str(data["project"]["version"])
     except Exception as e:
+        # 供自检行降级输出
         return f"读取失败：{type(e).__name__}"
 
 

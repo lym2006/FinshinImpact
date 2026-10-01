@@ -1,5 +1,5 @@
 # src/plugins/AI/services/_ai_chat.py
-"""对话分发服务（内部实现）
+"""对话分发服务
 
 - 实现入队、状态提示与监控启动
 """

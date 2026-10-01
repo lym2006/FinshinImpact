@@ -1,5 +1,5 @@
 # src/gui/controllers/_shutdown.py
-"""关闭控制器（内部实现）
+"""关闭控制器
 
 - 实现退出流程调度
 - 实现关闭与配置弹窗竞态协调
@@ -40,14 +40,15 @@ class ShutdownController(BaseController):
     def request_exit_from(self, source: QWidget | None = None) -> None:
         """响应向导的退出请求
 
-        确认框以向导为父级盖在其上，取消后向导与已填内容原样保留。
+        - 确认框以向导为父级盖在其上
+        - 取消后向导与已填内容原样保留
         """
         self._on_close_intercepted(source)
 
     def shutdown_now(self) -> None:
         """跳过确认直接退出
 
-        致命错误确认后调用。
+        - 致命错误确认后调用
         """
         if self._is_shutting_down:
             return
@@ -56,8 +57,11 @@ class ShutdownController(BaseController):
         self._start_shutdown()
 
     def _on_close_intercepted(self, source: QWidget | None = None) -> None:
-        """弹出确认框，确认后启动清理流程"""
-        # 不重复执行
+        """关闭拦截入口
+
+        - 弹出确认框，确认后启动清理流程
+        """
+        # 防重复执行
         if self._is_shutting_down:
             return
 

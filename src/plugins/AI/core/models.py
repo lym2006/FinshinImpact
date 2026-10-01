@@ -1,5 +1,5 @@
 # src/plugins/AI/core/models.py
-"""核心数据模型（内部实现）
+"""核心数据模型
 
 - 定义任务载体与会话状态结构
 """
@@ -13,7 +13,7 @@ from aiogram.types import Message
 
 @dataclass
 class TaskItem:
-    """任务数据载体（纯数据）"""
+    """任务数据载体"""
 
     message: Message
     chat_id: int
@@ -29,7 +29,7 @@ class TaskItem:
 
 @dataclass
 class UserSession:
-    """用户会话数据结构（纯数据）"""
+    """用户会话数据结构"""
 
     message: list[dict[str, str]] = field(default_factory=list)
     md_status: bool = False  # 是否有 Markdown 内容可以输出

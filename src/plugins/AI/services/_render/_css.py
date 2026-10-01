@@ -1,5 +1,5 @@
 # src/plugins/AI/services/_render/_css.py
-"""渲染样式（内部实现）
+"""渲染样式
 
 - 定义 CSS 模板与高亮组件映射
 - 定义 HTML 安全白名单

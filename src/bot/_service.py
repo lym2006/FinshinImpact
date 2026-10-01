@@ -1,5 +1,5 @@
 # src/bot/_service.py
-"""Bot 服务（内部实现）
+"""Bot 服务
 
 - 实现后台线程中的 asyncio 事件循环
 - 提供自动重连与日志记录的轮询

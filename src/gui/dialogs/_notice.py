@@ -1,5 +1,5 @@
 # src/gui/dialogs/_notice.py
-"""通用提示弹窗（内部实现）
+"""通用提示弹窗
 
 - 单消息 + 确认按钮的家族化小窗
 """
@@ -13,7 +13,10 @@ from ._base import BaseDialog
 
 
 class NoticeDialog(BaseDialog):
-    """统一通知弹窗：提示/致命共用，critical 区分标题与确认语义"""
+    """统一通知弹窗
+
+    - 提示/致命共用，critical 区分标题与确认语义
+    """
 
     def __init__(
         self, text: str, critical: bool = False, parent: QWidget | None = None

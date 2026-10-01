@@ -1,5 +1,5 @@
 # src/gui/dialogs/_settings/_change.py
-"""变更确认弹窗（内部实现）
+"""变更确认弹窗
 
 - 提供配置变更表格 diff 的二次确认
 """
@@ -45,7 +45,7 @@ class ChangeConfirmDialog(BaseDialog):
     ) -> bool:
         """模态展示
 
-        返回是否确认保存。
+        - 返回是否确认保存
         """
         dialog = ChangeConfirmDialog(logs, parent=parent)
         return dialog.exec() == dialog.DialogCode.Accepted

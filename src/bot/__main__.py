@@ -37,14 +37,14 @@ class Main:
     def main(self) -> int:
         """主函数"""
         try:
-            # 0. 单实例守卫：同目录双开会互踩配置与数据，先到先得
+            # 单实例守卫：同目录双开会互踩配置与数据，先到先得
             if not acquire_instance_lock():
                 app = QApplication(sys.argv)
                 apply_icon(app)
                 QMessageBox.warning(None, WINDOW.title, GLOBAL.already_running)
                 return 0
 
-            # 1. 启动 GUI
+            # 启动 GUI
             app = QApplication(sys.argv)
             apply_icon(app)
             window, instances = create_gui()
@@ -52,7 +52,7 @@ class Main:
             app.processEvents()
             self.logger.debug("GUI 加载完成")
 
-            # 2. 获取控制器并绑定信号
+            # 获取控制器
             settings_controller = cast(SettingsController, instances.get("settings"))
             shutdown_controller = cast(ShutdownController, instances.get("shutdown"))
             window.set_shutdown_handler(shutdown_controller.shutdown_now)
@@ -93,7 +93,7 @@ class Main:
                 shutdown_controller.request_exit_from, "弹窗退出"
             )
 
-            # 3. 启动后台线程
+            # 启动后台线程
             loop_thread = threading.Thread(
                 target=self._loop.run_forever,
                 daemon=True,
@@ -102,13 +102,13 @@ class Main:
             loop_thread.start()
             self._loop_thread = loop_thread
 
-            # 4. 启动 Manager：threadsafe 入口会唤醒 selector，裸 create_task 叫不醒
+            # 启动 Manager：threadsafe 入口会唤醒 selector，裸 create_task 叫不醒
             self._bot_task = asyncio.run_coroutine_threadsafe(
                 self._manager.start(), self._loop
             )
             self.logger.info("调度器启动完成")
 
-            # 5. 进入 Qt 主循环
+            # 进入 Qt 主循环
             return app.exec()
 
         except Exception as e:
@@ -122,7 +122,7 @@ class Main:
     def _cleanup(self) -> None:
         """统一清理资源
 
-        停服务、清生命周期注册表、关事件循环。
+        - 停服务、清生命周期注册表、关事件循环
         """
         self._manager.stop_service()
 

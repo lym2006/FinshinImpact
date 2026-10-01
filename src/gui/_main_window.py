@@ -1,5 +1,5 @@
 # src/gui/_main_window.py
-"""主窗口（内部实现）
+"""主窗口
 
 - 定义 BotGUI 纯渲染与指令执行层
 """
@@ -10,6 +10,7 @@ from collections.abc import Callable
 from PySide6.QtCore import QTimer
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import (
+    QApplication,
     QHBoxLayout,
     QMainWindow,
     QPushButton,
@@ -21,10 +22,14 @@ from utils.logger import get_logger
 
 from ._dashboard import DashboardWidget, TextHandler
 from ._theme import BodyConfig, FontConfig, ToolbarConfig, WindowConfig
+from .dialogs import NoticeDialog
 
 
 class BotGUI(QMainWindow):
-    """Bot 可视化窗口（纯渲染与指令执行）"""
+    """Bot 可视化窗口
+
+    - 纯渲染与指令执行
+    """
 
     # ==================== 初始化 ====================
 
@@ -122,7 +127,6 @@ class BotGUI(QMainWindow):
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
         """拦截窗口关闭"""
-        # 拦截原生关闭，改走按钮确认流程
         event.ignore()
         self._handle_button("btn_shutdown")
 
@@ -151,14 +155,10 @@ class BotGUI(QMainWindow):
     def show_notice(self, message: str, critical: bool = False) -> None:
         """弹出统一通知
 
-        critical 区分致命语义：致命确认后直退，跳过二次关闭确认。
-        存在活动模态窗时延后重试，防被模态环吞掉一闪而退。
-        版本检测等多行结果只进弹窗，面板不重复。
+        - critical 区分致命语义：致命确认后直退，跳过二次关闭确认
+        - 存在活动模态窗时延后重试，防被模态环吞掉一闪而退
+        - 版本检测等多行结果只进弹窗，面板不重复
         """
-        from PySide6.QtWidgets import QApplication
-
-        from .dialogs import NoticeDialog
-
         if QApplication.activeModalWidget() is not None:
             QTimer.singleShot(800, lambda: self.show_notice(message, critical))
             return

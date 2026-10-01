@@ -13,7 +13,7 @@ _PROXY_KEY = r"Software\Microsoft\Windows\CurrentVersion\Internet Settings"
 def _pick_from_entries(raw: str) -> str | None:
     """提取代理地址
 
-    兼容分协议格式，优先 https 条目。
+    - 兼容分协议格式，优先 https 条目
     """
     entries: dict[str, str] = {}
     singles: list[str] = []
@@ -36,7 +36,7 @@ def _pick_from_entries(raw: str) -> str | None:
 def _to_url(address: str) -> str | None:
     """裸地址补 http scheme
 
-    mixed 端口 HTTP/SOCKS 双协议，统一按 http。
+    - mixed 端口 HTTP/SOCKS 双协议，统一按 http
     """
     address = address.strip()
     if not address:
@@ -47,10 +47,14 @@ def _to_url(address: str) -> str | None:
 
 
 def registry_proxy() -> dict:
-    """读注册表系统代理开关与地址，失败按未开启处理"""
+    """读注册表系统代理开关与地址
+
+    - 失败按未开启处理
+    """
     info = {"enable": None, "server": ""}
     if sys.platform != "win32":
         return info
+
     try:
         import winreg
 
@@ -72,7 +76,7 @@ def registry_proxy() -> dict:
 def detect_system_proxy() -> str | None:
     """探测系统代理
 
-    ProxyEnable=1 且地址可解析才返回 URL。
+    - ProxyEnable=1 且地址可解析才返回 URL
     """
     reg = registry_proxy()
     if not reg["enable"]:

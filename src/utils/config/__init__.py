@@ -45,7 +45,7 @@ __all__ = [
 def _write_clean_config() -> None:
     """从模板生成纯数据配置
 
-    注释只存模板，防 tomlkit 合并搅乱排版。
+    - 注释只存模板，防 tomlkit 合并搅乱排版
     """
     lines = CONFIG_EXAMPLE.read_text(encoding="utf-8").splitlines()
     kept: list[str] = []

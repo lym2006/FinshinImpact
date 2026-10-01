@@ -1,5 +1,5 @@
 # src/plugins/AI/handlers/_auth.py
-"""黑名单命令（内部实现）
+"""黑名单命令
 
 - /on：移出黑名单，开启对话
 - /off：加入黑名单，关闭对话
