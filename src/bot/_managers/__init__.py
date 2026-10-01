@@ -1,5 +1,5 @@
 # src/bot/_managers/__init__.py
-"""Bot 管理器门面（内部实现）
+"""Bot 管理器门面
 
 - 定义总控入口与 GUI 信号接入点
 - 实现子管理器协调：初始化→校验→启动/热重载
@@ -43,7 +43,7 @@ class BotManager:
         # 最近一次生效并重启过引擎的参数指纹：一致则跳过重启防闪断
         self._last_applied: tuple[str, str, float] | None = None
 
-        # 三级解析出的生效通道；引擎与指纹均以此为准
+        # 三级解析出的生效通道，引擎与指纹均以此为准
         self._resolved_proxy: str | None = None
 
     # ==================== 对外启停与信号处理（Qt 线程入口） ====================
@@ -55,39 +55,33 @@ class BotManager:
         await self._apply_config()
 
     def on_config_saved(self) -> None:
-        """配置保存回调（Qt 侧投递）"""
+        """配置保存回调"""
         self._loop.call_soon_threadsafe(self._handle_config_saved)
 
     def on_config_candidate(self) -> None:
-        """候选配置待验回调（Qt 侧投递，候选已进内存）"""
+        """候选配置待验回调"""
         self._loop.call_soon_threadsafe(self._handle_candidate)
 
     def on_config_abort(self) -> None:
-        """中止在途校验回调（Qt 侧投递）"""
+        """中止在途校验回调"""
         self._loop.call_soon_threadsafe(self._handle_abort)
 
     def on_shutdown_request(self) -> None:
-        """关闭请求回调（Qt 侧投递）"""
+        """关闭请求回调"""
         self._loop.call_soon_threadsafe(self._handle_shutdown)
 
     def on_shutdown_cancelled(self) -> None:
-        """取消关闭回调（Qt 侧投递）"""
+        """取消关闭回调"""
         self._loop.call_soon_threadsafe(self._handle_shutdown_cancel)
 
     def stop_service(self) -> None:
-        """停止
-
-        关闭服务，清理资源。
-        """
+        """关闭服务并清理资源"""
         self._service_manager.stop_service()
 
     # ==================== 信号处理（asyncio 线程执行） ====================
 
     def _handle_config_saved(self) -> None:
-        """重新校验并应用配置
-
-        仅 loop 线程。
-        """
+        """重新校验并应用配置"""
         if self._shutdown:
             self._logger.info("关闭流程中忽略配置保存事件")
             return
@@ -97,10 +91,7 @@ class BotManager:
         self._apply_task = self._loop.create_task(self._apply_config())
 
     def _handle_candidate(self) -> None:
-        """候选入队：候选已由 GUI 载入内存，本轮跳过磁盘重载
-
-        守卫与 _handle_config_saved 同构：任务在途时不置位，防标记串轮。
-        """
+        """候选入队"""
         if self._shutdown:
             self._logger.info("关闭流程中忽略候选校验请求")
             return
@@ -111,10 +102,9 @@ class BotManager:
         self._apply_task = self._loop.create_task(self._apply_config())
 
     def _handle_abort(self) -> None:
-        """真取消：中止在途校验，内存回退可信值，当场宣告就绪
+        """取消校验
 
-        回退后的内存就是刚验证通过、引擎正在跑的那份，无物可验，不必再跑一轮。
-        能点取消说明校验仍在探测阶段，引擎尚未被触碰，回退与就绪即时安全。
+        - 中止在途校验，内存回退可信值，当场宣告就绪
         """
         if self._apply_task is not None and not self._apply_task.done():
             self._apply_task.cancel()
@@ -143,7 +133,7 @@ class BotManager:
     async def _apply_config(self) -> None:
         """应用当前配置
 
-        失败弹向导等待再次保存，通过则重启服务。
+        - 失败弹向导等待再次保存，通过则重启服务
         """
         if self._shutdown:
             return
@@ -193,9 +183,11 @@ class BotManager:
     # ==================== 辅助方法 ====================
 
     def _get_config_func(self) -> tuple[str, str]:
-        """读取 Token 与生效 Proxy（引擎与指纹专用）
+        """读取 Token 与生效 Proxy
 
-        三级解析通过后引擎走 resolved 通道；未校验时退回配置原值。
+        - 引擎与指纹专用
+        - 三级解析通过后引擎走 resolved 通道
+        - 未校验时退回配置原值
         """
         token, cfg = self._get_raw_config_func()
         if self._resolved_proxy is not None:
@@ -203,6 +195,6 @@ class BotManager:
         return token, cfg
 
     def _get_raw_config_func(self) -> tuple[str, str]:
-        """读取配置文件原值（校验专用）"""
+        """读取校验专用的配置文件原值"""
         get: Callable[[str, type], str] = config_manager.get
         return get("basic.telegram_token", str), get("basic.proxy", str).strip()

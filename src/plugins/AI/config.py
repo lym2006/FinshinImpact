@@ -1,5 +1,5 @@
 # plugins/AI/config.py
-"""AI 配置（内部实现）
+"""AI 配置
 
 - 提供静态默认值与动态配置入口
 """
@@ -19,7 +19,7 @@ from .utils import build_message
 class _StaticAIConfig:
     """静态配置
 
-    存放固定不变的值。
+    - 存放固定不变的值
     """
 
     record_dir: Path = RECORDS_DIR  # 路径配置
@@ -41,7 +41,7 @@ _HOUR_SECONDS = 60 * 60
 class _DynamicAIConfig:
     """动态配置代理
 
-    属性访问实时透传配置中心。
+    - 属性访问实时透传配置中心
     """
 
     def __init__(self) -> None:
@@ -63,9 +63,9 @@ class _DynamicAIConfig:
     def __getattr__(self, name: str) -> Any:
         """拦截属性访问
 
-        静态优先，动态实时读取
+        - 静态优先，动态实时读取
         """
-        # ConfigError 由装饰器发信号后上抛；AttributeError 原样透出
+        # ConfigError 由装饰器发信号后上抛，AttributeError 原样透出
         if hasattr(self._static, name):
             return getattr(self._static, name)
 

@@ -1,5 +1,5 @@
 # src/plugins/AI/handlers/_history.py
-"""历史命令（内部实现）
+"""历史命令
 
 - /history：发送对话记录文档
 - /clear：清除当前会话记忆
@@ -32,7 +32,7 @@ def _get_file_path(user: str) -> Path:
 @history.message(Command("history"))
 @session_guard
 async def show_history(message: Message) -> None:
-    """发送历史记录（以文档形式）"""
+    """发送历史记录"""
     user = get_name(message)
     file_path = _get_file_path(user)
 

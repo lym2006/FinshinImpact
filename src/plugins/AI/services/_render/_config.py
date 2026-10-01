@@ -1,5 +1,5 @@
 # src/plugins/AI/services/_render/_config.py
-"""渲染配置（内部实现）
+"""渲染配置
 
 - 定义浏览器运行与自动化参数
 """

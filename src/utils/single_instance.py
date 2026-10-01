@@ -21,8 +21,8 @@ _instance_handle: int | None = None  # 持有至进程退出，由操作系统�
 def acquire_instance_lock() -> bool:
     """占用实例锁
 
-    锁名固定：一台机器同时只许一个实例，同 token 双开必互踩。
-    句柄与进程同生命周期，故意不关。
+    - 锁名固定：一台机器同时只许一个实例，同 token 双开必互踩
+    - 句柄与进程同生命周期，故意不关
     """
     global _instance_handle
     handle = _CreateMutexW(None, False, _MUTEX_NAME)

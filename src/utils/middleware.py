@@ -1,5 +1,5 @@
 # src/utils/middleware.py
-"""日志中间件（内部实现）
+"""日志中间件
 
 - 定义访问与异常统一记录管道
 """
@@ -17,7 +17,7 @@ from .logger import get_logger
 class LoggingMiddleware(BaseMiddleware):
     """访问日志中间件
 
-    拦截更新事件，格式化输出访问日志。
+    - 拦截更新事件，格式化输出访问日志
     """
 
     # 聊天类型中文映射（类级别常量，避免重复创建）
@@ -67,7 +67,7 @@ class LoggingMiddleware(BaseMiddleware):
     def _build_log_entry(self, message: Message) -> str:
         """构建日志条目
 
-        形如：超级群[-100123]<测试群> | 用户123<张三> 发送[长度：5]文本：Hi
+        - 形如：超级群[-100123]<测试群> | 用户123<张三> 发送[长度：5]文本：你好
         """
         chat = message.chat
         user = message.from_user

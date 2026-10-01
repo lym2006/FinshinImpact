@@ -1,5 +1,5 @@
 # src/utils/config/_validator.py
-"""配置校验（内部实现）
+"""配置校验
 
 - 实现按默认值类型的校验
 - 实现必填项的存在与非空判定
@@ -33,8 +33,8 @@ _BOUNDS: dict[str, tuple[float, float]] = {
 def validate_types(schema: AppSchema, data: AppConfigData) -> dict[str, str]:
     """按 schema 校验各字段类型与数值区间
 
-    必填键缺键或留空报必填文案。
-    非必填键缺失静默放行，由运行期回退模板默认值。
+    - 必填键缺键或留空报必填文案
+    - 非必填键缺失静默放行，由运行期回退模板默认值
     """
     errors: dict[str, str] = {}
 

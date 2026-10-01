@@ -1,5 +1,5 @@
 # src/plugins/help/_help.py
-"""帮助命令（内部实现）
+"""帮助命令
 
 - /help：查询帮助（图片渲染）
 - /命令 -h：单命令帮助查询
@@ -93,7 +93,9 @@ async def command_help(message: Message) -> None:
 
 @router.message(Command("help"))
 async def show_help_list(message: Message) -> None:
-    """以图片形式发送帮助菜单"""
-    # 渲染可能触发绘制（同步重活），放线程池防卡事件循环；缓存命中则近乎零成本
+    """以图片形式发送帮助菜单
+
+    - 渲染可能触发绘制，放线程池防卡事件循环
+    """
     path = await asyncio.to_thread(generate_image)
     await message.answer_photo(FSInputFile(str(path)))

@@ -1,5 +1,5 @@
 # src/gui/controllers/_settings.py
-"""配置控制器（内部实现）
+"""配置控制器
 
 - 实现向导调度、二次确认与热重载
 - 面板全程非模态：EDIT/SETUP 同实例原地切换
@@ -86,11 +86,10 @@ class SettingsController(BaseController):
     # ==================== 状态同步 ====================
 
     def _on_config_ready_changed(self, ready: bool) -> None:
-        """更新就绪缓存（Qt 线程）
+        """更新就绪缓存
 
-        收窗铁律：校验通过检测窗一律自动收，失败驻留等读结果
+        - 校验通过检测窗一律自动收窗，失败驻留等读结果
         """
-        # 未就绪事件不得清 _validating：否则已就绪到达时无人解除 busy 转圈
         self._config_ready = ready
         if not ready:
             # 裸启动无面板无窗：1.2 秒后校验未完才弹等待窗，快路径不闪窗
@@ -110,7 +109,6 @@ class SettingsController(BaseController):
             self._pending_candidate = None
             try:
                 save_config(candidate)
-                # 文案避"配置"与结果词：域词表 ⚙️ 在前，写盘动作应归 💾
                 self.logger.info(CheckMessage.WRITTEN)
             except ConfigOutputError as e:
                 self.logger.error(f"配置写入失败: {e}")
@@ -127,10 +125,11 @@ class SettingsController(BaseController):
             self._is_dialog_open = False  # 面板已被用户关掉：复位防卡死
 
     def _close_panel_verified(self) -> None:
-        """通过统一收面板：先关窗再弹一条已验证提示
+        """通过统一收面板
 
-        向导与 EDIT 同路，SETUP 的标红残留随窗消失，无需分模式。
+        - 先关窗再弹一条已验证提示
         """
+        # 向导与 EDIT 同路，SETUP 的标红残留随窗消失，无需分模式
         if self._panel is None:
             return
         self._panel.accept()
@@ -152,7 +151,7 @@ class SettingsController(BaseController):
     def show_setup_dialog(self, field_errors: dict | None = None) -> None:
         """外部信号启动强制向导
 
-        面板在前台则原地变身 SETUP，绝无关窗重开。
+        - 面板在前台则原地变身 SETUP
         """
         # 关闭流程进行中，不再打开弹窗
         if gui_bridge.is_shutdown_pending():
@@ -183,15 +182,20 @@ class SettingsController(BaseController):
     # ==================== 校验进度窗（唯一实例） ====================
 
     def _verify_window(self) -> CheckDialog | None:
-        """取当前校验轮窗口：非校验轮或无窗均返 None"""
+        """取当前校验轮窗口
+
+        - 非校验轮或无窗均返 None
+        """
         win = current_check_window()
         return win if win is not None and win.round == Round.VERIFY else None
 
     def _start_verify_wait(self, aborts: bool) -> bool:
-        """在唯一窗上开校验轮；他轮在途则日志拦截
+        """在唯一窗上开校验轮
 
-        返回是否真正开轮，调用方据此决定是否唤醒后台。
+        - 他轮在途则日志拦截
+        - 返回是否真正开轮
         """
+        # 调用方据此决定是否唤醒后台
         busy = current_check_window()
         if busy is not None and busy.is_running:
             self.logger.info(CheckMessage.CHECK_BUSY)
@@ -213,10 +217,11 @@ class SettingsController(BaseController):
         return True
 
     def _on_verify_closed(self, result: int) -> None:
-        """唯一窗收场：仅校验轮的进行中 reject 才是真停
+        """唯一窗收场
 
-        不可中断轮进行中无按钮且屏蔽 Esc，只会以 accept 收场，不动后台。
+        - 仅校验轮的进行中 reject 才是真停
         """
+        # 不可中断轮进行中无按钮且屏蔽 Esc，只会以 accept 收场，不动后台
         wait = self._verify_window()
         if (
             wait is not None
@@ -227,17 +232,19 @@ class SettingsController(BaseController):
             self._abort_pending_verify()
 
     def _abort_pending_verify(self) -> None:
-        """真停：按钮文案即行为——中止校验、弃候选、当场解锁面板
+        """停止保存校验
 
-        保存在途走 abort 通道（Bot 中止任务并回退内存）；复验在途无候选，
-        只弃在途标志，被中断的校验轮收尾必发 ready，面板届时解除忙碌。
+        - 按钮文案即行为：中止校验、弃候选、当场解锁面板
         """
+        # 保存在途走 abort 通道（Bot 中止任务并回退内存）
         if self._save_pending:
             self._pending_candidate = None
             self._save_pending = False
             self.logger.info(CheckMessage.VERIFY_ABORTED)
             gui_bridge.config_abort.emit()
             return
+
+        # 复验在途无候选，只弃在途标志，被中断的校验轮收尾必发 ready，面板届时解除忙碌
         if self._validating:
             self._validating = False
             if self._panel is not None:
@@ -246,10 +253,11 @@ class SettingsController(BaseController):
             gui_bridge.config_abort.emit()
 
     def _attach_transient(self) -> None:
-        """校验窗浮在当前面板之上：面板换装/新开后重新跟随
+        """校验窗浮在当前面板之上
 
-        本绑定无 QWidget 级接口，下到 QWindow 挂关系；句柄需 winId 强制具象。
+        - 面板换装/新开后重新跟随
         """
+        # 本绑定无 QWidget 级接口，下到 QWindow 挂关系，句柄需 winId 强制具象
         wait = self._verify_window()
         if wait is None:
             return
@@ -259,7 +267,11 @@ class SettingsController(BaseController):
         wait.windowHandle().setTransientParent(owner.windowHandle())
 
     def _on_verify_frame(self, frame: dict) -> None:
-        """进度帧转发：窗未开先缓存（开轮补播），他轮占用则静默丢弃"""
+        """进度帧转发
+
+        - 窗未开先缓存（开轮补播）
+        - 他轮占用则静默丢弃
+        """
         wait = self._verify_window()
         if wait is not None:
             wait.apply(frame)
@@ -267,10 +279,12 @@ class SettingsController(BaseController):
             self._pre_frames.append(frame)
 
     def _open_startup_wait(self) -> None:
-        """启动校验迟滞弹窗（快路径不闪窗，他轮占用则静默让位）
+        """启动校验迟滞弹窗
 
-        后台校验照跑不误，播报让路即可；抢弹提示是骚扰不是反馈。
+        - 快路径不闪窗
+        - 他轮占用则静默让位
         """
+        # 后台校验照跑不误，播报让路，不抢弹提示
         if self._config_ready or self._panel is not None:
             return
         busy = current_check_window()
@@ -284,7 +298,8 @@ class SettingsController(BaseController):
     # ==================== 内部弹窗逻辑 ====
 
     def _show_dialog(self) -> None:
-        """打开配置弹窗（EDIT/SETUP 统一非模态 show，可拖动看日志）"""
+        """打开配置弹窗"""
+        # EDIT/SETUP 统一非模态 show，可拖动看日志
         if self._is_dialog_open:
             # 面板已在前台时再点按钮应聚焦它而不是无响应
             if self._panel is not None:
@@ -316,7 +331,8 @@ class SettingsController(BaseController):
     def _on_save_requested(self, dialog: SettingsDialog | None) -> None:
         """处理面板保存请求
 
-        校验通过才关窗；取消路径面板与已填内容原样保留。
+        - 校验通过才关窗
+        - 取消路径面板与已填内容原样保留
         """
         if dialog is None:
             return
@@ -326,7 +342,7 @@ class SettingsController(BaseController):
             config_manager.schema, config_manager.get_all(), new_config
         )
 
-        # 有风险（向导态/代理留空）或有任何改动都要复验；通道没变时 Manager 跳重启
+        # 有风险（向导态/代理留空）或有任何改动都要复验，通道没变时 Manager 跳过重启
         risky = (
             self._current_mode == ConfigMode.SETUP
             or not str(config_manager.get("basic.proxy", str) or "").strip()
@@ -356,7 +372,7 @@ class SettingsController(BaseController):
             return
 
         self._log_changes(logs)
-        # 先验后存：候选只进内存，通过才落盘；取消即回退，磁盘从未见过坏值
+        # 先验后存，候选只进内存，通过才落盘，取消即回退
         self._pending_candidate = new_config
         self._save_pending = True
         dialog.set_busy(True)
@@ -377,7 +393,7 @@ class SettingsController(BaseController):
             return
         if result == self._panel.DialogCode.Rejected:
             self.logger.info("用户取消了配置修改")
-            # 校验在途时关面板=放弃本次操作：候选与后台轮一并掐掉
+            # 校验在途时关面板即放弃本次操作，候选与后台轮一并掐掉
             self._abort_pending_verify()
         self._panel.deleteLater()
         self._panel = None

@@ -1,5 +1,5 @@
 # src/plugins/AI/browser/_manager.py
-"""浏览器生命周期（内部实现）
+"""浏览器生命周期
 
 - 实现懒加载单例与安全关闭
 """
@@ -72,5 +72,5 @@ class BrowserManager:
             logger.info("全局浏览器资源已彻底释放")
 
 
-# 极其冷酷的全局单例（整个 AI 插件共享这一个管家）
+# AI 插件的全局单例
 browser_manager = BrowserManager()

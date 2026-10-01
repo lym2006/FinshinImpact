@@ -1,5 +1,5 @@
 # src/bot/_managers/_initialization.py
-"""初始化管理器（内部实现）
+"""初始化管理器
 
 - 实现文件检查流程
 """

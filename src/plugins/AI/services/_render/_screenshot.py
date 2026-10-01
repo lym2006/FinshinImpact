@@ -1,5 +1,5 @@
 # src/plugins/AI/services/_render/_screenshot.py
-"""截图服务（内部实现）
+"""截图服务
 
 - 实现懒加载浏览器与并发控制
 - 提供网页截图与边框裁剪
@@ -20,11 +20,10 @@ from ._config import render_config
 
 logger = get_logger("Plg.AI.Render")
 
-# ==================== 全局状态管理 ====================
-
+# 全局状态管理
 _semaphore = asyncio.Semaphore(render_config.max_concurrent_screenshots)
 
-# ==================== 底层截图逻辑 ====
+# ==================== 底层截图逻辑 ====================
 
 
 async def _get_screenshot(file_name: str, html_path: Path) -> Path | None:
@@ -35,10 +34,10 @@ async def _get_screenshot(file_name: str, html_path: Path) -> Path | None:
     new_path = ai_config.record_dir / f"temp/{file_name}.png"
     page = None
     try:
-        # 1. 懒加载共享浏览器
+        # 懒加载共享浏览器
         browser = await browser_manager.get_browser()
 
-        # 2. 新页面加载 HTML
+        # 新页面加载 HTML
         page = await browser.new_page()
         await page.goto(
             f"file:///{html_path}",
@@ -47,7 +46,7 @@ async def _get_screenshot(file_name: str, html_path: Path) -> Path | None:
         )
         await page.wait_for_timeout(render_config.wait_after_load)
 
-        # 3. 量取内容实际尺寸
+        # 量取内容实际尺寸
         dimensions = await page.evaluate("""() => {
             return {
                 width:document.body.scrollWidth,
@@ -63,11 +62,11 @@ async def _get_screenshot(file_name: str, html_path: Path) -> Path | None:
             render_config.render_cavas_height,
         )
 
-        # 4. 按内容重设视口，等待渲染稳定
+        # 按内容重设视口，等待渲染稳定
         await page.set_viewport_size({"width": new_width, "height": new_height})
         await page.wait_for_timeout(render_config.wait_after_resize)
 
-        # 5. 截图落盘
+        # 截图落盘
         await page.screenshot(path=new_path, full_page=False)
         logger.info(f"截图已保存: {new_path}")
     except PlaywrightError as e:
@@ -90,7 +89,7 @@ async def _get_screenshot(file_name: str, html_path: Path) -> Path | None:
 def _crop_screenshot(file_path: Path) -> None:
     """按像素裁剪截图
 
-    同步函数，需在线程池中运行。
+    - 同步函数，需在线程池中运行
     """
     try:
         img = Image.open(file_path).convert("""RGB""")
@@ -119,7 +118,10 @@ def _crop_screenshot(file_path: Path) -> None:
 
 
 async def screenshot(file_name: str, html_path: Path) -> None:
-    """截图主入口，带并发控制与异常兜底"""
+    """截图主入口
+
+    - 带并发控制与异常兜底
+    """
     async with _semaphore:
         try:
             new_path = await _get_screenshot(file_name, html_path)

@@ -1,5 +1,5 @@
 # src/plugins/AI/handlers/_identity.py
-"""身份命令（内部实现）
+"""身份命令
 
 - /change：多步修改 AI 名字与人设
 - /system：以 system 角色注入指令
@@ -62,7 +62,7 @@ async def input_name(message: Message, state: FSMContext) -> None:
 
 @identity.message(StateFilter(Chg.name))
 async def input_identity(message: Message, state: FSMContext) -> None:
-    """接收名字，等待描述"""
+    """接收名字"""
     if (new_name := message.text) is None:
         await message.answer(BotMessage.IDENTITY_ASK_TEXT)
         return
@@ -75,7 +75,7 @@ async def input_identity(message: Message, state: FSMContext) -> None:
 @identity.message(StateFilter(Chg.identity))
 @session_guard
 async def change_identity(message: Message, state: FSMContext) -> None:
-    """接收描述，完成身份设置"""
+    """完成身份设置"""
     if (new_identity := message.text) is None:
         await message.answer(BotMessage.IDENTITY_ASK_TEXT)
         return

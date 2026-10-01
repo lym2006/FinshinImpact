@@ -1,5 +1,5 @@
 # src/plugins/AI/services/_render/_renderer.py
-"""渲染核心（内部实现）
+"""渲染核心
 
 - 实现 Markdown 转 HTML 与清洗
 - 提供 Prism 高亮脚本注入
@@ -61,7 +61,7 @@ def _build_prism_scripts(langs_found: set[str]) -> str:
 def render_html(text: str) -> str:
     """渲染完整 HTML 页面
 
-    MD→HTML→XSS 清洗→高亮注入流水线。
+    - MD→HTML→XSS 清洗→高亮注入流水线
     """
     html_body = _generate_html(text)
 

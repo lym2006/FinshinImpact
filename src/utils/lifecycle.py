@@ -1,9 +1,9 @@
 # src/utils/lifecycle.py
-"""生命周期（内部实现）
+"""生命周期
 
 - 提供按对象注册的清理入口
 - 实现自退注销与退出兜底
-- 纯工具层：零日志，清理失败以描述列表返回上层记录
+- 清理失败以描述列表返回上层记录
 """
 
 import asyncio
@@ -43,9 +43,10 @@ def unregister_lifecycle(target: _TargetType, type_: _LifecycleType) -> None:
 
 
 def shutdown_all() -> list[str]:
-    """进程退出兜底清理（线程安全且幂等）
+    """进程退出兜底清理
 
-    返回失败项描述列表，由调用方记录。
+    - 线程安全且幂等
+    - 返回失败项描述列表，由调用方记录
     """
     with _registry_lock:
         # _registry 恒含三个分类键，判空必须看各列表内容
@@ -57,7 +58,8 @@ def shutdown_all() -> list[str]:
 
 
 def _run_shutdown() -> list[str]:
-    """执行一轮完整清理，收集失败项"""
+    """执行一轮完整清理"""
+    # 收集失败项
     failures: list[str] = []
 
     def _run_on_loop(

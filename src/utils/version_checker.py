@@ -26,7 +26,7 @@ _BASE_URL = "https://lym2006.github.io"
 _REQUEST_PATH = "/TelegramBot/pyproject.toml"
 _HEADER = {"User-Agent": "Python-Script"}
 
-# 静态小文件读取快，超时从严；失败即报，不做重试拖满等待
+# 静态小文件读取快，超时从严，失败即报，不做重试拖满等待
 _TIMEOUT = 3.0
 _CONNECT_TIMEOUT = 2.0
 

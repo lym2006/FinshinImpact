@@ -1,5 +1,5 @@
 # src/exceptions/_gui.py
-"""GUI 异常族（内部实现）
+"""GUI 异常族
 
 - 定义界面操作相关异常
 """
