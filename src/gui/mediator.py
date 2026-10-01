@@ -1,5 +1,5 @@
 # src/gui/mediator.py
-"""GUI 中介者（内部实现）
+"""GUI 中介者
 
 - 定义 GUI 与 Bot 的通信协议，信号按流向分组声明
 - 提供跨线程屏障与关闭竞态协调
@@ -13,11 +13,7 @@ from .signal import SafeSignal
 
 
 class GUIBridge(QObject):
-    """GUI 与 Bot 通信桥梁
-
-    关闭链三信号接力：request_exit（弹确认，不过 Bot）→ 确认后 request_shutdown（Bot 清理）
-    → 确认框反悔 request_shutdown_cancel（Bot 复位）；命名与 cancel 成对的是 shutdown 而非 exit。
-    """
+    """GUI 与 Bot 通信桥梁"""
 
     # ==================== 真实信号声明（元类注册，槽彼此隔离） ====================
 
@@ -47,7 +43,7 @@ class GUIBridge(QObject):
     request_shutdown_cancel = SafeSignal()  # 确认框取消，Bot 复位关闭状态
 
     # Bot → GUI：状态广播与弹窗调度
-    config_ready_changed = SafeSignal()  # 就绪态变更；通过即全绿，消费方自行过滤
+    config_ready_changed = SafeSignal()  # 就绪态变更。通过即全绿，消费方自行过滤。
     verify_progress = SafeSignal()  # 校验进度帧，渲染校验表格窗
     request_force_setup = SafeSignal()  # 呼出强制配置向导并标红出错字段
     request_notice = SafeSignal()  # 弹通知窗，致命确认后直退

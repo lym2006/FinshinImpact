@@ -1,5 +1,5 @@
 # src/gui/dialogs/_settings/_diff.py
-"""变更 diff 渲染（内部实现）
+"""变更 diff 渲染
 
 - 实现配置值的行级与字符级比对
 - 提供只读 diff 单元格构建
@@ -25,7 +25,7 @@ _Line = list[tuple[str, str]]
 def to_lines(value: object) -> list[str]:
     """配置值拆行
 
-    list 逐元素，标量按文本行。
+    - list 逐元素，标量按文本行
     """
     if isinstance(value, (list, tuple)):
         return [str(v) for v in value]
@@ -35,8 +35,9 @@ def to_lines(value: object) -> list[str]:
 def _char_diff(old: str, new: str) -> tuple[_Line, _Line]:
     """行内字符级比对
 
-    旧/新各输出 (类型, 文本) 分段，公共部分白色。
+    - 旧/新各输出 (类型, 文本) 分段
     """
+    # 公共部分白色
     sm = difflib.SequenceMatcher(a=old, b=new, autojunk=False)
     left: _Line = []
     right: _Line = []
@@ -55,7 +56,8 @@ def _char_diff(old: str, new: str) -> tuple[_Line, _Line]:
 def split_diff(old: list[str], new: list[str]) -> tuple[list[_Line], list[_Line]]:
     """行级对齐 + 配对行字符级细化
 
-    改词只亮改动处，多出的行整行删除/新增。
+    - 改词只亮改动处
+    - 多出的行整行删除/新增
     """
     sm = difflib.SequenceMatcher(a=old, b=new, autojunk=False)
     left: list[_Line] = []
@@ -84,7 +86,7 @@ def split_diff(old: list[str], new: list[str]) -> tuple[list[_Line], list[_Line]
 def make_diff_cell(lines: list[_Line], mono: str) -> QTextEdit:
     """只读 diff 单元格
 
-    超行高自动出滚动条。
+    - 超行高自动出滚动条
     """
     body = (
         "".join(

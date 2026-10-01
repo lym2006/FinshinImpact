@@ -1,5 +1,5 @@
 # src/plugins/AI/services/_blacklist.py
-"""黑名单服务（内部实现）
+"""黑名单服务
 
 - 实现文件读写与内存缓存
 - 提供并发安全的状态维护
@@ -24,9 +24,10 @@ _lock = asyncio.Lock()
 
 
 async def get_black_list() -> list[str]:
-    """获取黑名单（优先内存缓存）
+    """获取黑名单
 
-    首次从磁盘加载，锁防并发重复读。
+    - 优先内存缓存
+    - 首次从磁盘加载，锁防并发重复读
     """
     global _cache
 
@@ -62,7 +63,7 @@ async def get_black_list() -> list[str]:
 async def save_black_list(black_list: list[str]) -> None:
     """保存黑名单
 
-    落盘并同步更新内存缓存。
+    - 落盘并同步更新内存缓存
     """
     global _cache
 

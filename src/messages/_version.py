@@ -1,11 +1,11 @@
 # src/messages/_version.py
-"""版本检测文案（内部实现）"""
+"""版本检测文案"""
 
 
 class VersionMessage:
     """版本检测文案
 
-    升级检查回执与异常填充话术的聚合入口。
+    - 升级检查回执与异常填充话术的聚合入口
     """
 
     # 用：gui/_theme/_dialogs.py WaitDialogConfig 回执字段

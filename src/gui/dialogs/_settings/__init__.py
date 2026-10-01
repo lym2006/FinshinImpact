@@ -1,5 +1,5 @@
 # src/gui/dialogs/_settings/__init__.py
-"""配置向导（内部实现）
+"""配置向导
 
 - 实现多标签页表单与错误标红
 - 提供复验结果原地刷新与防重入
@@ -64,11 +64,15 @@ _BLANK_BY_TYPE: dict[type, ConfigValue] = {
 
 
 def _clear_layout(layout: QHBoxLayout) -> None:
-    """腾空按钮条：逐项摘控件交还 GC，容器自身由调用方 removeItem"""
+    """腾空按钮条
+
+    - 逐项摘控件交还 GC
+    """
+    # 容器自身由调用方 removeItem
     while layout.count():
         item = layout.takeAt(0)
-        if item.widget():
-            item.widget().deleteLater()
+        if item and (widget := item.widget()):
+            widget.deleteLater()
 
 
 class ConfigMode(Enum):
@@ -110,7 +114,7 @@ class SettingsDialog(BaseDialog):
             ConfigListWidget | QLineEdit | QTextEdit | QCheckBox,
         ] = {}
 
-        # 恢复按钮登记：{字段键: (按钮, 字段, 恢复目标)}；显隐随刷新时机重估
+        # 恢复按钮登记：{字段键: (按钮, 字段, 恢复目标)}，显隐随刷新时机重估
         self._reset_rows: dict[str, tuple[QPushButton, FieldSchema, ConfigValue]] = {}
 
         # 标签/页签/按钮引用：复验结果原地刷新用（免关窗重开的闪烁）
@@ -125,8 +129,7 @@ class SettingsDialog(BaseDialog):
         self._bottom_layout: QHBoxLayout | None = None
         self._tip_labels: list[QLabel] = []
 
-        # 非模态 + 灰×：两模式同款，×开关只在 flags 上，出生定死终身不碰
-        # 摘×防误点错觉；EDIT 退出走取消/Esc，SETUP 走 closeEvent 拦截
+        # 非模态 + 灰×，防误点错觉，EDIT 退出走取消/Esc，SETUP 走 closeEvent 拦截
         self.setWindowModality(Qt.WindowModality.NonModal)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowCloseButtonHint)
 
@@ -145,15 +148,16 @@ class SettingsDialog(BaseDialog):
     def showEvent(self, event: QShowEvent) -> None:  # noqa: N802
         """每次显示重估恢复按钮显隐
 
-        以控件当前值判定，覆盖首次打开与已开后置前两条路径。
+        - 以控件当前值判定
         """
+        # 覆盖首次打开与已开后置前两条路径
         super().showEvent(event)
         self._refresh_resets()
 
     def keyPressEvent(self, event: QKeyEvent) -> None:  # noqa: N802
         """SETUP 屏蔽 Esc
 
-        防绕过不可关闭约束。
+        - 防绕过不可关闭约束
         """
         if self._mode == ConfigMode.SETUP and event.key() == Qt.Key.Key_Escape:
             event.accept()
@@ -163,9 +167,9 @@ class SettingsDialog(BaseDialog):
     def _on_exit_clicked(self) -> None:
         """退出程序
 
-        保留本窗请求退出
-        确认框取消时本窗与已填内容原样保留。
+        - 保留本窗请求退出
         """
+        # 确认框取消时本窗与已填内容原样保留
         gui_bridge.request_exit.emit(self)
 
     # ==================== 错误标注 ====================
@@ -181,7 +185,8 @@ class SettingsDialog(BaseDialog):
     def apply_errors(self, field_errors: dict[str, str] | None) -> None:
         """原地刷新校验结果
 
-        字段标红/清除、标签页 ⚠ 增撤
+        - 字段标红/清除
+        - 标签页 ⚠ 增撤
         """
         self._field_errors = dict(field_errors or {})
         bad = self._resolve_error_namespaces(self._schema)
@@ -207,7 +212,7 @@ class SettingsDialog(BaseDialog):
     def set_busy(self, busy: bool) -> None:
         """校验进行中的防重入
 
-        锁表单与保存按钮：校验结果只对应按下瞬间的配置，改不动才不会被吞。
+        - 锁表单与保存按钮
         """
         if self._save_btn is None:
             return
@@ -219,10 +224,11 @@ class SettingsDialog(BaseDialog):
             self._tabs.setEnabled(not busy)
 
     def switch_to_setup(self, field_errors: dict[str, str] | None) -> None:
-        """EDIT 原地转 SETUP：保内容、换按钮、挂提示
+        """EDIT 原地转 SETUP
 
-        只拆提示行与按钮条两个可再生部件；模态与×两模式同款出生定死，无需动。
+        - 保内容、换按钮、挂提示
         """
+        # 只拆提示行与按钮条两个可再生部件，模态与×两模式同款出生定死，无需动
         self._mode = ConfigMode.SETUP
         self._field_errors = dict(field_errors or {})
         self._error_namespaces = self._resolve_error_namespaces(self._schema)
@@ -259,9 +265,10 @@ class SettingsDialog(BaseDialog):
     ) -> QWidget:
         """渲染表单控件
 
-        必填键缺失或留空一律空态上屏，禁模板占位假值冒充用户配置。
-        非必填键缺失回退模板默认值，用户不改即沿用。
+        - 必填键缺失或留空一律空态上屏
+        - 非必填键缺失回退模板默认值
         """
+        # 禁模板占位假值冒充用户配置，用户不改即沿用默认值
         container = QWidget()
         form = QFormLayout(container)
         form.setSpacing(GLOBAL.radius)
@@ -269,17 +276,18 @@ class SettingsDialog(BaseDialog):
             *[SETTINGS_DIALOG.margin] * 3 + [SETTINGS_DIALOG.tab_spacing]
         )
         ns_config = self._current.get(namespace)
-        present = ns_config is not None and field.key in ns_config
-        current_value: ConfigValue = ns_config[field.key] if present else field.default
+        present = ns_config and field.key in ns_config
+        current_value: ConfigValue = ns_config[field.key] if present else field.default  # type: ignore
 
-        # 非必填项：恢复目标是模板默认值；按钮常建，显隐随刷新时机重估
+        # 非必填项：恢复目标是模板默认值
+        restore_target: ConfigValue = None
         required = f"{namespace}.{field.key}" in REQUIRED_KEYS
         if required:
             # 必填项空态上屏，不挂恢复按钮（占位假值不是可恢复的默认）
             if not present or is_blank(current_value):
                 current_value = _BLANK_BY_TYPE.get(type(field.default), "")
         else:
-            restore_target: ConfigValue = (
+            restore_target = (
                 deepcopy(field.default)
                 if isinstance(field.default, list)
                 else field.default
@@ -358,14 +366,19 @@ class SettingsDialog(BaseDialog):
         field: FieldSchema,
         restore_target: ConfigValue,
     ) -> None:
-        """登记恢复按钮：初始隐藏，显隐统一交给刷新时机判定"""
+        """登记恢复按钮
+
+        - 初始隐藏
+        """
+        # 显隐统一交给刷新时机判定
         btn.setVisible(False)
         self._reset_rows[field_key] = (btn, field, restore_target)
 
     def _wrap_with_reset(
         self, widget: QWidget, field_key: str, restore_target: ConfigValue
     ) -> tuple[QWidget, QPushButton]:
-        """输入控件右侧挂恢复按钮（图标态，悬停出提示）"""
+        """输入控件右侧挂恢复按钮"""
+        # 图标态，悬停出提示
         row = QWidget()
         h_layout = QHBoxLayout(row)
         h_layout.setContentsMargins(*[SETTINGS_DIALOG.margin] * 4)
@@ -380,13 +393,9 @@ class SettingsDialog(BaseDialog):
         h_layout.addWidget(btn)
         return row, btn
 
-    def _value_of(
-        self, field_key: str, field: FieldSchema
-    ) -> ConfigValue:
-        """从控件提取字段当前值
-
-        与 get_modified_config 同款口径；float 解析失败返回原文，判定必不等于默认。
-        """
+    def _value_of(self, field_key: str, field: FieldSchema) -> ConfigValue:
+        """从控件提取字段当前值"""
+        # float 解析失败返回原文，判定必不等于默认
         widget = self._inputs.get(field_key)
         if widget is None:
             return None
@@ -408,18 +417,20 @@ class SettingsDialog(BaseDialog):
         return None
 
     def _refresh_resets(self) -> None:
-        """重估全部恢复按钮显隐：面板打开与校验回传时各刷一次
+        """重估全部恢复按钮显隐
 
-        判定对象是控件里的当前值而非磁盘快照，手改待保存的偏离同样亮钮。
+        - 面板打开与校验回传时各刷一次
         """
+        # 判定对象是控件里的当前值而非磁盘快照，手改待保存的偏离同样亮钮
         for field_key, (btn, field, restore_target) in self._reset_rows.items():
             btn.setVisible(self._value_of(field_key, field) != restore_target)
 
     def _reset_widget(self, field_key: str, restore_target: ConfigValue) -> None:
         """按控件类型回填恢复目标值
 
-        回填即等于默认：重估显隐，本行按钮随之消失。
+        - 回填即等于默认：重估显隐
         """
+        # 本行按钮随之消失
         widget = self._inputs.get(field_key)
         if widget is None:
             return

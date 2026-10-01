@@ -1,5 +1,5 @@
 # src/plugins/AI/browser/_config.py
-"""浏览器启动配置（内部实现）
+"""浏览器启动配置
 
 - 定义 Playwright 启动参数
 """

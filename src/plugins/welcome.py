@@ -1,5 +1,5 @@
 # src/plugins/welcome.py
-"""欢迎插件（内部实现）
+"""欢迎插件
 
 - /start：返回欢迎语
 - /time：查询当前时间

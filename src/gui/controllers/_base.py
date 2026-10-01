@@ -1,5 +1,5 @@
 # src/gui/controllers/_base.py
-"""控制器基类（内部实现）
+"""控制器基类
 
 - 定义按钮绑定契约与执行入口
 """
@@ -18,7 +18,8 @@ if TYPE_CHECKING:
 class BaseController(ABC):
     """控制器基类
 
-    统一 GUI 引用与日志注入，强制子类声明按钮契约。
+    - 统一 GUI 引用与日志注入
+    - 强制子类声明按钮契约
     """
 
     # ==================== 契约声明区 ====================
@@ -29,10 +30,8 @@ class BaseController(ABC):
 
     @abstractmethod
     def _execute(self) -> None:
-        """业务逻辑入口
-
-        子类必须实现，否则实例化抛 TypeError。
-        """
+        """业务逻辑入口"""
+        # 未实现时实例化抛 TypeError，由 ABC 元类强制
 
     # ==================== 初始化与生命周期 ====================
 
@@ -51,8 +50,6 @@ class BaseController(ABC):
 
     @gui_guard
     def execute(self) -> None:
-        """业务执行入口
-
-        触发安全守卫后委托 _execute()。
-        """
+        """业务执行入口"""
+        # gui_guard 装饰器拦截异常并记日志，防 GUI 线程卡死
         self._execute()

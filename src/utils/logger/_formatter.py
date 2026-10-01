@@ -1,5 +1,5 @@
 # src/utils/logger/_formatter.py
-"""日志格式器（内部实现）
+"""日志格式器
 
 - 定义统一格式与语义标记规则
 - 实现仪表盘日志按语义注入标记
@@ -23,7 +23,7 @@ _MARK_STOP = "\U0001f6d1"  # 🛑 停止
 _MARK_HINT = "\U0001f4a1"  # 💡 检测提示
 _MARK_DEFAULT = "\u2139\ufe0f"  # ℹ️ 兜底
 
-# 词表保持最小集，靠文案标准化命中；error 级未命中词汇时默认 ❌
+# 词表保持最小集，靠文案标准化命中，error 级未命中词汇时默认 ❌
 _RESULT_RULES = (
     (_MARK_CANCEL, ("取消",)),
     (_MARK_PAUSE, ("中断", "被删除")),
@@ -57,7 +57,8 @@ _DOMAIN_RULES = (
 def _resolve_mark(levelno: int, text: str) -> str:
     """解析日志标记
 
-    只看冒号前的头部，防后文误伤；未命中时 error 级红叉、其余图标、ℹ️ 兜底
+    - 只看冒号前的头部，防后文误伤
+    - 未命中时 error 级红叉、其余图标、ℹ️ 兜底
     """
     head = text.split("：", 1)[0].split(":", 1)[0]
 

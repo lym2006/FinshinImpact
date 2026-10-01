@@ -1,5 +1,5 @@
 # src/utils/config/_parser.py
-"""配置解析（内部实现）
+"""配置解析
 
 - 实现模板到 Schema 的解析
 """

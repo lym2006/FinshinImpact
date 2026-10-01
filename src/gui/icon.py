@@ -26,11 +26,6 @@ if sys.platform == "win32" and _anchor and Path(_anchor).is_file():
 
 
 def apply_icon(app: QApplication) -> None:
-    """设置应用图标
-
-    身份已在导入期锚定启动器 exe：Explorer 对路径形式身份就地解析壳内嵌图标，
-    裸字符串身份查不到来源，弹窗引发按钮重建时回退宿主默认图标。
-    图标文件缺失只影响窗口图标，任务栏仍跟壳走；开发态无壳，保持解释器默认。
-    """
+    """设置应用图标"""
     if _ICON_PATH.is_file():
         app.setWindowIcon(QIcon(str(_ICON_PATH)))

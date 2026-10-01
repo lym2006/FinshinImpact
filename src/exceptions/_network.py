@@ -1,5 +1,5 @@
 # src/exceptions/_network.py
-"""网络异常族（内部实现）
+"""网络异常族
 
 - 定义 HTTP 请求细分异常与映射表
 """

@@ -1,5 +1,5 @@
 # src/plugins/AI/services/_render/__init__.py
-"""渲染服务门面（内部实现）
+"""渲染服务门面
 
 - 提供 HTML 渲染与截图出口
 """

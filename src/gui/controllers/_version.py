@@ -1,5 +1,5 @@
 # src/gui/controllers/_version.py
-"""版本控制器（内部实现）
+"""版本控制器
 
 - 提供检查更新入口与结果透出
 - 探测走独立线程，不占 GUI 线程
@@ -20,10 +20,9 @@ _ERR_MAP_VERSION = MAPS["Version"]
 
 
 class _VersionWorker(QThread):
-    """版本检查线程：网络探测不占 GUI 线程
+    """版本检查线程
 
-    线程内 asyncio.run 建一次性 loop 跑协程。
-    结果以 (文案, 成败) 发回，控件更新由 Qt 排队投递回主线程，本线程绝不碰控件。
+    - 结果以 (文案, 成败) 发回
     """
 
     done = Signal(str, bool)
@@ -52,10 +51,10 @@ class VersionController(BaseController):
     def _execute(self) -> None:
         """检查版本更新
 
-        转圈窗可取消（关窗即弃线程）。
-        结果经统一通知弹窗承载全文，面板只记首行摘要。
-        新版提示文案与成败态同源透出。
+        - 转圈窗可取消（关窗即弃线程）
+        - 结果经统一通知弹窗承载全文
         """
+        # 面板只记首行摘要，新版提示文案与成败态同源透出
         dialog = WaitDialog(WAIT_DIALOG.check_text, parent=self.gui, cancelable=True)
         worker = _VersionWorker()
         result: list[tuple[str, bool]] = []
