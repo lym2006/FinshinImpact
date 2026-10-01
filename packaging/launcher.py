@@ -449,14 +449,16 @@ def _apply_update(root: Path, version: str) -> bool:
         if not new_root.exists():
             raise FileNotFoundError("发布包缺少 TelegramBot 顶层目录")
 
-        # 覆盖：白名单外目录整树拷、文件逐个拷，本体走暂存不许直接覆盖
+        # 覆盖：白名单外目录整树先删后拷、文件逐个拷，本体走暂存不许直接覆盖
         print("应用更新（保留配置、数据与日志）…")
         for item in new_root.iterdir():
             if item.name in _PRESERVE_NAMES or item.name == _SHELL_EXE:
                 continue
             target = root / item.name
             if item.is_dir():
-                shutil.copytree(item, target, dirs_exist_ok=True)
+                # 先删后拷：只合并会残留新版已删除的旧代码，遮蔽同名新模块致启动即崩
+                shutil.rmtree(target, ignore_errors=True)
+                shutil.copytree(item, target)
             else:
                 shutil.copy2(item, target)
 
