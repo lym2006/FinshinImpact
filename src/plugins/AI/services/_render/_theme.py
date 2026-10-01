@@ -1,5 +1,5 @@
 # src/plugins/AI/services/_render/_theme.py
-"""渲染主题（内部实现）
+"""渲染主题
 
 - 定义 Design Tokens 与 CSS 生成
 """
@@ -93,14 +93,8 @@ class RenderTheme:
         self.blockquote_border_color: str = "#e338e6"  # 左边框颜色
         self.blockquote_border_width: int = 3  # 左边框宽度(px)
         self.blockquote_color: str = "#555555"  # 文字色
-        self.blockquote_padding: tuple[int, int] = (
-            5,
-            10,
-        )  # 内边距(垂直px, 水平px)
-        self.blockquote_margin: tuple[float, float] = (
-            0.5,
-            0.0,
-        )  # 外边距(上em, 下em)
+        self.blockquote_padding: tuple[int, int] = (5, 10)  # 内边距(垂直px, 水平px)
+        self.blockquote_margin: tuple[float, float] = (0.5, 0.0)  # 外边距(上em, 下em)
         self.blockquote_radius: tuple[int, int, int, int] = (
             0,
             2,

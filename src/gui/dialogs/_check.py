@@ -1,8 +1,8 @@
 # src/gui/dialogs/_check.py
-"""检查进度窗（内部实现）
+"""检查进度窗
 
 - 校验轮与诊断轮共用的唯一表格窗：模块级工厂保单实例，换轮原地刷
-- 无×＋写死置顶：flags 首显前定死，进行中出口只有「取消」
+- 无×及写死置顶：flags 首显前定死，进行中出口只有「取消」
 - 不可中断轮（启动）：进行中不放按钮且屏蔽 Esc，强制跑完
 """
 
@@ -35,7 +35,10 @@ __all__ = [
 
 
 class Round:
-    """检查窗轮次协议串：单实例上的身份标记，禁止跨模块裸写"""
+    """检查窗轮次协议串
+
+    - 单实例上的身份标记，禁止跨模块裸写
+    """
 
     VERIFY = "verify"
     DIAGNOSE = "diagnose"
@@ -45,7 +48,10 @@ _window: "CheckDialog | None" = None  # 进程级唯一实例：谁开轮谁取�
 
 
 def open_check_window(parent: QWidget) -> "CheckDialog":
-    """取得唯一检查窗：无则创建并常驻，有则原地返回"""
+    """取得唯一检查窗
+
+    - 无则创建并常驻，有则原地返回
+    """
     global _window
     if _window is None:
         _window = CheckDialog(parent=parent)
@@ -53,15 +59,19 @@ def open_check_window(parent: QWidget) -> "CheckDialog":
 
 
 def current_check_window() -> "CheckDialog | None":
-    """查询当前唯一实例：轮次守卫与跨控制器判空用"""
+    """查询当前唯一实例
+
+    - 轮次守卫与跨控制器判空用
+    """
     return _window
 
 
 class CheckDialog(BaseDialog):
-    """检查进度表格窗（单实例，begin_round 换身份，谁开轮谁喂帧）
+    """检查进度表格窗
 
-    - 中断轮：进行中唯一出口「取消」，点击即中断本轮交还重来
-    - 不可中断轮（启动）：进行中无按钮且屏蔽 Esc，跑完才亮「知道了」
+    - 单实例换身份，谁开轮谁喂帧
+        - 中断轮：进行中唯一出口「取消」，点击即中断本轮交还重来
+        - 启动轮：进行中无按钮且屏蔽 Esc，跑完才亮「知道了」
     - 成功由开轮方自动收窗，失败亮「知道了」驻留待读
     """
 
@@ -69,8 +79,7 @@ class CheckDialog(BaseDialog):
         super().__init__(parent=parent, title=CHECK_DIALOG.verify_title)
         self.setWindowModality(Qt.WindowModality.NonModal)
 
-        # 无×＋写死置顶：×开关只在 flags 上，首显前一次性定死、终身不碰
-        # 换轮换标题走 setWindowTitle，不触 flags 无重建；退出只认按钮
+        # ×开关只在 flags 上，首显前定死，换轮换标题不触 flags 无重建，退出只认按钮
         flags = self.windowFlags() & ~Qt.WindowType.WindowCloseButtonHint
         self.setWindowFlags(flags | Qt.WindowType.WindowStaysOnTopHint)
 
@@ -82,6 +91,7 @@ class CheckDialog(BaseDialog):
         self._idx = 0
         self._frames = CHECK_DIALOG.spinner_frames
         self.setStyleSheet(build_check_dialog_qss())
+
         # 宽度定死、高度交给布局最小值：表格随行数收紧，默认尺寸即最小尺寸
         self.setFixedWidth(CHECK_DIALOG.width)
         layout = QVBoxLayout(self)
@@ -103,7 +113,8 @@ class CheckDialog(BaseDialog):
         self._btn = QPushButton(CHECK_DIALOG.cancel_text)
         self._btn.setObjectName("btn_primary")
         self._btn.clicked.connect(self.reject)
-        # 进行中唯一出口是「取消」；不可中断轮宁可没按钮，也不给假出口
+
+        # 进行中唯一出口是「取消」，不可中断轮宁可没按钮，也不给假出口
         self._btn.setVisible(False)
         layout.addWidget(self._btn, alignment=Qt.AlignmentFlag.AlignRight)
 
@@ -113,7 +124,10 @@ class CheckDialog(BaseDialog):
         self.finished.connect(self._dispatch_close)
 
     def _dispatch_close(self, result: int) -> None:
-        """收场分发：只回调当轮开轮方，实例常驻不销毁"""
+        """收场分发
+
+        - 只回调当轮开轮方，实例常驻不销毁
+        """
         self._running = False
         if self._on_close is not None:
             self._on_close(result)
@@ -132,10 +146,11 @@ class CheckDialog(BaseDialog):
         rows: list[dict],
         on_close: Callable[[int], None],
     ) -> None:
-        """在旧窗上原地开新一轮：换身份、换文案、复位表格与闸门
+        """在旧窗上原地开新一轮
 
-        收口后窗只是 hide、实例常驻，开轮即重新现身，调用方无需管显隐。
-        on_close 承接本窗 finished：单实例下只通知当轮控制器，杜绝多方抢接信号。
+        - 换身份、换文案、复位表格与闸门
+        - 收口后窗隐藏、实例常驻，开轮即重新现身，调用方无需管显隐
+        - 单实例下只通知当轮控制器，杜绝多方抢接信号
         """
         self._round = round_id
         self._aborts = aborts
@@ -160,7 +175,10 @@ class CheckDialog(BaseDialog):
 
     @staticmethod
     def _texts(round_id: str) -> tuple[str, str, str, str]:
-        """按轮取（标题、进行中、成功、失败）四段文案"""
+        """按轮取四段文案
+
+        - 依次为标题、进行中、成功、失败
+        """
         if round_id == Round.DIAGNOSE:
             return (
                 CHECK_DIALOG.diagnose_title,
@@ -179,34 +197,41 @@ class CheckDialog(BaseDialog):
 
     @property
     def round(self) -> str:
-        """当前轮次：跨控制器槽的守卫依据"""
+        """当前轮次
+
+        - 跨控制器槽的守卫依据
+        """
         return self._round
 
     @property
     def settled(self) -> bool:
-        """已出结果：区分中断本轮与自动收窗的依据
+        """已出结果
 
-        命名避开 QDialog.done()，同名 property 会被基类方法遮蔽。
+        - 区分中断本轮与自动收窗的依据
         """
         return self._done
 
     @property
     def aborts(self) -> bool:
-        """中断轮：按钮「取消」意为叫停本轮交还重来"""
+        """中断轮"""
         return self._aborts
 
     @property
     def is_running(self) -> bool:
-        """一轮在途且未出结果：单实例忙碌守卫，任何新轮次此时必须让路
+        """一轮在途且未出结果
 
-        收口（含失败驻留）后转 False——那时来新轮是原地覆盖重开，非并发。
+        - 单实例忙碌守卫，任何新轮次此时必须让路
+        - 收口（含失败驻留）后来新轮，原地覆盖重开
         """
         return self._running
 
     # ==================== 帧消费 ====================
 
     def apply(self, frame: dict) -> None:
-        """消费一帧进度：plan 整表重建，row 单行点亮，advice 结果帧收口"""
+        """消费一帧进度
+
+        - plan 整表重建，row 单行点亮，advice 结果帧收口
+        """
         if self._done:
             return
         self._view.apply(frame)
@@ -217,11 +242,17 @@ class CheckDialog(BaseDialog):
             self._finish(frame["status"] == RowStatus.OK)
 
     def force_apply(self, frame: dict) -> None:
-        """旁路收口闸门刷单行：仅限验证通过原地转绿这类人工证据"""
+        """旁路收口闸门刷单行
+
+        - 仅限验证通过原地转绿这类人工证据
+        """
         self._view.apply(frame)
 
     def _finish(self, passed: bool) -> None:
-        """停圈亮按钮，重复调用只认首次"""
+        """停圈亮按钮
+
+        - 重复调用只认首次
+        """
         if self._done:
             return
         self._done = True
@@ -240,19 +271,28 @@ class CheckDialog(BaseDialog):
     # ==================== 进行中拦截 ====================
 
     def keyPressEvent(self, event: QKeyEvent) -> None:  # noqa: N802
-        """收口前屏蔽 Esc：无按钮轮的「强制」不防键盘等于没防"""
+        """收口前屏蔽 Esc
+
+        - 无按钮轮的「强制」防键盘
+        """
         if not self._done and event.key() == Qt.Key.Key_Escape:
             event.accept()
             return
         super().keyPressEvent(event)
 
     def reject(self) -> None:
-        """中断关闭：取消按钮路径，先解忙再关窗"""
+        """中断关闭
+
+        - 取消按钮路径，先解忙再关窗
+        """
         self._running = False
         return super().reject()
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
-        """收口前拒关，防在途校验失去宿主"""
+        """收口前拒关
+
+        - 防在途校验失去宿主
+        """
         if not self._done:
             event.ignore()
             return

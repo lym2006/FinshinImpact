@@ -1,5 +1,5 @@
 # src/plugins/AI/services/_monitor.py
-"""队列监控服务（内部实现）
+"""队列监控服务
 
 - 实现任务消费与会话清理循环
 """
@@ -26,7 +26,7 @@ logger = get_logger("Plg.AI.Monitor")
 async def monitor_loop(user: str) -> None:
     """监控任务队列
 
-    有任务即消费，队列空时清理退出。
+    - 有任务即消费，队列空时清理退出
     """
     session = user_sessions[user]
     queue = task_queues[user]
@@ -41,7 +41,8 @@ async def monitor_loop(user: str) -> None:
                 break
 
             try:
-                # 状态先上屏；群组不推思考过程只给指引
+                # 状态先上屏。
+                # 群组不推思考过程只给指引。
                 preview = "🧠 正在思考中"
                 if task.type_ in [ChatType.GROUP, ChatType.SUPERGROUP]:
                     preview += "\n群组不推送思考过程，如需要使用 /history 命令查看"
@@ -89,7 +90,10 @@ async def monitor_loop(user: str) -> None:
 
 
 async def cleanup_loop() -> NoReturn:
-    """后台清理不活跃用户，防止内存无限膨胀"""
+    """后台清理不活跃用户
+
+    - 防止内存无限膨胀
+    """
     rec_dir = ai_config.record_dir
 
     while True:

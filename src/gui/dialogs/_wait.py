@@ -1,5 +1,5 @@
 # src/gui/dialogs/_wait.py
-"""忙碌等待弹窗（内部实现）
+"""忙碌等待弹窗
 
 - 模态转圈：动画由弹窗嵌套事件循环驱动，界面不僵死
 - 后台结果到达后停圈显示，用户确认才关闭
@@ -64,7 +64,10 @@ class WaitDialog(BaseDialog):
         self._tick.start()
 
     def set_text(self, text: str) -> None:
-        """更新等待文案（倒计时刷新用）"""
+        """更新等待文案
+
+        - 倒计时刷新用
+        """
         self._label.setText(text)
 
     # ==================== 动画与收尾 ====================
@@ -77,8 +80,9 @@ class WaitDialog(BaseDialog):
     def finish(self, text: str, passed: bool = True) -> None:
         """等待窗收口
 
-        停圈换文案；可取消版结果即终态，自动收窗不再要确认。
-        重复调用只认首次。
+        - 停圈换文案
+        - 可取消版结果即终态，自动收窗不再要确认
+        - 重复调用只认首次
         """
         if self._done:
             return
@@ -102,7 +106,7 @@ class WaitDialog(BaseDialog):
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
         """关闭等待窗
 
-        不可取消版结果未出前拒关，防后台线程失去宿主。
+        - 不可取消版结果未出前拒关，防后台线程失去宿主
         """
         if not self._cancelable and not self._done:
             event.ignore()

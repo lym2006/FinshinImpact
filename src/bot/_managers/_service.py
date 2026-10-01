@@ -1,5 +1,5 @@
 # src/bot/_managers/_service.py
-"""服务管理器（内部实现）
+"""服务管理器
 
 - 实现 BotService 生命周期管理
 - 提供组件构建与停止清理入口

@@ -1,5 +1,5 @@
 # src/gui/signal.py
-"""安全信号（内部实现）
+"""安全信号
 
 - 定义按 tag 防重连的信号包装
 """
@@ -41,14 +41,17 @@ class SafeSignalInstance:
             self._connected.discard(tag)
 
     def emit(self, *args: Any) -> None:
-        """发射信号（仅触达本信号的槽）"""
+        """发射信号
+
+        - 仅触达本信号的槽
+        """
         self._instance.emit(*args)
 
 
 class SafeSignal:
     """防重连信号描述符
 
-    将宿主类上的 _signal_<name> 真实信号包装为入口。
+    - 将宿主类上的 _signal_<name> 真实信号包装为入口
     """
 
     _native_attr: str

@@ -1,5 +1,5 @@
 # src/plugins/AI/core/_tasks.py
-"""任务队列（内部实现）
+"""任务队列
 
 - 定义 Telegram 消息安全操作
 - 实现异步任务队列管理
@@ -44,7 +44,7 @@ class TelegramTaskItem(TaskItem):
     async def safe_delete(self) -> None:
         """删除状态消息
 
-        消息已不存在则静默失败。
+        - 消息已不存在则静默失败
         """
         try:
             await self.safe_draft("用户主动停止，正在清除消息...")
@@ -58,7 +58,7 @@ class TelegramTaskItem(TaskItem):
     async def safe_reply(self, msg: str) -> Message:
         """回复原消息
 
-        原消息被删除则抛出 TaskStoppedError。
+        - 原消息被删除则抛出 TaskStoppedError
         """
         if await self.is_deleted():
             raise AITaskStoppedError() from None
@@ -77,7 +77,7 @@ class TelegramTaskItem(TaskItem):
     async def safe_edit(self, msg: str) -> None:
         """编辑状态消息
 
-        编辑失败则降级为回复新消息。
+        - 编辑失败则降级为回复新消息
         """
         if await self.is_deleted():
             raise AITaskStoppedError() from None
@@ -104,7 +104,7 @@ class TelegramTaskItem(TaskItem):
     async def safe_draft(self, text: str) -> bool:
         """发送草稿消息
 
-        失败时静默返回 False。
+        - 失败时静默返回 False
         """
         try:
             return await self.bot.send_message_draft(

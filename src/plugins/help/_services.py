@@ -1,5 +1,5 @@
 # src/plugins/help/_services.py
-"""帮助服务（内部实现）
+"""帮助服务
 
 - 定义帮助菜单数据源与自动构建
 - 提供单命令解析与图片渲染
@@ -102,7 +102,8 @@ def resolve_single_help(text: str) -> str:
 def prewarm() -> None:
     """启动前强制重画帮助图
 
-    每进程恰好一次；失败不阻断，首次请求补画。
+    - 每进程恰好一次
+    - 失败不阻断，首次请求补画
     """
     try:
         with _RENDER_LOCK:
@@ -115,7 +116,7 @@ def prewarm() -> None:
 def generate_image() -> Path:
     """渲染或命中缓存帮助图
 
-    锁双重检查保证只画一次。
+    - 锁双重检查保证只画一次
     """
     if _SAVE_PATH.exists():
         return _SAVE_PATH
@@ -128,7 +129,7 @@ def generate_image() -> Path:
 def _render_menu() -> Path:
     """绘制菜单图片
 
-    仅缓存未命中时调用。
+    - 仅缓存未命中时调用
     """
     # 使用字体对象获取真实的像素宽度
     font = ImageFont.truetype(_FONT_PATH, _HELP.font_size)

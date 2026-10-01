@@ -1,5 +1,5 @@
 # src/exceptions/_connectivity.py
-"""连接性异常族（内部实现）
+"""连接性异常族
 
 - 定义代理与 Token 探测的细分异常
 """

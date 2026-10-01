@@ -1,5 +1,5 @@
 # src/utils/plugins_register.py
-"""插件注册表（内部实现）
+"""插件注册表
 
 - 实现白名单加载顺序控制
 - 实现路由注册与逐项结果上报
@@ -29,7 +29,8 @@ _PluginReport = list[tuple[str, bool, str]]
 def register_routers(dispatcher: Dispatcher) -> _PluginReport:
     """按顺序注册插件
 
-    返回逐项报告；全部失败抛 PluginsMissingError。
+    - 返回逐项报告
+    - 全部失败抛 PluginsMissingError
     """
     report: _PluginReport = []
     success_count = 0

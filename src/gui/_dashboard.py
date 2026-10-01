@@ -1,5 +1,5 @@
 # src/gui/_dashboard.py
-"""仪表盘（内部实现）
+"""仪表盘
 
 - 定义日志面板渲染组件
 - 定义日志重定向 Handler
@@ -22,8 +22,6 @@ from exceptions import (
 )
 
 from ._theme import FontConfig
-
-_FontType = tuple[QFont, str, str]
 
 # ==================== 线程安全信号桥 ====================
 

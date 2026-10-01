@@ -1,5 +1,5 @@
 # packaging/launcher.py
-"""启动器（发布包的构建源）
+"""发布包启动器
 
 - 首次启动自动安装嵌入式 Python、依赖与浏览器内核
 - 启动前比对在线版本页，发现新版确认后整包升级，用户资产保留
@@ -46,7 +46,7 @@ _PIP_INDEX_URLS = (
 )
 _PLAYWRIGHT_CDN = "https://cdn.npmmirror.com/binaries/playwright"
 
-# 升级保留用户资产；_internal 只装二进制依赖，换壳无需动它
+# 升级保留用户资产（_internal 只装二进制依赖，换壳无需动）
 _PRESERVE_NAMES = ("config.toml", "data", "logs", "runtime", "_update", "_internal")
 
 # 换壳：运行中的 exe 不许覆盖但可改名，新壳先暂存、择机换入重启
@@ -86,18 +86,13 @@ def _info(text: str) -> None:
 
 
 def _wait_info(text: str, ms: int) -> None:
-    """限时信息弹窗
-
-    超时自动关闭，换壳交接不能赌有人在屏幕前点确定。
-    """
+    """限时信息弹窗"""
     _MessageBoxTimeoutW(0, text, _APP_TITLE, _MB_ICON_INFO, ms, 0)
 
 
 def _instance_taken() -> bool:
-    """实例锁占用探测（静默）
-
-    锁在手即主程序已在跑，是换壳交接成功的唯一硬证据。
-    """
+    """实例锁占用静默探测"""
+    # 持有锁则表明换壳成功
     handle = _CreateMutexW(None, False, _MUTEX_NAME)
     if not handle:
         return False
@@ -107,10 +102,11 @@ def _instance_taken() -> bool:
 
 
 def _already_running() -> bool:
-    """实例锁已被占用则提示并退出
+    """运行中提示
 
-    只探测不持有：真正的持锁者是随后拉起的主程序。
+    - 实例锁已被占用则提示并退出
     """
+    # 只探测不持有，真正的持锁者是随后拉起的主程序
     busy = _instance_taken()
     if busy:
         _info("机器人已在运行，请勿重复启动。\n请先关闭已开的窗口。")
@@ -118,7 +114,7 @@ def _already_running() -> bool:
 
 
 def _ask_yes_no(text: str) -> bool:
-    """询问弹窗，返回用户是否选择「是」"""
+    """询问弹窗"""
     flags = _MB_YESNO | _MB_ICON_INFO
     return ctypes.windll.user32.MessageBoxW(0, text, _APP_TITLE, flags) == _ID_YES
 
@@ -135,7 +131,10 @@ _console_open = False
 
 
 def _open_console() -> None:
-    """分配控制台窗口展示安装/升级进度"""
+    """分配控制台窗口
+
+    - 展示安装/升级进度
+    """
     global _console_open
     if _console_open:
         return
@@ -148,7 +147,7 @@ def _open_console() -> None:
 def _close_console() -> None:
     """回收控制台窗口
 
-    主程序拉起后调用。
+    - 主程序拉起后回收窗口
     """
     global _console_open
     if not _console_open:
@@ -158,15 +157,16 @@ def _close_console() -> None:
 
 
 def _hold_console() -> None:
-    """驻留进度窗口供查阅报错
+    """驻留进度窗口
 
-    等回车放行；输入不可用时直接放行，防无人值守卡死。
+    - 供查阅失败详情
     """
     print("\n以上为失败详情，按回车继续…")
     try:
         with open("CONIN$", encoding="oem", errors="replace") as f:
             f.readline()
     except OSError:
+        # 输入不可用多半无人值守，直接放行防卡死
         pass
 
 
@@ -174,7 +174,11 @@ def _hold_console() -> None:
 
 
 def _apply_system_proxy() -> None:
-    """注册表系统代理注入环境变量，安装下载随其走代理"""
+    """注册表系统代理临时注入环境变量
+
+    - 安装下载随其走代理
+    - 仅供安装期子进程使用，_launch 会剔除
+    """
     try:
         import winreg
 
@@ -201,8 +205,6 @@ def _apply_system_proxy() -> None:
         proxy = f"http://{proxy}"
     os.environ["HTTP_PROXY"] = os.environ["HTTPS_PROXY"] = proxy
 
-    # 仅供安装期的 pip/playwright 子进程继承，_launch 会剔除
-
 
 # ==================== 版本与依赖（pyproject 单一来源） ====================
 
@@ -219,12 +221,12 @@ def _local_version(root: Path) -> str:
 
 
 def _dependencies(root: Path) -> list[str]:
-    """运行依赖清单：直接取 pyproject，不落中间文件"""
+    """获取运行依赖清单"""
     return list(_pyproject_data(root)["project"]["dependencies"])
 
 
 def _remote_version() -> str | None:
-    """读取版本页的在线版本号，网络不通返回 None"""
+    """读取版本页在线版本号"""
     try:
         with urllib.request.urlopen(
             _PAGES_PYPROJECT_URL, timeout=_REQUEST_TIMEOUT
@@ -239,7 +241,10 @@ def _remote_version() -> str | None:
 
 
 def _deps_digest(deps: list[str]) -> str:
-    """依赖清单摘要：内容变动即触发重装"""
+    """依赖清单摘要
+
+    - 内容变动即触发重装
+    """
     return hashlib.sha256("\n".join(deps).encode("utf-8")).hexdigest()
 
 
@@ -258,7 +263,10 @@ def _extract_embed(runtime: Path) -> None:
 
 
 def _enable_site(runtime: Path) -> None:
-    """放开嵌入式包的 site-packages（默认注释锁死，pip 装不进第三方包）"""
+    """放开嵌入式包的 site-packages
+
+    - 默认被注释锁死，pip 装不进第三方包
+    """
     pth = next(iter(runtime.glob("python*._pth")))
     text = pth.read_text()
     if "#import site" in text:
@@ -266,7 +274,10 @@ def _enable_site(runtime: Path) -> None:
 
 
 def _pip_with_index_retry(cmd: list[str]) -> None:
-    """按序尝试多镜像索引，失败换源重试直至耗尽"""
+    """按序尝试多镜像索引
+
+    - 失败换源重试直至耗尽
+    """
     for i, index in enumerate(_PIP_INDEX_URLS):
         if i:
             print(f"换源重试（第 {i} 次）：{index}")
@@ -281,7 +292,7 @@ def _pip_with_index_retry(cmd: list[str]) -> None:
 
 
 def _bootstrap_pip(runtime: Path) -> None:
-    """引导安装 pip（已存在则跳过）"""
+    """引导安装 pip"""
     if (runtime / "Lib" / "site-packages" / "pip").exists():
         return
     cmd = [
@@ -293,7 +304,7 @@ def _bootstrap_pip(runtime: Path) -> None:
 
 
 def _install_deps(runtime: Path, deps: list[str]) -> None:
-    """把 pyproject 依赖清单直接交给 pip 安装"""
+    """安装依赖清单"""
     base = [
         runtime / "python.exe",
         "-m",
@@ -308,8 +319,8 @@ def _install_deps(runtime: Path, deps: list[str]) -> None:
 def _install_browser(runtime: Path) -> None:
     """下载 Playwright 的 chromium 内核
 
-    装到用户目录，多程序共享。
-    默认走 npmmirror 加速，失败清掉镜像变量回退官方源重试。
+    - 装到用户目录，多程序共享
+    - 默认走 npmmirror 加速
     """
     cmd = [runtime / "python.exe", "-m", "playwright", "install", "chromium"]
     env = os.environ.copy()
@@ -317,6 +328,7 @@ def _install_browser(runtime: Path) -> None:
     try:
         subprocess.run(cmd, check=True, env=env)
     except subprocess.CalledProcessError:
+        # 镜像不可用时清掉变量，回退官方源重试
         print("\n\n")
         del env["PLAYWRIGHT_DOWNLOAD_HOST"]
         print("npmmirror 不可用，已回退官方源重试，上方报错无需处理。\n\n")
@@ -324,7 +336,10 @@ def _install_browser(runtime: Path) -> None:
 
 
 def _ensure_runtime(root: Path) -> None:
-    """补齐运行环境：嵌入式 Python → site 开关 → pip → 依赖 → 浏览器内核"""
+    """补齐运行环境
+
+    - 嵌入式 Python → site 开关 → pip → 依赖 → 浏览器内核
+    """
     runtime = root / "runtime"
     deps = _dependencies(root)
     if _installed_ok(runtime, deps):
@@ -359,7 +374,10 @@ def _ensure_runtime(root: Path) -> None:
 
 
 def _report_progress(done: int, total: int, start: float) -> None:
-    """单行刷新下载进度：百分比、字节量与速率"""
+    """单行刷新下载进度
+
+    - 含百分比、字节量与速率
+    """
     elapsed = max(time.monotonic() - start, _SPEED_EPS)
     speed = done / elapsed / _BYTES_PER_MB
     if total:
@@ -388,7 +406,10 @@ def _download_one(url: str, target: Path) -> None:
 
 
 def _fetch_zip(urls: list[str], target: Path) -> None:
-    """多源下载发布物：每源完成后校验 zip，坏包自动换源"""
+    """多源下载发布物
+
+    - 每源完成后校验 zip，坏包自动换源
+    """
     last_error: Exception | None = None
     for url in urls:
         try:
@@ -406,8 +427,8 @@ def _fetch_zip(urls: list[str], target: Path) -> None:
 def _apply_update(root: Path, version: str) -> bool:
     """整包升级
 
-    下载新版并覆盖源码，用户资产保留。
-    新壳有变化则暂存包根，由升级收尾当场换入。
+    - 下载新版并覆盖源码，用户资产保留
+    - 新壳有变化则暂存包根，由升级收尾当场换入
     """
     stage = root / "_update"
     try:
@@ -428,7 +449,7 @@ def _apply_update(root: Path, version: str) -> bool:
         if not new_root.exists():
             raise FileNotFoundError("发布包缺少 TelegramBot 顶层目录")
 
-        # 覆盖：白名单外目录整树拷、文件逐个拷；本体走暂存不许直接覆盖
+        # 覆盖：白名单外目录整树拷、文件逐个拷，本体走暂存不许直接覆盖
         print("应用更新（保留配置、数据与日志）…")
         for item in new_root.iterdir():
             if item.name in _PRESERVE_NAMES or item.name == _SHELL_EXE:
@@ -459,7 +480,8 @@ def _apply_update(root: Path, version: str) -> bool:
 def _check_update(root: Path) -> None:
     """升级检查
 
-    比对在线版本并确认后升级；网络不通静默跳过，GUI 内可手动检查。
+    - 网络不通静默跳过
+    - GUI 内可手动检查
     """
     local = _local_version(root)
     remote = _remote_version()
@@ -490,26 +512,25 @@ def _check_update(root: Path) -> None:
 def _apply_shell_update(root: Path, handoff: bool = False) -> None:
     """启动器换壳
 
-    旧 exe 改名让位，新壳移入规范路径；
-    启动开头调用只换壳沿用本次流程，升级收尾带 handoff 则拉起新壳、
-    以主程序持锁确认接管后旧壳退场，等不到就回退旧壳直接启动。
+    - 启动开头调用只换壳，沿用本次流程
+    - 升级收尾带 handoff 则拉起新壳，主程序持锁确认接管后旧壳退场，等不到就回退旧壳直接启动
     """
     pending = root / _SHELL_PENDING
     exe_path = root / _SHELL_EXE
     bak = exe_path.with_name(_SHELL_EXE + _SHELL_BAK_SUFFIX)
 
-    # 每次执行先清理上次换壳的遗留备份（彼时旧壳进程已退出，可删了）
+    # 每次执行先清理上次换壳的遗留备份
     try:
         bak.unlink(missing_ok=True)
     except OSError:
-        pass  # 上次旧壳仍存活或备份被占用：留到下次再清
+        pass  # 上次旧壳仍存活或备份被占用，留到下次再清
     new_exe = pending / _SHELL_EXE
     if not new_exe.is_file():
         return
     try:
         exe_path.rename(bak)  # 旧 exe 变身 .old 让位
     except OSError:
-        # 改名失败多半是被安全软件短暂占用：放弃本次更换，保留暂存下次再试
+        # 改名失败可能是短暂占用，放弃本次更换，保留暂存下次再试
         print("启动器暂被占用，本次沿用旧版继续")
         return
     shutil.move(str(new_exe), str(exe_path))  # 新壳移入规范路径
@@ -533,7 +554,7 @@ def _apply_shell_update(root: Path, handoff: bool = False) -> None:
     if _handoff_wait(_SWAP_FAST_TIMEOUT):
         sys.exit(0)
 
-    # 慢路径：新壳多半卡在杀软首扫，安抚窗顶住这段无反馈时间
+    # 慢路径：新壳多半卡在杀软首扫，安抚窗顶住无反馈时间
     _wait_info(
         "更新完成，正在自动重新启动。\n首次启动需要安全软件扫描，可能要等一会儿…",
         _SWAP_SOOTHE_MS,
@@ -546,7 +567,7 @@ def _apply_shell_update(root: Path, handoff: bool = False) -> None:
 def _handoff_wait(timeout: float) -> bool:
     """抢锁轮询
 
-    锁在新壳主程序手里，抢到即证明新版真的跑起来了。
+    - 锁在新壳主程序手里，抢到即证明新版运行中
     """
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
@@ -557,7 +578,10 @@ def _handoff_wait(timeout: float) -> bool:
 
 
 def _root_dir() -> Path:
-    """发布包根目录：启动器 exe 位于包根"""
+    """发布包根目录
+
+    - 启动器 exe 位于包根
+    """
     if not getattr(sys, "frozen", False):
         _fail_exit("本文件需经 build.py 编译成 exe 后使用")
     return Path(sys.executable).resolve().parent
@@ -566,13 +590,12 @@ def _root_dir() -> Path:
 def _launch(root: Path) -> None:
     """以无窗口解释器拉起主程序入口脚本
 
-    main.py 位于包根，注入源码路径后等价 python -m bot，
-    显式入口便于调试：可直接运行 main.py 复现问题。
+    - 注入源码路径后等价 python -m bot
+    - 显式入口便于调试，可直接运行 main.py 复现问题
     """
-    # 剔除安装期注入的代理变量：主程序有自己的三级解析，不该被 OS 代理绑架
     env = {
         k: v for k, v in os.environ.items() if k not in ("HTTP_PROXY", "HTTPS_PROXY")
-    }
+    }  # 剔除安装期注入的代理变量
     env[_AUMID_ANCHOR_VAR] = str(Path(sys.executable))  # 任务栏图标解析指向壳自身
     subprocess.Popen(
         [str(root / "runtime" / "pythonw.exe"), str(root / "main.py")],
@@ -582,7 +605,10 @@ def _launch(root: Path) -> None:
 
 
 def main() -> None:
-    """实例检查 → 换壳 → 安装环境 → 检查升级 → 拉起主程序 → 回收进度窗口"""
+    """启动主流程
+
+    - 依次：实例检查、换壳、装环境、检查升级、拉起主程序、回收进度窗口
+    """
     if _already_running():
         sys.exit(0)
     root = _root_dir()

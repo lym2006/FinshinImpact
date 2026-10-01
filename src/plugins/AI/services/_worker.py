@@ -1,5 +1,5 @@
 # src/plugins/AI/services/_worker.py
-"""对话工作循环（内部实现）
+"""对话工作循环
 
 - 实现流式接收、UI 更新与记录持久化
 """
@@ -38,7 +38,7 @@ def _trim(text: str) -> str:
 async def _send_long_message(task: TelegramTaskItem, text: str) -> None:
     """分段发送长消息
 
-    内置防频控。
+    - 内置防频控
     """
     total_len = len(text)
     size = ai_config.msg_chunk_size
@@ -94,7 +94,7 @@ async def _handle_ai_message(
 ) -> AsyncGenerator[tuple[str, Any], None]:
     """处理 AI 流式数据
 
-    产出 (事件类型, 数据)。
+    - 产出 (事件类型, 数据)
     """
     session = user_sessions[user]
     current_think = current_msg = ""
