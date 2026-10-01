@@ -3,7 +3,8 @@
 
 - 通道并行调度单源：全通道同时发射、按阶梯顺序首成裁决、同款进度帧
 - 探测方式由调用方以探针注入，本模块不关心 token 与网络栈细节
-- 超时预算归探针自持；端口复测与结论聚合留各调用方：两处语义本就不同
+- 超时预算归探针自持
+- 端口复测与结论聚合留各调用方
 """
 
 import asyncio
@@ -16,7 +17,7 @@ from .config import AppConfigData, AppSchema, validate_types
 from .net_probe import Channel, FieldKey, RowId, RowStatus
 
 # 探针契约：返回 (生效地址或 None, 字段错误字典, 表格展示句)
-# 表格展示句留空时由核心按"称谓：可达/不可达"统一拼装；缺席句等特例才显式覆盖
+# 表格展示句留空时由核心按"称谓：可达/不可用"统一拼装，缺席句等特例显式覆盖
 _Probe = Callable[[Channel], Awaitable[tuple[str | None, dict[str, str], str]]]
 _Emit = Callable[[dict], None]
 _StopCheck = Callable[[], bool]
@@ -38,7 +39,8 @@ class ChannelOutcome:
 
 
 def _never_stop() -> bool:
-    """默认停止回调：永不中断"""
+    """默认停止回调"""
+    # 永不中断
     return False
 
 
@@ -46,9 +48,9 @@ def _never_stop() -> bool:
 
 
 async def _probe_safe(ch: Channel, probe: _Probe) -> _Verdict:
-    """执行单通道探针：探针自身异常折为该通道 fail，取消原样上抛
+    """执行单通道探针
 
-    炸一行不掀桌：一只耗子的异常只判死它自己的通道。
+    - 探针自身异常折为该通道 fail，不原样上抛
     """
     try:
         resolved, errors, detail = await probe(ch)
@@ -61,13 +63,20 @@ async def _probe_safe(ch: Channel, probe: _Probe) -> _Verdict:
 
 
 def _settle_frame(ch: Channel, verdict: _Verdict, via_label: _ViaLabel) -> dict:
-    """组单行终态帧：展示句留空即按称谓统一拼装成败句"""
+    """组单行终态帧
+
+    - 展示句留空即按称谓统一拼装成败句
+    """
     ok, _, _, detail = verdict
     text = detail or CheckMessage.REACH.format(
         via=via_label(ch),
         state=CheckMessage.REACH_OK if ok else CheckMessage.REACH_FAIL,
     )
-    return {"id": ch.kind, "status": RowStatus.OK if ok else RowStatus.FAIL, "detail": text}
+    return {
+        "id": ch.kind,
+        "status": RowStatus.OK if ok else RowStatus.FAIL,
+        "detail": text,
+    }
 
 
 async def run_channels(
@@ -77,10 +86,15 @@ async def run_channels(
     via_label: _ViaLabel,
     stop_check: _StopCheck | None = None,
 ) -> ChannelOutcome:
-    """全通道并行发射，按阶梯顺序首成裁决，与两窗同款帧协议
+    """全通道并行发射
 
-    在场通道同时标 checking，行有结局即点亮；高优先未交代前，低优先先通不抢答。
-    首个可走即定案，剩余在途取消并标跳过；stop_check 置真整体让路不发终态帧。
+    - 阶梯顺序，首成定案
+    - 两窗同帧协议
+    - 在场通道同标 checking
+    - 败即红，成则定案才绿
+    - 高优未决时低优可通不抢答，落选者清场跳过
+    - 首个可走即定案，余者在途取消
+    - stop_check 为真则整体让路，不发终态帧
     """
     stop = stop_check or _never_stop
     outcome = ChannelOutcome()
@@ -101,21 +115,23 @@ async def run_channels(
         for task in done:
             ch = tasks[task]
             verdict = task.result()
-            # 定案后的迟到结局（陪跑抢先完成那一瞬）不再点亮，留给清场统一标跳过
-            if winner is not None:
-                continue
             verdicts[ch.kind] = verdict
-            emit(_settle_frame(ch, verdict, via_label))
-        # 按阶梯顺序走账：首个未交代处停下等它；已交代的位子里出现可走即定案
+            # 败行即时落红：✗ 是终局，不会被清场翻案
+            if not verdict[0]:
+                emit(_settle_frame(ch, verdict, via_label))
+
+        # 按阶梯顺序走账：首个未交代处停下等它，已交代的位子里出现可走即定案
         for ch in order:
             verdict = verdicts.get(ch.kind)
             if verdict is None:
                 break
             if verdict[0]:
                 winner = ch
+                # 定案的绿勾此刻才上屏：按住期间它从没亮过，不存在翻案
+                emit(_settle_frame(ch, verdict, via_label))
                 break
 
-    # 清场：在途陪跑取消并补标跳过，抢跑成功的改标跳过；败行保留真实✗不掩遮
+    # 清场：在途陪跑取消，按住未发的成功者与未完成者统一补绿色带过。
     stragglers = {t for t in tasks if not t.done()}
     for task in stragglers:
         task.cancel()
@@ -151,9 +167,10 @@ async def run_channels(
 
 
 def local_row(schema: AppSchema, config: AppConfigData) -> tuple[dict, dict[str, str]]:
-    """本地配置校验：返回（local 行终态帧，类型错误字典）
+    """本地配置校验
 
-    纯函数零阻塞，结果并入开局整表先行落定，网络在跑时本地已亮。
+    - 返回（local 行终态帧，类型错误字典）
+    - 纯函数零阻塞，结果并入开局整表先行落定，网络在跑时本地已亮
     """
     errors = validate_types(schema, config)
     frame = {
