@@ -20,8 +20,6 @@ class ConfigIO:
     def __init__(self, config_path: Path) -> None:
         self._config_path = config_path
 
-    # ==================== 读取 ====================
-
     def load(self) -> AppConfigData:
         """读取配置数据"""
         if not self._config_path.exists():
@@ -32,8 +30,6 @@ class ConfigIO:
             return tomlkit.parse(raw_text)
         except Exception as e:
             raise ConfigInputError() from e
-
-    # ==================== 写入 ====================
 
     def save(self, config_data: AppConfigData) -> None:
         """全量保存配置"""
