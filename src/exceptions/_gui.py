@@ -17,9 +17,6 @@ class DashboardWriteError(GUIError):
     """仪表盘写入异常"""
 
 
-# ==================== 字体异常 ====================
-
-
 class FontError(GUIError):
     """字体异常基类"""
 

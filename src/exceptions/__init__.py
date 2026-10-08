@@ -15,6 +15,7 @@ from ._config import (
     ConfigParseError,
     ConfigPathMissingError,
     ConfigTemplateMissingError,
+    ProfileMissingError,
 )
 from ._connectivity import (
     CONNECTIVITY_MAP,
@@ -81,6 +82,7 @@ __all__ = [
     "ConfigParseError",
     "ConfigAttrError",
     "ConfigPathMissingError",
+    "ProfileMissingError",
     # 网络与 API
     "NetworkError",
     "HTTPStatusError",

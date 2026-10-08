@@ -18,25 +18,31 @@ class ConfigMissingError(ConfigError):
 
 
 class ConfigTemplateMissingError(ConfigError):
-    """致命的配置模板缺失异常"""
+    """配置模板缺失异常"""
+
+    fatal = True
+
+
+class ProfileMissingError(ConfigError):
+    """实例身份缺失异常"""
 
     fatal = True
 
 
 class ConfigInputError(ConfigError):
-    """致命的配置读取错误异常"""
+    """配置读取错误异常"""
 
     fatal = True
 
 
 class ConfigOutputError(ConfigError):
-    """致命的配置写入错误异常"""
+    """配置写入错误异常"""
 
     fatal = True
 
 
 class ConfigParseError(ConfigError):
-    """致命的配置解析错误异常"""
+    """配置解析错误异常"""
 
     fatal = True
 
@@ -69,11 +75,12 @@ class ConfigAttrError(ConfigError):
 CONFIG_MAP = {
     ConfigMissingError: "缺少配置文件，自动打开面板填写",
     ConfigTemplateMissingError: "缺少配置模板，阻止启动",
+    ProfileMissingError: "实例身份缺失\n无法定位实例目录",
     ConfigInputError: "配置读取错误",
     ConfigOutputError: "配置写入错误",
     ConfigParseError: "配置模板解析错误",
-    ConfigPathMissingError: "\n配置缺失：{key_path}\n找不到键：'{missing_key}'",
-    ConfigAttrError: "\n配置项：{key_path}"
+    ConfigPathMissingError: "配置缺失：{key_path}\n找不到键：'{missing_key}'",
+    ConfigAttrError: "配置项：{key_path}"
     "\n期望类型：{expected_type}"
     "\n实际类型：{actual_type}"
     "\n实际值：{actual_value}",
