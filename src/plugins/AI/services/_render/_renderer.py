@@ -12,8 +12,6 @@ from markdown import markdown as md
 
 from ._css import ALLOWED_ATTRS, ALLOWED_TAGS, CDN_BASE, HEAD, PRISM_COMPONENTS, TAIL
 
-# ==================== Markdown 转 HTML ====================
-
 
 def _generate_html(text: str) -> str:
     """组装完整 HTML 文档"""
@@ -35,9 +33,6 @@ def _generate_html(text: str) -> str:
     return html_body
 
 
-# ==================== Prism 脚本注入 ====================
-
-
 def _build_prism_scripts(langs_found: set[str]) -> str:
     """构建高亮脚本标签"""
     # 无代码块时不注入高亮脚本
@@ -53,9 +48,6 @@ def _build_prism_scripts(langs_found: set[str]) -> str:
             scripts.append(f'<script src="{CDN_BASE}{js_file}"></script>')
 
     return "\n".join(scripts)
-
-
-# ==================== 渲染主入口 ====================
 
 
 def render_html(text: str) -> str:

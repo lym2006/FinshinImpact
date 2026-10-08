@@ -7,7 +7,7 @@
 
 from ._theme import render_theme
 
-# ==================== CDN 地址配置 ====================
+# CDN 地址配置
 
 # Prism CDN 根地址
 _PRISM_CDN_ROOT = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/"
@@ -20,8 +20,7 @@ _PRISM_THEMES_DIR = "themes/"
 _PRISM_THEME_URL = f"{_PRISM_CDN_ROOT}{_PRISM_THEMES_DIR}prism-okaidia.min.css"
 CDN_BASE = f"{_PRISM_CDN_ROOT}{_PRISM_COMPONENTS_DIR}"
 
-# ==================== HTML 模板样式 ====================
-
+# HTML 模板样式
 HEAD = f"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -123,8 +122,7 @@ TAIL = """
 </body>
 </html>"""
 
-# ==================== Prism 代码高亮组件映射 ====================
-
+# Prism 代码高亮组件映射
 PRISM_COMPONENTS = {
     "python": "prism-python.min.js",
     "py": "prism-python.min.js",
@@ -146,7 +144,7 @@ PRISM_COMPONENTS = {
     "git": "prism-git.min.js",
 }
 
-# ==================== HTML 安全白名单配置 ====================
+# HTML 安全白名单配置
 
 # 允许的 HTML 标签白名单（Markdown 渲染需要的标签 + 安全标签）
 ALLOWED_TAGS = {

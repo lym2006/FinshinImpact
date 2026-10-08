@@ -22,8 +22,6 @@ _CONNECT_TIMEOUT = 10.0
 class BaseClient:
     """通用 HTTP 客户端基类"""
 
-    # ==================== 内部辅助方法 ====================
-
     @classmethod
     @asynccontextmanager
     async def _create_client(
@@ -63,8 +61,6 @@ class BaseClient:
             raise ConnectionFailedError() from e
         except httpx.HTTPStatusError as e:
             raise HTTPStatusError(e.response.status_code, e.response.text) from e
-
-    # ==================== 通用请求方法 ====================
 
     @classmethod
     async def stream_post(

@@ -9,12 +9,13 @@ from pathlib import Path
 from typing import Any
 
 from bot.error_guard import error_guard
-from utils import BLACKLIST_DIR, RECORDS_DIR, config_manager
+from utils import RECORDS_DIR, config_manager
+from utils.config.models import PersonaKey
+from utils.persona import build_persona
 
 from .utils import build_message
 
 
-# 静态配置：所有不变的东西都放在这里
 @dataclass(frozen=True)
 class _StaticAIConfig:
     """静态配置
@@ -22,22 +23,33 @@ class _StaticAIConfig:
     - 存放固定不变的值
     """
 
-    record_dir: Path = RECORDS_DIR  # 路径配置
-    black_dir: Path = BLACKLIST_DIR
+    # 路径配置
+    record_dir: Path = RECORDS_DIR
+
+    # 硬编码模型行为
+    model_name: str = "qwen3.7-flash"
+    think_mode: tuple[tuple[str, Any], ...] = (("enable_thinking", False),)
 
     # API 与模型基础配置
-    base_url: str = "https://api.siliconflow.cn/v1"
+    base_url: str = "https://maas.qianwenaiapi.com/compatible-mode/v1"
     request_path: str = "/chat/completions"
     msg_chunk_size: int = 4000  # 消息发送相关
     flood_threshold: int = 5
-    think_throttle_sec: float = 1.2
-    trim_preview_len: int = 2000
 
 
 _HOUR_SECONDS = 60 * 60
 
 
-# 动态代理：负责实时获取变化的值
+def _build_persona(fallback: str) -> str:
+    """取人设正文并注入主人 id
+
+    - 勾选 use_file 则优先读实例人设文件，读不到回退配置字符串
+    """
+    use_file = config_manager.get(PersonaKey.path(PersonaKey.USE_FILE), bool)
+    owner_id = config_manager.get(PersonaKey.path(PersonaKey.OWNER), str)
+    return build_persona(fallback, use_file, owner_id)
+
+
 class _DynamicAIConfig:
     """动态配置代理
 
@@ -50,13 +62,12 @@ class _DynamicAIConfig:
         # 定义动态属性的获取规则：属性名 -> (配置中心路径, 类型)
         self._dynamic_attr_map = {
             "timeout": ("global.network_timeout", float),
-            "model_name": ("ai.model_name", str),
             "api_key": ("ai.api_key", str),
             "temperature": ("ai.temperature", float),
             "group_triggers": ("chore.triggers", list),
             "cleanup_time": ("data.clearup", float),
             "waiting_time": ("data.waiting", float),
-            "init": ("chore.personality", str),
+            "init": (PersonaKey.path(PersonaKey.PERSONALITY), str),
         }
 
     @error_guard("AI 配置读取", reraise=True)
@@ -82,7 +93,7 @@ class _DynamicAIConfig:
             if name == "waiting_time":
                 return value * _HOUR_SECONDS
             if name == "init":
-                return tuple([build_message("system", value)])
+                return tuple([build_message("system", _build_persona(value))])
 
             return value
 
