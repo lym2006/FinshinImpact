@@ -45,7 +45,7 @@ extend-ignore-names = [
 ]
 
 [lint.isort]
-known-first-party = ["plugins", "utils"]
+known-first-party = ["plugins", "utils", "core", "data", "services", "adapters", "bot"]
 
 [format]
 quote-style = "double"                  # 普通字符串强制使用双引号 ""

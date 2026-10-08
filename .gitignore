@@ -1,53 +1,26 @@
-# --- Python 编译缓存与构建产物 ---
+# --- Python 缓存与构建产物 ---
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
 *.egg-info/
-.installed.cfg
-*.egg
+dist/
+
+# --- 工具缓存 ---
 .ruff_cache/
+.import_linter_cache/
+.grimp_cache/
 
 # --- 虚拟环境 ---
 .venv/
-ENV/
-env/
-venv/
 
-# --- IDE 配置 ---
+# --- 编辑器配置 ---
 .vscode/
 .idea/
-*.swp
-*.swo
 
-# --- 日志 ---
-logs/
-
-# --- 敏感信息与配置文件 ---
-.env
-/config.toml
-/config.toml.bak
-secrets.json
-*.key
-*.pem
+# --- 运行时数据 ---
+instances/
 
 # --- 项目特定忽略项 ---
-data/
 tests/
 
 # --- 操作系统文件 ---
-.DS_Store
 Thumbs.db
