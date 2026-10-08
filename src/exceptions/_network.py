@@ -31,5 +31,5 @@ class HTTPStatusError(NetworkError):
 NETWORK_MAP = {
     RequestTimeoutError: "请求超时",
     ConnectionFailedError: "连接失败",
-    HTTPStatusError: "\nHTTP 状态码：{status_code}\n错误信息：{msg}",
+    HTTPStatusError: "HTTP 状态码：{status_code}\n错误信息：{msg}",
 }

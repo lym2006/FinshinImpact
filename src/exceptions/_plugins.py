@@ -6,8 +6,6 @@
 
 from ._base import BotError
 
-# ==================== 总插件异常 ====================
-
 
 class PluginsError(BotError):
     """插件异常基类"""
@@ -17,9 +15,6 @@ class PluginsMissingError(PluginsError):
     """未注册插件"""
 
     fatal = True  # 环境缺失非配置可修，向导无从补救
-
-
-# ==================== AI 插件异常 ====================
 
 
 class AIError(PluginsError):

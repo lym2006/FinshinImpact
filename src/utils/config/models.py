@@ -6,20 +6,37 @@
 
 from dataclasses import dataclass, field
 
-# ==================== 核心配置值类型 ====================
+# 核心配置值类型
 
 # 单个 TOML 配置值
 ConfigValue = str | bool | float | list[str] | None
 
-# ==================== 运行时配置数据结构 ====================
-
+# 运行时配置数据结构
 TabData = dict[str, ConfigValue]  # 一个标签页
 
 # 完整 TOML 配置文件结构
 AppConfigData = dict[str, TabData]
 
 
-# ==================== 校验占位协议 ====================
+class PersonaKey:
+    """人设配置键
+
+    - 配置向导预览与 AI 人设组装必须取同一组键名
+    - 成员存 TOML 短键名，点分路径由 path 派生
+    """
+
+    NAMESPACE: str = "chore"
+    USE_FILE: str = "use_file"
+    PERSONALITY: str = "personality"
+    OWNER: str = "owner"
+
+    @classmethod
+    def path(cls, key: str) -> str:
+        """拼点分路径"""
+        return f"{cls.NAMESPACE}.{key}"
+
+
+# 校验占位协议
 
 # 前置项失败导致某项无法验证时的文案前缀（proxy 坏则 token 测不了）
 PENDING_MARK = "暂未检测"
@@ -33,8 +50,8 @@ REQUIRED_MARK = "必填项未填写"
 # 必填项点分路径清单：硬编码防用户改配置绕过，防模板占位假值当真值上屏
 REQUIRED_KEYS: frozenset[str] = frozenset(
     {
-        "basic.telegram_token",
         "ai.api_key",
+        PersonaKey.path(PersonaKey.OWNER),
         "chore.triggers",
     }
 )
@@ -53,9 +70,7 @@ def is_blank(value: object) -> bool:
     return False
 
 
-# ==================== UI Schema 结构契约 ====================
-
-
+# UI Schema 结构契约
 @dataclass
 class FieldSchema:
     """单个配置项的 UI 属性"""
