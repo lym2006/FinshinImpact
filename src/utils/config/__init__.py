@@ -4,10 +4,7 @@
 - 提供检查、读写与校验出口
 """
 
-from exceptions import (
-    ConfigMissingError,
-    ConfigTemplateMissingError,
-)
+from exceptions import ConfigTemplateMissingError
 
 from ..init_files import CONFIG_EXAMPLE, CONFIG_FILE
 from ._differ import compare_configs
@@ -21,8 +18,10 @@ from .models import (
     AppSchema,
 )
 
-_IO = ConfigIO(CONFIG_FILE)  # 底层组件实例化
+# CONFIG_EXAMPLE 在 init_files 已按身份码前缀定好平台模板，导入期绑定即正确
 _PARSER = ConfigParser(CONFIG_EXAMPLE)
+
+
 __all__ = [
     # 占位标记（re-export 自 models）
     "PENDING_MARK",
@@ -39,7 +38,13 @@ __all__ = [
     "validate_types",
 ]
 
-# ==================== 启动阶段 ====================
+
+def _io() -> ConfigIO:
+    """取得配置读写器
+
+    - 每次按当前 CONFIG_FILE 构造，身份码注入晚于本模块导入也不会绑错路径
+    """
+    return ConfigIO(CONFIG_FILE)
 
 
 def _write_clean_config() -> None:
@@ -57,24 +62,26 @@ def _write_clean_config() -> None:
         if not line.strip() and (not kept or not kept[-1].strip()):
             continue
         kept.append(line)
+    CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
     CONFIG_FILE.write_text("\n".join(kept) + "\n", encoding="utf-8")
 
 
 def ensure_config() -> None:
-    """确保配置文件存在"""
+    """确保配置文件存在
+
+    - 缺失则从模板生成后照常返回，不中断启动流程
+    - 必填项留空由本地校验报出，向导据此标红引导填写
+    """
     if CONFIG_FILE.exists():
         return
 
-    if CONFIG_EXAMPLE.exists():
-        _write_clean_config()
-        raise ConfigMissingError() from None
+    if not CONFIG_EXAMPLE.exists():
+        raise ConfigTemplateMissingError() from None
 
-    raise ConfigTemplateMissingError() from None
-
-
-# ==================== 数据读取与 UI 渲染 ====================
+    _write_clean_config()
 
 
+# 数据读取与 UI 渲染
 def get_schema() -> AppSchema:
     """获取 Schema 树"""
     return _PARSER.parse()
@@ -82,12 +89,9 @@ def get_schema() -> AppSchema:
 
 def load_config() -> AppConfigData:
     """读取配置数据"""
-    return _IO.load()
-
-
-# ==================== 数据保存 ====================
+    return _io().load()
 
 
 def save_config(config_data: AppConfigData) -> None:
     """GUI 数据写回磁盘"""
-    _IO.save(config_data)
+    _io().save(config_data)
