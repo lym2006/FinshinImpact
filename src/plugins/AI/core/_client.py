@@ -16,16 +16,12 @@ from ..config import ai_config
 class AIClient(BaseClient):
     """鉴权与禁代理客户端"""
 
-    # ==================== 动态生成鉴权 Headers ====================
-
     @classmethod
     def _headers(cls) -> dict[str, str]:
         return {
             "Authorization": f"Bearer {ai_config.api_key}",
             "Content-Type": "application/json",
         }
-
-    # ==================== AI 请求方法 ====================
 
     @classmethod
     async def stream_chat(
@@ -42,6 +38,7 @@ class AIClient(BaseClient):
             "messages": msg,
             "stream": True,
             "temperature": ai_config.temperature,
+            **dict(ai_config.think_mode),
         }
 
         async for line in super().stream_post(
@@ -49,7 +46,7 @@ class AIClient(BaseClient):
             request_path=ai_config.request_path,
             headers=cls._headers(),
             payload=payload,
-            timeout=ai_config.timeout,  # 用户配置的网络超时（global.network_timeout）
+            timeout=ai_config.timeout,
         ):
             if line.startswith("data: "):
                 try:

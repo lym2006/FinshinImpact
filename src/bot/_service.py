@@ -48,8 +48,6 @@ class BotService:
         self._thread: threading.Thread | None = None
         self._stop_event = threading.Event()
 
-    # ==================== 对外接口 ====================
-
     @property
     def is_running(self) -> bool:
         """服务线程是否存活"""
@@ -101,8 +99,6 @@ class BotService:
 
         gui_bridge.shutdown_completed_event.set()
         _logger.debug("服务已停止")
-
-    # ==================== 内部实现 ====================
 
     def _run_loop(self, ready: threading.Event) -> None:
         """后台线程入口"""

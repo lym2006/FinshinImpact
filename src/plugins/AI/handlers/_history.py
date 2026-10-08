@@ -19,14 +19,9 @@ from ..utils import get_name
 
 history = Router()
 
-# ==================== 内部辅助函数 ====================
-
 
 def _get_file_path(user: str) -> Path:
     return ai_config.record_dir / f"temp/{user}.md"
-
-
-# ==================== /history 历史查询命令 ====================
 
 
 @history.message(Command("history"))
@@ -45,9 +40,6 @@ async def show_history(message: Message) -> None:
     )
 
 
-# ==================== /clear 记忆清除命令 ====================
-
-
 @history.message(Command("clear"))
 @session_guard
 async def clear_history(message: Message) -> None:
@@ -57,9 +49,6 @@ async def clear_history(message: Message) -> None:
     user_sessions[user].message = list(ai_config.init)
     file_path.unlink(missing_ok=True)
     await message.answer(BotMessage.HISTORY_MEMORY_CLEARED)
-
-
-# ==================== /md 图片发送命令 ====================
 
 
 @history.message(Command("md"))

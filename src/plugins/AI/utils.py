@@ -24,23 +24,13 @@ if TYPE_CHECKING:
     from .core.models import UserSession
 
 logger_retry = get_logger("Plg.AI.Retry")
-__all__ = [
-    "build_message",
-    "make_data",
-    "get_name",
-    "retry_sending",
-]
 
-# ==================== 内部常量与泛型定义 ====================
 
 P = ParamSpec("P")
 T = TypeVar("T")
 _MAX_RETRIES = 3  # 重试器硬编码配置
 _MIN_RETRY_DELAY = 1
 _MAX_RETRY_DELAY = 10
-
-
-# ==================== 消息构建工具 ====================
 
 
 def build_message(role: str, content: str) -> dict[str, str]:
@@ -56,9 +46,6 @@ def make_data(session: "UserSession", thisinput: str) -> list[dict[str, str]]:
     return session.message + [build_message("user", thisinput)]
 
 
-# ==================== 用户信息提取 ====================
-
-
 def get_name(message: Message) -> str:
     """用户唯一标识
 
@@ -70,9 +57,6 @@ def get_name(message: Message) -> str:
         if id_ < 0
         else f"u_{id_}"
     )
-
-
-# ==================== 异步重试装饰器 ====================
 
 
 def retry_sending() -> Callable[[Callable[P, T]], Callable[P, T]]:

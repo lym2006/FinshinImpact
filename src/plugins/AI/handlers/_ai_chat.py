@@ -17,8 +17,6 @@ from ..utils import retry_sending
 
 ai_chat = Router()
 
-# ==================== 自定义过滤器 ====================
-
 
 class ChatFilter(Filter):
     """筛选出需要 AI 处理的文本消息"""
@@ -44,9 +42,6 @@ class ChatFilter(Filter):
                 )
             case _:
                 return False  # 其他类型一律忽略
-
-
-# ==================== AI 聊天路由处理函数 ====================
 
 
 @ai_chat.message(ChatFilter())

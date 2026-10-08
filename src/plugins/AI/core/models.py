@@ -8,8 +8,6 @@ from dataclasses import dataclass, field
 
 from aiogram.types import Message
 
-# ==================== 任务数据模型 ====================
-
 
 @dataclass
 class TaskItem:
@@ -19,12 +17,6 @@ class TaskItem:
     chat_id: int
     ori_id: int  # 原始消息 ID
     type_: str  # 聊天类型（私聊、群组等）
-    status_id: int = 0  # 状态消息 ID
-    draft_id: int = 0  # 草稿消息 ID
-    last_draft_time: float = 0.0  # 上次更新草稿时间
-
-
-# ==================== 用户会话模型 ====================
 
 
 @dataclass

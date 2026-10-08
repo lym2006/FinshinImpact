@@ -17,9 +17,6 @@ from .messages import BotMessage
 
 logger = get_logger("Plg.Welcome")
 router = Router()
-__all__ = ["router"]
-
-# ==================== /start 开始命令 ====================
 
 
 @router.message(Command("start"))
@@ -33,9 +30,6 @@ async def command_start_handler(message: Message) -> None:
     # TODO: 后续可在此处调用 get_started(user_id) 初始化用户数据
     await message.answer(BotMessage.WELCOME)
     logger.info(f"用户 {user_id} 发起对话")
-
-
-# ==================== /time 时间查询命令 ====================
 
 
 @router.message(Command("time"))

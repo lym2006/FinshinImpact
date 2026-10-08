@@ -10,13 +10,16 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-from utils import ROOT_DIR, get_logger
+from profile_env import ASSET_FONT_NAME, ASSETS_DIR
+from utils import get_logger
+from utils.init_files import HELP_IMAGE
 
-# ==================== 内部配置与数据源 ====================
+# 内部配置与数据源
 
-_SAVE_PATH = ROOT_DIR / "data/help.png"
+# 帮助图属实例产物，落实例数据目录，随实例隔离不共用
+_SAVE_PATH = HELP_IMAGE
 _RENDER_LOCK = threading.Lock()
-_FONT_PATH = ROOT_DIR / "assets/font.ttf"
+_FONT_PATH = ASSETS_DIR / ASSET_FONT_NAME  # 字体是全局资源，不随实例复制
 _logger = get_logger("Plg.Help")
 
 
@@ -45,24 +48,17 @@ _HELP_MENU_DATA: list[dict[str, str]] = [
     },
     {"type": "section", "content": "AI 部分"},
     {"type": "note", "content": "独立会话和思考过程"},
-    {"type": "command", "cmd": "on", "desc": "开启 AI 对话"},
-    {"type": "command", "cmd": "off", "desc": "关闭 AI 对话"},
     {
-        "type": "command",
+        "type": "fixing",
         "cmd": "md",
         "desc": "以markdown格式输出上一次回复内容（图片）",
     },
-    {"type": "command", "cmd": "history", "desc": "显示历史记录（包括思考过程）"},
+    {"type": "command", "cmd": "history", "desc": "显示历史记录"},
     {"type": "command", "cmd": "clear", "desc": "清空记忆"},
-    {"type": "command", "cmd": "balance", "desc": "查看账户余额"},
-    # {"type": "command", "cmd": "change", "desc": "更改 AI 人设"},
-    # {"type": "command", "cmd": "system", "desc": "以 system 身份输入数据，用于添加人设、背景等"},
     {"type": "section", "content": "未完待续"},
 ]
 
 _HELP = HelpRenderConfig()
-
-# ==================== 自动构建器 ====================
 
 
 def _build_help_menu() -> tuple[dict[str, str], list[tuple[str, str]]]:
@@ -84,8 +80,6 @@ def _build_help_menu() -> tuple[dict[str, str], list[tuple[str, str]]]:
 
 
 help_list, _display_order = _build_help_menu()
-
-# ==================== 业务处理函数 ====================
 
 
 def resolve_single_help(text: str) -> str:
