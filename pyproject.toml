@@ -9,14 +9,15 @@ package-dir = {"" = "src"}
 where = ["src"]
 
 [project]
-name = "asyncbot"
-version = "1.0.0-alpha.2"
-description = "一个基于 aiogram 的机器人"
+name = "finshin-impact"
+version = "1.0.0-alpha.3.dev1"
+description = "鱼神，启动！"
 requires-python = ">=3.11,<4.0"
 dependencies = [
     "aiogram==3.29.1",
     "aiohttp==3.14.1",
     "aiohttp-socks==0.11.0",
+    "aiosqlite==0.22.1",
     "beautifulsoup4==4.14.3",
     "bleach==6.4.0",
     "httpx==0.28.1",
@@ -34,6 +35,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+    "import-linter==2.15",
+    "pyinstaller==6.22.3",
     "ruff==0.16.3",
-    "pyinstaller==6.22.3"
 ]

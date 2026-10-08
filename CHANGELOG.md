@@ -9,6 +9,86 @@
 ### 📝 Planned
 
 - **热重启做成弹窗**：重启服务等耗时操作接入通用转圈壳，届时 WaitDialog 获得第二个用户、Version 专属命名再议。
+- **数据层持久化与跨平台适配重构**：方案见 `docs/design/refactor-design.md`。会话与任务落 SQLite、内部对象改经 DTO 访问、aiogram 逻辑收拢进适配层并预留 QQ 接入，待确认后分阶段实施。
+- **重构操作手册**：阶段 0～6 的逐步执行清单见 `docs/design/refactor-operations.md`，含命令、文件改动与验证项。
+- **core 层施工单合并**：新建 `docs/design/core-changes.md` 为 core 层字段增删唯一依据，合并原 `contract-changes.md`/`dto-changes.md`/`refactor-keys-steps.md` 三份清单后将其删除；新增 `docs/design/README.md` 文档索引。
+- **重构方案移除会话级 md_ready**：渲染触发下沉到消息级（TG 按钮 / QQ 命令），产物按消息 ref 建索引；字段、补丁位、端口方法与 DDL 列同步删除。
+- **状态消息流程重定**：占位两端均发并引用原消息（不点名），终态统一删占位后引用加点名新发（终态 reply 目标待定，见 D15）；OneBot at 段与 reply 段独立，旧前提“QQ 提及只能靠引用”作废。
+- **AI 插件交互设计定稿**：`docs/design/ai-plugin-design.md` 吸收全部批注，删除 T-01~T-31 待定标记产出定稿。权限档位数值化（`CommandRole` OWNER=0/ADMIN=10/MEMBER=50，判定 `<=`）、群聊四类特权命令由 granted 收紧为仅 owner、`session_message` 拆 `sender_id`+`sender_name` 双列（id 防冒名）、上文压缩改「每轮独立压缩覆盖旧 summary」并新增 token 预算（发送前 32k 硬上限 / 8k 触发压缩 / 保留 6 轮）、新增 delete 命令口径。
+
+---
+
+## [1.0.0-alpha.3.dev1] - 2026-10-08
+
+### ⚠️ Breaking Changes
+
+- **旧版需手动整包**：
+  - 不做自动迁移。删除旧目录后解压新包，想保留的配置与数据先备份再放回。
+  - 实例资产收进 `instances\`：每个机器人的 `config.toml`、`persona.md`、`profile.json`、`data\`、`logs\` 都落在 `instances\<身份码>\` 下，不再平铺根目录。
+  - 根目录 `config.toml` 废除：旧位置的配置文件不再被读取，按新位置重填。
+  - apikey 与 owner 改向导填写：首次启动由配置向导当场填，不从旧配置继承。
+  - token 移出配置文件：token 存进实例 `profile.json`，管理面板不显示也不可改。
+
+### ✨ Added
+
+- **多实例身份隔离**：
+  - 启动先弹「选择机器人」窗口，选定或新建实例后按身份码派生全套路径。
+  - 同机可并存多个机器人，同 token 双开仍互斥、不同 token 各自放行。
+  - 身份码取 Telegram token 冒号前的 bot_id，重生成 token 也不变，不采用会失联的哈希方案。
+  - 每个实例独占一个身份码文件夹，内含 `config.toml`、`persona.md`、`profile.json`、`data/`、`logs/`。会话历史与日志全部按实例隔离，两实例碰到同一用户不再互相覆盖。
+- **选窗平台**：
+  - 新建实例顶部选平台，Telegram 可选、QQ 置灰预告，为后续接入留位。新建实例后回到列表并默认选中。
+  - 新增编辑入口，选中已有实例可改 token 与备注名。改 token 后核对身份码，换机器人（bot_id 变）拒绝编辑并引导新建，同 bot 重生成 token 则就地更新。
+  - 新增删除入口，选中实例可删除其文件夹，配置、人设与数据一并删除。确认后才动手，文件被占用（实例运行中）则提示关闭后重试。
+  - 列表按最近使用排序，创建与启动都计入，刚碰过的置顶，其余保持倒序。
+- **配置向导人设预览**：
+  - 正式启用独立人设文件，勾选后读实例内 `persona.md`，`{OWNER_ID}` 按平台从 `owner` 注入。未勾选或文件缺失回退配置字符串。注入后正文逐字节稳定以命中上游缓存。
+  - 新增「预览人设」「打开人设文件」按钮，弹窗只读展示最终注入 AI 的完整正文。
+  - 人设输入行与按钮行共槽堆叠，切换勾选读文件整页等高不跳动。
+- **主人键 `chore.owner`**：纳入必填项拦启动，平台由不同实例区分。
+
+### 🔧 Changed
+
+- **启动链路**：
+  - `python -m bootstrap` 为唯一入口，实例锁改由引导层统一抢占、主程序不再碰锁，`python -m bot` 作废。选中已在运行的实例统一弹「已在运行」提示。
+  - 实例锁拆为两把：`utils/single_instance.py` 移出为顶层 `instance_lock.py`，锁名带身份码。新增引导锁防重复弹选择窗，并在抢到实例锁后才释放，消除两锁之间绕过实例锁的空档。
+  - 启动器改探引导锁：实例锁名带身份码、启动器无从得知，改探引导锁。升级换壳的接管检测同源，新壳弹选窗即视为接管成功。
+- **配置与模板**：
+  - 人设模板改名：`assets/personality.md` → `assets/persona.example.md`，与实例内 `persona.md` 区分，不需要忽略规则反选。
+  - 配置读写器改惰性构造：身份码注入晚于模块导入，import 期绑定路径会攥着旧配置文件。
+  - 配置模板按平台拆分：根目录 `config.example.toml` 移入 `assets/` 并拆为 `config.telegram.example.toml` 与 `config.qq.example.toml`（QQ 侧占位骨架，键名待适配器落地补齐），`init_files` 按身份码前缀 `tg-`/`qq-` 分流选模板，未知前缀回落 TG。
+  - token 移出配置改存实例自描述文件：`config.toml` 不再有 token 项，token 存进实例 `profile.json`、面板不渲染。实例判定标记从 `config.toml` 改 `profile.json`。
+- **启动校验**：token 无效改致命弹窗退出。校验时 proxy 已通而 token 仍错则弹致命提示、确认后退出，用户重开程序走选窗编辑换 token，proxy 故障仍走向导不误退。
+- **发送面与命名规范**：
+  - 规范新增 DTO 后缀与词表归层命名：`core/dto` 类型一律 `DTO` 后缀，词表按变更范围定归属。
+  - 端口发送面收口：统一约定为 `send_message` + `OutboundPayloadDTO` 载荷（kind 分派、预览超限降级归 Adapter、reply_ref 与 mention 正交标志），删除独立回复与定向投递方法，新增 `ContentKind.VIDEO`。
+  - 注：功能暂未实装，仅初步完成约定。
+- **单源收敛**：
+  - 根目录定位收敛单源：项目根统一由 `profile_env.ROOT_DIR` 提供，转发层 `utils/_root_dir.py` 已删除，消费方直连。
+  - 平台标识收敛进 core.domain：`Platform` 枚举值即身份码前缀，身份码拼装与解析改为 `make_profile_code`/`platform_of_profile` 单源，`init_files` 前缀分流与 `_store.code_for_token` 平台分派都改引它，消除散落的 `"tg"`/`"qq"` 裸串与脆弱的按分隔符切分。
+  - 资源路径收敛单源：字体文件名与 assets 目录原在五处各自拼接，收进 `profile_env` 一处定义，应用图标不再按目录层级反推项目根。
+  - 人设组装收敛单源：读文件与 `{OWNER_ID}` 注入原在 AI 配置内，抽进 `utils/persona.py` 供运行期与向导预览共用；人设键名收进 `utils/config/models.py` 的 `PersonaKey`，消除 AI 侧与 GUI 侧各自硬编码。
+- **通知弹窗加宽并高度自适应**：窗宽 380→420 给带版本号的长文案留余量，高度改按内容实测撑开，不再数换行符。
+- **重排 .gitignore**：删掉项目用不到的模板项（build/、lib/、venv/、.env 等），新增 import-linter 的 `.import_linter_cache/` 与其底层 `.grimp_cache/` 忽略。
+
+### 🐛 Fixed
+
+- **首启 token 无效不弹致命窗、必填项不标红**：
+  - 首次启动生成配置后 `ensure_config` 抛 `ConfigMissingError`，被异常守卫直接弹向导并中断，导致配置未载入内存、连通校验根本没跑。
+  - 改为生成后照常返回，必填缺失交本地校验报出，token 探测得以参与致命判定。
+- **通知弹窗裁掉末行**：
+  - 高度按换行符数估算，数不到超宽自动折行，致命提示末尾被裁。
+  - 改按内容实测高度，任意行数不裁。
+- **AI 渲染图片字体从未生效**：
+  - 字体地址按相对层级写死，产物移入实例数据目录后解析不到 assets，且字体名被模板二次包引号致声明整体无效。
+  - 改绝对地址并剥引号，markdown 图片首次用上自定义字体。
+- **引导期弹窗无图标且可致崩溃**：
+  - 选窗与「已在运行」提示先于主程序建应用实例，图标要到主窗才挂；且善后弹窗经 gui 包导入图标会拽起 utils 链，空身份码下直接崩。
+  - 图标模块升为顶层 `app_icon.py`，应用实例创建即挂图标。
+
+### 🗑️ Removed
+
+- **命令精简**：退役 `/blacklist`、`/system`、`/change`、`/balance`，移除帮助菜单中的废命令。
 
 ---
 
@@ -433,7 +513,7 @@
 
 ### Fixed
 - 修复 `install.bat` 因目录非空导致 `git clone` 失败的问题
-- 修复 `update.bat` 未进入 `TelegramBot` 目录导致找不到 `.git` 和 `.venv` 的问题
+- 修复 `update.bat` 未进入 `FinshinImpact` 目录导致找不到 `.git` 和 `.venv` 的问题
 - 统一 `install.bat` 和 `update.bat` 的启动提示信息
 
 ---
