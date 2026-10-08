@@ -11,6 +11,7 @@ from PySide6.QtCore import QThread, Signal
 from PySide6.QtWidgets import QDialog, QWidget
 
 from messages import CheckMessage
+from profile_env import get_profile, read_token
 from utils import config_manager
 from utils.diagnose import diagnose_flow
 from utils.net_probe import FieldKey, FrameKey, RowId, RowStatus, verify_skeleton
@@ -91,8 +92,6 @@ class DiagnoseController(BaseController):
         """启动校验结论落闩"""
         self._startup_settled = True
 
-    # ==================== 业务逻辑实现 ====================
-
     def _execute(self) -> None:
         """在唯一窗上开诊断轮
 
@@ -108,12 +107,11 @@ class DiagnoseController(BaseController):
             return
 
         configured = ""
-        token = ""
         try:
             configured = config_manager.get("basic.proxy", str)
-            token = config_manager.get("basic.telegram_token", str)
         except Exception:  # 配置未就绪按留空处理，不阻塞诊断
             pass
+        token = read_token(get_profile())
 
         # 窗出现即证据，面板不重复灌，开局整表由公共核心算好随线程首帧发出
         self.logger.debug("打开网络诊断")
@@ -121,8 +119,7 @@ class DiagnoseController(BaseController):
         win.begin_round(Round.DIAGNOSE, True, verify_skeleton(), self._on_round_closed)
         self._run(configured, token, win)
 
-    # ==================== 轮次驱动 ====================
-
+    # 轮次驱动
     def _run(self, configured: str, token: str, win: QWidget) -> None:
         """诊断轮线程启动
 

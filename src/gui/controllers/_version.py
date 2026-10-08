@@ -41,12 +41,9 @@ class _VersionWorker(QThread):
 class VersionController(BaseController):
     """版本控制器"""
 
-    # ==================== 契约声明 ====================
-
+    # 契约声明
     LOGGER_NAME = "GUI.Version"
     BTN_KEY = "update"  # 工具栏接线标识，与按钮表同源，改名需连动 _misc 与主窗
-
-    # ==================== 业务逻辑实现 ====================
 
     def _execute(self) -> None:
         """检查版本更新

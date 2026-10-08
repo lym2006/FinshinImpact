@@ -13,6 +13,8 @@ from ._theme import BODY, FONT, TOOLBAR, WINDOW
 from .controllers import BaseController, build_controllers
 
 logger = get_logger("GUI")
+
+
 __all__ = [
     # 类型
     "BotGUI",
@@ -33,8 +35,7 @@ def create_gui() -> tuple[BotGUI, dict[str, BaseController]]:
     # 打包业务控制器
     controllers, instances = build_controllers(botgui)
 
-    # ==================== 防呆校验 ====================
-
+    # 防呆校验
     valid_ui_keys = {key for _, key in MiscMessage.TOOLBAR_BUTTONS}
     registered_keys = {btn_id.replace("btn_", "", 1) for btn_id, _ in controllers}
 
@@ -48,8 +49,7 @@ def create_gui() -> tuple[BotGUI, dict[str, BaseController]]:
             f"控制器缺失: UI 层定义了按钮，但缺少对应的 Controller -> {missing}"
         )
 
-    # ==================== 注入依赖并返回 ====================
-
+    # 注入依赖并返回
     botgui.set_action_map(dict(controllers))
     botgui.set_logger_handler()
 

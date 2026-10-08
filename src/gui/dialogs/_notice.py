@@ -28,8 +28,6 @@ class NoticeDialog(BaseDialog):
         self.set_always_on_top()
         self.setStyleSheet(build_notice_dialog_qss())
 
-        extra = max(0, text.count("\n") - 1) * NOTICE_DIALOG.line_height
-        self.setFixedSize(NOTICE_DIALOG.width, NOTICE_DIALOG.height + extra)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(*[NOTICE_DIALOG.pad] * 4)
         layout.setSpacing(NOTICE_DIALOG.spacing)
@@ -47,6 +45,11 @@ class NoticeDialog(BaseDialog):
         btn.clicked.connect(self.accept)
         btn.setDefault(True)
         layout.addWidget(btn, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        # 宽度定死，高度交内容撑开：数换行会漏掉超宽自动折行的部分，裁掉末行
+        self.setFixedWidth(NOTICE_DIALOG.width)
+        height = max(NOTICE_DIALOG.height, layout.sizeHint().height())
+        self.setFixedHeight(height)
 
     @staticmethod
     def notify(text: str, parent: QWidget | None = None) -> None:

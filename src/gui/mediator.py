@@ -15,7 +15,7 @@ from .signal import SafeSignal
 class GUIBridge(QObject):
     """GUI 与 Bot 通信桥梁"""
 
-    # ==================== 真实信号声明（元类注册，槽彼此隔离） ====================
+    # 真实信号声明（元类注册，槽彼此隔离）
 
     # GUI → Bot：配置事件与关闭指令
     _signal_config_candidate = Signal()  # 候选已在内存：校验通过才落盘
@@ -33,7 +33,7 @@ class GUIBridge(QObject):
     # GUI → GUI：退出入口
     _signal_request_exit = Signal(object)  # source 作确认框父级，可为 None
 
-    # ==================== 防重连包装（对外的连接/发射入口） ====================
+    # 防重连包装（对外的连接/发射入口）
 
     # GUI → Bot：配置事件与关闭指令
     config_candidate = SafeSignal()  # 候选配置进内存待验，通过才落盘
@@ -51,12 +51,12 @@ class GUIBridge(QObject):
     # GUI → GUI：退出入口
     request_exit = SafeSignal()  # 向导退出按钮/主窗关闭：只弹确认框，未确认不触 Bot
 
-    # ==================== 跨线程同步屏障 ====================
+    # 跨线程同步屏障
 
     # Bot 清理完毕，放行 GUI 关闭
     shutdown_completed_event = threading.Event()
 
-    # ==================== 跨流程协调标志 ====================
+    # 跨流程协调标志
 
     # 关闭流程进行中：阻止强制配置弹窗在关闭确认期间被打开
     _is_shutdown_pending: bool = False
