@@ -3,7 +3,7 @@
 
 - 首次启动自动安装嵌入式 Python、依赖与浏览器内核
 - 启动前比对在线版本页，发现新版确认后整包升级，用户资产保留
-- 启动器本体随升级自动更换：当场换入并拉起新壳，主程序抢锁确认后旧壳退场
+- 启动器本体随升级自动更换：当场换入并拉起新壳，新壳抢到引导锁后旧壳退场
 """
 
 import ctypes
@@ -24,9 +24,9 @@ from packaging.version import Version
 
 # ==================== 常量 ====================
 
-_APP_TITLE = "TelegramBot"
-_PAGES_PYPROJECT_URL = "https://lym2006.github.io/TelegramBot/pyproject.toml"
-_RELEASE_ZIP_URL = "https://github.com/lym2006/TelegramBot/releases/download/v{ver}/TelegramBot-v{ver}.zip"
+_APP_TITLE = "FinshinImpact"
+_PAGES_PYPROJECT_URL = "https://lym2006.github.io/FinshinImpact/pyproject.toml"
+_RELEASE_ZIP_URL = "https://github.com/lym2006/FinshinImpact/releases/download/v{ver}/FinshinImpact-v{ver}.zip"
 
 _REQUEST_TIMEOUT = 10.0  # 版本页请求超时 10 秒
 _DOWNLOAD_CHUNK = 64 * 1024  # 分块粒度 64 KB（刷进度）
@@ -47,15 +47,24 @@ _PIP_INDEX_URLS = (
 _PLAYWRIGHT_CDN = "https://cdn.npmmirror.com/binaries/playwright"
 
 # 升级保留用户资产（_internal 只装二进制依赖，换壳无需动）
-_PRESERVE_NAMES = ("config.toml", "data", "logs", "runtime", "_update", "_internal")
+# instances 收纳全部实例资产，config.toml/data/logs 为旧版根目录资产，过渡期一并保留
+_PRESERVE_NAMES = (
+    "instances",
+    "config.toml",
+    "data",
+    "logs",
+    "runtime",
+    "_update",
+    "_internal",
+)
 
 # 换壳：运行中的 exe 不许覆盖但可改名，新壳先暂存、择机换入重启
-_SHELL_EXE = "TelegramBot.exe"
+_SHELL_EXE = "FinshinImpact.exe"
 _SHELL_PENDING = "_shell_update"
 _SHELL_BAK_SUFFIX = ".old"
 
-# 与 GUI icon.py 是同一份约定，两处改名必须同步：任务栏身份锚定到壳 exe 路径
-_AUMID_ANCHOR_VAR = "TELEGRAMBOT_EXE_PATH"
+# 与 app_icon.py 是同一份约定，两处改名必须同步：任务栏身份锚定到壳 exe 路径
+_AUMID_ANCHOR_VAR = "FINSHINIMPACT_EXE_PATH"
 
 _MB_ICON_INFO = 0x40
 _MB_ICON_ERROR = 0x10
@@ -68,8 +77,9 @@ _SWAP_FAST_TIMEOUT = 5.0  # 快交接静默等待上限 5 秒
 _SWAP_SOOTHE_MS = 20_000  # 慢路径安抚弹窗驻留 20 秒
 _HANDOFF_POLL_TICK = 0.5  # 抢锁轮询间隔 0.5 秒
 
-# 与主程序 _single_instance 是同一把锁，两处改名必须同步
-_MUTEX_NAME = "Local\\TelegramBot-Instance"
+# 与主程序 instance_lock 的引导锁是同一把，两处改名必须同步
+# 实例锁名带身份码、启动器无从得知，故只探测引导锁防重复弹选择窗
+_BOOTSTRAP_MUTEX_NAME = "Local\\FinshinImpact-Bootstrap"
 _ERROR_ALREADY_EXISTS = 183
 _CreateMutexW = ctypes.windll.kernel32.CreateMutexW
 _CreateMutexW.restype = wintypes.HANDLE  # 缺省 int 会在 64 位截断句柄
@@ -90,10 +100,9 @@ def _wait_info(text: str, ms: int) -> None:
     _MessageBoxTimeoutW(0, text, _APP_TITLE, _MB_ICON_INFO, ms, 0)
 
 
-def _instance_taken() -> bool:
-    """实例锁占用静默探测"""
-    # 持有锁则表明换壳成功
-    handle = _CreateMutexW(None, False, _MUTEX_NAME)
+def _bootstrap_taken() -> bool:
+    """引导锁占用静默探测"""
+    handle = _CreateMutexW(None, False, _BOOTSTRAP_MUTEX_NAME)
     if not handle:
         return False
     busy = ctypes.GetLastError() == _ERROR_ALREADY_EXISTS
@@ -102,14 +111,15 @@ def _instance_taken() -> bool:
 
 
 def _already_running() -> bool:
-    """运行中提示
+    """选择窗占用提示
 
-    - 实例锁已被占用则提示并退出
+    - 引导锁已被占用则提示并退出，防重复弹选择窗
+    - 同账号重复启动由主程序按身份码自行拦截，此处不管
     """
-    # 只探测不持有，真正的持锁者是随后拉起的主程序
-    busy = _instance_taken()
+    # 只探测不持有，真正的持锁者是随后拉起的选择窗
+    busy = _bootstrap_taken()
     if busy:
-        _info("机器人已在运行，请勿重复启动。\n请先关闭已开的窗口。")
+        _info("已有一个选择窗口在打开，请在该窗口操作。")
     return busy
 
 
@@ -445,9 +455,9 @@ def _apply_update(root: Path, version: str) -> bool:
             zf.extractall(stage)
 
         # 解压：暂存目录展开，校验顶层结构
-        new_root = stage / "TelegramBot"
+        new_root = stage / "FinshinImpact"
         if not new_root.exists():
-            raise FileNotFoundError("发布包缺少 TelegramBot 顶层目录")
+            raise FileNotFoundError("发布包缺少 FinshinImpact 顶层目录")
 
         # 覆盖：白名单外目录整树先删后拷、文件逐个拷，本体走暂存不许直接覆盖
         print("应用更新（保留配置、数据与日志）…")
@@ -515,7 +525,7 @@ def _apply_shell_update(root: Path, handoff: bool = False) -> None:
     """启动器换壳
 
     - 启动开头调用只换壳，沿用本次流程
-    - 升级收尾带 handoff 则拉起新壳，主程序持锁确认接管后旧壳退场，等不到就回退旧壳直接启动
+    - 升级收尾带 handoff 则拉起新壳，新壳持引导锁确认接管后旧壳退场，等不到就回退旧壳直接启动
     """
     pending = root / _SHELL_PENDING
     exe_path = root / _SHELL_EXE
@@ -569,11 +579,12 @@ def _apply_shell_update(root: Path, handoff: bool = False) -> None:
 def _handoff_wait(timeout: float) -> bool:
     """抢锁轮询
 
-    - 锁在新壳主程序手里，抢到即证明新版运行中
+    - 新壳拉起后弹选择窗即持有引导锁，探到即证明新版已接管
+    - 选窗停留等用户点击，必然横跨轮询窗口，不会漏判
     """
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
-        if _instance_taken():
+        if _bootstrap_taken():
             return True
         time.sleep(_HANDOFF_POLL_TICK)
     return False
@@ -592,7 +603,7 @@ def _root_dir() -> Path:
 def _launch(root: Path) -> None:
     """以无窗口解释器拉起主程序入口脚本
 
-    - 注入源码路径后等价 python -m bot
+    - 注入源码路径后走引导层，先选实例再拉起主程序
     - 显式入口便于调试，可直接运行 main.py 复现问题
     """
     env = {
@@ -609,7 +620,7 @@ def _launch(root: Path) -> None:
 def main() -> None:
     """启动主流程
 
-    - 依次：实例检查、换壳、装环境、检查升级、拉起主程序、回收进度窗口
+    - 依次：选择窗占用检查、换壳、装环境、检查升级、拉起主程序、回收进度窗口
     """
     if _already_running():
         sys.exit(0)
