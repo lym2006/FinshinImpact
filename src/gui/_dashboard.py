@@ -23,16 +23,11 @@ from exceptions import (
 
 from ._theme import FontConfig
 
-# ==================== 线程安全信号桥 ====================
-
 
 class _LogSignal(QObject):
     """内部跨线程信号桥接器"""
 
     log_received = Signal(str)
-
-
-# ==================== 日志处理器 ====================
 
 
 class TextHandler(logging.Handler):
@@ -70,9 +65,6 @@ class TextHandler(logging.Handler):
         except Exception as e:
             # GUI 写入日志出错
             raise DashboardWriteError() from e
-
-
-# ==================== 仪表盘组件 ====================
 
 
 class DashboardWidget(QTextEdit):

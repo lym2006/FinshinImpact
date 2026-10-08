@@ -1,14 +1,12 @@
-# src/gui/_qss.py
-"""QSS 拼装
+# src/gui/_qss/_parts.py
+"""弹窗样式片段
 
-- 实现组件样式渲染与 QSS 拼接
+- 定义各弹窗共用的 QSS 片段常量
 """
 
-from ._theme import (
+from .._theme import (
     BODY,
     BTN,
-    BTN_DANGER,
-    CHANGE_DIALOG,
     GLOBAL,
     LIST_DIALOG,
     SCROLLBAR,
@@ -17,116 +15,20 @@ from ._theme import (
     WAIT_DIALOG,
 )
 
-# ==================== QSS 样式表 ====================
-
-# 主窗口与中央容器
-_BODY_QSS = f"""\
-QMainWindow, QWidget#centralWidget {{
-    background-color: {BODY.bg};
-}}"""
-
-# 工具栏
-_TOOLBAR_QSS = f"""\
-QWidget#toolbar {{
-    background-color: {TOOLBAR.bg};
-    border-bottom: {TOOLBAR.border_width}px solid {TOOLBAR.border_color};
-}}"""
-
-# 按钮
-_BUTTON_QSS = f"""\
-QPushButton {{
-    background-color: {BTN.bg};
-    color: {BODY.color};
-    border: none;
-    border-radius: {GLOBAL.radius}px;
-    padding: {BTN.padding_v}px {BTN.padding_h}px;
-    font-weight: bold;
-    min-width: {BTN.min_width}px;
-    min-height: {BTN.height}px;
-}}
-
-QPushButton:hover {{
-    background-color: {BTN.hover_bg};
-    color: {BODY.hover_color};
-}}
-
-QPushButton:pressed {{
-    background-color: {BTN.pressed_bg};
-}}"""
-
-# 危险按钮
-_BUTTON_DANGER_QSS = f"""\
-QPushButton#btn_clear, QPushButton#btn_shutdown {{
-    background-color: {BTN_DANGER.bg};
-}}
-
-QPushButton#btn_clear:hover, QPushButton#btn_shutdown:hover {{
-    background-color: {BTN_DANGER.hover_bg};
-}}
-
-QPushButton#btn_clear:pressed, QPushButton#btn_shutdown:pressed {{
-    background-color: {BTN_DANGER.pressed_bg};
-}}"""
-
-# 仪表盘文本区域
-_DASHBOARD_QSS = f"""\
-QTextEdit#dashboard {{
-    background-color: {BODY.bg};
-    color: {BODY.color};
-    border: none;
-    padding: {BODY.padding}px;
-    selection-background-color: {BODY.selection_bg};
-    selection-color: {BODY.hover_color};
-}}"""
-
-# 滚动条
-_SCROLLBAR_QSS = f"""
-QScrollBar:vertical {{
-    background: {SCROLLBAR.bg};
-    width: {SCROLLBAR.width}px;
-    border: none;
-    margin: {SCROLLBAR.margin}px;
-}}
-
-QScrollBar::handle:vertical {{
-    background: {SCROLLBAR.handle_bg};
-    border-radius: {SCROLLBAR.width // 2}px;
-    min-height: {SCROLLBAR.min_handle_height}px;
-}}
-
-QScrollBar::handle:vertical:hover {{
-    background: {SCROLLBAR.handle_hover_bg};
-}}
-
-QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
-    height: {SCROLLBAR.arrow_height}px;
-}}
-
-QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
-    background: none;
-}}"""
-
-_GLOBAL_QSS = "\n".join(  # 全局 QSS 拼接
-    [
-        _BODY_QSS,
-        _TOOLBAR_QSS,
-        _BUTTON_QSS,
-        _BUTTON_DANGER_QSS,
-        _DASHBOARD_QSS,
-        _SCROLLBAR_QSS,
-    ]
-)
-
-# ==================== 弹窗专属 QSS ====================
+# 弹窗专属 QSS
 
 # 弹窗基本样式
-_DIALOG_BASE_QSS = f"""\
+DIALOG_BASE_QSS = f"""\
 QDialog {{
     background-color: {BODY.bg};
 }}"""
 
 # 标签页
 _DIALOG_TAB_QSS = f"""\
+QWidget#{SETTINGS_DIALOG.tab_container_name} {{
+    background-color: {SETTINGS_DIALOG.tab_bg};
+}}
+
 QTabWidget::pane {{
     border: {SETTINGS_DIALOG.border_width}px solid {SETTINGS_DIALOG.border_color};
     background-color: {BODY.bg};
@@ -176,14 +78,14 @@ QCheckBox::indicator:checked {{
 }}"""
 
 # 忙碌等待弹窗
-_WAIT_QSS = f"""\
+WAIT_QSS = f"""\
 QLabel#wait_spinner {{
     font-size: {WAIT_DIALOG.spinner_font_size}px;
     color: {WAIT_DIALOG.spinner_color};
 }}"""
 
 # 标题
-_DIALOG_LABEL_QSS = f"""\
+DIALOG_LABEL_QSS = f"""\
 QLabel {{
     color: {BODY.color};
 }}"""
@@ -219,7 +121,7 @@ QTextEdit:focus {{
 }}"""
 
 # 主按钮（高亮）
-_DIALOG_BUTTON_QSS = f"""\
+DIALOG_BUTTON_QSS = f"""\
 QPushButton#btn_primary {{
     background-color: {BODY.selection_bg};
     color: {BODY.selection_color};
@@ -258,6 +160,30 @@ QPushButton#btn_reset:hover {{
 
 QPushButton#btn_reset:pressed {{
     background-color: {BTN.pressed_bg};
+}}
+
+QPushButton#btn_persona_open,
+QPushButton#btn_persona_preview {{
+    background-color: {LIST_DIALOG.primary_bg};
+    color: {LIST_DIALOG.primary_color};
+    border: none;
+    border-radius: {GLOBAL.radius}px;
+    padding: {LIST_DIALOG.btn_padding_v}px {LIST_DIALOG.btn_padding_h}px;
+    min-width: {LIST_DIALOG.btn_min_width}px;
+}}
+
+QPushButton#btn_persona_open:hover,
+QPushButton#btn_persona_preview:hover {{
+    background-color: {SETTINGS_DIALOG.btn_hover_bg};
+}}
+
+QPushButton#btn_persona_open:pressed,
+QPushButton#btn_persona_preview:pressed {{
+    background-color: {SETTINGS_DIALOG.btn_pressed_bg};
+}}
+
+QTextEdit#persona_preview {{
+    background-color: {SETTINGS_DIALOG.tab_bg};
 }}"""
 
 # 弹窗滚动条
@@ -346,129 +272,18 @@ QListWidget#list_widget::item:hover {{
     background-color: {BODY.hover_bg};
 }}"""
 
-_DIALOG_QSS = "\n".join(  # 弹窗 QSS 拼接
+DIALOG_QSS = "\n".join(  # 弹窗 QSS 拼接
     [
-        _DIALOG_BASE_QSS,
+        DIALOG_BASE_QSS,
         _DIALOG_TAB_QSS,
-        _DIALOG_LABEL_QSS,
+        DIALOG_LABEL_QSS,
         _DIALOG_LINEEDIT_QSS,
         _DIALOG_TEXTEDIT_QSS,
-        _DIALOG_BUTTON_QSS,
+        DIALOG_BUTTON_QSS,
         _DIALOG_SCROLL_QSS,
         _DIALOG_CHECK_QSS,
     ]
 )
 
-# 变更确认表格
-_CHANGE_TABLE_QSS = f"""\
-QTableWidget#change_table {{
-    background-color: {BODY.bg};
-    alternate-background-color: {CHANGE_DIALOG.alt_bg};
-    color: {BODY.color};
-    border: {SETTINGS_DIALOG.border_width}px solid {SETTINGS_DIALOG.border_color};
-    border-radius: {GLOBAL.radius}px;
-    gridline-color: {CHANGE_DIALOG.grid_color};
-}}
-
-QTableWidget#change_table::item {{
-    padding: {LIST_DIALOG.item_padding_v}px {LIST_DIALOG.item_padding_h}px;
-}}
-
-QTextEdit#change_cell {{
-    background-color: {CHANGE_DIALOG.alt_bg};
-    color: {BODY.color};
-    border: none;
-    padding: {CHANGE_DIALOG.cell_padding_v}px {CHANGE_DIALOG.cell_padding_h}px;
-}}
-
-QHeaderView::section {{
-    background-color: {SETTINGS_DIALOG.tab_bg};
-    color: {BODY.hover_color};
-    border: none;
-    padding: {LIST_DIALOG.item_padding_v}px {LIST_DIALOG.item_padding_h}px;
-}}"""
-
-# 检查进度窗表格区（原诊断窗同款，随两窗合并改名）
-_CHECK_TABLE_QSS = f"""\
-QDialog {{
-    background-color: {BODY.bg};
-}}
-
-QTextEdit#row_view {{
-    background-color: {TOOLBAR.bg};
-    color: {BODY.color};
-    border: {SETTINGS_DIALOG.border_width}px solid {SETTINGS_DIALOG.border_color};
-    border-radius: {GLOBAL.radius}px;
-    padding: {SETTINGS_DIALOG.input_padding_v}px {SETTINGS_DIALOG.input_padding_h}px;
-}}"""
-
 # 列表项 QSS 拼接
-_LIST_QSS = f"{_LIST_BTN_QSS}\n{_LIST_ITEM_QSS}"
-
-# ==================== QSS 生成器 ====================
-
-
-def build_global_qss() -> str:
-    """构建主窗口 QSS"""
-    return _GLOBAL_QSS
-
-
-def build_settings_dialog_qss() -> str:
-    """构建弹窗 QSS"""
-    return _DIALOG_QSS
-
-
-def build_settings_list_qss() -> str:
-    """构建配置列表项 QSS"""
-    return _LIST_QSS
-
-
-def build_notice_dialog_qss() -> str:
-    """构建通知弹窗 QSS"""
-    return "\n".join(
-        [
-            _DIALOG_BASE_QSS,
-            _DIALOG_LABEL_QSS,
-            _DIALOG_BUTTON_QSS,
-        ]
-    )
-
-
-def build_change_dialog_qss() -> str:
-    """构建变更确认弹窗 QSS"""
-    return "\n".join(
-        [
-            _DIALOG_BASE_QSS,
-            _DIALOG_LABEL_QSS,
-            _DIALOG_BUTTON_QSS,
-            _CHANGE_TABLE_QSS,
-        ]
-    )
-
-
-def build_wait_dialog_qss() -> str:
-    """构建忙碌等待弹窗 QSS"""
-    return "\n".join(
-        [
-            _DIALOG_BASE_QSS,
-            _DIALOG_LABEL_QSS,
-            _DIALOG_BUTTON_QSS,
-            _WAIT_QSS,
-        ]
-    )
-
-
-def build_check_dialog_qss() -> str:
-    """构建检查进度窗 QSS
-
-    - 校验轮与诊断轮共用同一皮肤
-    """
-    return "\n".join(
-        [
-            _DIALOG_BASE_QSS,
-            _DIALOG_LABEL_QSS,
-            _DIALOG_BUTTON_QSS,
-            _WAIT_QSS,
-            _CHECK_TABLE_QSS,
-        ]
-    )
+LIST_QSS = f"{_LIST_BTN_QSS}\n{_LIST_ITEM_QSS}"

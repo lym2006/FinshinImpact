@@ -101,8 +101,6 @@ class ConfigListWidget(QWidget):
         if item:
             self.list_widget.editItem(item)
 
-    # === 公开方法 ===
-
     def add_item(self) -> None:
         """外部可调用的添加逻辑"""
         item = QListWidgetItem()

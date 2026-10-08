@@ -19,12 +19,9 @@ from ._decorator import gui_guard
 class ShutdownController(BaseController):
     """进程关闭控制器"""
 
-    # ==================== 契约声明 ====================
-
+    # 契约声明
     LOGGER_NAME = "GUI.Shutdown"
     BTN_KEY = "shutdown"
-
-    # ==================== 初始化 ====================
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)

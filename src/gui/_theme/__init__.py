@@ -26,7 +26,7 @@ from ._dialogs import (
 )
 from ._dialogs import FiveStateDialogConfig as FiveStateDialogConfig
 
-# ==================== 实例化配置 ====================
+# 实例化配置
 
 # 在模块级别实例化，供外部导入使用
 WINDOW = WindowConfig()

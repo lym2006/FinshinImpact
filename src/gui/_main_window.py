@@ -31,8 +31,6 @@ class BotGUI(QMainWindow):
     - 纯渲染与指令执行
     """
 
-    # ==================== 初始化 ====================
-
     def __init__(
         self,
         qss: str,
@@ -66,8 +64,6 @@ class BotGUI(QMainWindow):
         self._text_handler: logging.Handler = TextHandler(self._dashboard, formatter)
 
         self._build_ui()  # 构建纯 UI 界面
-
-    # ==================== 界面构建 ====================
 
     def _build_ui(self) -> None:
         """组装窗口的整体布局结构"""
@@ -114,8 +110,6 @@ class BotGUI(QMainWindow):
 
         parent_layout.addWidget(toolbar)
 
-    # ==================== 事件分发 ====================
-
     def _handle_button(self, btn_id: str) -> None:
         """响应按钮点击事件"""
         action = self.action_map.get(btn_id)
@@ -123,14 +117,10 @@ class BotGUI(QMainWindow):
         if action:
             action()
 
-    # ==================== 生命周期 ====================
-
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
         """拦截窗口关闭"""
         event.ignore()
         self._handle_button("btn_shutdown")
-
-    # ==================== 对外暴露的 UI 操作接口 ====================
 
     def set_action_map(self, action_map: dict[str, Callable]) -> None:
         """注入按钮 ID 与回调函数的映射"""
