@@ -3,7 +3,7 @@
 
 - 实现向导调度、二次确认与热重载
 - 面板全程非模态：EDIT/SETUP 同实例原地切换
-- 校验轮驱动进程级唯一 CheckDialog，与他轮互斥不并发
+- 校验轮驱动进程级唯一 CheckDialog，交 VerifyCoordinator 协调
 """
 
 from PySide6.QtCore import QTimer
@@ -12,25 +12,21 @@ from exceptions import ConfigOutputError
 from messages import CheckMessage
 from utils import config_manager
 from utils.config import (
-    AppConfigData,
     compare_configs,
     save_config,
 )
-from utils.net_probe import verify_skeleton
 
 from .._theme import NOTICE_DIALOG, SETTINGS_DIALOG
 from ..dialogs import (
     ChangeConfirmDialog,
-    CheckDialog,
     ConfigMode,
     NoticeDialog,
-    Round,
     SettingsDialog,
     current_check_window,
-    open_check_window,
 )
 from ..mediator import gui_bridge
 from ._base import BaseController
+from ._verify import VerifyCoordinator
 
 _STARTUP_WAIT_DELAY = 1200  # 启动校验迟滞弹窗阈值（毫秒）
 
@@ -38,12 +34,9 @@ _STARTUP_WAIT_DELAY = 1200  # 启动校验迟滞弹窗阈值（毫秒）
 class SettingsController(BaseController):
     """配置控制器"""
 
-    # ==================== 契约声明 ====================
-
+    # 契约声明
     LOGGER_NAME = "GUI.Settings"
     BTN_KEY = "settings"
-
-    # ==================== 初始化 ====================
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -63,28 +56,18 @@ class SettingsController(BaseController):
         # 配置就绪缓存：仅在 Qt 线程由信号回调更新，默认未就绪
         self._config_ready: bool = False
 
-        # 复验在途标记：无落盘动作，通过只收检测窗
-        self._validating: bool = False
-
-        # 保存在途标记：本轮通过时由 Qt 侧落盘候选
-        self._save_pending: bool = False
-
-        # 待落盘候选：校验通过才写入磁盘，关面板/取消即弃
-        self._pending_candidate: AppConfigData | None = None
-
-        # 迟滞开窗前的帧缓存：启动轮后台先跑，计划帧先到窗未开，开轮后补播
-        self._pre_frames: list[dict] = []
+        # 校验轮协调器：持有在途标志、待落盘候选与迟滞帧缓存
+        self._verify = VerifyCoordinator(self)
 
         # 信号携带最新状态，经 Queued 投递后在本线程写入私有字段
         gui_bridge.config_ready_changed.connect(
             self._on_config_ready_changed, "配置就绪", queued=True
         )
         gui_bridge.verify_progress.connect(
-            self._on_verify_frame, "校验进度", queued=True
+            self._verify.on_frame, "校验进度", queued=True
         )
 
-    # ==================== 状态同步 ====================
-
+    # 状态同步
     def _on_config_ready_changed(self, ready: bool) -> None:
         """更新就绪缓存
 
@@ -94,19 +77,19 @@ class SettingsController(BaseController):
         if not ready:
             # 裸启动无面板无窗：1.2 秒后校验未完才弹等待窗，快路径不闪窗
             if not (self._panel or current_check_window()):
-                QTimer.singleShot(_STARTUP_WAIT_DELAY, self._open_startup_wait)
+                QTimer.singleShot(_STARTUP_WAIT_DELAY, self._verify.open_startup_wait)
             return
-        was_validating = self._validating
-        was_pending = self._save_pending
-        self._validating = False
-        self._save_pending = False
-        wait = self._verify_window()
+        was_validating = self._verify.validating
+        was_pending = self._verify.save_pending
+        self._verify.validating = False
+        self._verify.save_pending = False
+        wait = self._verify.window()
         if wait is not None:
             wait.accept()  # 通过即全绿：结果无保留价值，静默收窗
-        if was_pending and self._pending_candidate is not None:
+        if was_pending and self._verify.pending_candidate is not None:
             # 先验后存的落盘时刻：内存早已就位，磁盘只给验证过的配置
-            candidate = self._pending_candidate
-            self._pending_candidate = None
+            candidate = self._verify.pending_candidate
+            self._verify.pending_candidate = None
             try:
                 save_config(candidate)
                 self.logger.info(CheckMessage.WRITTEN)
@@ -135,8 +118,6 @@ class SettingsController(BaseController):
         self._panel.accept()
         NoticeDialog.notify(SETTINGS_DIALOG.verified_ok, parent=self.gui)
 
-    # ==================== 业务逻辑实现 ====================
-
     def _execute(self) -> None:
         """用户点击按钮进入编辑模式"""
         # 重验期间禁编辑：半新配置一旦保存会覆盖用户真实配置
@@ -162,9 +143,9 @@ class SettingsController(BaseController):
 
         # 面板在前台（EDIT 或 SETUP）：原地刷标红，检测窗继续浮顶
         if self._panel is not None:
-            self._validating = False
-            self._save_pending = False
-            self._pending_candidate = None
+            self._verify.validating = False
+            self._verify.save_pending = False
+            self._verify.pending_candidate = None
             self._panel.set_busy(False)
             if self._current_mode == ConfigMode.EDIT:
                 self._current_mode = ConfigMode.SETUP
@@ -173,129 +154,11 @@ class SettingsController(BaseController):
             else:
                 self._panel.apply_errors(self._field_errors)
                 self.logger.debug("强制向导已打开，原地刷新校验结果")
-            self._attach_transient()
+            self._verify.attach_transient()
             return
 
         self._current_mode = ConfigMode.SETUP
         self._show_dialog()
-
-    # ==================== 校验进度窗（唯一实例） ====================
-
-    def _verify_window(self) -> CheckDialog | None:
-        """取当前校验轮窗口
-
-        - 非校验轮或无窗均返 None
-        """
-        win = current_check_window()
-        return win if win is not None and win.round == Round.VERIFY else None
-
-    def _start_verify_wait(self, aborts: bool) -> bool:
-        """在唯一窗上开校验轮
-
-        - 他轮在途则日志拦截
-        - 返回是否真正开轮
-        """
-        # 调用方据此决定是否唤醒后台
-        busy = current_check_window()
-        if busy is not None and busy.is_running:
-            self.logger.info(CheckMessage.CHECK_BUSY)
-            self._validating = False
-            self._save_pending = False
-            if self._panel is not None:
-                self._panel.set_busy(False)
-            return False
-
-        wait = open_check_window(self.gui)
-        wait.begin_round(
-            Round.VERIFY, aborts, verify_skeleton(), self._on_verify_closed
-        )
-        # 补播迟滞期缓存的帧：计划帧带缺席结论重建表格，逐行帧按序点亮
-        for frame in self._pre_frames:
-            wait.apply(frame)
-        self._pre_frames = []
-        self._attach_transient()
-        return True
-
-    def _on_verify_closed(self, result: int) -> None:
-        """唯一窗收场
-
-        - 仅校验轮的进行中 reject 才是真停
-        """
-        # 不可中断轮进行中无按钮且屏蔽 Esc，只会以 accept 收场，不动后台
-        wait = self._verify_window()
-        if (
-            wait is not None
-            and result == wait.DialogCode.Rejected
-            and not wait.settled
-            and wait.aborts
-        ):
-            self._abort_pending_verify()
-
-    def _abort_pending_verify(self) -> None:
-        """停止保存校验
-
-        - 按钮文案即行为：中止校验、弃候选、当场解锁面板
-        """
-        # 保存在途走 abort 通道（Bot 中止任务并回退内存）
-        if self._save_pending:
-            self._pending_candidate = None
-            self._save_pending = False
-            self.logger.info(CheckMessage.VERIFY_ABORTED)
-            gui_bridge.config_abort.emit()
-            return
-
-        # 复验在途无候选，只弃在途标志，被中断的校验轮收尾必发 ready，面板届时解除忙碌
-        if self._validating:
-            self._validating = False
-            if self._panel is not None:
-                self._panel.set_busy(False)
-            self.logger.info(CheckMessage.VERIFY_STOPPED)
-            gui_bridge.config_abort.emit()
-
-    def _attach_transient(self) -> None:
-        """校验窗浮在当前面板之上
-
-        - 面板换装/新开后重新跟随
-        """
-        # 本绑定无 QWidget 级接口，下到 QWindow 挂关系，句柄需 winId 强制具象
-        wait = self._verify_window()
-        if wait is None:
-            return
-        owner = self._panel or self.gui
-        wait.winId()
-        owner.winId()
-        wait.windowHandle().setTransientParent(owner.windowHandle())
-
-    def _on_verify_frame(self, frame: dict) -> None:
-        """进度帧转发
-
-        - 窗未开先缓存（开轮补播）
-        - 他轮占用则静默丢弃
-        """
-        wait = self._verify_window()
-        if wait is not None:
-            wait.apply(frame)
-        elif current_check_window() is None:
-            self._pre_frames.append(frame)
-
-    def _open_startup_wait(self) -> None:
-        """启动校验迟滞弹窗
-
-        - 快路径不闪窗
-        - 他轮占用则静默让位
-        """
-        # 后台校验照跑不误，播报让路，不抢弹提示
-        if self._config_ready or self._panel is not None:
-            return
-        busy = current_check_window()
-        if busy is not None and busy.is_running:
-            return
-        self.logger.info(
-            CheckMessage.VERIFY_START.format(reason=CheckMessage.REASON_STARTUP)
-        )
-        self._start_verify_wait(aborts=False)
-
-    # ==================== 内部弹窗逻辑 ====
 
     def _show_dialog(self) -> None:
         """打开配置弹窗"""
@@ -316,7 +179,7 @@ class SettingsController(BaseController):
         dialog.finished.connect(self._on_panel_finished)
         self._panel.show()
         # 先面板后跟随窗：面板后出场会反压检测窗，顺序不可颠倒
-        self._attach_transient()
+        self._verify.attach_transient()
 
     def _create_dialog(self) -> SettingsDialog:
         """按当前模式构造配置弹窗"""
@@ -352,15 +215,15 @@ class SettingsController(BaseController):
             self.logger.info("配置未修改")
             return
         if not changes:
-            if self._validating:
+            if self._verify.validating:
                 return
-            self._validating = True
+            self._verify.validating = True
             dialog.set_busy(True)
             self.logger.info(
                 CheckMessage.VERIFY_START.format(reason=CheckMessage.REASON_RECHECK)
             )
-            if not self._start_verify_wait(aborts=True):
-                self._validating = False
+            if not self._verify.start_wait(aborts=True):
+                self._verify.validating = False
                 dialog.set_busy(False)
                 return
             # 复验走候选通道：校验对象必须是面板上屏值，禁走磁盘重载
@@ -373,15 +236,15 @@ class SettingsController(BaseController):
 
         self._log_changes(logs)
         # 先验后存，候选只进内存，通过才落盘，取消即回退
-        self._pending_candidate = new_config
-        self._save_pending = True
+        self._verify.pending_candidate = new_config
+        self._verify.save_pending = True
         dialog.set_busy(True)
         self.logger.info(
             CheckMessage.VERIFY_START.format(reason=CheckMessage.REASON_SAVE)
         )
-        if not self._start_verify_wait(aborts=True):
-            self._pending_candidate = None
-            self._save_pending = False
+        if not self._verify.start_wait(aborts=True):
+            self._verify.pending_candidate = None
+            self._verify.save_pending = False
             dialog.set_busy(False)
             return
         config_manager.load(new_config)
@@ -394,12 +257,10 @@ class SettingsController(BaseController):
         if result == self._panel.DialogCode.Rejected:
             self.logger.info("用户取消了配置修改")
             # 校验在途时关面板即放弃本次操作，候选与后台轮一并掐掉
-            self._abort_pending_verify()
+            self._verify.abort_pending()
         self._panel.deleteLater()
         self._panel = None
         self._is_dialog_open = False
-
-    # ==================== 内部保存逻辑 ====================
 
     def _log_changes(self, logs: list) -> None:
         """分级记录变更日志"""

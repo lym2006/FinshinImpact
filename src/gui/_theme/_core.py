@@ -8,9 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from messages import MiscMessage
-from utils import ROOT_DIR
-
-# ==================== 窗口配置 ====================
+from profile_env import ASSET_EMOJI_FONT_NAME, ASSET_FONT_NAME, ASSETS_DIR
 
 
 @dataclass(frozen=True)
@@ -24,9 +22,6 @@ class WindowConfig:
     min_height: int = 400  # 窗口最小高度
 
 
-# ==================== 全局/Reset ====================
-
-
 @dataclass(frozen=True)
 class GlobalConfig:
     """全局基础配置
@@ -38,19 +33,13 @@ class GlobalConfig:
     already_running: str = MiscMessage.ALREADY_RUNNING
 
 
-# ==================== 字体配置 ====================
-
-
 @dataclass(frozen=True)
 class FontConfig:
     """字体配置"""
 
-    font_path: Path = ROOT_DIR / "assets/font.ttf"  # 主字体路径
-    emoji_path: Path = ROOT_DIR / "assets/seguiemj.ttf"  # emoji 字体路径
+    font_path: Path = ASSETS_DIR / ASSET_FONT_NAME  # 主字体路径
+    emoji_path: Path = ASSETS_DIR / ASSET_EMOJI_FONT_NAME  # emoji 字体路径
     font_size: int = 11  # 全局字体大小
-
-
-# ==================== Body（主窗口/中央容器） ====================
 
 
 @dataclass(frozen=True)
@@ -66,9 +55,6 @@ class BodyConfig:
     padding: int = 8  # 仪表盘内边距
 
 
-# ==================== Toolbar（顶部工具栏） ====================
-
-
 @dataclass(frozen=True)
 class ToolbarConfig:
     """工具栏配置"""
@@ -77,9 +63,6 @@ class ToolbarConfig:
     height: int = 50  # 高度
     border_width: int = 1  # 底部分割线宽度
     border_color: str = "#444444"  # 底部分割线颜色
-
-
-# ==================== Button（按钮） ====================
 
 
 @dataclass(frozen=True)
@@ -95,9 +78,6 @@ class ButtonConfig:
     padding_h: int = 16  # 水平内边距
 
 
-# ==================== Button Danger（危险按钮） ====================
-
-
 @dataclass(frozen=True)
 class ButtonDangerConfig:
     """危险操作按钮配置"""
@@ -105,9 +85,6 @@ class ButtonDangerConfig:
     bg: str = "#D32F2F"  # 背景色
     hover_bg: str = "#B71C1C"  # 悬停色
     pressed_bg: str = "#9A0007"  # 按下色
-
-
-# ==================== Scrollbar（滚动条） ====================
 
 
 @dataclass(frozen=True)

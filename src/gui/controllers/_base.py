@@ -22,7 +22,7 @@ class BaseController(ABC):
     - 强制子类声明按钮契约
     """
 
-    # ==================== 契约声明区 ====================
+    # 契约声明区
 
     # 子类必须声明这两个属性，否则实例化时会报错
     LOGGER_NAME: ClassVar[str]  # 日志器名称
@@ -33,20 +33,14 @@ class BaseController(ABC):
         """业务逻辑入口"""
         # 未实现时实例化抛 TypeError，由 ABC 元类强制
 
-    # ==================== 初始化与生命周期 ====================
-
     def __init__(self, gui_ref: "BotGUI") -> None:
         self.gui = gui_ref
         self.logger = get_logger(self.LOGGER_NAME)
-
-    # ==================== 自动生成的绑定标识 ====================
 
     @property
     def btn_id(self) -> str:
         """完整按钮 ID"""
         return f"btn_{self.BTN_KEY}"
-
-    # ==================== 公开业务执行入口 ====================
 
     @gui_guard
     def execute(self) -> None:

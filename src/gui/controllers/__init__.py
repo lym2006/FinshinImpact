@@ -18,6 +18,7 @@ from ._version import VersionController
 if TYPE_CHECKING:
     from gui import BotGUI
 
+
 __all__ = [
     # 唯一打包函数
     "build_controllers",

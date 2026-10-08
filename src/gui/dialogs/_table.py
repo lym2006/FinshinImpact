@@ -15,8 +15,6 @@ from utils.net_probe import FrameKey, RowStatus
 
 from .._theme import FiveStateDialogConfig
 
-__all__ = ["RowTable"]
-
 _CLOCK_MS = 1000  # 倒计时步进：一秒一跳，与探测预算的秒刻度对齐
 
 
