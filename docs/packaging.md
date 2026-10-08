@@ -7,17 +7,17 @@
 发布物是绿色便携目录：
 
 ```
-TelegramBot\
-├── TelegramBot.exe   启动器（用户双击这个）
+FinshinImpact\
+├── FinshinImpact.exe   启动器（用户双击这个）
 ├── _internal\        启动器运行库
-├── main.py           主程序入口（调试可单跑：runtime\python.exe main.py）
+├── main.py           程序入口，走引导层（调试可单跑：runtime\python.exe main.py，会先弹选择窗）
 ├── runtime\          嵌入式 Python 原料，首启自装于此
 ├── src\              代码文件
 ```
 
 启动器首启：解压嵌入式 Python → 放开 site-packages → 装 pip → 装依赖 → 拉浏览器内核 → 拉起主程序。此后每次启动比对在线版本页，弹窗确认后整包升级。
 
-- 升级换源码与启动器：新壳有变化时暂存 `_shell_update\`，当场换入并由旧壳拉起新壳，确认新程序抢到实例锁后旧壳退场；新壳启动慢会弹限时提示，始终等不到接管则旧壳直接启动兜底；失败则下次启动兜底换入；用户资产与运行环境保留。
+- 升级换源码与启动器：新壳有变化时暂存 `_shell_update\`，当场换入并由旧壳拉起新壳，确认新程序抢到引导锁（弹选择窗即持有）后旧壳退场；新壳启动慢会弹限时提示，始终等不到接管则旧壳直接启动兜底；失败则下次启动兜底换入；用户资产与运行环境保留。
 - `runtime\python-embed.zip`、`get-pip.py` 是启动器按名字找的文件，**改名会坏**。
 - `runtime\.installed` 记录依赖清单摘要，清单没变下次跳过安装。
 
@@ -32,14 +32,14 @@ python -m PyInstaller --version   # 应打印 6.22.3
 
 版本号在构建前定稿，zip 名取自 `pyproject.toml`，全程只构建这一次：
 
-1. `pyproject.toml` 的 `version` 改为发布号；`CHANGELOG.md` 的 `[Unreleased]` 改为新版本号并补空 `[Unreleased]`；
+1. `pyproject.toml` 的 `version` 改为发布号；`CHANGELOG.md` 的 `[Unreleased]` 改为新版本号并补空 `[Unreleased]`，如有 `Planned` 则原样保留在新 `[Unreleased]`；
 2. 构建：
 
 ```powershell
 python packaging\build.py
 ```
 
-编译启动器 → 白名单组装（排除 `*.egg-info` 等开发残留）→ 下载嵌入式 `Python` 与 `get-pip.py`（国内镜像优先、官方兜底，zip 逐条目校验、脚本验头，不过会中止）。成功标志：末行打印 `完成：dist\TelegramBot-vX.Y.Z.zip`——第三步测试与第四步上传用的都是这个包，不要再重跑构建。
+编译启动器 → 白名单组装（排除 `*.egg-info` 等开发残留）→ 下载嵌入式 `Python` 与 `get-pip.py`（国内镜像优先、官方兜底，zip 逐条目校验、脚本验头，不过会中止）。成功标志：末行打印 `完成：dist\FinshinImpact-vX.Y.Z.zip`——第三步测试与第四步上传用的都是这个包，不要再重跑构建。
 
 参数：`--no-launcher` 跳过编译环节；`--check` 自检四行：本地版本号、远端 tag、本地 zip、在线版本页（tag 与版本页读远端，是发布真相；推 tag 前"tag 缺失"属正常）。
 
@@ -55,8 +55,8 @@ python packaging\build.py
 拿第二步产出的 zip 走一遍用户路径：
 
 1. 把 zip 复制到别处（如桌面）解压——在 `dist\` 里测会污染构建目录。
-2. 双击 `TelegramBot.exe`，进度窗口 `[1/5]`～`[5/5]`，pip 按阿里→腾讯→清华→官方四源回退，约几分钟，别关窗口。
-3. 验证：向导填 token 能收发消息；再开一次应几秒直达、不再出现进度窗口；测试目录只多出 `config.toml`、`data\`、`logs\`、`runtime\`。
+2. 双击 `FinshinImpact.exe`，进度窗口 `[1/5]`～`[5/5]`，pip 按阿里→腾讯→清华→官方四源回退，约几分钟，别关窗口。
+3. 验证：向导填 token 能收发消息；再开一次应几秒直达、不再出现进度窗口；测试目录只多出 `instances\`、`runtime\`。实例文件夹内应含 `config.toml`、`persona.md`、`profile.json`、`data\`、`logs\`。
 4. 任一环节失败都不许发布。测完删掉测试目录。
 
 ## 第四步：正式发布
