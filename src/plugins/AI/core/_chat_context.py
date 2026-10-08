@@ -22,13 +22,11 @@ from .models import UserSession
 
 logger = get_logger("Plg.AI.Session")
 
-# ==================== 全局状态存储 ====================
-
+# 全局状态存储
 user_sessions: dict[str, UserSession] = {}
 task_queues: dict[str, TaskQueue] = {}
 active_tasks: set[asyncio.Task] = set()
 
-# ==================== 内部常量与类型定义 ====================
 
 # 泛型类型变量（用于装饰器的类型推导）
 P = ParamSpec("P")
@@ -39,15 +37,10 @@ _DEFAULT_SESSION = {  # 默认会话模板
     "is_active": False,
 }
 
-# ==================== 会话管理工具 ====================
-
 
 def create_new_session() -> UserSession:
     """创建并返回一个新的用户会话对象"""
     return UserSession(**_DEFAULT_SESSION)
-
-
-# ==================== 会话守卫装饰器 ====================
 
 
 def session_guard(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:

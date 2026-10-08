@@ -16,8 +16,6 @@ from exceptions import AITaskStoppedError
 
 from .models import TaskItem
 
-# ==================== Telegram 任务执行器 ====================
-
 
 class TelegramTaskItem(TaskItem):
     """注入 bot 的任务载体"""
@@ -41,20 +39,6 @@ class TelegramTaskItem(TaskItem):
         except TelegramAPIError as e:
             return "message to edit not found" in str(e)
 
-    async def safe_delete(self) -> None:
-        """删除状态消息
-
-        - 消息已不存在则静默失败
-        """
-        try:
-            await self.safe_draft("用户主动停止，正在清除消息...")
-            await self.bot.delete_message(
-                chat_id=self.chat_id, message_id=self.status_id
-            )
-        except TelegramAPIError:
-            # 消息可能已经被删除，无需处理，静默失败
-            pass
-
     async def safe_reply(self, msg: str) -> Message:
         """回复原消息
 
@@ -73,48 +57,6 @@ class TelegramTaskItem(TaskItem):
                 raise AITaskStoppedError() from None
             else:
                 raise
-
-    async def safe_edit(self, msg: str) -> None:
-        """编辑状态消息
-
-        - 编辑失败则降级为回复新消息
-        """
-        if await self.is_deleted():
-            raise AITaskStoppedError() from None
-
-        try:
-            await self.bot.edit_message_text(
-                text=msg, chat_id=self.chat_id, message_id=self.status_id
-            )
-        except TelegramAPIError as e:
-            if "message is not modified" in str(e):
-                # 内容未修改，直接忽略
-                return
-
-            if any(
-                i in str(e)
-                for i in ["message to edit not found", "message can't be edited"]
-            ):
-                # 降级处理：尝试回复新消息
-                new_msg = await self.safe_reply(msg)
-                self.status_id = new_msg.message_id
-            else:
-                raise
-
-    async def safe_draft(self, text: str) -> bool:
-        """发送草稿消息
-
-        - 失败时静默返回 False
-        """
-        try:
-            return await self.bot.send_message_draft(
-                chat_id=self.chat_id, draft_id=self.draft_id, text=text
-            )
-        except Exception:
-            return False
-
-
-# ==================== 异步安全任务队列 ====================
 
 
 class TaskQueue:

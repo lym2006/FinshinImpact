@@ -6,18 +6,15 @@
 """
 
 from ._config_manager import config_manager
-from ._root_dir import ROOT_DIR
-from .init_files import BLACKLIST_DIR, LOGS_DIR, RECORDS_DIR, TEMP_DIR
+from .init_files import LOGS_DIR, RECORDS_DIR, TEMP_DIR
 from .lifecycle import register_lifecycle, unregister_lifecycle
 from .logger import get_logger
 
 __all__ = [
     # 全局路径
-    "ROOT_DIR",
     "RECORDS_DIR",
     "TEMP_DIR",
     "LOGS_DIR",
-    "BLACKLIST_DIR",
     # 基础服务
     "config_manager",
     "get_logger",

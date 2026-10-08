@@ -33,8 +33,6 @@ from .ssl import SSLUnverifiedSession
 # 构造期异常消息 → 配置键的解析规则
 _SCHEME_RE = re.compile(r"Invalid scheme component:\s*(.*)", re.IGNORECASE)
 
-__all__ = ["attempt_channel", "check_config", "map_construct_error"]
-
 
 def map_construct_error(e: Exception, proxy: str) -> ConnectivityError:
     """映射构造期异常"""

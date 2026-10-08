@@ -8,8 +8,6 @@ from utils.init_files import init_project_files
 
 from ._base import BaseManager
 
-__all__ = ["InitializationManager"]
-
 
 class InitializationManager(BaseManager):
     """初始化管理器"""

@@ -19,6 +19,8 @@ _setup_lock = threading.Lock()
 # 全局派生格式器（对外提供）
 FORMATTER = create_formatter()
 GUI_FORMATTER = create_formatter(marked=True)
+
+
 __all__ = [
     # 获取日志器
     "get_logger",

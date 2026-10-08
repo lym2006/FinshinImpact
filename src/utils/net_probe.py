@@ -29,11 +29,12 @@ class RowStatus:
 class FieldKey:
     """探测错误字典的键协议
 
-    - 兼作向导标红的字段键，禁止跨模块裸写
+    - 区分 proxy 错与 token 错，禁止跨模块裸写
+    - proxy 兼作向导标红字段键，token 不进面板仅作致命判定
     """
 
     PROXY = "proxy"
-    TOKEN = "telegram_token"
+    TOKEN = "token"
 
 
 class RowId:
@@ -63,8 +64,8 @@ class FrameKey:
 _PORT_TIMEOUT = 0.5  # 回环 TCP 探活上限：本机进程秒回，半秒已极宽
 
 # 并行探测的通道级超时预算（秒）：罩得住代理冷启动的慢 TLS 握手
-PROBE_BUDGET = 6.0  # 代理通道全程上限：SOCKS 握手 + TLS + getMe
-PROBE_BUDGET_DIRECT = 3.0  # 直连预算：墙内黑洞必吃满，快进快出不陪跑
+_PROBE_BUDGET = 6.0  # 代理通道全程上限：SOCKS 握手 + TLS + getMe
+_PROBE_BUDGET_DIRECT = 3.0  # 直连预算：墙内黑洞必吃满，快进快出不陪跑
 
 # 常见本地代理软件默认监听端口（Clash/v2rayN/mihomo 等）
 _PROXY_PORTS = (7890, 7897, 7898, 7893, 10808, 10809, 8118, 20171, 20172)
@@ -115,7 +116,7 @@ def probe_budget(url: str) -> float:
 
     - 直连是墙内黑洞快进快出，代理罩得住冷启动慢握手
     """
-    return PROBE_BUDGET_DIRECT if not url else PROBE_BUDGET
+    return _PROBE_BUDGET_DIRECT if not url else _PROBE_BUDGET
 
 
 # 校验表行序：行 id 即 Channel.kind，port/local/advice 为收尾行，与发帧顺序一致

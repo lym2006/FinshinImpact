@@ -8,7 +8,7 @@
 
 import asyncio
 import time
-from collections.abc import Callable, Sequence
+from collections.abc import Awaitable, Callable, Sequence
 
 from messages import CheckMessage
 
@@ -53,7 +53,7 @@ def _never_stop() -> bool:
     return False
 
 
-def _never_emit(_frame: dict) -> None:
+def _never_emit(_frame_data: dict) -> None:
     """无回调占位"""
     # 独立调用时静默消费帧
     return None
@@ -95,6 +95,99 @@ async def _port_hit(token: str, url: str) -> bool:
     return FieldKey.PROXY not in errors
 
 
+def _diagnose_probe(
+    token: str,
+) -> Callable[[Channel], Awaitable[tuple[str | None, dict[str, str], str]]]:
+    """造诊断探针
+
+    - 与校验轮共用 attempt_channel，同网络栈、同预算、真 token 实测
+    """
+
+    async def probe(ch: Channel) -> tuple[str | None, dict[str, str], str]:
+        start = time.monotonic()
+        resolved, errors = await attempt_channel(token, ch.url)
+        logger.debug(
+            CheckMessage.COST.format(via=via_label(ch), cost=time.monotonic() - start)
+        )
+
+        # 表格句留空由核心统一拼"称谓：可达/不可用"
+        return resolved, errors, ""
+
+    return probe
+
+
+def _diagnose_channels(cfg: str, detected: str | None) -> list[Channel]:
+    """规划在场通道
+
+    - 缺席行由开局帧直接给定态，不入梯
+    """
+    channels = [Channel(RowId.CFG, cfg)] if cfg else []
+    if detected:
+        channels.append(Channel(RowId.SYS, detected))
+    channels.append(Channel(RowId.DIRECT, ""))
+    return channels
+
+
+async def _alive_ports(
+    cfg: str, reg: dict, stop: Callable[[], bool], frame: Callable[[dict], None]
+) -> list[int]:
+    """探活本地监听端口并渲染端口行
+
+    - TCP 存活只证明进程在听，能否出网由结论行复测
+    - 回环探活并发全等：单个预算 0.5s，串行只会把秒数累加成人质
+    - stop 置真返回空表，调用方据此静默收尾
+    """
+    sources = dict.fromkeys(
+        p for p in (extract_port(cfg), extract_port(str(reg["server"]))) if p
+    )
+    ports = list(sources) or list(_FALLBACK_PORTS)
+
+    ups = list(await asyncio.gather(*(asyncio.to_thread(port_alive, p) for p in ports)))
+    if stop():
+        return []
+    alive = [p for p, up in zip(ports, ups, strict=True) if up]
+    marks = [
+        f"{p} {CheckMessage.DIAG_PORT_ALIVE if up else CheckMessage.DIAG_PORT_DEAD}"
+        for p, up in zip(ports, ups, strict=True)
+    ]
+    suffix = f" {CheckMessage.DIAG_PORT_FALLBACK}" if not sources else ""
+    frame(
+        {
+            "id": RowId.PORT,
+            "status": RowStatus.OK if alive else RowStatus.FAIL,
+            "detail": "  ".join(marks) + suffix,
+        }
+    )
+    return alive
+
+
+async def _retest_ports(
+    alive: list[int], token: str, stop: Callable[[], bool]
+) -> str | None:
+    """存活端口并发复测
+
+    - 按端口序取首个可通定案，陪跑取消等落地
+    - 返回可出网地址，stop 置真返回 None
+    """
+    cands = [f"http://127.0.0.1:{p}" for p in alive[:_ALT_RETEST_LIMIT]]
+    tasks = [asyncio.ensure_future(_port_hit(token, url)) for url in cands]
+    alt: str | None = None
+    try:
+        for url, task in zip(cands, tasks, strict=True):
+            if stop():
+                return None
+            if await task:
+                alt = url
+                break
+    finally:
+        stragglers = [t for t in tasks if not t.done()]
+        for t in stragglers:
+            t.cancel()
+        if stragglers:
+            await asyncio.gather(*stragglers, return_exceptions=True)
+    return alt
+
+
 async def diagnose_flow(
     configured_proxy: str = "",
     token: str = "",
@@ -104,7 +197,6 @@ async def diagnose_flow(
     """跑一轮诊断
 
     - 并行调度进公共核心，诊断独有收口在本地补齐
-    - 探针与校验轮共用 attempt_channel：同网络栈、同预算、真 token 实测
     - 缺席通道静态给定态不入梯
     - 全挂才扫端口并复测可用地址
     - stop_check 置真即静默收尾，公共核心掐掉全部在途探测
@@ -116,28 +208,12 @@ async def diagnose_flow(
     detected = detect_system_proxy()
     cfg = configured_proxy.strip()
 
-    # 在场通道入梯并行探测，缺席行由开局帧直接给定态
-    channels = [Channel(RowId.CFG, cfg)] if cfg else []
-    if detected:
-        channels.append(Channel(RowId.SYS, detected))
-    channels.append(Channel(RowId.DIRECT, ""))
+    channels = _diagnose_channels(cfg, detected)
     frame({FrameKey.ROWS: diagnose_plan(channels)})
 
-    async def probe(ch: Channel) -> tuple[str | None, dict[str, str], str]:
-        """带预算的真 token 实测
-
-        - 与校验轮逐字同路
-        """
-        start = time.monotonic()
-        resolved, errors = await attempt_channel(token, ch.url)
-        logger.debug(
-            CheckMessage.COST.format(via=via_label(ch), cost=time.monotonic() - start)
-        )
-
-        # 表格句留空由核心统一拼"称谓：可达/不可用"
-        return resolved, errors, ""
-
-    outcome = await run_channels(channels, probe, frame, via_label, stop)
+    outcome = await run_channels(
+        channels, _diagnose_probe(token), frame, via_label, stop
+    )
     if stop():
         return
 
@@ -153,51 +229,16 @@ async def diagnose_flow(
         )
         return
 
-    # 本地监听端口：TCP 存活只证明进程在听，能否出网由结论行复测
     frame({"id": RowId.PORT, "status": RowStatus.CHECKING, "detail": ""})
-    sources = dict.fromkeys(
-        p for p in (extract_port(cfg), extract_port(str(reg["server"]))) if p
-    )
-    ports = list(sources) or list(_FALLBACK_PORTS)
-
-    # 回环探活并发全等：单个预算 0.5s，串行只会把秒数累加成人质
-    ups = list(await asyncio.gather(*(asyncio.to_thread(port_alive, p) for p in ports)))
+    alive = await _alive_ports(cfg, reg, stop, frame)
     if stop():
         return
-    alive = [p for p, up in zip(ports, ups, strict=True) if up]
-    marks = [
-        f"{p} {CheckMessage.DIAG_PORT_ALIVE if up else CheckMessage.DIAG_PORT_DEAD}"
-        for p, up in zip(ports, ups, strict=True)
-    ]
-    suffix = f" {CheckMessage.DIAG_PORT_FALLBACK}" if not sources else ""
-    frame(
-        {
-            "id": RowId.PORT,
-            "status": RowStatus.OK if alive else RowStatus.FAIL,
-            "detail": "  ".join(marks) + suffix,
-        }
-    )
 
     # 诊断结论：只对"配置可达"负责，端口行存活不等于通道可用
     frame({"id": RowId.ADVICE, "status": RowStatus.CHECKING, "detail": ""})
-
-    # 存活端口并发复测：按端口序取首个可通定案，陪跑取消等落地
-    cands = [f"http://127.0.0.1:{p}" for p in alive[:_ALT_RETEST_LIMIT]]
-    tasks = [asyncio.ensure_future(_port_hit(token, url)) for url in cands]
-    alt = ""
-    try:
-        for url, task in zip(cands, tasks, strict=True):
-            if stop():
-                return
-            if await task:
-                alt = url
-                break
-    finally:
-        stragglers = [t for t in tasks if not t.done()]
-        for t in stragglers:
-            t.cancel()
-        if stragglers:
-            await asyncio.gather(*stragglers, return_exceptions=True)
+    alt = await _retest_ports(alive, token, stop)
+    if stop():
+        return
     frame(
         {
             "id": RowId.ADVICE,

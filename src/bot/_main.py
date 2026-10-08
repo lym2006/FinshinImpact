@@ -1,25 +1,23 @@
-# src/bot/__main__.py
-"""Bot 启动主模块
+# src/bot/_main.py
+"""主程序装配
 
-- 提供 GUI 构建、服务总控与资源清理入口
+- 建 GUI 与控制器，接通信号总线
+- 起后台事件循环托管服务，退出时统一清理资源
 """
 
 import asyncio
-import sys
 import threading
 from concurrent.futures import Future
 from typing import cast
 
-from PySide6.QtWidgets import QApplication, QMessageBox
-
+from app_icon import ensure_app
 from gui import create_gui
-from gui._theme import GLOBAL, WINDOW
+from gui._theme import WINDOW
 from gui.controllers import SettingsController, ShutdownController
-from gui.icon import apply_icon
 from gui.mediator import gui_bridge
+from profile_env import get_profile
 from utils import get_logger
 from utils.lifecycle import shutdown_all
-from utils.single_instance import acquire_instance_lock
 
 from ._managers import BotManager
 
@@ -37,17 +35,14 @@ class Main:
     def main(self) -> int:
         """主函数"""
         try:
-            # 单实例守卫：同目录双开会互踩配置与数据，先到先得
-            if not acquire_instance_lock():
-                app = QApplication(sys.argv)
-                apply_icon(app)
-                QMessageBox.warning(None, WINDOW.title, GLOBAL.already_running)
-                return 0
-
-            # 启动 GUI
-            app = QApplication(sys.argv)
-            apply_icon(app)
+            # 实例锁由 bootstrap 统一抢占，此处不再重复抢
+            app = ensure_app()
             window, instances = create_gui()
+
+            # 多实例任务栏区分：标题带身份码，无身份码维持原标题
+            profile = get_profile()
+            if profile:
+                window.setWindowTitle(f"{WINDOW.title} - {profile}")
             window.show()
             app.processEvents()
             self.logger.debug("GUI 加载完成")
@@ -117,8 +112,6 @@ class Main:
         finally:
             self._cleanup()
 
-    # ==================== 清理 ====================
-
     def _cleanup(self) -> None:
         """统一清理资源
 
@@ -141,7 +134,3 @@ class Main:
             self._loop.close()
 
         self.logger.debug("资源已清理")
-
-
-if __name__ == "__main__":
-    sys.exit(Main().main())
