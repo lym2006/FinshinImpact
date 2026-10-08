@@ -1,4 +1,4 @@
-# Fool's Telegram Bot
+# Finshin Impact
 
 [![Python Version](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Aiogram Version](https://img.shields.io/badge/aiogram-3.x-green.svg)](https://docs.aiogram.dev/)
@@ -6,8 +6,14 @@
 [![Project Type](https://img.shields.io/badge/project-pyproject.toml-brightgreen.svg)](pyproject.toml)
 [![Changelog](https://img.shields.io/badge/changelog-CHANGELOG.md-blue.svg)](CHANGELOG.md)
 
-> 一个基于 `Python` 和 `aiogram 3.x` 构建的异步 Telegram 机器人，采用模块化插件设计。
+> 一个基于 `Python` 和 `aiogram 3.x` 构建的异步机器人，采用模块化插件设计。
 >
+> *鱼神，启动！*
+>
+**⚠️ 破坏性变更**
+- 从 **v1.0.0-alpha.3.dev1** 以前的版本更新的用户需手动整包，因为路径变化较大，以防止旧数据污染。
+- 具体请看 [**v1.0.0-alpha.3.dev1 专项**](#new)
+> 
 > **本项目仅限 `Windows` 用户使用。**
 
 ---
@@ -16,15 +22,15 @@
 
 无需 Python、无需 Git、无命令行，五步完成：
 
-1. **代理**：大陆用户访问 `github` 和使用机器人需 **全程** 开启代理。
-2. **下载**：下最新版的 `TelegramBot-vX.Y.Z.zip`（认准此文件名；Releases 页标着 `Source code` 的压缩包不含启动器，不要下）。
-   - 🚀 [国内镜像加速（推荐）](https://gh-proxy.com/#https://github.com/lym2006/TelegramBot/releases)：打开最新条目在 `Assets` 里下载，无需代理；
-   - 📦 [GitHub Releases](https://github.com/lym2006/TelegramBot/releases)：官方直连，需代理时走这条。
-3. **解压**：解压到任意 **可写目录**（如 `D:\TelegramBot`）。
-4. **首次启动**：双击 `TelegramBot\TelegramBot.exe`，确认后自动安装运行环境（嵌入式 Python、依赖、浏览器内核，默认走国内镜像加速），进度窗口实时显示安装步骤与下载速率，期间保持网络畅通。中途出现红色报错无需处理——镜像源失效时程序会自动换源重试，窗口会打印 `换源重试` 进度提示。
-5. **配置**：完成后管理面板弹出配置向导，填入 `telegram_token` 保存即开始收发消息（`config.toml` 自动生成，无需手编）。
+1. **代理**：大陆用户访问 `github` 和使用 **tg 端** 机器人需 **全程** 开启代理。
+2. **下载**：下最新版的 `FinshinImpact-vX.Y.Z.zip`（认准此文件名；Releases 页标着 `Source code` 的压缩包不含启动器，不要下）。
+   - 🚀 [国内镜像加速（推荐）](https://gh-proxy.com/#https://github.com/lym2006/FinshinImpact/releases)：打开最新条目在 `Assets` 里下载，无需代理；
+   - 📦 [GitHub Releases](https://github.com/lym2006/FinshinImpact/releases)：官方直连，需代理时走这条。
+3. **解压**：解压到任意 **可写目录**（如 `D:\FinshinImpact`）。
+4. **首次启动**：双击 `FinshinImpact\FinshinImpact.exe`，确认后自动安装运行环境（嵌入式 Python、依赖、浏览器内核，默认走国内镜像加速），进度窗口实时显示安装步骤与下载速率，期间保持网络畅通。
+5. **创建并运行实例**：运行后先弹出「选择机器人」窗口，点「新建」填入 Bot Token 即生成专属实例文件夹 `instances\<身份码>\`（同机可建多个、并存运行）；随后管理面板弹出配置向导，填入 API Key 与主人 ID 等即开始收发消息。
 
-**注意**：升级会整树替换 `src\` 与 `assets\`，自定义文件 **一定不要** 放这两个目录，`config.toml`、`data\`、`logs\`、`runtime\` 不受影响。
+**注意**：升级会整树替换 `src\` 与 `assets\`，自定义文件 **一定不要** 放这两个目录。
 
 ---
 
@@ -49,7 +55,7 @@
   -  内置版本检测更新、配置自动创建、类型范围自动校验逻辑。
 - **异步架构**: 基于 `asyncio` 和 `aiogram`，提供高并发处理能力。
 - **配置向导**: 窗口内可视化编辑 `config.toml`。
-- **单实例运行**: 同机双击第二个实例直接提示"已在运行"并退出，杜绝双开互踩配置与消息。
+- **多实例隔离**: 每个机器人独占一个身份文件夹，配置、人设、数据、日志互不干扰；同 token 双开提示"已在运行"并退出，杜绝互踩长轮询，不同 token 可同机并存。
 - **自定义应用图标**: 启动器文件、管理面板窗口与任务栏图标统一，旧版用户正常升级即自动生效。
 - **优雅退出**: 关闭拦截 + 确认弹窗 + 资源清理钩子统一调度，致命错误弹窗提示后安全退出，避免闪退。
 - **插件化设计**: 模块位于 `src/plugins` 目录，支持动态加载，易于扩展和维护。
@@ -113,7 +119,7 @@
 - 📦 **打包教程**（发布原理与操作）：[`docs/packaging.md`](docs/packaging.md)
 - 📝 **提交规范**（commit 格式模板）：[`.gitmessage`](.gitmessage)
 - 🚀 **发布工作流**（CHANGELOG、tag、release 四件套）：[`docs/release-workflow.md`](docs/release-workflow.md)
-- ⚙️ **配置模板**（全部可改项与注释）：[`config.example.toml`](config.example.toml)
+- ⚙️ **配置模板**（全部可改项与注释）：[`assets/config.telegram.example.toml`](assets/config.telegram.example.toml)
 
 [⤴️ 返回目录](#menu)
 
@@ -127,6 +133,11 @@
 - **v1.0.0-alpha.2 专项**：
   - 从旧版本自动升级后若双击没反应，删除 `src\bot\_managers\_settings` 文件夹即可恢复
   - 从 alpha.2 起更新无此问题
+- **v1.0.0-alpha.3.dev1 专项**：所有旧版本均需手动整包，不做自动迁移。<a id="new"></a>
+  - 备份旧目录根部的 `config.toml`、`data\`、`logs\`，删除旧目录后解压新包
+  - 新包首次启动会弹「选择机器人」窗口，点「新建」填 Bot Token，实例资产此后落在 `instances\<身份码>\` 下
+  - Bot Token 不再写进配置文件，改存实例内 `profile.json`，管理面板不显示也不可改
+  - 各项配置请自行从旧文件复制填写
 
 [⤴️ 返回目录](#menu)
 
@@ -136,7 +147,7 @@
 
 本项目目前仍处于 **测试阶段**，如遇报错或异常行为属正常现象，请勿惊慌 😊 
 
-- **代理语义**：填写地址优先使用；留空或试不通会自动尝试系统代理与直连，全不通时提示可用的本机端口，经你确认才采用，程序绝不擅自使用。
+- **代理语义**：填写地址优先使用，留空或试不通会自动尝试系统代理与直连，全不通时提示可用的本机端口。
 
 如需进行插件开发、查阅 API 或查看源码，请参考以下资源：
 - 📖 **官方文档**：[`aiogram.dev`](https://docs.aiogram.dev/en/latest/)
