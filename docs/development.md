@@ -9,14 +9,17 @@
 3. 激活虚拟环境：`.venv\Scripts\activate`。
 4. 安装依赖与开发工具：`pip install -e ".[dev]"`（可自行配置镜像源）。
 5. 安装 Playwright 浏览器内核：`playwright install chromium`。
-6. 启动：`python -m bot`，管理面板窗口即出现。
-7. 首次运行自动生成 `config.toml` 并弹出配置向导，填入配置即完成初始化（无需手编文件）。
+6. 启动：`python -m bootstrap`，先弹出「选择机器人」窗口，选定或新建实例后管理面板出现。
+7. 首次运行需在选择窗点「新建」，填 Bot Token 即生成实例文件夹 `instances/<身份码>/` 并弹出配置向导，填入配置即完成初始化（无需手编文件）。
+8. 实例文件夹内含 `config.toml`、`persona.md`、`profile.json`、`data/`、`logs/`，整体不进版本库。Bot Token 存 `profile.json`，不进 `config.toml`，面板不渲染也不可改。
+9. 身份码经环境变量 `FINSHINIMPACT_PROFILE` 传递（单源定义在 `src/profile_env.py` 的 `PROFILE_ENV`），选窗写入、业务模块导入期读取。`init_files` 的路径常量导入即冻结，故身份码必须在任何业务模块 import 前确定。手动单跑 `runtime\python.exe main.py` 也会先弹选择窗，无需自行设置该变量。
+10. 已有旧版根目录 `config.toml` 的老配置需手动备份重填 API Key、人设等项，旧位置不再被读取。
 
 ## 发布流程
 
 1. `pyproject.toml` 递增版本号，`CHANGELOG` 定稿，打 `git tag vX.Y.Z` 并推送。
-2. GitHub Release 上传发布物 `TelegramBot-vX.Y.Z.zip`（源码 + 启动器，不含 `.venv`）。
-3. 手动把 `pyproject.toml` 覆盖到版本页仓库（`lym2006.github.io/TelegramBot`）并 `push`，其 Pages workflow 自动部署，在线版本号即生效。
+2. GitHub Release 上传发布物 `FinshinImpact-vX.Y.Z.zip`（源码 + 启动器，不含 `.venv`）。
+3. 手动把 `pyproject.toml` 覆盖到版本页仓库（`lym2006.github.io/FinshinImpact`）并 `push`，其 Pages workflow 自动部署，在线版本号即生效。
 4. 用户下次启动时，GUI 版本检查命中新版本，启动器自动完成升级。
 
 ## 更新方式
