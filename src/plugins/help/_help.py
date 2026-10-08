@@ -21,8 +21,6 @@ router = Router()
 _HELP_FLAG = "-h"  # 单命令帮助查询参数
 _COMMAND_PREFIX = "/"  # 命令前缀
 
-# ==================== 内部辅助函数 ====================
-
 
 def _is_command(text: str | None) -> bool:
     """判断消息是否为命令"""
@@ -36,9 +34,6 @@ def _get_words(message: Message) -> list[str]:
         return []
 
     return text[1:].split()
-
-
-# ==================== 自定义过滤器 ====================
 
 
 class StartWithSlash(Filter):
@@ -59,9 +54,6 @@ class KeywordFilter(Filter):
         return (_HELP_FLAG in words) and any(w in help_list for w in words)
 
 
-# ==================== 未知命令提示路由处理函数 ====================
-
-
 @router.message(StartWithSlash())
 async def command_check(message: Message) -> None:
     """检查未知命令并提示使用 /help"""
@@ -71,9 +63,6 @@ async def command_check(message: Message) -> None:
     cmd = text.replace(" ", "").replace(_COMMAND_PREFIX, "")
     if cmd not in help_list:
         await message.answer(BotMessage.CMD_NOT_FOUND)
-
-
-# ==================== 单命令帮助路由处理函数 ====================
 
 
 @router.message(KeywordFilter())
@@ -86,9 +75,6 @@ async def command_help(message: Message) -> None:
 
     result = resolve_single_help(text)
     await message.answer(result)
-
-
-# ==================== /help 帮助查询命令 ====================
 
 
 @router.message(Command("help"))

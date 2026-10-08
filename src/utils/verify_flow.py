@@ -26,8 +26,6 @@ _ViaLabel = Callable[[Channel], str]
 # 探针裁决：(通道可走, 生效地址, 字段错误, 表格展示句)
 _Verdict = tuple[bool, str | None, dict[str, str], str]
 
-__all__ = ["ChannelOutcome", "run_channels", "local_row"]
-
 
 @dataclass
 class ChannelOutcome:
@@ -42,9 +40,6 @@ def _never_stop() -> bool:
     """默认停止回调"""
     # 永不中断
     return False
-
-
-# ==================== 核心业务逻辑 ====================
 
 
 async def _probe_safe(ch: Channel, probe: _Probe) -> _Verdict:

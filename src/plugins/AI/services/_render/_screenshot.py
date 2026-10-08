@@ -23,8 +23,6 @@ logger = get_logger("Plg.AI.Render")
 # 全局状态管理
 _semaphore = asyncio.Semaphore(render_config.max_concurrent_screenshots)
 
-# ==================== 底层截图逻辑 ====================
-
 
 async def _get_screenshot(file_name: str, html_path: Path) -> Path | None:
     """执行截图逻辑"""
@@ -83,9 +81,6 @@ async def _get_screenshot(file_name: str, html_path: Path) -> Path | None:
     return new_path
 
 
-# ==================== 智能裁剪逻辑 ====================
-
-
 def _crop_screenshot(file_path: Path) -> None:
     """按像素裁剪截图
 
@@ -112,9 +107,6 @@ def _crop_screenshot(file_path: Path) -> None:
         logger.debug(f"裁剪区域：({left}, {top}) 到 ({right}, {bottom})")
     except (OSError, ValueError) as e:
         logger.send_error("裁剪出错", e)
-
-
-# ==================== 截图主入口 ====================
 
 
 async def screenshot(file_name: str, html_path: Path) -> None:

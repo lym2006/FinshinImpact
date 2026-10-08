@@ -5,9 +5,8 @@
 - 提供字段级错误文案供向导标红
 """
 
-import asyncio
 import time
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from typing import cast
 
 from gui.mediator import gui_bridge
@@ -27,14 +26,14 @@ from utils.net_probe import (
     RowId,
     RowStatus,
     plan_channels,
-    scan_proxy_ports,
     verify_plan,
     via_label,
 )
 from utils.system_proxy import detect_system_proxy
-from utils.verify_flow import local_row, run_channels
+from utils.verify_flow import ChannelOutcome, local_row, run_channels
 
 from ._base import BaseManager
+from ._port_probe import verify_port_row
 
 
 def _label_of(schema: AppSchema, key: str) -> str:
@@ -69,8 +68,7 @@ class SettingsManager(BaseManager):
         # 上次验证时的网络参数：(token, 配置代理)，变化判定基准
         self._net_state: tuple[str, str] = ("", "")
 
-    # ==================== 配置加载与验证 ====================
-
+    # 配置加载与验证
     async def _execute(self) -> None:
         """加载配置进内存"""
         ensure_config()
@@ -87,13 +85,36 @@ class SettingsManager(BaseManager):
         configured = raw.strip()
         self._net_state = (token, configured)
 
-        # 分流判定：仅 token 变则复用生效通道，不重跑候选链
+        channels, token_only = self._plan_channels(
+            token, configured, prev_token, prev_cfg
+        )
+        type_errors = self._emit_opening(channels, token_only, schema)
+
+        outcome = await run_channels(
+            channels,
+            self._make_probe(token),
+            gui_bridge.verify_progress.emit,
+            via_label,
+        )
+        port_hint = await verify_port_row(outcome, token, token_only)
+        net_errors = self._aggregate_errors(outcome, channels, port_hint)
+
+        self._settle(outcome.resolved, configured)
+        self.last_errors = {**net_errors, **type_errors}
+        return self._emit_advice(schema)
+
+    def _plan_channels(
+        self, token: str, configured: str, prev_token: str, prev_cfg: str
+    ) -> tuple[list[Channel], bool]:
+        """规划候选通道
+
+        - 仅 token 变则复用生效通道，不重跑候选链
+        """
         token_only = (
             self.resolved_proxy is not None
             and configured == prev_cfg
             and token != prev_token
         )
-        sys_proxy = None if token_only else detect_system_proxy()
         if token_only:
             # 代理字段未动：通道已验证过，只对 token 单点复查
             reuse = cast(str, self.resolved_proxy)
@@ -102,11 +123,17 @@ class SettingsManager(BaseManager):
                 if not reuse
                 else (RowId.CFG if reuse == configured else RowId.SYS)
             )
-            channels = [Channel(kind, reuse)]
-        else:
-            channels = plan_channels(configured, sys_proxy)
+            return [Channel(kind, reuse)], True
+        return plan_channels(configured, detect_system_proxy()), False
 
-        # 本地校验纯函数零耗时：先落定再发开局整表，网络在跑时本地已亮
+    def _emit_opening(
+        self, channels: list[Channel], token_only: bool, schema: AppSchema
+    ) -> dict[str, str]:
+        """发开局整表
+
+        - 本地校验纯函数零耗时，网络在跑时本地已亮
+        - 返回本地类型错误供收口合并
+        """
         local_frame, type_errors = local_row(schema, config_manager.get_all())
         gui_bridge.verify_progress.emit(
             {
@@ -117,8 +144,16 @@ class SettingsManager(BaseManager):
                 )
             }
         )
+        return type_errors
 
-        # 并行调度交给公共核心：首成裁决，token 错不换道，成本日志留在探针闭包里
+    def _make_probe(
+        self, token: str
+    ) -> Callable[[Channel], Awaitable[tuple[str | None, dict[str, str], str]]]:
+        """造通道探针
+
+        - 并行调度交给公共核心：首成裁决，token 错不换道
+        """
+
         async def probe(ch: Channel) -> tuple[str | None, dict[str, str], str]:
             start = time.monotonic()
             resolved, errors = await attempt_channel(token, ch.url)
@@ -130,81 +165,47 @@ class SettingsManager(BaseManager):
             # 表格句留空由核心统一拼"称谓：可达/不可用"，errors 长句留给字段标红
             return resolved, errors, ""
 
-        outcome = await run_channels(
-            channels,
-            probe,
-            gui_bridge.verify_progress.emit,
-            via_label,
-        )
-        resolved = outcome.resolved
-        net_errors = outcome.errors
+        return probe
 
-        # 通道判通，port 行直接标跳过
-        if outcome.passed:
-            gui_bridge.verify_progress.emit(
-                {
-                    "id": RowId.PORT,
-                    "status": RowStatus.SKIP,
-                    "detail": CheckMessage.SKIP,
-                }
-            )
+    def _aggregate_errors(
+        self, outcome: ChannelOutcome, channels: list[Channel], port_hint: str
+    ) -> dict[str, str]:
+        """聚合代理错误
 
-        # 全挂才扫本机端口：仅探测复测，不自动采用、不写配置
-        port_hint = ""
-        if not outcome.passed and FieldKey.PROXY in net_errors and not token_only:
-            gui_bridge.verify_progress.emit(
-                {"id": RowId.PORT, "status": RowStatus.CHECKING, "detail": ""}
-            )
-            port_hint, alive = await self._probe_ports(token)
-            if port_hint:
-                status, port_detail = (
-                    RowStatus.OK,
-                    CheckMessage.VERIFY_PORT_HIT.format(url=port_hint),
-                )
-            elif not alive:
-                status, port_detail = (
-                    RowStatus.FAIL,
-                    CheckMessage.VERIFY_PORT_EMPTY,
-                )
-            else:
-                status, port_detail = (
-                    RowStatus.FAIL,
-                    CheckMessage.VERIFY_PORT_NONE,
-                )
-            gui_bridge.verify_progress.emit(
-                {"id": RowId.PORT, "status": status, "detail": port_detail}
-            )
-
-        if resolved is None and FieldKey.PROXY in net_errors:
-            # 单候选（仅直连）保留原始错误，多候选聚合为一句引导
+        - 单候选（仅直连）保留原始错误，多候选聚合为一句引导
+        """
+        errors = dict(outcome.errors)
+        if outcome.resolved is None and FieldKey.PROXY in errors:
             base = (
-                CheckMessage.ALL_FAIL
-                if len(channels) > 1
-                else net_errors[FieldKey.PROXY]
+                CheckMessage.ALL_FAIL if len(channels) > 1 else errors[FieldKey.PROXY]
             )
             if port_hint:
                 base += f"\n{CheckMessage.PORT_HOVER.format(url=port_hint)}"
             elif len(channels) > 1:
                 base += f"\n{CheckMessage.DIAGNOSE}"
-            net_errors = {FieldKey.PROXY: base}
+            errors = {FieldKey.PROXY: base}
+        return errors
 
-        # 结果落地：聚合错误，或标注生效通道
+    def _settle(self, resolved: str | None, configured: str) -> None:
+        """记录生效通道"""
         self.resolved_proxy = resolved
-        if resolved is not None:
-            via = (
-                CheckMessage.VIA_DIRECT
-                if not resolved
-                else CheckMessage.VIA_CFG.format(proxy=resolved)
-                if resolved == configured
-                else CheckMessage.VIA_SYSTEM.format(proxy=resolved)
-            )
-            self.logger.info(CheckMessage.PASS.format(via=via))
-            self._warn_stale(configured, resolved)
+        if resolved is None:
+            return
+        via = (
+            CheckMessage.VIA_DIRECT
+            if not resolved
+            else CheckMessage.VIA_CFG.format(proxy=resolved)
+            if resolved == configured
+            else CheckMessage.VIA_SYSTEM.format(proxy=resolved)
+        )
+        self.logger.info(CheckMessage.PASS.format(via=via))
+        self._warn_stale(configured, resolved)
 
-        # 网络与本地两路错误合并，全绿才返回 True，收口认 advice
-        self.last_errors = {**net_errors, **type_errors}
+    def _emit_advice(self, schema: AppSchema) -> bool:
+        """发结论帧收口
 
-        # 结论帧收口：表格 HTML 吞换行，失败只报计数，明细由字段标红与悬浮承载
+        - 表格 HTML 吞换行，失败只报计数，明细由字段标红与悬浮承载
+        """
         passed = not self.last_errors
         gui_bridge.verify_progress.emit(
             {
@@ -217,39 +218,10 @@ class SettingsManager(BaseManager):
                 ),
             }
         )
-
         if self.last_errors:
             fields = "、".join(_label_of(schema, k) for k in self.last_errors)
             self.logger.error(CheckMessage.CHECK_FAIL.format(fields=fields))
-        return not self.last_errors
-
-    async def _probe_ports(self, token: str) -> tuple[str, int]:
-        """本机端口扫描复测
-
-        - 返回 (首个 getMe 实测可通的 URL 或空串, 存活端口数)
-        - TCP 存活不等于可出网，复测不过不提示
-        - 全端口并发发射、按列表序收口：端口序即优先级，定案后剩余取消等落地
-        """
-        urls = await asyncio.to_thread(scan_proxy_ports)
-        if not urls:
-            return "", 0
-        tasks = [asyncio.ensure_future(attempt_channel(token, url)) for url in urls]
-        hit = ""
-        try:
-            # 按列表序逐个取结局：首个可通即定案，前面的已败不必再看
-            for task in tasks:
-                resolved, _ = await task
-                if resolved is not None:
-                    hit = resolved
-                    break
-        finally:
-            # 定案/异常都清场：在途的掐掉并等落地，防 destroyed 噪声
-            stragglers = [t for t in tasks if not t.done()]
-            for task in stragglers:
-                task.cancel()
-            if stragglers:
-                await asyncio.gather(*stragglers, return_exceptions=True)
-        return hit, len(urls)
+        return passed
 
     def _warn_stale(self, raw: str, resolved: str) -> None:
         """配置值坏但被后续通道救活

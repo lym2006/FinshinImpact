@@ -18,19 +18,17 @@ from exceptions import (
     RemoteVersionError,
 )
 from messages import VersionMessage
+from profile_env import ROOT_DIR
 
-from ._root_dir import ROOT_DIR
 from .base_client import BaseClient
 
 _BASE_URL = "https://lym2006.github.io"
-_REQUEST_PATH = "/TelegramBot/pyproject.toml"
+_REQUEST_PATH = "/FinshinImpact/pyproject.toml"
 _HEADER = {"User-Agent": "Python-Script"}
 
 # 静态小文件读取快，超时从严，失败即报，不做重试拖满等待
 _TIMEOUT = 3.0
 _CONNECT_TIMEOUT = 2.0
-
-# ==================== 内部辅助函数 ====================
 
 
 def _get_local_version() -> str | NoReturn:
@@ -65,9 +63,6 @@ async def _get_remote_version() -> str | NoReturn:
         raise RemoteVersionError(MAPS["Network"][type(e)].format(**vars(e))) from e
     except Exception as e:
         raise RemoteVersionError(VersionMessage.REMOTE_BROKEN) from e
-
-
-# ==================== 核心版本检查逻辑 ====================
 
 
 async def check_updates() -> str | NoReturn:
