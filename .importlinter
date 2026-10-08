@@ -1,0 +1,47 @@
+[importlinter]
+root_packages =
+    bootstrap
+    core
+    data
+    services
+    adapters
+    plugins
+    utils
+    bot
+    exceptions
+    gui
+    messages
+include_external_packages = True
+
+[importlinter:contract:core-zero-deps]
+name = core zero external dependencies
+type = forbidden
+source_modules =
+    core
+forbidden_modules =
+    aiogram
+    PySide6
+    aiosqlite
+    httpx
+    playwright
+    tenacity
+    markdown
+    PIL
+    cv2
+    numpy
+
+[importlinter:contract:data-adapters-isolation]
+name = data and adapters isolation
+type = forbidden
+source_modules =
+    data
+forbidden_modules =
+    adapters
+
+[importlinter:contract:core-layers]
+name = core internal layers
+type = layers
+layers =
+    core.contracts
+    core.dto
+    core.domain

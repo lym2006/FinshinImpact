@@ -18,7 +18,7 @@ from pathlib import Path
 # 仓库根与产物目录（_cache 存放重复构建可复用的原料）
 _ROOT = Path(__file__).resolve().parent.parent
 _DIST = _ROOT / "dist"
-_STAGE = _DIST / "TelegramBot"
+_STAGE = _DIST / "FinshinImpact"
 _CACHE = _DIST / "_cache"
 
 # 应用图标唯一来源：随 assets 白名单进发布包，exe 与 GUI 任务栏同源
@@ -38,7 +38,7 @@ _GET_PIP_URLS = (
     "https://mirrors.aliyun.com/pypi/get-pip.py",
     "https://bootstrap.pypa.io/get-pip.py",
 )
-_PAGES_PYPROJECT_URL = "https://lym2006.github.io/TelegramBot/pyproject.toml"
+_PAGES_PYPROJECT_URL = "https://lym2006.github.io/FinshinImpact/pyproject.toml"
 
 _DOWNLOAD_TIMEOUT = 120.0  # 构建原料下载超时 120 秒（2 分钟）
 _CHECK_TIMEOUT = 10.0  # 版本页自检超时 10 秒
@@ -48,7 +48,6 @@ _SHEBANG_PROBE = 32  # 脚本原料头部探测长度 32 字节
 _COPY_DIRS = ("src", "assets")
 _COPY_FILES = (
     "pyproject.toml",
-    "config.example.toml",
     "README.md",
     "CHANGELOG.md",
     "LICENSE",
@@ -154,11 +153,11 @@ def build_launcher() -> Path:
     - onedir 不自我解压、默认不压缩，显著降低杀软启发式误报
     - 产物指纹未变时复用已编译产物，exe 哈希不随无关构建漂移，用户端不触发无谓换壳
     """
-    out = _DIST / "_launcher" / "TelegramBot"
+    out = _DIST / "_launcher" / "FinshinImpact"
     stamp = _DIST / "_launcher" / ".launcher_sha"
     fp = _launcher_fingerprint()
     if (
-        (out / "TelegramBot.exe").exists()
+        (out / "FinshinImpact.exe").exists()
         and stamp.exists()
         and stamp.read_text() == fp
     ):
@@ -174,7 +173,7 @@ def build_launcher() -> Path:
             "--onedir",
             "--noconsole",
             "--name",
-            "TelegramBot",
+            "FinshinImpact",
             "--icon",
             str(_ICON),
             "--distpath",
@@ -195,15 +194,15 @@ def build_launcher() -> Path:
 # ==================== 发布物组装 ====================
 
 
-# 入口脚本模板：注入源码路径后等价 python -m bot
+# 入口脚本模板：注入源码路径后走引导层，先选实例再拉起主程序
 _MAIN_PY = """import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from bot.__main__ import Main
+from bootstrap import main
 
-sys.exit(Main().main())
+sys.exit(main())
 """
 
 
@@ -214,7 +213,7 @@ def _write_runtime_seed(launcher_dir: Path) -> None:
     """
     runtime = _STAGE / "runtime"
     runtime.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(launcher_dir / "TelegramBot.exe", _STAGE / "TelegramBot.exe")
+    shutil.copy2(launcher_dir / "FinshinImpact.exe", _STAGE / "FinshinImpact.exe")
     shutil.copytree(
         launcher_dir / "_internal",
         _STAGE / "_internal",
@@ -254,7 +253,7 @@ def assemble(launcher_dir: Path) -> Path:
 
     (_STAGE / "main.py").write_text(_MAIN_PY, encoding="utf-8")
     _write_runtime_seed(launcher_dir)
-    zip_name = _DIST / f"TelegramBot-v{version}.zip"
+    zip_name = _DIST / f"FinshinImpact-v{version}.zip"
     if zip_name.exists():
         zip_name.unlink()
     with zipfile.ZipFile(zip_name, "w", zipfile.ZIP_DEFLATED) as zf:
@@ -285,7 +284,7 @@ def _check_release() -> None:
             f"v{version}" if not version.endswith("-dev") else "开发号，先正式化",
         ),
         ("git tag 远端", "已推送" if tag_hit else "缺失，先 push tag"),
-        ("本地 zip", (_DIST / f"TelegramBot-v{version}.zip").exists()),
+        ("本地 zip", (_DIST / f"FinshinImpact-v{version}.zip").exists()),
         (
             "在线版本页一致",
             _remote_version_text(),
@@ -335,8 +334,8 @@ def main() -> None:
         return
 
     if args.no_launcher:
-        launcher_dir = _DIST / "_launcher" / "TelegramBot"
-        if not (launcher_dir / "TelegramBot.exe").exists():
+        launcher_dir = _DIST / "_launcher" / "FinshinImpact"
+        if not (launcher_dir / "FinshinImpact.exe").exists():
             print("找不到已有启动器，去掉 --no-launcher 重新编译")
             return
     else:
