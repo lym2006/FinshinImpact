@@ -26,13 +26,6 @@ from .._theme import CHECK_DIALOG
 from ._base import BaseDialog
 from ._table import RowTable
 
-__all__ = [
-    "CheckDialog",
-    "Round",
-    "current_check_window",
-    "open_check_window",
-]
-
 
 class Round:
     """检查窗轮次协议串
@@ -137,8 +130,6 @@ class CheckDialog(BaseDialog):
         self._idx = (self._idx + 1) % len(self._frames)
         self._spinner.setText(self._frames[self._idx])
 
-    # ==================== 轮次切换 ====================
-
     def begin_round(
         self,
         round_id: str,
@@ -193,8 +184,7 @@ class CheckDialog(BaseDialog):
             CHECK_DIALOG.verify_head_fail,
         )
 
-    # ==================== 状态出口 ====================
-
+    # 状态出口
     @property
     def round(self) -> str:
         """当前轮次
@@ -225,8 +215,7 @@ class CheckDialog(BaseDialog):
         """
         return self._running
 
-    # ==================== 帧消费 ====================
-
+    # 帧消费
     def apply(self, frame: dict) -> None:
         """消费一帧进度
 
@@ -268,8 +257,7 @@ class CheckDialog(BaseDialog):
         self._btn.clicked.disconnect()
         self._btn.clicked.connect(self.accept)
 
-    # ==================== 进行中拦截 ====================
-
+    # 进行中拦截
     def keyPressEvent(self, event: QKeyEvent) -> None:  # noqa: N802
         """收口前屏蔽 Esc
 

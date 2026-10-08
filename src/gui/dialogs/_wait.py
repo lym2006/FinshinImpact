@@ -70,8 +70,7 @@ class WaitDialog(BaseDialog):
         """
         self._label.setText(text)
 
-    # ==================== 动画与收尾 ====================
-
+    # 动画与收尾
     def _advance(self) -> None:
         """播放下一帧"""
         self._idx = (self._idx + 1) % len(self._frames)

@@ -6,7 +6,7 @@
 
 from typing import Any, overload
 
-from PySide6.QtCore import QObject, Qt, Signal, SignalInstance
+from PySide6.QtCore import QObject, Qt, SignalInstance
 
 
 class SafeSignalInstance:
@@ -74,6 +74,3 @@ class SafeSignal:
         if self not in cache:
             cache[self] = SafeSignalInstance(getattr(instance, self._native_attr))
         return cache[self]
-
-
-__all__ = ["SafeSignal", "SafeSignalInstance", "Signal"]

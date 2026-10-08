@@ -50,12 +50,9 @@ def _activate_explorer(title: str) -> bool:
 class LogsController(BaseController):
     """日志控制器"""
 
-    # ==================== 契约声明 ====================
-
+    # 契约声明
     LOGGER_NAME = "GUI.Logs"
     BTN_KEY = "log"
-
-    # ==================== 业务逻辑实现 ====================
 
     def _execute(self) -> None:
         """打开日志文件所在目录"""
