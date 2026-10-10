@@ -34,7 +34,9 @@ class SettingsDialogConfig:
     tab_padding_h: int = 16  # 标签页水平内边距
     tab_spacing: int = 12  # 标签页内部控件间距
     tab_bg: str = "#2D2D2D"  # 标签页背景色
-    tab_container_name: str = "settings_tab_container"  # 页容器样式名，改名同步 _parts 选择器
+    tab_container_name: str = (
+        "settings_tab_container"  # 页容器样式名，改名同步 _parts 选择器
+    )
 
     # 输入框
     input_padding_v: int = 6  # 输入框垂直内边距
@@ -78,6 +80,7 @@ class SettingsDialogConfig:
     persona_from_file: str = DialogMessage.SETUP_PERSONA_FROM_FILE
     persona_from_config: str = DialogMessage.SETUP_PERSONA_FROM_CONFIG
     persona_missing: str = DialogMessage.SETUP_PERSONA_MISSING
+    persona_file_miss: str = DialogMessage.SETUP_PERSONA_FILE_MISS
     persona_open_text: str = DialogMessage.SETUP_PERSONA_OPEN
     persona_open_fail: str = DialogMessage.SETUP_PERSONA_OPEN_FAIL
     persona_close_text: str = DialogMessage.SETUP_PERSONA_CLOSE
