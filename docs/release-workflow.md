@@ -11,7 +11,7 @@
   → 构建 zip 并本地实测
   → 附注 tag 并推送
   → 发布 release
-  → 版本页同步收尾
+  → 版本页校验收尾
 ```
 
 ## CHANGELOG
@@ -62,7 +62,7 @@ type(scope): 主题
 
 ```powershell
 python packaging\build.py
-python packaging\build.py --check   # 自检：本地版本号、远端 tag、本地 zip、在线版本页
+python packaging\build.py --check   # 自检：本地版本号、远端 tag、本地 zip、在线版本页、发布物官方直连、发布物 gh-proxy
 ```
 
 成功标志：末行打印 `完成：dist\FinshinImpact-vX.Y.Z.zip`。发布前必须拿这个 zip 走一遍用户路径实测（解压、双击、装环境、收发），细节见 [packaging.md](packaging.md)。
@@ -115,15 +115,6 @@ git push origin main vX.Y.Z
 
 Release 发布完成不等于升级链生效：在线版本页是启动器与 GUI 版本检查的唯一真相。
 
-1. 把本地 `pyproject.toml` 覆盖到版本页仓库 `lym2006.github.io` 的 `FinshinImpact/` 目录并 push，Pages workflow 自动部署。
-2. 跑 `python packaging\build.py --check`，末行「在线版本页」显示新版本号才算发布完成。
+版本页仓库的 workflow 随发布自动同步 `pyproject.toml` 并部署 Pages，**无需手动覆盖推送**。跑 `python packaging\build.py --check`，末行「在线版本页」显示新版本号即发布闭环（Pages 部署有延迟，读数未变稍后重跑）。
 
-## 版本页同步
-
-zip 上传完成不等于发布完成。在线版本页是启动器判断"有没有新版"的唯一真相，必须手动同步：
-
-1. 把本项目 `pyproject.toml` 覆盖到版本页仓库 `lym2006.github.io` 的 `FinshinImpact/pyproject.toml`。
-2. 在该仓库 `git commit` 并 `push`，其 Pages workflow 自动部署。
-3. 回本项目跑 `python packaging\build.py --check`，末行「在线版本页」显示新版本号即发布闭环。
-
-推 tag、传 zip、同步版本页三步齐了，老客户端才会在下次启动时收到升级提示。少同步版本页，用户看不到新版；zip 漏传，用户点了升级却下载失败。
+推 tag、传 zip 两步齐了，老客户端才会在下次启动时收到升级提示。zip 漏传，用户点了升级却下载失败。
