@@ -10,7 +10,16 @@ import inspect
 from collections.abc import Callable
 from typing import Any, ParamSpec, TypeVar, cast
 
-from exceptions import MAPS, BotError, ConfigError, ConfigPathMissingError, ProxyError
+from exceptions import (
+    MAP_KEY_CONFIG,
+    MAP_KEY_CONNECTIVITY,
+    MAP_KEY_PROXY,
+    MAPS,
+    BotError,
+    ConfigError,
+    ConfigPathMissingError,
+    ProxyError,
+)
 from gui.mediator import gui_bridge
 from utils.config.models import REQUIRED_MARK
 from utils.logger import get_logger
@@ -33,11 +42,11 @@ def _setup_errors(exc: BotError) -> dict[str, str]:
 def _describe(exc: BotError) -> str:
     """渲染异常详细文案"""
     if isinstance(exc, ConfigError):
-        template = MAPS["Config"].get(type(exc), "")
+        template = MAPS[MAP_KEY_CONFIG].get(type(exc), "")
     else:
-        table = MAPS["Connectivity"]
+        table = MAPS[MAP_KEY_CONNECTIVITY]
         if isinstance(exc, ProxyError):
-            template = table["Proxy"].get(type(exc), "")
+            template = table[MAP_KEY_PROXY].get(type(exc), "")
         else:
             template = table.get(type(exc), "")
     try:

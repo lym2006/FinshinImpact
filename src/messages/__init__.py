@@ -8,13 +8,18 @@
 """
 
 from ._check import CheckMessage
-from ._dialogs import DialogMessage
+from ._dialog import DialogMessage
 from ._misc import MiscMessage
+from ._picker import PickerMessage
 from ._version import VersionMessage
 
 __all__ = [
-    "CheckMessage",
-    "DialogMessage",
+    # 引导期选窗
+    "PickerMessage",
+    # 主窗与专属弹窗
     "MiscMessage",
+    "DialogMessage",
+    # 网络检查与更新
+    "CheckMessage",
     "VersionMessage",
 ]

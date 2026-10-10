@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
 )
 
 from app_icon import ensure_app
-from messages._picker import PickerMessage
+from messages import PickerMessage
 
 from ._picker_form import EditProfileDialog, NewProfileDialog
 from ._store import delete_profile, list_profiles, touch_profile

@@ -25,6 +25,10 @@ _registry: dict[
 # 清理可能从多个线程并发进入，注册表读写必须串行
 _registry_lock = threading.Lock()
 
+# 清理等待预算
+_LOOP_TASK_TIMEOUT = 5.0  # 协程投递 loop 等完成最多 5 秒
+_THREAD_JOIN_TIMEOUT = 3.0  # 线程等退出最多 3 秒
+
 
 def register_lifecycle(target: _TargetType, desc: str, type_: _LifecycleType) -> None:
     """注册生命周期资源"""
@@ -66,7 +70,7 @@ def _run_shutdown() -> list[str]:
         coro: Any,
         desc: str,
         loop: asyncio.AbstractEventLoop,
-        timeout: float = 5.0,
+        timeout: float = _LOOP_TASK_TIMEOUT,
     ) -> None:
         """投递协程到 loop"""
         if not loop.is_running():
@@ -106,7 +110,7 @@ def _run_shutdown() -> list[str]:
             # 清理链可能运行在被注册线程自己身上，join 自己必抛错
             continue
         if thread.is_alive():
-            thread.join(timeout=3.0)
+            thread.join(timeout=_THREAD_JOIN_TIMEOUT)
             if thread.is_alive():
                 failures.append(f"线程停止失败: {desc}")
 

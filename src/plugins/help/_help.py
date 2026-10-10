@@ -36,7 +36,7 @@ def _get_words(message: Message) -> list[str]:
     return text[1:].split()
 
 
-class StartWithSlash(Filter):
+class _StartWithSlash(Filter):
     """匹配 / 开头的未知命令"""
 
     async def __call__(self, message: Message) -> bool:
@@ -45,7 +45,7 @@ class StartWithSlash(Filter):
         return len(words) != 0 and not any(w in help_list for w in words)
 
 
-class KeywordFilter(Filter):
+class _KeywordFilter(Filter):
     """匹配单命令帮助格式"""
 
     async def __call__(self, message: Message) -> bool:
@@ -54,7 +54,7 @@ class KeywordFilter(Filter):
         return (_HELP_FLAG in words) and any(w in help_list for w in words)
 
 
-@router.message(StartWithSlash())
+@router.message(_StartWithSlash())
 async def command_check(message: Message) -> None:
     """检查未知命令并提示使用 /help"""
     text = message.text
@@ -65,7 +65,7 @@ async def command_check(message: Message) -> None:
         await message.answer(BotMessage.CMD_NOT_FOUND)
 
 
-@router.message(KeywordFilter())
+@router.message(_KeywordFilter())
 async def command_help(message: Message) -> None:
     """发送单个命令的帮助说明"""
     text = message.text

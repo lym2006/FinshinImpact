@@ -11,6 +11,9 @@ import logging
 _FMT = "%(asctime)s | %(name)-20s | %(levelname)-5s | %(message)s"
 _DATEFMT = "%Y-%m-%d %H:%M:%S"
 
+# 消息内可含 |，只切前三个分隔符取头部四段
+_HEAD_SEPARATORS = 3
+
 # 结果标记（只看冒号前的头部文字）
 _MARK_CANCEL = "\U0001f6ab"  # 🚫 取消
 _MARK_PAUSE = "\u23f8\ufe0f"  # ⏸️ 中断
@@ -70,12 +73,12 @@ def _resolve_mark(levelno: int, text: str) -> str:
     return _MARK_DEFAULT
 
 
-class MarkedFormatter(logging.Formatter):
+class _MarkedFormatter(logging.Formatter):
     """在标准格式之上按语义注入状态标记前缀"""
 
     def format(self, record: logging.LogRecord) -> str:
         base = super().format(record)
-        parts = base.split(" | ", 3)  # 消息内可含 |，只切前三个分隔符
+        parts = base.split(" | ", _HEAD_SEPARATORS)
         if len(parts) < 4:
             return base
         prefix, message = " | ".join(parts[:3]), parts[3]
@@ -85,5 +88,5 @@ class MarkedFormatter(logging.Formatter):
 
 def create_formatter(marked: bool = False) -> logging.Formatter:
     """创建日志格式器"""
-    cls = MarkedFormatter if marked else logging.Formatter
+    cls = _MarkedFormatter if marked else logging.Formatter
     return cls(fmt=_FMT, datefmt=_DATEFMT)

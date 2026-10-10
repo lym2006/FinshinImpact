@@ -26,8 +26,6 @@ class ChatScope(StrEnum):
     UNKNOWN = "unknown"
 
 
-# 实例身份码
-
 # 身份码分隔符，平台前缀与账号 id 的唯一分界
 _PROFILE_CODE_SEP = "-"
 

@@ -8,10 +8,13 @@ from collections.abc import Callable
 from functools import wraps
 from typing import ParamSpec, TypeVar, cast
 
+from messages import MiscMessage
 from utils.logger import get_logger
 
-logger = get_logger("GUI.Guard")
-P = ParamSpec("P")  # 泛型定义
+_logger = get_logger("GUI.Guard")
+
+# 泛型定义
+P = ParamSpec("P")
 T = TypeVar("T")
 
 
@@ -27,7 +30,9 @@ def gui_guard(func: Callable[P, T]) -> Callable[P, T]:
             return func(*args, **kwargs)
 
         except Exception as e:
-            logger.send_error(f"执行 [{func.__name__}] 时发生错误", e)
+            _logger.send_error(
+                MiscMessage.GUARD_EXEC_ERROR.format(name=func.__name__), e
+            )
 
         return
 

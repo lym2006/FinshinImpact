@@ -34,6 +34,10 @@ from ..._theme import GLOBAL, SETTINGS_DIALOG
 from ._list_widget import ConfigListWidget
 from ._reset import Inputs, ResetRegistry
 
+# Qt 布局四边
+_MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
+_LABEL_WIDTH_MAX_EM = 8  # 标签列宽上限为 8 倍「M」字宽
+
 _ERROR_QSS = f"color: {SETTINGS_DIALOG.error_color};"
 _PENDING_QSS = f"color: {SETTINGS_DIALOG.pending_color};"
 
@@ -56,6 +60,7 @@ class FieldBuilder:
         self._current = current
         self._font = font
         self.inputs: Inputs = {}
+
         # {字段键: (标签控件, 原标题)}，复验结果原地刷新用
         self.labels: dict[str, tuple[QLabel, str]] = {}
         self._resets = ResetRegistry(self.inputs, self.value_of)
@@ -76,7 +81,8 @@ class FieldBuilder:
         form = QFormLayout(container)
         form.setSpacing(GLOBAL.radius)
         form.setContentsMargins(
-            *[SETTINGS_DIALOG.margin] * 3 + [SETTINGS_DIALOG.tab_spacing]
+            *[SETTINGS_DIALOG.margin] * (_MARGIN_EDGES - 1)
+            + [SETTINGS_DIALOG.tab_spacing]
         )
         current_value, restore_target, required = self._resolve_value(field, namespace)
         label_widget = self._build_label(field, errors, label_width)
@@ -110,7 +116,7 @@ class FieldBuilder:
         """计算标签统一列宽"""
         metrics = QFontMetrics(self._font)
         max_width = max((metrics.horizontalAdvance(f.label) for f in fields), default=0)
-        limit = metrics.horizontalAdvance("M") * 8
+        limit = metrics.horizontalAdvance("M") * _LABEL_WIDTH_MAX_EM
         return min(max_width, limit)
 
     def value_of(self, field_key: str, field: FieldSchema) -> ConfigValue:
@@ -230,7 +236,7 @@ class FieldBuilder:
         """
         right_wrapper = QWidget()
         v_layout = QVBoxLayout(right_wrapper)
-        v_layout.setContentsMargins(*[SETTINGS_DIALOG.margin] * 4)
+        v_layout.setContentsMargins(*[SETTINGS_DIALOG.margin] * _MARGIN_EDGES)
         v_layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
         if required:
             v_layout.addWidget(input_widget)

@@ -16,11 +16,14 @@ from ._dialog import (
 from ._global import build_global_qss
 
 __all__ = [
-    "build_change_dialog_qss",
-    "build_check_dialog_qss",
+    # 主窗口
     "build_global_qss",
-    "build_notice_dialog_qss",
+    # 配置弹窗
     "build_settings_dialog_qss",
     "build_settings_list_qss",
+    # 专属弹窗
+    "build_notice_dialog_qss",
+    "build_change_dialog_qss",
     "build_wait_dialog_qss",
+    "build_check_dialog_qss",
 ]

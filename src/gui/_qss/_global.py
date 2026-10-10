@@ -13,8 +13,6 @@ from .._theme import (
     TOOLBAR,
 )
 
-# QSS 样式表
-
 # 主窗口与中央容器
 _BODY_QSS = f"""\
 QMainWindow, QWidget#centralWidget {{

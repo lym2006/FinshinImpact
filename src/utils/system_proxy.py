@@ -9,6 +9,10 @@ import sys
 
 _PROXY_KEY = r"Software\Microsoft\Windows\CurrentVersion\Internet Settings"
 
+# 注册表代理值名，与 packaging/launcher.py 独立副本同值（exe 不导入 src）
+_PROXY_ENABLE_VALUE = "ProxyEnable"
+_PROXY_SERVER_VALUE = "ProxyServer"
+
 
 def _pick_from_entries(raw: str) -> str | None:
     """提取代理地址
@@ -59,8 +63,8 @@ def registry_proxy() -> dict:
         import winreg
 
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, _PROXY_KEY) as key:
-            info["enable"] = winreg.QueryValueEx(key, "ProxyEnable")[0]
-            for value_name in ("ProxyServer", "PriProxy"):
+            info["enable"] = winreg.QueryValueEx(key, _PROXY_ENABLE_VALUE)[0]
+            for value_name in (_PROXY_SERVER_VALUE, "PriProxy"):
                 try:
                     raw = str(winreg.QueryValueEx(key, value_name)[0]).strip()
                 except OSError:

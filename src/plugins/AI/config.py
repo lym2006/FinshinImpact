@@ -1,4 +1,4 @@
-# plugins/AI/config.py
+# src/plugins/AI/config.py
 """AI 配置
 
 - 提供静态默认值与动态配置入口
@@ -57,7 +57,8 @@ class _DynamicAIConfig:
     """
 
     def __init__(self) -> None:
-        self._static = _StaticAIConfig()  # 初始化时加载一次静态配置
+        # 初始化时加载一次静态配置
+        self._static = _StaticAIConfig()
 
         # 定义动态属性的获取规则：属性名 -> (配置中心路径, 类型)
         self._dynamic_attr_map = {
@@ -86,14 +87,15 @@ class _DynamicAIConfig:
             value = config_manager.get(attr_path, attr_type)
 
             # 在这里进行值的后处理
-            if name == "group_triggers":
-                return tuple(value)
-            if name == "cleanup_time":
-                return value * _HOUR_SECONDS
-            if name == "waiting_time":
-                return value * _HOUR_SECONDS
-            if name == "init":
-                return tuple([build_message("system", _build_persona(value))])
+            match name:
+                case "group_triggers":
+                    return tuple(value)
+                case "cleanup_time":
+                    return value * _HOUR_SECONDS
+                case "waiting_time":
+                    return value * _HOUR_SECONDS
+                case "init":
+                    return tuple([build_message("system", _build_persona(value))])
 
             return value
 

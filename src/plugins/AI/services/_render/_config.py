@@ -10,7 +10,7 @@ import numpy as np
 
 
 @dataclass(frozen=True)
-class RenderConfig:
+class _RenderConfig:
     """渲染配置"""
 
     max_concurrent_screenshots: int = 3  # 最多允许同时执行的截图任务数
@@ -26,7 +26,8 @@ class RenderConfig:
     render_cavas_height: int = 10000  # 渲染画布高度（撑大视口，确保完整渲染，后续裁剪）
 
     # 智能裁剪颜色：检测 HTML 中定义的橙色背景边框 (#FFA500)
+    color_mode: str = "RGB"  # PIL 色彩模式
     orange_target: np.ndarray = field(default_factory=lambda: np.array([255, 165, 0]))
 
 
-render_config = RenderConfig()  # 实例化为全局单例
+render_config = _RenderConfig()  # 实例化为全局单例

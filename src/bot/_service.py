@@ -32,9 +32,14 @@ def _retry_if_network_running(state: RetryCallState) -> bool:
     return isinstance(exc, TelegramNetworkError) and not state.args[0].is_stopping
 
 
-_RECONNECT_TIMEOUT = 60
+# 引擎线程握手
+_LOOP_READY_TIMEOUT = 5.0  # 等事件循环线程就绪最多 5 秒
+
+# 重连退避
+_RECONNECT_TIMEOUT = 60  # 断线重连窗口 60 秒
 _MIN_RETRY_DELAY = 1
 _MAX_RETRY_DELAY = 10
+
 _logger = get_logger("Service")
 
 
@@ -74,7 +79,7 @@ class BotService:
         self._thread.start()
 
         # 阻塞等待 loop 创建完成，超时保护
-        if not ready.wait(timeout=5.0):
+        if not ready.wait(timeout=_LOOP_READY_TIMEOUT):
             raise RuntimeError("BotService event loop 启动超时")
         _logger.debug("引擎线程已运行")
 

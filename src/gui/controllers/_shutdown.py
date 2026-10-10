@@ -15,6 +15,9 @@ from ..mediator import gui_bridge
 from ._base import BaseController
 from ._decorator import gui_guard
 
+# 关闭进度轮询
+_SHUTDOWN_POLL_MS = 100  # 0.1 秒查一次关闭阶段状态
+
 
 class ShutdownController(BaseController):
     """进程关闭控制器"""
@@ -91,7 +94,7 @@ class ShutdownController(BaseController):
         self.logger.info("正在等待 Bot 线程清理资源...")
         self._check_shutdown_timer = QTimer(self.gui)
         self._check_shutdown_timer.timeout.connect(self._check_shutdown_status)
-        self._check_shutdown_timer.start(100)
+        self._check_shutdown_timer.start(_SHUTDOWN_POLL_MS)
         self.logger.debug("检查定时器已启动，轮询间隔 0.1 秒")
 
         # 超时定时器：如果 5 秒后还没清理完，强行退出

@@ -29,7 +29,7 @@ if sys.platform == "win32" and _anchor and Path(_anchor).is_file():
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(_anchor)
 
 
-def apply_icon(app: QApplication) -> None:
+def _apply_icon(app: QApplication) -> None:
     """设置应用图标"""
     if _ICON_PATH.is_file():
         app.setWindowIcon(QIcon(str(_ICON_PATH)))
@@ -45,5 +45,5 @@ def ensure_app() -> QApplication:
     if instance:
         return cast(QApplication, instance)
     app = QApplication(sys.argv)
-    apply_icon(app)
+    _apply_icon(app)
     return app

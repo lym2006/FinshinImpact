@@ -16,7 +16,7 @@ from ..core import AITaskStoppedError, task_queues, user_sessions
 from ..state import user_locks
 from ._worker import worker_loop
 
-logger = get_logger("Plg.AI.Monitor")
+_logger = get_logger("Plg.AI.Monitor")
 
 
 async def monitor_loop(user: str) -> None:
@@ -32,33 +32,33 @@ async def monitor_loop(user: str) -> None:
             # 消费循环：peek 队首，空则置非活跃退出
             task = await queue.peek_front()
             if task is None:
-                logger.debug(f"{user} 队列为空")
+                _logger.debug(f"{user} 队列为空")
                 session.is_active = False
                 break
 
             try:
                 await worker_loop(task, user)
             except AITaskStoppedError:
-                logger.error(f"{user} 原消息被删除")
+                _logger.error(f"{user} 原消息被删除")
             except CancelledError:
-                logger.error(f"{user} 任务被取消")
+                _logger.error(f"{user} 任务被取消")
                 raise
             except Exception as e:
-                logger.send_error(f"{user} 任务出错", e)
+                _logger.send_error(f"{user} 任务出错", e)
             finally:
                 # 无论成功失败，都必须将当前任务出队
                 await queue.pop_front()
 
     except CancelledError:
-        logger.error(f"{user} 监控循环被取消")
+        _logger.error(f"{user} 监控循环被取消")
         raise
     except Exception as e:
         # 外层兜底：崩溃只记录不外抛，防拖垮宿主
-        logger.send_error(f"{user} 监控循环崩溃", e)
+        _logger.send_error(f"{user} 监控循环崩溃", e)
     finally:
         session.is_active = False
         user_locks.pop(user, None)
-        logger.debug(f"{user} 监控循环结束")
+        _logger.debug(f"{user} 监控循环结束")
 
 
 async def cleanup_loop() -> NoReturn:
@@ -95,4 +95,4 @@ async def cleanup_loop() -> NoReturn:
                 ]
                 for path in paths:
                     path.unlink(missing_ok=True)
-                logger.info(f"清理长时间不活跃会话: {user}")
+                _logger.info(f"清理长时间不活跃会话: {user}")

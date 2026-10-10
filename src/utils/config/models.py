@@ -6,8 +6,6 @@
 
 from dataclasses import dataclass, field
 
-# 核心配置值类型
-
 # 单个 TOML 配置值
 ConfigValue = str | bool | float | list[str] | None
 
@@ -35,8 +33,6 @@ class PersonaKey:
         """拼点分路径"""
         return f"{cls.NAMESPACE}.{key}"
 
-
-# 校验占位协议
 
 # 前置项失败导致某项无法验证时的文案前缀（proxy 坏则 token 测不了）
 PENDING_MARK = "暂未检测"
@@ -70,7 +66,6 @@ def is_blank(value: object) -> bool:
     return False
 
 
-# UI Schema 结构契约
 @dataclass
 class FieldSchema:
     """单个配置项的 UI 属性"""

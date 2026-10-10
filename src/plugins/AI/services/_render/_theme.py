@@ -21,7 +21,7 @@ _FONT_CODE = ("'Consolas'", "'Monaco'", "'Courier New'", "monospace")
 
 
 @dataclass(frozen=True)
-class RenderTheme:
+class _RenderTheme:
     """渲染主题配置"""
 
     # 全局/Reset
@@ -85,7 +85,6 @@ class RenderTheme:
     html_bg: str = "#FFA500"  # 背景色
     html_padding: int = 10  # 内边距(px)
 
-    # 派生 CSS 属性
     def font_css(self, name: Literal["body", "code"]) -> str:
         """生成字体 CSS"""
         return ", ".join(getattr(self, f"font_{name}"))
@@ -100,7 +99,6 @@ class RenderTheme:
             for name, path in zip(self.font_body, self.font_paths, strict=False)
         )
 
-    # 派生间距属性
     @property
     def margin_normal_css(self) -> str:
         return " ".join(f"{v:g}em" for v in self.margin_normal)
@@ -134,4 +132,4 @@ class RenderTheme:
         return " ".join(f"{v:d}px" for v in self.blockquote_radius)
 
 
-render_theme = RenderTheme()  # 实例化为全局单例
+render_theme = _RenderTheme()  # 实例化为全局单例

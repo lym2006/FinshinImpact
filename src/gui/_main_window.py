@@ -24,6 +24,9 @@ from ._dashboard import DashboardWidget, TextHandler
 from ._theme import BodyConfig, FontConfig, ToolbarConfig, WindowConfig
 from .dialogs import NoticeDialog
 
+# 通知重试
+_NOTICE_RETRY_DELAY_MS = 800  # 模态占用时 0.8 秒后重弹
+
 
 class BotGUI(QMainWindow):
     """Bot 可视化窗口
@@ -150,7 +153,10 @@ class BotGUI(QMainWindow):
         - 版本检测等多行结果只进弹窗，面板不重复
         """
         if QApplication.activeModalWidget() is not None:
-            QTimer.singleShot(800, lambda: self.show_notice(message, critical))
+            QTimer.singleShot(
+                _NOTICE_RETRY_DELAY_MS,
+                lambda: self.show_notice(message, critical),
+            )
             return
 
         if critical:

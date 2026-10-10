@@ -23,12 +23,14 @@ from utils import get_logger
 if TYPE_CHECKING:
     from .core.models import UserSession
 
-logger_retry = get_logger("Plg.AI.Retry")
+_logger_retry = get_logger("Plg.AI.Retry")
 
-
+# 泛型定义
 P = ParamSpec("P")
 T = TypeVar("T")
-_MAX_RETRIES = 3  # 重试器硬编码配置
+
+# 重试器
+_MAX_RETRIES = 3
 _MIN_RETRY_DELAY = 1
 _MAX_RETRY_DELAY = 10
 
@@ -71,7 +73,7 @@ def retry_sending() -> Callable[[Callable[P, T]], Callable[P, T]]:
             retry=retry_if_exception_type(TelegramNetworkError),
             stop=stop_after_attempt(_MAX_RETRIES),
             wait=wait_exponential(min=_MIN_RETRY_DELAY, max=_MAX_RETRY_DELAY),
-            before_sleep=lambda retry_state: logger_retry.error(
+            before_sleep=lambda retry_state: _logger_retry.error(
                 f"消息发送失败，正在第 {retry_state.attempt_number} 次重试..."
             ),
             reraise=True,
