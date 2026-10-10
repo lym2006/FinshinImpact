@@ -1,4 +1,4 @@
-# src/messages/_dialogs.py
+# src/messages/_dialog.py
 """弹窗装配文案"""
 
 
@@ -9,8 +9,6 @@ class DialogMessage:
     - 成员一律以所属弹窗子域为前缀，五态表格符号收进 MARK_ 段
     """
 
-    # 配置编辑弹窗
-
     # 用：theme SettingsDialogConfig 文案字段
     SETUP_TITLE = "修改配置"
     SETUP_TIP = "检测到配置有误，请修正后继续"
@@ -19,21 +17,18 @@ class DialogMessage:
     SETUP_RESET = "恢复默认"
     SETUP_RESET_ICON = "↺"
 
-    # 人设预览
-
     # 用：settings 弹窗 chore 页人设按钮行与预览弹窗
     SETUP_PERSONA_TITLE = "人设预览"
     SETUP_PERSONA_PREVIEW = "预览人设"
     SETUP_PERSONA_FROM_FILE = "正文来源：实例 persona.md"
     SETUP_PERSONA_FROM_CONFIG = "未勾选读文件，展示配置字符串拼装结果"
     SETUP_PERSONA_MISSING = "人设文件缺失，已回退配置字符串"
+    SETUP_PERSONA_FILE_MISS = "文件不存在"
     SETUP_PERSONA_OPEN = "打开人设文件"
     SETUP_PERSONA_OPEN_FAIL = "打开人设文件失败"
     SETUP_PERSONA_CLOSE = "关闭"
 
-    # 通用按钮文案
-
-    # 用：settings/shutdown/verify 等弹窗的按钮字段
+    # 用：主窗弹窗与引导期选窗共用的按钮字段
     BTN_CANCEL = "取消"
     BTN_SAVE = "保存"
     BTN_EXIT = "退出程序"
@@ -41,13 +36,9 @@ class DialogMessage:
     BTN_CONFIRM = "确认"
     BTN_VALIDATING = "校验中..."
 
-    # 退出确认弹窗
-
     # 用：theme ShutdownDialogConfig 文案字段
     SHUTDOWN_TITLE = "确认退出"
     SHUTDOWN_MSG = "确定要关闭机器人并退出程序吗？"
-
-    # 统一通知弹窗
 
     # 用：theme NoticeDialogConfig 文案字段
     NOTICE_TITLE = "提示"
@@ -57,13 +48,9 @@ class DialogMessage:
     NOTICE_FATAL_OK = "确认并退出"
     NOTICE_NOT_CHANGED = "您未修改任何配置"
 
-    # 忙碌等待弹窗
-
     # 用：theme WaitDialogConfig 文案字段
     WAIT_TITLE = "请稍候"
     WAIT_CHECK = "正在检查版本更新..."
-
-    # 检查进度窗
 
     # 用：theme CheckDialogConfig 校验轮字段
     CHECK_VERIFY_TITLE = "连通性校验"
@@ -77,16 +64,12 @@ class DialogMessage:
     CHECK_DIAG_HEAD_PASS = "网络诊断完成"
     CHECK_DIAG_HEAD_FAIL = "网络诊断未通过"
 
-    # 五态表格符号（诊断窗与校验窗共用）
-
-    # 用：theme 五态基类的符号字段
+    # 用：theme 五态基类的符号字段（诊断窗与校验窗共用）
     MARK_PENDING = "•"
     MARK_CHECKING = "…"
     MARK_OK = "✓"
     MARK_SKIP = "✓"  # 跳过行同样绿勾，详情文字区分
     MARK_FAIL = "✗"
-
-    # 变更确认弹窗
 
     # 用：theme ChangeDialogConfig 文案字段
     CHANGE_TITLE = "确认变更"

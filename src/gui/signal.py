@@ -6,10 +6,10 @@
 
 from typing import Any, overload
 
-from PySide6.QtCore import QObject, Qt, SignalInstance
+from PySide6.QtCore import QObject, Qt, Signal, SignalInstance
 
 
-class SafeSignalInstance:
+class _SafeSignalInstance:
     """防重连信号实例包装"""
 
     def __init__(self, instance: SignalInstance) -> None:
@@ -51,19 +51,21 @@ class SafeSignalInstance:
 class SafeSignal:
     """防重连信号描述符
 
-    - 将宿主类上的 _signal_<name> 真实信号包装为入口
+    - 按签名自动在宿主类上创建 _signal_<name> 真实信号并包装为入口
     """
 
-    _native_attr: str
+    def __init__(self, *types: type) -> None:
+        self._types = types
 
     def __set_name__(self, owner: type, name: str) -> None:
         self._native_attr = f"_signal_{name}"
+        setattr(owner, self._native_attr, Signal(*self._types))  # 自动生成真实信号
 
     @overload
     def __get__(self, instance: None, owner: Any = None) -> "SafeSignal": ...
 
     @overload
-    def __get__(self, instance: QObject, owner: Any = None) -> SafeSignalInstance: ...
+    def __get__(self, instance: QObject, owner: Any = None) -> _SafeSignalInstance: ...
 
     def __get__(self, instance: QObject | None, owner: Any = None) -> Any:
         if instance is None:
@@ -72,5 +74,5 @@ class SafeSignal:
         # 包装实例按描述符缓存，保证 tag 去重集合稳定存活
         cache: dict = instance.__dict__.setdefault("_safe_signal_cache", {})
         if self not in cache:
-            cache[self] = SafeSignalInstance(getattr(instance, self._native_attr))
+            cache[self] = _SafeSignalInstance(getattr(instance, self._native_attr))
         return cache[self]
