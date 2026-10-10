@@ -118,7 +118,7 @@
 - 📐 **代码规范**（注释、docstring、命名约定）：[`docs/coding-style.md`](docs/coding-style.md)，模板 [`docs/example.py`](docs/example.py)
 - 📦 **打包教程**（发布原理与操作）：[`docs/packaging.md`](docs/packaging.md)
 - 📝 **提交规范**（commit 格式模板）：[`.gitmessage`](.gitmessage)
-- 🚀 **发布工作流**（CHANGELOG、tag、release 四件套）：[`docs/release-workflow.md`](docs/release-workflow.md)
+- 🚀 **发布工作流**（CHANGELOG、commit、tag、release 四件套）：[`docs/release-workflow.md`](docs/release-workflow.md)
 - ⚙️ **配置模板**（全部可改项与注释）：[`assets/config.telegram.example.toml`](assets/config.telegram.example.toml)
 
 [⤴️ 返回目录](#menu)
