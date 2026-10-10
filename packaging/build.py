@@ -18,7 +18,9 @@ from pathlib import Path
 # 仓库根与产物目录（_cache 存放重复构建可复用的原料）
 _ROOT = Path(__file__).resolve().parent.parent
 _DIST = _ROOT / "dist"
-_STAGE = _DIST / "FinshinImpact"
+_APP = "FinshinImpact"  # 产物与启动器共用的应用名
+_HDR_CONTENT_LENGTH = "Content-Length"
+_STAGE = _DIST / _APP
 _CACHE = _DIST / "_cache"
 
 # 应用图标唯一来源：随 assets 白名单进发布包，exe 与 GUI 任务栏同源
@@ -34,17 +36,35 @@ _EMBED_URLS = (
     f"https://npmmirror.com/mirrors/{_EMBED_URL_SUFFIX}",
     f"https://www.python.org/ftp/{_EMBED_URL_SUFFIX}",
 )
-_GET_PIP_URLS = (
-    "https://mirrors.aliyun.com/pypi/get-pip.py",
-    "https://bootstrap.pypa.io/get-pip.py",
+
+# uv 随包下发给启动器装依赖，取用方在 launcher 的 payload 解包
+_UV_VERSION = "0.12.23"
+_UV_URL_SUFFIX = (
+    f"astral-sh/uv/releases/download/{_UV_VERSION}/uv-x86_64-pc-windows-msvc.zip"
 )
+_UV_URLS = (
+    f"https://gh-proxy.com/https://github.com/{_UV_URL_SUFFIX}",
+    f"https://ghproxy.net/https://github.com/{_UV_URL_SUFFIX}",
+    f"https://github.com/{_UV_URL_SUFFIX}",
+)
+_UV_CACHE_NAME = f"uv-{_UV_VERSION}.zip"
+
+# 官方发布页校验值，升 _UV_VERSION 必须同步换值
+_UV_SHA256 = "75d05de6762778c31ee183398de7dd15093fad0ed90b1f236d8205ea5ec00c90"
+
+# 版本信息网页
 _PAGES_PYPROJECT_URL = "https://lym2006.github.io/FinshinImpact/pyproject.toml"
 
-_DOWNLOAD_TIMEOUT = 120.0  # 构建原料下载超时 120 秒（2 分钟）
-_CHECK_TIMEOUT = 10.0  # 版本页自检超时 10 秒
-_SHEBANG_PROBE = 32  # 脚本原料头部探测长度 32 字节
+# 发布物探测地址：与 launcher 的下载源同构
+_RELEASE_ZIP_URL = "https://github.com/lym2006/FinshinImpact/releases/download/v{ver}/FinshinImpact-v{ver}.zip"
+_RELEASE_MIRROR = "https://gh-proxy.com/"
 
-# 发布 zip 的白名单：只装运行必需与用户文档，开发配置与残留全部排除
+_DOWNLOAD_TIMEOUT = 120.0  # 构建原料下载超时 120 秒（2 分钟）
+_CHECK_TIMEOUT = 10.0  # 版本页与发布物探测超时 10 秒
+_BYTES_PER_MB = 1024 * 1024  # 1 MB
+
+# 发布 zip 白名单：只装运行必需与用户文档
+# devtools、tests、docs、packaging 等开发内容不在名单内，天然排除出发布包
 _COPY_DIRS = ("src", "assets")
 _COPY_FILES = (
     "pyproject.toml",
@@ -80,24 +100,22 @@ def _download(url: str, target: Path) -> None:
         raise
 
 
-def _download_verified(urls: list[str], target: Path) -> None:
+def _download_verified(urls: list[str], target: Path, sha256: str = "") -> None:
     """构建原料多源下载
 
-    - zip 验条目、脚本验头，任一不过即该源失败换下一源
+    - zip 验条目，带哈希的再比对 sha256，任一不过即该源失败换下一源
     """
     last_error: Exception | None = None
     for url in urls:
         try:
             _download(url, target)
-            if target.suffix == ".zip":
-                with zipfile.ZipFile(target) as zf:
-                    if zf.testzip() is not None:
-                        raise zipfile.BadZipFile("zip 条目校验失败")
-            else:
-                with open(target, "rb") as f:
-                    head = f.read(_SHEBANG_PROBE)
-                if not head.startswith(b"#"):
-                    raise ValueError("下载内容不是脚本")  # 镜像返回错误页
+            with zipfile.ZipFile(target) as zf:
+                if zf.testzip() is not None:
+                    raise zipfile.BadZipFile("zip 条目校验失败")
+            if sha256:
+                digest = hashlib.sha256(target.read_bytes()).hexdigest()
+                if digest != sha256:
+                    raise ValueError(f"sha256 不符：{digest}")
             return
         except Exception as e:
             last_error = e
@@ -106,7 +124,7 @@ def _download_verified(urls: list[str], target: Path) -> None:
     raise RuntimeError(f"全部下载源均失败，中止构建：{last_error}")
 
 
-def _fetch_to_cache(urls: list[str], name: str) -> Path:
+def _fetch_to_cache(urls: list[str], name: str, sha256: str = "") -> Path:
     """构建原料取用缓存
 
     - 原料跨构建复用
@@ -117,12 +135,8 @@ def _fetch_to_cache(urls: list[str], name: str) -> Path:
     if cached.exists():
         print(f"命中缓存 {name}")
         return cached
-    _download_verified(urls, cached)
+    _download_verified(urls, cached, sha256)
     return cached
-
-
-# ==================== 启动器编译 ====================
-
 
 def _require_icon() -> bytes:
     """图标原料校验
@@ -146,18 +160,18 @@ def _launcher_fingerprint() -> str:
     return hashlib.sha256(src + _require_icon()).hexdigest()
 
 
-def build_launcher() -> Path:
+def _build_launcher() -> Path:
     """创建启动器
 
     - 编译启动器源码为无控制台单目录 exe
     - onedir 不自我解压、默认不压缩，显著降低杀软启发式误报
     - 产物指纹未变时复用已编译产物，exe 哈希不随无关构建漂移，用户端不触发无谓换壳
     """
-    out = _DIST / "_launcher" / "FinshinImpact"
+    out = _DIST / "_launcher" / _APP
     stamp = _DIST / "_launcher" / ".launcher_sha"
     fp = _launcher_fingerprint()
     if (
-        (out / "FinshinImpact.exe").exists()
+        (out / f"{_APP}.exe").exists()
         and stamp.exists()
         and stamp.read_text() == fp
     ):
@@ -173,7 +187,7 @@ def build_launcher() -> Path:
             "--onedir",
             "--noconsole",
             "--name",
-            "FinshinImpact",
+            _APP,
             "--icon",
             str(_ICON),
             "--distpath",
@@ -189,10 +203,6 @@ def build_launcher() -> Path:
     stamp.parent.mkdir(parents=True, exist_ok=True)
     stamp.write_text(fp)
     return out
-
-
-# ==================== 发布物组装 ====================
-
 
 # 入口脚本模板：注入源码路径后走引导层，先选实例再拉起主程序
 _MAIN_PY = """import sys
@@ -213,7 +223,7 @@ def _write_runtime_seed(launcher_dir: Path) -> None:
     """
     runtime = _STAGE / "runtime"
     runtime.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(launcher_dir / "FinshinImpact.exe", _STAGE / "FinshinImpact.exe")
+    shutil.copy2(launcher_dir / f"{_APP}.exe", _STAGE / f"{_APP}.exe")
     shutil.copytree(
         launcher_dir / "_internal",
         _STAGE / "_internal",
@@ -223,13 +233,15 @@ def _write_runtime_seed(launcher_dir: Path) -> None:
     shutil.copy2(
         _fetch_to_cache(list(_EMBED_URLS), _EMBED_FILE), runtime / "python-embed.zip"
     )
+    payload = _STAGE / "payload"
+    payload.mkdir(parents=True, exist_ok=True)
     shutil.copy2(
-        _fetch_to_cache(list(_GET_PIP_URLS), "get-pip.py"),
-        runtime / "get-pip.py",
+        _fetch_to_cache(list(_UV_URLS), _UV_CACHE_NAME, _UV_SHA256),
+        payload / "uv.zip",
     )
 
 
-def assemble(launcher_dir: Path) -> Path:
+def _assemble(launcher_dir: Path) -> Path:
     """组装发布目录并压缩为 zip"""
     version = _read_version()
     if _STAGE.exists():
@@ -253,7 +265,7 @@ def assemble(launcher_dir: Path) -> Path:
 
     (_STAGE / "main.py").write_text(_MAIN_PY, encoding="utf-8")
     _write_runtime_seed(launcher_dir)
-    zip_name = _DIST / f"FinshinImpact-v{version}.zip"
+    zip_name = _DIST / f"{_APP}-v{version}.zip"
     if zip_name.exists():
         zip_name.unlink()
     with zipfile.ZipFile(zip_name, "w", zipfile.ZIP_DEFLATED) as zf:
@@ -263,14 +275,10 @@ def assemble(launcher_dir: Path) -> Path:
     shutil.rmtree(_STAGE)
     return zip_name
 
-
-# ==================== 本地自检 ====================
-
-
 def _check_release() -> None:
-    """发布前四项核对
+    """发布前后自检
 
-    - 版本号、远端 tag、发布物、在线版本页
+    - 版本号、远端 tag、本地包指纹、在线版本页、发布物各源可达
     """
     version = _read_version()
     tag_hit = subprocess.run(
@@ -278,20 +286,51 @@ def _check_release() -> None:
         capture_output=True,
         text=True,
     ).stdout.strip()
+    zip_path = _DIST / f"{_APP}-v{version}.zip"
+    local_size = zip_path.stat().st_size if zip_path.is_file() else 0
+    local_digest = (
+        hashlib.sha256(zip_path.read_bytes()).hexdigest() if local_size else ""
+    )
     checks = [
         (
             "本地版本号",
             f"v{version}" if not version.endswith("-dev") else "开发号，先正式化",
         ),
         ("git tag 远端", "已推送" if tag_hit else "缺失，先 push tag"),
-        ("本地 zip", (_DIST / f"FinshinImpact-v{version}.zip").exists()),
         (
-            "在线版本页一致",
-            _remote_version_text(),
+            "本地 zip",
+            f"{local_size / _BYTES_PER_MB:.1f} MB sha256={local_digest[:12]}"
+            if local_size
+            else "缺失，先构建",
         ),
+        ("在线版本页", _remote_version_text()),
     ]
+    zip_url = _RELEASE_ZIP_URL.format(ver=version)
+    for name, url in (
+        ("发布物官方直连", zip_url),
+        ("发布物 gh-proxy", _RELEASE_MIRROR + zip_url),
+    ):
+        checks.append((name, _asset_probe(url, local_size)))
     for name, detail in checks:
         print(f"[自检] {name}: {detail}")
+
+
+def _asset_probe(url: str, local_size: int) -> str:
+    """HEAD 探测发布物可达性与体积
+
+    - 与本地 zip 大小一致即内容对得上，无需整包下载
+    """
+    if not local_size:
+        return "本地无包，跳过"
+    request = urllib.request.Request(url, method="HEAD")
+    try:
+        with urllib.request.urlopen(request, timeout=_CHECK_TIMEOUT) as resp:
+            remote = int(resp.headers.get(_HDR_CONTENT_LENGTH) or 0)
+    except Exception as e:
+        return f"不可达（{type(e).__name__}），确认已上传 release"
+    if remote == local_size:
+        return f"可达，{remote / _BYTES_PER_MB:.1f} MB 与本地包一致"
+    return f"可达但大小不符（远端 {remote / _BYTES_PER_MB:.1f} MB）"
 
 
 def _remote_version_text() -> str:
@@ -308,10 +347,6 @@ def _remote_version_text() -> str:
     except Exception as e:
         # 供自检行降级输出
         return f"读取失败：{type(e).__name__}"
-
-
-# ==================== 入口 ====================
-
 
 def main() -> None:
     """解析参数并执行构建流程"""
@@ -334,13 +369,13 @@ def main() -> None:
         return
 
     if args.no_launcher:
-        launcher_dir = _DIST / "_launcher" / "FinshinImpact"
-        if not (launcher_dir / "FinshinImpact.exe").exists():
+        launcher_dir = _DIST / "_launcher" / _APP
+        if not (launcher_dir / f"{_APP}.exe").exists():
             print("找不到已有启动器，去掉 --no-launcher 重新编译")
             return
     else:
-        launcher_dir = build_launcher()
-    zip_path = assemble(launcher_dir)
+        launcher_dir = _build_launcher()
+    zip_path = _assemble(launcher_dir)
     print(f"完成：{zip_path}")
 
 
