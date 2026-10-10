@@ -20,7 +20,7 @@ from ..utils import get_name
 from ._tasks import TaskQueue
 from .models import UserSession
 
-logger = get_logger("Plg.AI.Session")
+_logger = get_logger("Plg.AI.Session")
 
 # 全局状态存储
 user_sessions: dict[str, UserSession] = {}
@@ -38,7 +38,7 @@ _DEFAULT_SESSION = {  # 默认会话模板
 }
 
 
-def create_new_session() -> UserSession:
+def _create_new_session() -> UserSession:
     """创建并返回一个新的用户会话对象"""
     return UserSession(**_DEFAULT_SESSION)
 
@@ -53,8 +53,8 @@ def session_guard(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
 
         # 初始化用户会话
         if user not in user_sessions:
-            user_sessions[user] = create_new_session()
-            logger.debug(f"[Decorator] 已为 {user} 初始化会话")
+            user_sessions[user] = _create_new_session()
+            _logger.debug(f"[Decorator] 已为 {user} 初始化会话")
 
             # 将系统提示词写入本地文件
             file_path = ai_config.record_dir / f"temp/{user}.md"

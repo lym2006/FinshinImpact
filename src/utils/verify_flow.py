@@ -111,6 +111,7 @@ async def run_channels(
             ch = tasks[task]
             verdict = task.result()
             verdicts[ch.kind] = verdict
+
             # 败行即时落红：✗ 是终局，不会被清场翻案
             if not verdict[0]:
                 emit(_settle_frame(ch, verdict, via_label))
@@ -122,6 +123,7 @@ async def run_channels(
                 break
             if verdict[0]:
                 winner = ch
+
                 # 定案的绿勾此刻才上屏：按住期间它从没亮过，不存在翻案
                 emit(_settle_frame(ch, verdict, via_label))
                 break

@@ -21,7 +21,7 @@ from PySide6.QtWidgets import (
 )
 
 from core.domain import Platform, platform_of_profile
-from messages._picker import PickerMessage
+from messages import PickerMessage
 from profile_env import read_token
 
 from ._store import code_for_token, create_profile, update_profile

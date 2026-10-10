@@ -9,6 +9,7 @@ import os
 import sys
 from ctypes import wintypes
 
+from messages import MiscMessage
 from utils import LOGS_DIR
 
 from ._base import BaseController
@@ -16,22 +17,26 @@ from ._base import BaseController
 _EXPLORER_CLASSES = {"CabinetWClass", "ExploreWClass"}
 _SW_RESTORE = 9
 
+# Win32 文本 API
+_WINDOW_TEXT_LEN = 256  # GetClassNameW/GetWindowTextW 缓冲上限
+
 
 def _activate_explorer(title: str) -> bool:
     """激活标题匹配的资源管理器窗口"""
     user32 = ctypes.windll.user32
-    found: list[int] = []
+    found: list[ctypes.c_void_p] = []
 
     @ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND, wintypes.LPARAM)
-    def _enum(hwnd, _lparam) -> bool:
+    def _enum(hwnd: wintypes.HWND, _lparam: wintypes.LPARAM) -> bool:
         if not user32.IsWindowVisible(hwnd):
             return True
-        cls = ctypes.create_unicode_buffer(256)
-        user32.GetClassNameW(hwnd, cls, 256)
+        cls = ctypes.create_unicode_buffer(_WINDOW_TEXT_LEN)
+        user32.GetClassNameW(hwnd, cls, _WINDOW_TEXT_LEN)
         if cls.value not in _EXPLORER_CLASSES:
             return True
-        buf = ctypes.create_unicode_buffer(256)
-        user32.GetWindowTextW(hwnd, buf, 256)
+        buf = ctypes.create_unicode_buffer(_WINDOW_TEXT_LEN)
+        user32.GetWindowTextW(hwnd, buf, _WINDOW_TEXT_LEN)
+
         # Win11 标题带应用后缀（logs - 文件资源管理器）：取头段比对，全等会漏
         head = buf.value.split(" - ", 1)[0].split(" — ", 1)[0]
         if head == title:
@@ -65,8 +70,8 @@ class LogsController(BaseController):
 
             except OSError as e:
                 # 路径空格、权限不足、explorer 崩溃等系统级错误统一兜底
-                self.logger.send_error("打开日志目录失败", e)
+                self.logger.send_error(MiscMessage.OPEN_LOGS_FAIL, e)
 
             except Exception as e:
                 # 防止任何未知异常导致 GUI 闪退
-                self.logger.send_error("发生未知错误", e)
+                self.logger.send_error(MiscMessage.UNKNOWN_ERROR, e)

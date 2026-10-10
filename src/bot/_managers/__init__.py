@@ -42,7 +42,6 @@ class BotManager:
         self._settings_manager = SettingsManager(self._applier.get_raw_config_func)
         self._signals = SignalHandler(self)
 
-    # 对外启停与信号处理，Qt 线程入口
     @error_guard("Bot 启动", catch_all=True)
     async def start(self) -> None:
         """启动服务"""

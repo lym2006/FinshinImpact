@@ -14,6 +14,9 @@ from .._qss import build_wait_dialog_qss
 from .._theme import GLOBAL, WAIT_DIALOG
 from ._base import BaseDialog
 
+# Qt 布局四边
+_MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
+
 
 class WaitDialog(BaseDialog):
     """转圈等待 → 结果确认"""
@@ -30,7 +33,7 @@ class WaitDialog(BaseDialog):
         self.setStyleSheet(build_wait_dialog_qss())
         self.setFixedSize(WAIT_DIALOG.width, WAIT_DIALOG.height)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(*[WAIT_DIALOG.pad] * 4)
+        layout.setContentsMargins(*[WAIT_DIALOG.pad] * _MARGIN_EDGES)
         layout.addStretch()
         row = QHBoxLayout()
         row.setSpacing(GLOBAL.radius)
@@ -70,7 +73,6 @@ class WaitDialog(BaseDialog):
         """
         self._label.setText(text)
 
-    # 动画与收尾
     def _advance(self) -> None:
         """播放下一帧"""
         self._idx = (self._idx + 1) % len(self._frames)

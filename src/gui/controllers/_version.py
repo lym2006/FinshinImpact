@@ -9,14 +9,14 @@ import asyncio
 
 from PySide6.QtCore import QThread, Signal
 
-from exceptions import MAPS, NewVersionError, VersionError
+from exceptions import MAP_KEY_VERSION, MAPS, NewVersionError, VersionError
 from utils.version_checker import check_updates
 
 from .._theme import WAIT_DIALOG
 from ..dialogs import NoticeDialog, WaitDialog
 from ._base import BaseController
 
-_ERR_MAP_VERSION = MAPS["Version"]
+_ERR_MAP_VERSION = MAPS[MAP_KEY_VERSION]
 
 
 class _VersionWorker(QThread):

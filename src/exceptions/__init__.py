@@ -55,12 +55,19 @@ from ._version import (
     VersionError,
 )
 
+# 异常映射表域键
+MAP_KEY_CONNECTIVITY = "Connectivity"
+MAP_KEY_PROXY = "Proxy"
+MAP_KEY_CONFIG = "Config"
+MAP_KEY_NETWORK = "Network"
+MAP_KEY_VERSION = "Version"
+
 MAPS = {
     "GUI": GUI_MAP,
-    "Config": CONFIG_MAP,
-    "Version": VERSION_MAP,
-    "Network": NETWORK_MAP,
-    "Connectivity": CONNECTIVITY_MAP,
+    MAP_KEY_CONFIG: CONFIG_MAP,
+    MAP_KEY_VERSION: VERSION_MAP,
+    MAP_KEY_NETWORK: NETWORK_MAP,
+    MAP_KEY_CONNECTIVITY: CONNECTIVITY_MAP,
 }
 
 __all__ = [

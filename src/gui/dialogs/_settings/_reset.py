@@ -26,6 +26,10 @@ InputWidget: TypeAlias = ConfigListWidget | QLineEdit | QTextEdit | QCheckBox
 Inputs: TypeAlias = dict[str, InputWidget]
 
 
+# Qt 布局四边
+_MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
+
+
 class ResetRegistry:
     """恢复默认登记
 
@@ -39,6 +43,7 @@ class ResetRegistry:
     ) -> None:
         self._inputs = inputs
         self._value_of = value_of
+
         # {字段键: (按钮, 字段, 恢复目标)}
         self._rows: dict[str, tuple[QPushButton, FieldSchema, ConfigValue]] = {}
 
@@ -49,7 +54,7 @@ class ResetRegistry:
         # 图标态，悬停出提示
         row = QWidget()
         h_layout = QHBoxLayout(row)
-        h_layout.setContentsMargins(*[SETTINGS_DIALOG.margin] * 4)
+        h_layout.setContentsMargins(*[SETTINGS_DIALOG.margin] * _MARGIN_EDGES)
         h_layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
         h_layout.addWidget(widget, stretch=1)
         btn = QPushButton(SETTINGS_DIALOG.reset_icon)

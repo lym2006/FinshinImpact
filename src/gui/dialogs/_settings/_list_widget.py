@@ -21,6 +21,9 @@ from PySide6.QtWidgets import (
 from ..._qss import build_settings_list_qss
 from ..._theme import SETTINGS_DIALOG
 
+# Qt 布局四边
+_MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
+
 
 class ConfigListWidget(QWidget):
     """封装好的列表配置控件"""
@@ -37,7 +40,7 @@ class ConfigListWidget(QWidget):
     def _setup_ui(self) -> None:
         """构建界面"""
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(*[SETTINGS_DIALOG.margin] * 4)
+        main_layout.setContentsMargins(*[SETTINGS_DIALOG.margin] * _MARGIN_EDGES)
         main_layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
         self.list_widget = QListWidget()  # 列表区域
         self.list_widget.setObjectName("list_widget")
@@ -65,7 +68,7 @@ class ConfigListWidget(QWidget):
         """
         bar = QWidget()
         layout = QHBoxLayout(bar)
-        layout.setContentsMargins(*[SETTINGS_DIALOG.margin] * 4)
+        layout.setContentsMargins(*[SETTINGS_DIALOG.margin] * _MARGIN_EDGES)
         layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
         self._bar_layout = layout
 
