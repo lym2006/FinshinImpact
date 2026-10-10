@@ -67,7 +67,6 @@ class SettingsController(BaseController):
             self._verify.on_frame, "校验进度", queued=True
         )
 
-    # 状态同步
     def _on_config_ready_changed(self, ready: bool) -> None:
         """更新就绪缓存
 
@@ -178,6 +177,7 @@ class SettingsController(BaseController):
         dialog.save_requested.connect(lambda: self._on_save_requested(dialog))
         dialog.finished.connect(self._on_panel_finished)
         self._panel.show()
+
         # 先面板后跟随窗：面板后出场会反压检测窗，顺序不可颠倒
         self._verify.attach_transient()
 
@@ -226,6 +226,7 @@ class SettingsController(BaseController):
                 self._verify.validating = False
                 dialog.set_busy(False)
                 return
+
             # 复验走候选通道：校验对象必须是面板上屏值，禁走磁盘重载
             gui_bridge.config_candidate.emit()
             return
@@ -235,6 +236,7 @@ class SettingsController(BaseController):
             return
 
         self._log_changes(logs)
+
         # 先验后存，候选只进内存，通过才落盘，取消即回退
         self._verify.pending_candidate = new_config
         self._verify.save_pending = True
@@ -256,6 +258,7 @@ class SettingsController(BaseController):
             return
         if result == self._panel.DialogCode.Rejected:
             self.logger.info("用户取消了配置修改")
+
             # 校验在途时关面板即放弃本次操作，候选与后台轮一并掐掉
             self._verify.abort_pending()
         self._panel.deleteLater()

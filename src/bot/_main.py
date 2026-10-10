@@ -21,6 +21,9 @@ from utils.lifecycle import shutdown_all
 
 from ._managers import BotManager
 
+# 退出清理
+_LOOP_JOIN_TIMEOUT = 5  # 等事件循环线程退出最多 5 秒
+
 
 class Main:
     """Bot 主程序"""
@@ -127,9 +130,11 @@ class Main:
         if self._loop.is_running():
             self._loop.call_soon_threadsafe(self._loop.stop)
         if self._loop_thread and self._loop_thread.is_alive():
-            self._loop_thread.join(timeout=5)
+            self._loop_thread.join(timeout=_LOOP_JOIN_TIMEOUT)
             if self._loop_thread.is_alive():
-                self.logger.info("事件循环线程未在 5 秒内退出，跳过关闭")
+                self.logger.info(
+                    f"事件循环线程未在 {_LOOP_JOIN_TIMEOUT} 秒内退出，跳过关闭"
+                )
         if not self._loop.is_closed() and not self._loop.is_running():
             self._loop.close()
 

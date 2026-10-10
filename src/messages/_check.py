@@ -9,8 +9,6 @@ class CheckMessage:
     - 校验轮与诊断轮共窗共词，轮专属句按 VERIFY_ / ADVICE_ 前缀分组
     """
 
-    # 行骨架标题
-
     # 用：utils/net_probe.py 与 utils/diagnose.py 两轮的表行名（界面与生成器共用）
     ROW_CFG = "配置代理通道"
     ROW_SYS = "系统代理通道"
@@ -19,14 +17,10 @@ class CheckMessage:
     ROW_LOCAL = "本地配置"
     ROW_ADVICE = "检查结论"
 
-    # 通道称谓
-
     # 用：两轮表格与日志的统一称谓，代理类一律带地址
     VIA_DIRECT = "直连"
     VIA_CFG = "配置代理 {proxy}"
     VIA_SYSTEM = "系统代理 {proxy}"
-
-    # 行状态与短语（成功一份、失败一份）
 
     # 用：未被单独探测的通道行绿色带过（前级已通/定案陪跑）
     SKIP = "跳过（前级已连通）"
@@ -48,15 +42,11 @@ class CheckMessage:
     # 用：gui/dialogs/_table.py 进行中行独立计时后缀（已测秒/预算秒）
     COUNTDOWN = "检测中 {n}/{budget}s"
 
-    # 通道缺席句（两轮共用）
-
     # 用：配置代理行——代理项留空
     CFG_EMPTY = "未配置（可填 http://127.0.0.1:端口）"
 
     # 用：系统代理行——不可用收口句（未开启或地址解析不出）
     SYS_UNAVAILABLE = "无可用系统代理（未开启或地址不可解析）"
-
-    # 诊断轮专属
 
     # 用：端口行——探活符号与默认组标注
     DIAG_PORT_ALIVE = "✓"
@@ -68,8 +58,6 @@ class CheckMessage:
 
     # 用：全链不通
     DIAG_ADVICE_NONE = "未找到可用通道：启动代理软件后重试，或开启 TUN"
-
-    # 校验轮专属
 
     # 用：端口行——复测实测可通的收口句
     VERIFY_PORT_HIT = "复测通过：{url}"
@@ -91,8 +79,6 @@ class CheckMessage:
 
     # 用：结论行失败汇总——表格走 HTML 渲染，多行明细会被吞，只留一句计数
     VERIFY_ADVICE_FAIL = "{n} 项配置异常"
-
-    # 探测错误句
 
     # 用：三通道全挂的聚合句
     ALL_FAIL = "配置代理 / 系统代理 / 直连均无法连通"
@@ -123,8 +109,6 @@ class CheckMessage:
     # 用：单通道探测超时的错误句（用户面不带秒数，秒数只进 debug 日志）
     TIMEOUT = "验证超时，请稍后重试"
 
-    # 面板单行日志
-
     # 用：校验发起（reason 为 启动/保存/复验）
     VERIFY_START = "正在校验连通性（{reason}）"
 
@@ -140,7 +124,7 @@ class CheckMessage:
     PASS = "连通校验通过：生效通道 {via}"
 
     # 用：字段级失败的日志句
-    CHECK_FAIL = "连通校验失败：{fields}"
+    FAIL = "连通校验失败：{fields}"
 
     # 用：校验通过后的真正落盘（文案避"配置"与结果词，归 💾）
     WRITTEN = "新值已写入磁盘"
@@ -152,7 +136,7 @@ class CheckMessage:
     STARTUP_BUSY = "启动校验进行中，网络诊断稍后再试"
 
     # 用：面板单行日志：他轮在途时开新轮的拦截（唯一窗互斥守卫）
-    CHECK_BUSY = "已有检查正在进行，请稍候再试"
+    BUSY = "已有检查正在进行，请稍候再试"
 
     # 用：面板单行日志：保存流点"取消"，候选作废未落盘
     VERIFY_ABORTED = "已取消本次校验，候选配置未落盘"

@@ -57,7 +57,7 @@ class VerifyCoordinator:
         # 调用方据此决定是否唤醒后台
         busy = current_check_window()
         if busy is not None and busy.is_running:
-            self._host.logger.info(CheckMessage.CHECK_BUSY)
+            self._host.logger.info(CheckMessage.BUSY)
             self.validating = False
             self.save_pending = False
             if self._host._panel is not None:
@@ -66,6 +66,7 @@ class VerifyCoordinator:
 
         wait = open_check_window(self._host.gui)
         wait.begin_round(Round.VERIFY, aborts, verify_skeleton(), self.on_closed)
+
         # 补播迟滞期缓存的帧：计划帧带缺席结论重建表格，逐行帧按序点亮
         for frame in self.pre_frames:
             wait.apply(frame)

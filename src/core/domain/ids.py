@@ -7,13 +7,14 @@
 
 from typing import NewType
 
+# 容器与键段
 Container = NewType("Container", str)  # g/u 前缀
-
 UserKey = NewType("UserKey", str)  # platform:user
 SessionKey = NewType("SessionKey", str)  # SessionDTO.key
 MessageKey = NewType("MessageKey", str)  # MsgReferenceDTO.key
 PrincipalKey = NewType("PrincipalKey", str)  # PrincipalDTO.key
 
+# 平台原始标识
 UserId = NewType("UserId", str)
 MessageId = NewType("MessageId", str)
 TaskId = NewType("TaskId", str)  # MessageKey:TaskKind

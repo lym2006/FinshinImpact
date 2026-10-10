@@ -18,7 +18,7 @@ from ...browser import browser_manager
 from ...config import ai_config
 from ._config import render_config
 
-logger = get_logger("Plg.AI.Render")
+_logger = get_logger("Plg.AI.Render")
 
 # 全局状态管理
 _semaphore = asyncio.Semaphore(render_config.max_concurrent_screenshots)
@@ -27,7 +27,7 @@ _semaphore = asyncio.Semaphore(render_config.max_concurrent_screenshots)
 async def _get_screenshot(file_name: str, html_path: Path) -> Path | None:
     """执行截图逻辑"""
     if not html_path.exists():
-        logger.error(f"源文件不存在: {html_path}")
+        _logger.error(f"源文件不存在: {html_path}")
         return
     new_path = ai_config.record_dir / f"temp/{file_name}.png"
     page = None
@@ -66,11 +66,11 @@ async def _get_screenshot(file_name: str, html_path: Path) -> Path | None:
 
         # 截图落盘
         await page.screenshot(path=new_path, full_page=False)
-        logger.info(f"截图已保存: {new_path}")
+        _logger.info(f"截图已保存: {new_path}")
     except PlaywrightError as e:
-        logger.send_error("Playwright 引擎错误", e)
+        _logger.send_error("Playwright 引擎错误", e)
     except Exception as e:
-        logger.send_error("截图发生未知错误", e)
+        _logger.send_error("截图发生未知错误", e)
     finally:
         # 关闭 Page，防止内存泄漏
         if page:
@@ -87,26 +87,26 @@ def _crop_screenshot(file_path: Path) -> None:
     - 同步函数，需在线程池中运行
     """
     try:
-        img = Image.open(file_path).convert("""RGB""")
+        img = Image.open(file_path).convert(render_config.color_mode)
         img_array = np.array(img)
         if img_array.size == 0:
-            logger.debug(f"图片内容为空，跳过裁剪: {file_path}")
+            _logger.debug(f"图片内容为空，跳过裁剪: {file_path}")
             return
         is_orange = np.all(img_array == render_config.orange_target, axis=-1)
         rows = np.where(~np.all(is_orange, axis=1))[0]
         cols = np.where(~np.all(is_orange, axis=0))[0]
         if rows.size == 0 or cols.size == 0:
-            logger.debug("未检测到有效内容，跳过裁剪")
+            _logger.debug("未检测到有效内容，跳过裁剪")
             return
         top, bottom = rows[0], rows[-1] + 1
         left, right = cols[0], cols[-1] + 1
         cropped_array = img_array[top:bottom, left:right]
         cropped_img = Image.fromarray(cropped_array)
         cropped_img.save(file_path)
-        logger.info(f"裁剪成功：{img.size} → {cropped_img.size}")
-        logger.debug(f"裁剪区域：({left}, {top}) 到 ({right}, {bottom})")
+        _logger.info(f"裁剪成功：{img.size} → {cropped_img.size}")
+        _logger.debug(f"裁剪区域：({left}, {top}) 到 ({right}, {bottom})")
     except (OSError, ValueError) as e:
-        logger.send_error("裁剪出错", e)
+        _logger.send_error("裁剪出错", e)
 
 
 async def screenshot(file_name: str, html_path: Path) -> None:
@@ -121,4 +121,4 @@ async def screenshot(file_name: str, html_path: Path) -> None:
                 # 将同步的 CPU 密集型裁剪任务放入线程池，避免阻塞事件循环
                 await asyncio.to_thread(_crop_screenshot, new_path)
         except Exception as e:
-            logger.send_error("截图任务整体失败", e)
+            _logger.send_error("截图任务整体失败", e)

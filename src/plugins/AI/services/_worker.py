@@ -19,7 +19,7 @@ from ..core import AIClient, AITaskStoppedError, TelegramTaskItem, user_sessions
 from ..utils import build_message, make_data
 from ._render import render_html, screenshot
 
-logger = get_logger("Plg.AI.Worker")
+_logger = get_logger("Plg.AI.Worker")
 
 
 async def _send_long_message(task: TelegramTaskItem, text: str) -> None:
@@ -36,9 +36,9 @@ async def _send_long_message(task: TelegramTaskItem, text: str) -> None:
         try:
             await task.safe_reply(chunk)
         except TelegramBadRequest as e:
-            logger.send_error("分段消息请求错误", e)
+            _logger.send_error("分段消息请求错误", e)
         except Exception as e:
-            logger.send_error("分段消息未知错误", e)
+            _logger.send_error("分段消息未知错误", e)
 
         # 如果总段数超过阈值，且当前不是最后一段，则在发送后休眠防频控
         if total_chunks > ai_config.flood_threshold and idx < total_chunks - 1:
@@ -67,7 +67,7 @@ async def _save_conversation_record(user: str, text: str, final_msg: str) -> Non
         with open(rec_dir / f"temp/{user}.md", "a", encoding="utf8") as f:
             f.write(wrt)
     except Exception as e:
-        logger.send_error("保存本地对话记录失败", e)
+        _logger.send_error("保存本地对话记录失败", e)
 
 
 async def _handle_ai_message(
@@ -106,7 +106,7 @@ async def worker_loop(task: TelegramTaskItem, user: str) -> None:
     message = task.message
     text = message.text
     if text is None:
-        logger.debug("消息无文本，跳过")
+        _logger.debug("消息无文本，跳过")
         return
 
     session = user_sessions[user]
@@ -119,7 +119,7 @@ async def worker_loop(task: TelegramTaskItem, user: str) -> None:
                 case "final":
                     final_msg = data
                 case "error":
-                    logger.send_error("流式处理错误", data)
+                    _logger.send_error("流式处理错误", data)
                     has_error = True
 
         if has_error or not final_msg:
@@ -137,5 +137,5 @@ async def worker_loop(task: TelegramTaskItem, user: str) -> None:
     except AITaskStoppedError:
         raise
     except Exception as e:
-        logger.send_error("Worker 运行时错误", e)
+        _logger.send_error("Worker 运行时错误", e)
         await task.safe_reply(BotMessage.AI_UNAVAILABLE)

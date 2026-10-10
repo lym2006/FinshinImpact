@@ -29,7 +29,7 @@ from .system_proxy import detect_system_proxy, registry_proxy
 from .verify_flow import run_channels
 
 # 诊断跑在后台线程的私有 loop，耗时句走此器落 debug
-logger = get_logger("Mgr.Diagnose")
+_logger = get_logger("Mgr.Diagnose")
 
 # 仅当配置项与系统注册表都拿不到端口时，才回退扫描这组常见默认值
 _FALLBACK_PORTS = (7890, 7897, 7898)
@@ -59,7 +59,7 @@ def _never_emit(_frame_data: dict) -> None:
     return None
 
 
-def diagnose_plan(channels: Sequence[Channel]) -> list[dict]:
+def _diagnose_plan(channels: Sequence[Channel]) -> list[dict]:
     """开局整表
 
     - 在场通道标进行中，缺席行直接给定态
@@ -106,7 +106,7 @@ def _diagnose_probe(
     async def probe(ch: Channel) -> tuple[str | None, dict[str, str], str]:
         start = time.monotonic()
         resolved, errors = await attempt_channel(token, ch.url)
-        logger.debug(
+        _logger.debug(
             CheckMessage.COST.format(via=via_label(ch), cost=time.monotonic() - start)
         )
 
@@ -209,7 +209,7 @@ async def diagnose_flow(
     cfg = configured_proxy.strip()
 
     channels = _diagnose_channels(cfg, detected)
-    frame({FrameKey.ROWS: diagnose_plan(channels)})
+    frame({FrameKey.ROWS: _diagnose_plan(channels)})
 
     outcome = await run_channels(
         channels, _diagnose_probe(token), frame, via_label, stop

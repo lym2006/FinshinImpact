@@ -18,6 +18,10 @@ from exceptions import ConnectionFailedError, HTTPStatusError, RequestTimeoutErr
 _DEFAULT_TIMEOUT = 90.0
 _CONNECT_TIMEOUT = 10.0
 
+# 请求重试
+_MAX_RETRIES = 3
+_RETRY_DELAY = 1.0  # 重试间隔秒
+
 
 class BaseClient:
     """通用 HTTP 客户端基类"""
@@ -93,8 +97,8 @@ class BaseClient:
         proxy: str | None = None,
         timeout: float = _DEFAULT_TIMEOUT,
         connect_timeout: float = _CONNECT_TIMEOUT,
-        max_retries: int = 3,  # 最多重试次数
-        retry_delay: float = 1.0,  # 重试间隔时间（单位：秒）
+        max_retries: int = _MAX_RETRIES,
+        retry_delay: float = _RETRY_DELAY,
     ) -> dict[str, Any] | str | None:
         """发起 GET 请求"""
         for attempt in range(1, max_retries + 1):

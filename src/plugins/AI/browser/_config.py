@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True)
-class BrowserConfig:
+class _BrowserConfig:
     """浏览器配置"""
 
     # PlayWright 浏览器参数
@@ -27,4 +27,4 @@ class BrowserConfig:
     )
 
 
-browser_config = BrowserConfig()  # 实例化为全局单例
+browser_config = _BrowserConfig()  # 实例化为全局单例

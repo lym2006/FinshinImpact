@@ -10,7 +10,7 @@ import logging
 class BotLogger(logging.Logger):
     """Bot 专属的增强型日志器"""
 
-    def __init__(self, name: str, level=logging.NOTSET) -> None:
+    def __init__(self, name: str, level: int = logging.NOTSET) -> None:
         super().__init__(name, level)
 
     def send_error(self, msg: str, e: Exception) -> None:

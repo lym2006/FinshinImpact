@@ -16,7 +16,7 @@ from .config.models import REQUIRED_KEYS, ConfigValue
 T = TypeVar("T")
 
 
-class ConfigManager:
+class _ConfigManager:
     """全局配置管理器"""
 
     def __init__(self) -> None:
@@ -97,4 +97,4 @@ class ConfigManager:
         raise ConfigPathMissingError(path, key) from None
 
 
-config_manager = ConfigManager()  # 全局单例
+config_manager = _ConfigManager()  # 全局单例

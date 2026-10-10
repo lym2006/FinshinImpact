@@ -103,7 +103,7 @@ class DiagnoseController(BaseController):
 
         busy = current_check_window()
         if busy is not None and busy.is_running:
-            self.logger.info(CheckMessage.CHECK_BUSY)
+            self.logger.info(CheckMessage.BUSY)
             return
 
         configured = ""
@@ -119,7 +119,6 @@ class DiagnoseController(BaseController):
         win.begin_round(Round.DIAGNOSE, True, verify_skeleton(), self._on_round_closed)
         self._run(configured, token, win)
 
-    # 轮次驱动
     def _run(self, configured: str, token: str, win: QWidget) -> None:
         """诊断轮线程启动
 

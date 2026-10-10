@@ -81,7 +81,6 @@ def ensure_config() -> None:
     _write_clean_config()
 
 
-# 数据读取与 UI 渲染
 def get_schema() -> AppSchema:
     """获取 Schema 树"""
     return _PARSER.parse()

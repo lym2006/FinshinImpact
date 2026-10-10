@@ -7,8 +7,6 @@
 
 from ._theme import render_theme
 
-# CDN 地址配置
-
 # Prism CDN 根地址
 _PRISM_CDN_ROOT = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/"
 
@@ -143,8 +141,6 @@ PRISM_COMPONENTS = {
     "diff": "prism-diff.min.js",
     "git": "prism-git.min.js",
 }
-
-# HTML 安全白名单配置
 
 # 允许的 HTML 标签白名单（Markdown 渲染需要的标签 + 安全标签）
 ALLOWED_TAGS = {

@@ -23,9 +23,11 @@ from ._chrome import ChromeBuilder
 from ._field import FieldBuilder
 
 __all__ = [
-    "ChangeConfirmDialog",
+    # 工作模式
     "ConfigMode",
+    # 弹窗
     "SettingsDialog",
+    "ChangeConfirmDialog",
 ]
 
 _ERROR_QSS = f"color: {SETTINGS_DIALOG.error_color};"
@@ -91,7 +93,6 @@ class SettingsDialog(BaseDialog):
         """当前是否 SETUP 模式"""
         return self._mode == ConfigMode.SETUP
 
-    # 关闭与退出
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
         """SETUP 模式拦截自身关闭"""
         if self._is_setup():
@@ -126,7 +127,6 @@ class SettingsDialog(BaseDialog):
         # 确认框取消时本窗与已填内容原样保留
         gui_bridge.request_exit.emit(self)
 
-    # 错误标注
     def _resolve_error_namespaces(self, schema: AppSchema) -> set[str]:
         """定位出错字段所在页"""
         bad: set[str] = set()

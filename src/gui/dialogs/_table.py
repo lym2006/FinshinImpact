@@ -9,6 +9,7 @@ import html
 from typing import Any
 
 from PySide6.QtCore import QTimer
+from PySide6.QtGui import QResizeEvent
 from PySide6.QtWidgets import QTextEdit, QWidget
 
 from utils.net_probe import FrameKey, RowStatus
@@ -19,7 +20,7 @@ _CLOCK_MS = 1000  # 倒计时步进：一秒一跳，与探测预算的秒刻度
 
 
 def _state_map(cfg: FiveStateDialogConfig) -> dict[str, tuple[str, str]]:
-    """从弹窗令牌提取 {状态: (符号, 颜色)} 渲染表"""
+    """按弹窗令牌拼状态到符号颜色的渲染表"""
     return {
         RowStatus.PENDING: (cfg.pending_mark, cfg.pending_color),
         RowStatus.CHECKING: (cfg.checking_mark, cfg.checking_color),
@@ -45,8 +46,10 @@ class RowTable(QTextEdit):
 
         # {行id: [标题, 状态, 详情]}：渲染的唯一数据源
         self._rows: dict[str, list[str]] = {}
+
         # {行id: 预算秒}：开局帧携带，仅通道行有
         self._budgets: dict[str, int] = {}
+
         # {行id: 已测秒}：在场行进 checking 起跳，定案即摘
         self._elapsed: dict[str, int] = {}
         self.setObjectName("row_view")
@@ -153,7 +156,7 @@ class RowTable(QTextEdit):
         )
         self.setFixedHeight(height)
 
-    def resizeEvent(self, event) -> None:  # noqa: N802
+    def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802
         """宽度变化时改变换行并重算高度"""
         super().resizeEvent(event)
         self._fit_height()

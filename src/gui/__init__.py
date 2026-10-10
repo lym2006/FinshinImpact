@@ -12,7 +12,7 @@ from ._qss import build_global_qss
 from ._theme import BODY, FONT, TOOLBAR, WINDOW
 from .controllers import BaseController, build_controllers
 
-logger = get_logger("GUI")
+_logger = get_logger("GUI")
 
 
 __all__ = [
@@ -41,12 +41,12 @@ def create_gui() -> tuple[BotGUI, dict[str, BaseController]]:
 
     if unregistered := registered_keys - valid_ui_keys:
         raise ValueError(
-            f"控制器绑定失败: 发现未在 UI 层定义的按钮标识 -> {unregistered}"
+            MiscMessage.CTRL_BIND_FAIL.format(keys=unregistered)
         )
 
     if missing := valid_ui_keys - registered_keys:
         raise ValueError(
-            f"控制器缺失: UI 层定义了按钮，但缺少对应的 Controller -> {missing}"
+            MiscMessage.CTRL_MISSING.format(keys=missing)
         )
 
     # 注入依赖并返回
