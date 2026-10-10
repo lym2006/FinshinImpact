@@ -83,7 +83,8 @@ def _handle(result: _SlotResult) -> int | None:
     """非 RUNNING 结果的善后
 
     - 返回退出码，RUNNING 返回 None 交调用方继续启动
-    - 选窗取消静默退；引导锁被占与实例冲突各弹对应提示
+    - 选窗取消静默退
+    - 引导锁被占与实例冲突各弹对应提示
     """
     if result is _SlotResult.RUN:
         return None
@@ -92,7 +93,7 @@ def _handle(result: _SlotResult) -> int | None:
         return 0
 
     if result is _SlotResult.PICKER_BUSY:
-        from messages._picker import PickerMessage
+        from messages import PickerMessage
 
         _popup(PickerMessage.TITLE, PickerMessage.BUSY, icon_warning=False)
         return 0

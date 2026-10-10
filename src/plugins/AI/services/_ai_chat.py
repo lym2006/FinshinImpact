@@ -16,7 +16,7 @@ from ..state import user_locks
 from ..utils import get_name
 from ._monitor import monitor_loop
 
-logger = get_logger("Plg.AI")
+_logger = get_logger("Plg.AI")
 
 
 async def handle_ai_chat(message: Message, bot: Bot) -> None:
@@ -32,10 +32,10 @@ async def handle_ai_chat(message: Message, bot: Bot) -> None:
         await queue.add_task(task)
 
         if not session.is_active:
-            logger.debug(f"{user} 监控循环启动")
+            _logger.debug(f"{user} 监控循环启动")
             session.is_active = True
             monitor_task = asyncio.create_task(monitor_loop(user))
             active_tasks.add(monitor_task)
             monitor_task.add_done_callback(active_tasks.discard)
         else:
-            logger.info(f"用户 {user} 新任务入队，当前长度: {queue.size}")
+            _logger.info(f"用户 {user} 新任务入队，当前长度: {queue.size}")

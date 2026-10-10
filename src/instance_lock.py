@@ -9,7 +9,8 @@ from ctypes import wintypes
 
 from profile_env import get_profile
 
-_ERROR_ALREADY_EXISTS = 183
+# kernel32 互斥体 API
+_ERROR_ALREADY_EXISTS = 183  # Windows 对象已存在错误码
 _CloseHandle = ctypes.windll.kernel32.CloseHandle
 _CreateMutexW = ctypes.windll.kernel32.CreateMutexW
 _CreateMutexW.restype = wintypes.HANDLE  # 缺省 int 会在 64 位截断句柄

@@ -26,6 +26,9 @@ from .._theme import CHECK_DIALOG
 from ._base import BaseDialog
 from ._table import RowTable
 
+# Qt 布局四边
+_MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
+
 
 class Round:
     """检查窗轮次协议串
@@ -88,7 +91,7 @@ class CheckDialog(BaseDialog):
         # 宽度定死、高度交给布局最小值：表格随行数收紧，默认尺寸即最小尺寸
         self.setFixedWidth(CHECK_DIALOG.width)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(*[CHECK_DIALOG.pad] * 4)
+        layout.setContentsMargins(*[CHECK_DIALOG.pad] * _MARGIN_EDGES)
 
         row = QHBoxLayout()
         row.setSpacing(CHECK_DIALOG.pad)
@@ -159,6 +162,7 @@ class CheckDialog(BaseDialog):
         self._btn.clicked.connect(self.reject)
         self._tick.start()
         self.show()
+
         # 模态在演则让位：同档 raise 只插队，会把抓握输入的确认框重新盖没
         if QApplication.activeModalWidget() is None:
             self.raise_()
@@ -184,7 +188,6 @@ class CheckDialog(BaseDialog):
             CHECK_DIALOG.verify_head_fail,
         )
 
-    # 状态出口
     @property
     def round(self) -> str:
         """当前轮次
@@ -215,7 +218,6 @@ class CheckDialog(BaseDialog):
         """
         return self._running
 
-    # 帧消费
     def apply(self, frame: dict) -> None:
         """消费一帧进度
 
@@ -257,7 +259,6 @@ class CheckDialog(BaseDialog):
         self._btn.clicked.disconnect()
         self._btn.clicked.connect(self.accept)
 
-    # 进行中拦截
     def keyPressEvent(self, event: QKeyEvent) -> None:  # noqa: N802
         """收口前屏蔽 Esc
 

@@ -7,6 +7,7 @@
 
 import asyncio
 import re
+from collections.abc import Awaitable, Callable
 
 import aiohttp_socks
 from aiogram import Bot
@@ -34,7 +35,7 @@ from .ssl import SSLUnverifiedSession
 _SCHEME_RE = re.compile(r"Invalid scheme component:\s*(.*)", re.IGNORECASE)
 
 
-def map_construct_error(e: Exception, proxy: str) -> ConnectivityError:
+def _map_construct_error(e: Exception, proxy: str) -> ConnectivityError:
     """映射构造期异常"""
     if isinstance(e, UnicodeError):
         # idna 域名标签非法（如 192..168.1.1）
@@ -75,7 +76,7 @@ def _map_request_error(e: Exception, proxy: str) -> ConnectivityError:
     return ConnectivityError()
 
 
-async def probe_proxy(proxy: str) -> None:
+async def _probe_proxy(proxy: str) -> None:
     """纯代理探测
 
     - 构造期异常须映射为业务异常，防上层误判致命
@@ -83,7 +84,7 @@ async def probe_proxy(proxy: str) -> None:
     try:
         SSLUnverifiedSession(proxy=proxy)
     except (ValueError, UnicodeError) as e:
-        raise map_construct_error(e, proxy) from e
+        raise _map_construct_error(e, proxy) from e
 
 
 async def get_me(token: str, proxy: str) -> None:
@@ -100,8 +101,8 @@ async def get_me(token: str, proxy: str) -> None:
         # 无代理时超时是直连不通，不能报"连接代理超时"的空地址文案
         raise (ProxyTimeoutError(proxy=proxy) if proxy else DirectTimeoutError()) from e
     except (ValueError, UnicodeError) as e:
-        # 构造期异常穿透兜底（正常流程已在 probe_proxy 拦截）
-        raise map_construct_error(e, proxy) from e
+        # 构造期异常穿透兜底（正常流程已在 _probe_proxy 拦截）
+        raise _map_construct_error(e, proxy) from e
     except Exception as e:
         raise _map_request_error(e, proxy) from e
     finally:
@@ -117,11 +118,11 @@ def _is_token_wellformed(token: str) -> bool:
     return re.fullmatch(r"\d+:[A-Za-z0-9_-]+", token.strip()) is not None
 
 
-async def check_config(
+async def _check_config(
     token: str,
     proxy: str,
-    probe=probe_proxy,
-    get_me=get_me,
+    probe: Callable[[str], Awaitable[None]] = _probe_proxy,
+    get_me: Callable[[str, str], Awaitable[None]] = get_me,
 ) -> dict[str, str]:
     """双探测聚合
 
@@ -167,7 +168,7 @@ async def attempt_channel(token: str, proxy: str) -> tuple[str | None, dict[str,
     """
     try:
         errors = await asyncio.wait_for(
-            check_config(token, proxy), timeout=probe_budget(proxy)
+            _check_config(token, proxy), timeout=probe_budget(proxy)
         )
     except TimeoutError:
         errors = {FieldKey.PROXY: CheckMessage.TIMEOUT}
@@ -178,11 +179,10 @@ async def attempt_channel(token: str, proxy: str) -> tuple[str | None, dict[str,
 
 def _err_text(e: ConnectivityError) -> str:
     """生成可读错误文案"""
-    from exceptions import MAPS
+    from exceptions import MAP_KEY_CONNECTIVITY, MAP_KEY_PROXY, MAPS
 
-    template = MAPS["Connectivity"]["Proxy"].get(type(e)) or MAPS["Connectivity"].get(
-        type(e)
-    )
+    proxy_map = MAPS[MAP_KEY_CONNECTIVITY][MAP_KEY_PROXY]
+    template = proxy_map.get(type(e)) or MAPS[MAP_KEY_CONNECTIVITY].get(type(e))
     if not template:
         return type(e).__name__
     try:

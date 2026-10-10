@@ -68,7 +68,6 @@ class SettingsManager(BaseManager):
         # 上次验证时的网络参数：(token, 配置代理)，变化判定基准
         self._net_state: tuple[str, str] = ("", "")
 
-    # 配置加载与验证
     async def _execute(self) -> None:
         """加载配置进内存"""
         ensure_config()
@@ -162,6 +161,7 @@ class SettingsManager(BaseManager):
                     via=via_label(ch), cost=time.monotonic() - start
                 )
             )
+
             # 表格句留空由核心统一拼"称谓：可达/不可用"，errors 长句留给字段标红
             return resolved, errors, ""
 
@@ -220,7 +220,7 @@ class SettingsManager(BaseManager):
         )
         if self.last_errors:
             fields = "、".join(_label_of(schema, k) for k in self.last_errors)
-            self.logger.error(CheckMessage.CHECK_FAIL.format(fields=fields))
+            self.logger.error(CheckMessage.FAIL.format(fields=fields))
         return passed
 
     def _warn_stale(self, raw: str, resolved: str) -> None:

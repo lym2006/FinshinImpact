@@ -14,8 +14,6 @@ from profile_env import ASSET_FONT_NAME, ASSETS_DIR
 from utils import get_logger
 from utils.init_files import HELP_IMAGE
 
-# 内部配置与数据源
-
 # 帮助图属实例产物，落实例数据目录，随实例隔离不共用
 _SAVE_PATH = HELP_IMAGE
 _RENDER_LOCK = threading.Lock()
@@ -23,13 +21,14 @@ _FONT_PATH = ASSETS_DIR / ASSET_FONT_NAME  # 字体是全局资源，不随实�
 _logger = get_logger("Plg.Help")
 
 
-class HelpRenderConfig:
+class _HelpRenderConfig:
     """帮助菜单图片渲染配置"""
 
     font_size: int = 30
     line_spacing: int = 10  # 行间距
     padding: int = 15  # 画布边距
     cmd_desc_gap: int = 20  # 命令与描述间距
+    color_mode: str = "RGB"  # PIL 色彩模式
     bg_color: str = "#FFFFFF"  # 背景色
     text_color: str = "#000000"  # 文字颜色
 
@@ -58,7 +57,7 @@ _HELP_MENU_DATA: list[dict[str, str]] = [
     {"type": "section", "content": "未完待续"},
 ]
 
-_HELP = HelpRenderConfig()
+_HELP = _HelpRenderConfig()
 
 
 def _build_help_menu() -> tuple[dict[str, str], list[tuple[str, str]]]:
@@ -149,7 +148,7 @@ def _render_menu() -> Path:
     padding = _HELP.padding
     img_width = int(max_width) + padding * 2
     img_height = len(lines) * line_height + padding * 2
-    img = Image.new("RGB", (img_width, img_height), _HELP.bg_color)
+    img = Image.new(_HELP.color_mode, (img_width, img_height), _HELP.bg_color)
     dr = ImageDraw.Draw(img)
 
     for i, line in enumerate(lines):

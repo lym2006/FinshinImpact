@@ -11,6 +11,9 @@ from .._qss import build_notice_dialog_qss
 from .._theme import NOTICE_DIALOG
 from ._base import BaseDialog
 
+# Qt 布局四边
+_MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
+
 
 class NoticeDialog(BaseDialog):
     """统一通知弹窗
@@ -29,7 +32,7 @@ class NoticeDialog(BaseDialog):
         self.setStyleSheet(build_notice_dialog_qss())
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(*[NOTICE_DIALOG.pad] * 4)
+        layout.setContentsMargins(*[NOTICE_DIALOG.pad] * _MARGIN_EDGES)
         layout.setSpacing(NOTICE_DIALOG.spacing)
         if critical:
             head = QLabel(NOTICE_DIALOG.fatal_head)

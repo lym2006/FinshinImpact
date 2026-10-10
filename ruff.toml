@@ -35,6 +35,9 @@ ignore = [
 ]
 fixable = ["ALL"]
 
+[lint.per-file-ignores]
+"tests/**" = ["D"]  # 测试函数名即文档，不强制 docstring 与其格式规则
+
 [lint.pydocstyle]
 convention = "google"  # Google 风格
 

@@ -22,16 +22,16 @@ class BaseController(ABC):
     - 强制子类声明按钮契约
     """
 
-    # 契约声明区
-
     # 子类必须声明这两个属性，否则实例化时会报错
     LOGGER_NAME: ClassVar[str]  # 日志器名称
     BTN_KEY: ClassVar[str]  # 绑定的按钮标识（如 "func"，底层会自动拼接为 "btn_func"）
 
     @abstractmethod
     def _execute(self) -> None:
-        """业务逻辑入口"""
-        # 未实现时实例化抛 TypeError，由 ABC 元类强制
+        """业务逻辑入口
+
+        - 未实现时实例化抛 TypeError，由 ABC 元类强制
+        """
 
     def __init__(self, gui_ref: "BotGUI") -> None:
         self.gui = gui_ref

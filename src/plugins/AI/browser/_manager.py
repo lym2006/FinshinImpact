@@ -12,10 +12,10 @@ from utils import get_logger, register_lifecycle
 
 from ._config import browser_config
 
-logger = get_logger("Plg.AI.Browser")
+_logger = get_logger("Plg.AI.Browser")
 
 
-class BrowserManager:
+class _BrowserManager:
     """全局浏览器生命周期管家"""
 
     def __init__(self) -> None:
@@ -36,28 +36,29 @@ class BrowserManager:
 
             # 注册关闭钩子
             register_lifecycle(self._shutdown, "Playwright 浏览器", "hook_async")
-            logger.info("正在初始化全局 Playwright 浏览器...")
+            _logger.info("正在初始化全局 Playwright 浏览器...")
 
             # 启动 Playwright 引擎
             self._playwright = await async_playwright().start()
 
-            # 启动 Chromium 浏览器
+            # channel 与启动器安装的内核同名，改一处必须两处同步
             self._browser = await self._playwright.chromium.launch(
                 headless=True,
+                channel="chromium-headless-shell",
                 args=browser_config.args,
             )
-            logger.info("全局浏览器初始化成功")
+            _logger.info("全局浏览器初始化成功")
             return self._browser
 
     async def _shutdown(self) -> None:
         """关闭浏览器与引擎"""
         async with self._lock:
             if self._browser:
-                logger.info("正在关闭全局浏览器...")
+                _logger.info("正在关闭全局浏览器...")
                 try:
                     await self._browser.close()
                 except Exception as e:
-                    logger.send_error("关闭浏览器错误", e)
+                    _logger.send_error("关闭浏览器错误", e)
                 finally:
                     self._browser = None
 
@@ -65,12 +66,12 @@ class BrowserManager:
                 try:
                     await self._playwright.stop()
                 except Exception as e:
-                    logger.send_error("停止 Playwright 引擎失败", e)
+                    _logger.send_error("停止 Playwright 引擎失败", e)
                 finally:
                     self._playwright = None
 
-            logger.info("全局浏览器资源已彻底释放")
+            _logger.info("全局浏览器资源已彻底释放")
 
 
 # AI 插件的全局单例
-browser_manager = BrowserManager()
+browser_manager = _BrowserManager()

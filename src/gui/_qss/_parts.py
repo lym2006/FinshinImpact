@@ -15,8 +15,6 @@ from .._theme import (
     WAIT_DIALOG,
 )
 
-# 弹窗专属 QSS
-
 # 弹窗基本样式
 DIALOG_BASE_QSS = f"""\
 QDialog {{

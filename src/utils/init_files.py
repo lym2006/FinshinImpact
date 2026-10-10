@@ -24,8 +24,6 @@ _QQ_EXAMPLE = "config.qq.example.toml"
 # 身份码前缀即平台来源，未知前缀回落 Telegram
 _PLATFORM_EXAMPLES = {Platform.TELEGRAM: _TG_EXAMPLE, Platform.QQ: _QQ_EXAMPLE}
 
-# 路径单一来源
-
 # 身份码在 bootstrap 写完环境变量后才首次导入本模块，此处取值即冻结
 _PROFILE = get_profile()
 if not _PROFILE:
