@@ -40,6 +40,10 @@ _SOURCE_HINTS = {
 }
 
 
+# Qt 布局四边
+_MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
+
+
 def _text_of(widget: _TextWidget) -> str:
     """取文本控件当前值"""
     if isinstance(widget, QTextEdit):
@@ -47,7 +51,7 @@ def _text_of(widget: _TextWidget) -> str:
     return widget.text()
 
 
-class PersonaPreviewDialog(BaseDialog):
+class _PersonaPreviewDialog(BaseDialog):
     """人设正文弹窗
 
     - 打开即渲染最终正文，底部标注正文来源
@@ -59,18 +63,20 @@ class PersonaPreviewDialog(BaseDialog):
         self.setStyleSheet(build_settings_dialog_qss())
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(*[SETTINGS_DIALOG.input_padding_h] * 4)
+        layout.setContentsMargins(*[SETTINGS_DIALOG.input_padding_h] * _MARGIN_EDGES)
         layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
 
         body = QTextEdit()
         body.setObjectName("persona_preview")
         body.setReadOnly(True)
         body.setPlainText(text)
-        body.setFixedSize(
+
+        # 最小尺寸即默认尺寸，窗口拉大时正文框随布局弹性填满
+        body.setMinimumSize(
             SETTINGS_DIALOG.persona_preview_width,
             SETTINGS_DIALOG.persona_preview_height,
         )
-        layout.addWidget(body)
+        layout.addWidget(body, stretch=1)
 
         tip = QLabel(hint)
         tip.setWordWrap(True)
@@ -98,7 +104,7 @@ class PersonaPreviewRow(QWidget):
         self._slot: QStackedWidget | None = None
 
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(*[SETTINGS_DIALOG.margin] * 4)
+        layout.setContentsMargins(*[SETTINGS_DIALOG.margin] * _MARGIN_EDGES)
         layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
 
         # 占位标签撑出与字段行同宽的左列，按钮才与其他输入框左对齐
@@ -163,7 +169,7 @@ class PersonaPreviewRow(QWidget):
             _text_of(self._owner).strip(),
         )
         hint = _SOURCE_HINTS[persona_source(use_file)]
-        PersonaPreviewDialog(text, hint, parent=self.window()).exec()
+        _PersonaPreviewDialog(text, hint, parent=self.window()).exec()
 
     def _on_open_clicked(self) -> None:
         """打开实例人设文件
@@ -171,7 +177,7 @@ class PersonaPreviewRow(QWidget):
         - 文件缺失或系统拒绝一律弹窗告知，不静默失败
         """
         if not PERSONALITY_FILE.is_file():
-            self._notify(f"{PERSONALITY_FILE}\n文件不存在")
+            self._notify(f"{PERSONALITY_FILE}\n{SETTINGS_DIALOG.persona_file_miss}")
             return
         try:
             os.startfile(PERSONALITY_FILE)

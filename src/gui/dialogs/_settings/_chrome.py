@@ -159,7 +159,9 @@ class ChromeBuilder:
             )
             rows[field.key] = row
             main_layout.addWidget(row)
-        self._mount_persona_preview(tab_schema.namespace, main_layout, label_width, rows)
+        self._mount_persona_preview(
+            tab_schema.namespace, main_layout, label_width, rows
+        )
         main_layout.addStretch()
         scroll.setWidget(container)
         return scroll
