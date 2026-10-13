@@ -8,6 +8,7 @@ dist/
 .ruff_cache/
 .import_linter_cache/
 .grimp_cache/
+.pytest_cache/
 
 # --- 虚拟环境 ---
 .venv/
@@ -18,6 +19,7 @@ dist/
 
 # --- 运行时数据 ---
 instances/
+runtime/
 
 # --- 项目特定忽略项 ---
 tests/

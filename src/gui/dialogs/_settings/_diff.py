@@ -54,10 +54,10 @@ def _char_diff(old: str, new: str) -> tuple[_Line, _Line]:
 
 
 def split_diff(old: list[str], new: list[str]) -> tuple[list[_Line], list[_Line]]:
-    """行级对齐 + 配对行字符级细化
+    """行级对齐并做配对行字符级比对
 
-    - 改词只亮改动处
-    - 多出的行整行删除/新增
+    - 修改行只高亮改动处
+    - 增删行整行标记
     """
     sm = difflib.SequenceMatcher(a=old, b=new, autojunk=False)
     left: list[_Line] = []

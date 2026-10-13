@@ -2,7 +2,7 @@
 """Bot 线程异常守卫
 
 - 定义致命与可恢复两级路由规则
-- 实现异常到 GUI 信号的分发闭环
+- 将异常分发到对应的 GUI 信号
 """
 
 import functools
@@ -31,7 +31,7 @@ T = TypeVar("T")
 def _setup_errors(exc: BotError) -> dict[str, str]:
     """向导字段级错误
 
-    - 缺键异常须带字段标识，否则面板弹而无红
+    - 缺键异常须带字段标识，否则面板无标红
     - 整段缺失时 missing_key 是 section 名，字段键取点路径尾段
     """
     if isinstance(exc, ConfigPathMissingError):
@@ -87,8 +87,8 @@ def error_guard(
 ) -> Callable[[Callable[P, T]], Callable[P, T]]:
     """异常兜底装饰器
 
-    - catch_all=True 连未知异常也接住，按致命路由
-    - reraise=True 路由信号后异常继续上抛（调用方自行中断）
+    - catch_all 为真时未知异常也按致命路由
+    - reraise 为真时路由信号后继续上抛
     """
     guard_exceptions: tuple[type[Exception], ...] = (
         (BotError, Exception) if catch_all else (BotError,)

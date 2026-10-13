@@ -45,7 +45,7 @@ class ConfigMode(Enum):
 class SettingsDialog(BaseDialog):
     """配置面板弹窗
 
-    - 表单渲染交 FieldBuilder，骨架装配交 ChromeBuilder
+    - 表单渲染与骨架装配委托 FieldBuilder 和 ChromeBuilder
     """
 
     # SETUP 模式请求保存：由控制器校验并决定是否关窗，窗口自身不 accept
@@ -138,8 +138,8 @@ class SettingsDialog(BaseDialog):
     def apply_errors(self, field_errors: dict[str, str] | None) -> None:
         """原地刷新校验结果
 
-        - 字段标红/清除
-        - 标签页 ⚠ 增撤
+        - 标红或清除字段错误
+        - 增撤标签页 ⚠ 标记
         """
         self._field_errors = dict(field_errors or {})
         bad = self._resolve_error_namespaces(self._schema)
@@ -163,10 +163,7 @@ class SettingsDialog(BaseDialog):
         self._fields.refresh_resets()
 
     def set_busy(self, busy: bool) -> None:
-        """校验进行中的防重入
-
-        - 锁表单与保存按钮
-        """
+        """锁定表单防止校验期间重入"""
         if self._chrome.save_btn is None:
             return
         self._chrome.save_btn.setEnabled(not busy)
@@ -179,7 +176,7 @@ class SettingsDialog(BaseDialog):
     def switch_to_setup(self, field_errors: dict[str, str] | None) -> None:
         """EDIT 原地转 SETUP
 
-        - 保内容、换按钮、挂提示
+        - 保留已填内容，更换按钮并挂上提示
         """
         # 只拆提示行与按钮条两个可再生部件，模态与×两模式同款出生定死，无需动
         self._mode = ConfigMode.SETUP

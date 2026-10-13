@@ -51,7 +51,7 @@ def get_profile() -> str:
 def set_profile(code: str) -> str:
     """写入当前实例身份码
 
-    - 环境变量作唯一载体，路径常量导入期即冻结只能靠它跨模块传递
+    - 路径常量在导入期确定，身份码只能经环境变量跨模块传递
     - 返回净化后的身份码，调用方据此建实例文件夹
     """
     clean = _sanitize_profile(code)

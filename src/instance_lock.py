@@ -1,7 +1,7 @@
 # src/instance_lock.py
 """单实例守卫
 
-- 命名互斥体锁定同账号唯一实例，防双开互踩配置与 Telegram 长轮询
+- 命名互斥体锁定同账号唯一实例，避免双开争抢配置与 Telegram 长轮询
 """
 
 import ctypes
@@ -28,7 +28,7 @@ def _instance_mutex_name() -> str:
     """实例锁名
 
     - 统一入口保证锁名前身份码已就位
-    - 身份码万一为空，空后缀锁全机共用，误拦优于放行双开
+    - 身份码为空时锁后缀为空，全机共用一把锁，宁可误拦
     """
     return _MUTEX_PREFIX + get_profile()
 
@@ -37,7 +37,7 @@ def _create(name: str) -> tuple[int | None, bool]:
     """创建命名互斥体
 
     - 返回 (持有的句柄, 是否抢到)
-    - 创建失败属异常环境，放行优于误拒
+    - 创建失败视为异常环境，宁可放行
     """
     handle = _CreateMutexW(None, False, name)
     if not handle:
@@ -51,8 +51,7 @@ def _create(name: str) -> tuple[int | None, bool]:
 def acquire_instance_lock() -> bool:
     """占用实例锁
 
-    - 锁名带身份码：同账号双开必互踩，不同账号各自放行
-    - 唯一调用方是引导层，主程序不重复抢
+    - 锁名带身份码，同账号互斥、不同账号互不影响
     """
     global _instance_handle
     handle, acquired = _create(_instance_mutex_name())
@@ -77,7 +76,7 @@ def acquire_bootstrap_lock() -> bool:
 def release_bootstrap_lock() -> None:
     """释放引导锁
 
-    - 身份码定案即释放，让运行期间双击启动器仍能开新的选择窗
+    - 身份确定后即释放，程序运行期间双击启动器仍可打开选择窗
     """
     global _bootstrap_handle
     if _bootstrap_handle is None:

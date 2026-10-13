@@ -153,7 +153,7 @@ def _require_icon() -> bytes:
 def _launcher_fingerprint() -> str:
     """启动器产物指纹
 
-    - 源码与图标一并绑定，只换图标也能触发重编译下发新壳
+    - 源码与图标一并计入，只换图标也会重编译
     """
     # 编译动作与产物来源变更绑定
     src = (_ROOT / "packaging" / "launcher.py").read_bytes()
@@ -164,8 +164,8 @@ def _build_launcher() -> Path:
     """创建启动器
 
     - 编译启动器源码为无控制台单目录 exe
-    - onedir 不自我解压、默认不压缩，显著降低杀软启发式误报
-    - 产物指纹未变时复用已编译产物，exe 哈希不随无关构建漂移，用户端不触发无谓换壳
+    - onedir 不解压不压缩，降低杀毒软件误报
+    - 产物指纹未变时复用已编译产物，避免用户端重复下载
     """
     out = _DIST / "_launcher" / _APP
     stamp = _DIST / "_launcher" / ".launcher_sha"
