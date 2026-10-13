@@ -1,9 +1,8 @@
-# src/bootstrap/_picker_form.py
+# src/bootstrap/_picker/_form.py
 """实例表单窗
 
 - 收 token 与备注名，新建与编辑共用同一表单
 - 校验与落盘策略由各自子类实现
-- 只依赖 Qt、profile_env 与 core.domain，不碰 utils 防路径提前冻结
 """
 
 from typing import cast
@@ -24,10 +23,9 @@ from core.domain import Platform, platform_of_profile
 from messages import PickerMessage
 from profile_env import read_token
 
+from .._qss import build_bootstrap_qss
+from .._theme import FORM
 from ._store import code_for_token, create_profile, update_profile
-
-_FORM_WIDTH = 460
-_FORM_HEIGHT = 320
 
 # 平台下拉项，显示文案归 messages 单源
 _PLATFORM_ITEMS = (
@@ -54,7 +52,9 @@ class _ProfileFormDialog(QDialog):
     def _build(self, title: str) -> None:
         """装配控件"""
         self.setWindowTitle(title)
-        self.resize(_FORM_WIDTH, _FORM_HEIGHT)
+        self.setStyleSheet(build_bootstrap_qss())
+        self.resize(FORM.width, FORM.height)
+        self.setMinimumSize(FORM.min_width, FORM.min_height)
 
         form = QVBoxLayout(self)
 
@@ -77,12 +77,10 @@ class _ProfileFormDialog(QDialog):
 
         buttons = QHBoxLayout()
         ok = QPushButton(PickerMessage.BTN_OK)
+        ok.setObjectName("btn_primary")
         ok.clicked.connect(self._on_ok)
-        cancel = QPushButton(PickerMessage.BTN_CANCEL)
-        cancel.clicked.connect(self.reject)
         buttons.addStretch()
         buttons.addWidget(ok)
-        buttons.addWidget(cancel)
         form.addLayout(buttons)
 
         self._token.setFocus()

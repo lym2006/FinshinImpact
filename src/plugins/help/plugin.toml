@@ -1,0 +1,13 @@
+name = "help"
+title = "帮助"
+summary = "帮助菜单与命令查询"
+core = true
+order = 0  # 最先档：help 独占
+deps = []
+assets = []
+
+[[help]]
+
+[[help.commands]]
+cmd = "help"
+desc = "查看帮助文档，命令后接 -h 可以单独查看该命令帮助"
