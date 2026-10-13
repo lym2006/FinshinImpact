@@ -63,7 +63,8 @@ def _acquire_slot() -> _SlotResult:
         if panel_needed(code) and not open_panel(code, MODE_AUTO):
             return _SlotResult.CANCEL
 
-        # 启用集变动只在此刻结算，缺库补装、无主库删除，装完才起
+        # 启用集变动只在此刻结算，缺库补装，装完才起
+        # 装失败禁用相关插件
         settle_runtime(code)
 
         if not acquire_instance_lock():
@@ -129,11 +130,6 @@ def main() -> int:
     code = _handle(_acquire_slot())
     if code is not None:
         return code
-
-    # 面板强关后仍在跑的装卸任务，随主窗事件循环浮出续显
-    from ._plugin import rearm_detached
-
-    rearm_detached()
 
     from bot import Main
 

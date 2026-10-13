@@ -151,11 +151,10 @@ def degraded(commands: list[str], on_line: ProgressFn | None) -> None:
 def clean_cache(on_line: ProgressFn | None = None) -> None:
     """清除 uv 包缓存
 
-    - 缓存放包内是为断点续装命中，全量重建闭环后留着白占磁盘
-    - prune 只清悬空条目，成套缓存判全部在用删不动，用 clean 全清
+    - 缓存放包内是为断点续装命中，装齐后留着只占磁盘
     - cache 子命令不吃 --python，只挂缓存目录配置
     """
-    run_uv(["cache", "clean", "--cache-dir", str(_UV_CACHE_DIR)], None, on_line)
+    _run_uv(["cache", "clean", "--cache-dir", str(_UV_CACHE_DIR)], None, on_line)
 
 
 def with_index_retry(args: list[str], on_line: ProgressFn | None) -> int:
@@ -168,18 +167,18 @@ def with_index_retry(args: list[str], on_line: ProgressFn | None) -> int:
         if i:
             emit(on_line, PluginMessage.INDEX_RETRY.format(try_count=i, url=index))
             emit(on_line, PluginMessage.INDEX_RETRY_NOTE)
-        code = run_uv(args, index, on_line)
+        code = _run_uv(args, index, on_line)
         if code == 0:
             return 0
     return code
 
 
-def run_uv(
+def _run_uv(
     args: list[str], index_url: str | None = None, on_line: ProgressFn | None = None
 ) -> int:
     """执行一次 uv 子进程并返回退出码
 
-    - index_url 传入即挂 --index-url，卸与清理类命令走 None
+    - index_url 传入即挂 --index-url，清缓存类命令走 None
     """
     uv = _find_uv()
     argv = [str(uv), *args]
