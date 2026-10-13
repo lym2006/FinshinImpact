@@ -8,7 +8,7 @@ import logging
 import threading
 from typing import cast
 
-from ..init_files import BOT_LOG, DEBUG_LOG
+from ..paths import BOT_LOG, DEBUG_LOG
 from ._enhancer import BotLogger
 from ._formatter import create_formatter
 from ._handler import create_file_handler

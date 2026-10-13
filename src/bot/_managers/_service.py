@@ -11,8 +11,8 @@ from collections.abc import Callable
 from aiogram import Bot, Dispatcher
 
 from utils.middleware import LoggingMiddleware
-from utils.plugins_register import register_routers
-from utils.ssl import SSLUnverifiedSession
+from utils.network import SSLUnverifiedSession
+from utils.plugin import register_routers
 
 from .._service import BotService
 from ._base import BaseManager

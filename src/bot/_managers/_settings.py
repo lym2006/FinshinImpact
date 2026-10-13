@@ -12,25 +12,29 @@ from typing import cast
 from gui.mediator import gui_bridge
 from messages import CheckMessage
 from utils import config_manager
+from utils.check import (
+    ChannelOutcome,
+    attempt_channel,
+    local_row,
+    run_channels,
+)
 from utils.config import (
     AppSchema,
     ensure_config,
     get_schema,
     load_config,
 )
-from utils.connectivity import attempt_channel
-from utils.net_probe import (
+from utils.network import (
     Channel,
     FieldKey,
     FrameKey,
     RowId,
     RowStatus,
+    detect_system_proxy,
     plan_channels,
     verify_plan,
     via_label,
 )
-from utils.system_proxy import detect_system_proxy
-from utils.verify_flow import ChannelOutcome, local_row, run_channels
 
 from ._base import BaseManager
 from ._port_probe import verify_port_row
@@ -128,10 +132,10 @@ class SettingsManager(BaseManager):
     def _emit_opening(
         self, channels: list[Channel], token_only: bool, schema: AppSchema
     ) -> dict[str, str]:
-        """发开局整表
+        """发送首帧进度整表
 
-        - 本地校验纯函数零耗时，网络在跑时本地已亮
-        - 返回本地类型错误供收口合并
+        - 本地校验结果随首帧先行显示，不等网络探测
+        - 返回本地类型错误供后续结论合并
         """
         local_frame, type_errors = local_row(schema, config_manager.get_all())
         gui_bridge.verify_progress.emit(
@@ -148,9 +152,9 @@ class SettingsManager(BaseManager):
     def _make_probe(
         self, token: str
     ) -> Callable[[Channel], Awaitable[tuple[str | None, dict[str, str], str]]]:
-        """造通道探针
+        """构造单通道探针
 
-        - 并行调度交给公共核心：首成裁决，token 错不换道
+        - token 错误时不换代理重试
         """
 
         async def probe(ch: Channel) -> tuple[str | None, dict[str, str], str]:
@@ -172,7 +176,7 @@ class SettingsManager(BaseManager):
     ) -> dict[str, str]:
         """聚合代理错误
 
-        - 单候选（仅直连）保留原始错误，多候选聚合为一句引导
+        - 仅直连单候选时保留原始错误，多候选聚合为一句引导
         """
         errors = dict(outcome.errors)
         if outcome.resolved is None and FieldKey.PROXY in errors:
@@ -202,9 +206,9 @@ class SettingsManager(BaseManager):
         self._warn_stale(configured, resolved)
 
     def _emit_advice(self, schema: AppSchema) -> bool:
-        """发结论帧收口
+        """发送结论帧
 
-        - 表格 HTML 吞换行，失败只报计数，明细由字段标红与悬浮承载
+        - 失败只报数量，明细由字段标红与悬浮提示显示
         """
         passed = not self.last_errors
         gui_bridge.verify_progress.emit(
@@ -224,9 +228,9 @@ class SettingsManager(BaseManager):
         return passed
 
     def _warn_stale(self, raw: str, resolved: str) -> None:
-        """配置值坏但被后续通道救活
+        """记录配置代理失效但其他通道可用的告警
 
-        - 记错误提醒自改，不阻断启动
+        - 提醒用户自行修改，不阻断启动
         """
         if raw and resolved != raw:
             via = (

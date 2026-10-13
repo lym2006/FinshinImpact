@@ -1,15 +1,15 @@
 # src/gui/controllers/_verify.py
 """校验轮协调
 
-- 驱动进程级唯一校验进度窗，与他轮互斥不并发
-- 持有复验与保存在途标志、待落盘候选与迟滞帧缓存
+- 驱动进程级唯一校验进度窗，校验轮之间互斥
+- 维护复验与保存状态标记、待保存候选与开窗前的帧缓存
 """
 
 from typing import TYPE_CHECKING
 
 from messages import CheckMessage
 from utils.config import AppConfigData
-from utils.net_probe import verify_skeleton
+from utils.network import verify_skeleton
 
 from ..dialogs import CheckDialog, Round, current_check_window, open_check_window
 from ..mediator import gui_bridge
@@ -21,8 +21,8 @@ if TYPE_CHECKING:
 class VerifyCoordinator:
     """校验轮协调器
 
-    - 与 SettingsController 一对一绑定，直读其面板与就绪缓存
-    - 面板换装或新开后重新跟随浮顶
+    - 与 SettingsController 一对一绑定，读取其面板与就绪缓存
+    - 面板重建后重新设置从属浮窗关系
     """
 
     def __init__(self, host: "SettingsController") -> None:
@@ -51,8 +51,8 @@ class VerifyCoordinator:
     def start_wait(self, aborts: bool) -> bool:
         """在唯一窗上开校验轮
 
-        - 他轮在途则日志拦截
-        - 返回是否真正开轮
+        - 其他轮次进行中则记日志并返回 False
+        - 返回是否成功打开进度窗
         """
         # 调用方据此决定是否唤醒后台
         busy = current_check_window()
@@ -75,9 +75,9 @@ class VerifyCoordinator:
         return True
 
     def on_closed(self, result: int) -> None:
-        """唯一窗收场
+        """窗口关闭回调
 
-        - 仅校验轮的进行中 reject 才是真停
+        - 校验轮进行中的 reject 视为用户中止
         """
         # 不可中断轮进行中无按钮且屏蔽 Esc，只会以 accept 收场，不动后台
         wait = self.window()
@@ -92,7 +92,7 @@ class VerifyCoordinator:
     def abort_pending(self) -> None:
         """停止保存校验
 
-        - 按钮文案即行为：中止校验、弃候选、当场解锁面板
+        - 中止校验、丢弃待保存候选并解锁面板
         """
         # 保存在途走 abort 通道（Bot 中止任务并回退内存）
         if self.save_pending:
@@ -113,7 +113,7 @@ class VerifyCoordinator:
     def attach_transient(self) -> None:
         """校验窗浮在当前面板之上
 
-        - 面板换装/新开后重新跟随
+        - 面板重建后需再次调用
         """
         # 本绑定无 QWidget 级接口，下到 QWindow 挂关系，句柄需 winId 强制具象
         wait = self.window()
@@ -127,8 +127,8 @@ class VerifyCoordinator:
     def on_frame(self, frame: dict) -> None:
         """进度帧转发
 
-        - 窗未开先缓存（开轮补播）
-        - 他轮占用则静默丢弃
+        - 窗口未开时先缓存，开窗后补播
+        - 其他轮次占用时直接丢弃
         """
         wait = self.window()
         if wait is not None:
@@ -137,10 +137,10 @@ class VerifyCoordinator:
             self.pre_frames.append(frame)
 
     def open_startup_wait(self) -> None:
-        """启动校验迟滞弹窗
+        """启动校验延迟弹窗
 
-        - 快路径不闪窗
-        - 他轮占用则静默让位
+        - 校验很快完成时不闪窗
+        - 其他轮次占用时不弹
         """
         # 后台校验照跑不误，播报让路，不抢弹提示
         if self._host._config_ready or self._host._panel is not None:

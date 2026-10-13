@@ -57,8 +57,8 @@ _DOMAIN_RULES = (
 def _resolve_mark(levelno: int, text: str) -> str:
     """解析日志标记
 
-    - 只看冒号前的头部，防后文误伤
-    - 未命中时 error 级红叉、其余图标、ℹ️ 兜底
+    - 只看冒号前的头部文字
+    - 未匹配时 error 级标红叉，其余默认 ℹ️
     """
     head = text.split("：", 1)[0].split(":", 1)[0]
 

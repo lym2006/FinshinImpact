@@ -6,7 +6,7 @@
 
 from exceptions import ConfigTemplateMissingError
 
-from ..init_files import CONFIG_EXAMPLE, CONFIG_FILE
+from ..paths import CONFIG_EXAMPLE, CONFIG_FILE
 from ._differ import compare_configs
 from ._io import ConfigIO
 from ._parser import ConfigParser
@@ -18,7 +18,7 @@ from .models import (
     AppSchema,
 )
 
-# CONFIG_EXAMPLE 在 init_files 已按身份码前缀定好平台模板，导入期绑定即正确
+# CONFIG_EXAMPLE 在 paths 已按身份码前缀定好平台模板，导入期绑定即正确
 _PARSER = ConfigParser(CONFIG_EXAMPLE)
 
 
@@ -42,7 +42,7 @@ __all__ = [
 def _io() -> ConfigIO:
     """取得配置读写器
 
-    - 每次按当前 CONFIG_FILE 构造，身份码注入晚于本模块导入也不会绑错路径
+    - 每次调用按当前 CONFIG_FILE 构造
     """
     return ConfigIO(CONFIG_FILE)
 
@@ -69,7 +69,7 @@ def _write_clean_config() -> None:
 def ensure_config() -> None:
     """确保配置文件存在
 
-    - 缺失则从模板生成后照常返回，不中断启动流程
+    - 缺失则从模板生成后照常返回
     - 必填项留空由本地校验报出，向导据此标红引导填写
     """
     if CONFIG_FILE.exists():

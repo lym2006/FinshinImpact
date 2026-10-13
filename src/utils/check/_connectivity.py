@@ -1,8 +1,8 @@
-# src/utils/connectivity.py
+# src/utils/check/_connectivity.py
 """连接性探测
 
-- 代理与 Token 双重探测及构造期/请求期异常映射，校验轮与诊断轮共用
-- attempt_channel 为预算内单次探测的唯一入口，超时折成字段错误不上抛
+- 代理与 Token 两级探测，校验轮与诊断轮共用
+- 构造期与请求期异常映射为字段错误，超时不上抛
 """
 
 import asyncio
@@ -27,9 +27,9 @@ from exceptions import (
 )
 from messages import CheckMessage
 
-from .config import PENDING_MARK
-from .net_probe import FieldKey, probe_budget
-from .ssl import SSLUnverifiedSession
+from ..config import PENDING_MARK
+from ..network import SSLUnverifiedSession
+from ..network.probe import FieldKey, probe_budget
 
 # 构造期异常消息 → 配置键的解析规则
 _SCHEME_RE = re.compile(r"Invalid scheme component:\s*(.*)", re.IGNORECASE)
@@ -160,11 +160,11 @@ async def _check_config(
 
 
 async def attempt_channel(token: str, proxy: str) -> tuple[str | None, dict[str, str]]:
-    """预算内单通道探测一次
+    """预算内探测单个通道
 
     - 返回 (生效通道或 None, 错误字典)
     - 空错误即该通道通过
-    - 预算按通道分层：直连是墙内黑洞快进快出，代理罩得住冷启动慢握手
+    - 超时预算按通道类型取值，直连短、代理长
     """
     try:
         errors = await asyncio.wait_for(

@@ -1,4 +1,4 @@
-# src/utils/version_checker.py
+# src/utils/check/_version.py
 """版本检查
 
 - 实现本地与远程版本比对
@@ -21,7 +21,7 @@ from exceptions import (
 from messages import VersionMessage
 from profile_env import ROOT_DIR
 
-from .base_client import BaseClient
+from ..network import BaseClient
 
 _BASE_URL = "https://lym2006.github.io"
 _REQUEST_PATH = "/FinshinImpact/pyproject.toml"

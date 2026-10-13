@@ -11,7 +11,7 @@ from gui.mediator import gui_bridge
 from messages import CheckMessage
 from profile_env import get_profile, read_token
 from utils import config_manager
-from utils.net_probe import FieldKey
+from utils.network import FieldKey
 
 from ..error_guard import error_guard
 
@@ -23,7 +23,7 @@ class ConfigApplier:
     """配置应用器
 
     - 与 BotManager 一对一绑定，启停与子管理器由 host 持有
-    - 生效通道与指纹归本器，供引擎读取与跳过重启判定
+    - 持有生效通道与运行参数指纹，供引擎读取与跳过重启判定
     """
 
     def __init__(self, host: "BotManager") -> None:
@@ -100,16 +100,15 @@ class ConfigApplier:
         """判定是否 token 致命错
 
         - proxy 已通而 token 仍错才是致命，token 已不在面板改不了
-        - proxy 不通时 token 被标"暂未检测"，此时归代理故障走向导，不误退
+        - proxy 不通时 token 标为暂未检测，按代理故障走配置向导
         """
         return FieldKey.TOKEN in errors and FieldKey.PROXY not in errors
 
     def get_config_func(self) -> tuple[str, str]:
         """读取 Token 与生效 Proxy
 
-        - 引擎与指纹专用
-        - 三级解析通过后引擎走 resolved 通道
-        - 未校验时退回配置原值
+        - 供引擎与运行参数指纹读取
+        - 校验通过后返回生效通道，未校验时返回配置原值
         """
         token, cfg = self.get_raw_config_func()
         if self._resolved_proxy is not None:
