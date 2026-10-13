@@ -8,12 +8,24 @@
 2. 下载本仓库源码并解压，在项目根目录创建虚拟环境：`python -m venv .venv`。
 3. 激活虚拟环境：`.venv\Scripts\activate`。
 4. 安装依赖与开发工具：`pip install -e ".[dev]"`（可自行配置镜像源）。
-5. 安装 Playwright 浏览器内核：`playwright install chromium`。
+5. 浏览器内核按需安装：启用 `AI_render` 插件后由面板装卸 chromium-headless-shell，纯开发不装则 `/md` 与图片回复不可用。
 6. 启动：`python -m bootstrap`，先弹出「选择机器人」窗口，选定或新建实例后管理面板出现。
 7. 首次运行需在选择窗点「新建」，填 Bot Token 即生成实例文件夹 `instances/<身份码>/` 并弹出配置向导，填入配置即完成初始化（无需手编文件）。
 8. 实例文件夹内含 `config.toml`、`persona.md`、`profile.json`、`data/`、`logs/`，整体不进版本库。Bot Token 存 `profile.json`，不进 `config.toml`，面板不渲染也不可改。
-9. 身份码经环境变量 `FINSHINIMPACT_PROFILE` 传递（单源定义在 `src/profile_env.py` 的 `PROFILE_ENV`），选窗写入、业务模块导入期读取。`init_files` 的路径常量导入即冻结，故身份码必须在任何业务模块 import 前确定。手动单跑 `runtime\python.exe main.py` 也会先弹选择窗，无需自行设置该变量。
+9. 身份码经环境变量 `FINSHINIMPACT_PROFILE` 传递（单源定义在 `src/profile_env.py` 的 `PROFILE_ENV`），选窗写入、业务模块导入期读取。`utils/paths` 的路径常量导入即冻结，故身份码必须在任何业务模块 import 前确定。手动单跑 `runtime\python.exe main.py` 也会先弹选择窗，无需自行设置该变量。
 10. 已有旧版根目录 `config.toml` 的老配置需手动备份重填 API Key、人设等项，旧位置不再被读取。
+
+## 新增插件（清单驱动流程）
+
+1. 建目录 `src/plugins/<Name>/`，`__init__.py` 导出 `router`。
+2. 目录内放 `plugin.toml`（模板 `assets/plugin.example.toml`）：
+   `order` 取三档（0 最先 help 独占 / 10 常规 / 50 最后 AI 独占），
+   `deps` 只写本插件独有的顶层库并 pin 版本，核心公共库走 `pyproject.toml`。
+3. 注册序列与帮助图自动消费清单，无白名单可改；`name` 必须与目录名一致，否则整份清单被拒收。
+4. 命令可见性由清单 `[[help]]` 贡献决定：未写贡献的命令会被未知命令拦截误伤。
+
+> 面板启用/禁用与装库链路已落地：`plugin.toml` 的 deps/assets 由插件面板收集，
+> 选定实例后在启动前统一结算装卸；实例未保存过插件选择时仅 core 插件运行。
 
 ## 代码规范检查
 
