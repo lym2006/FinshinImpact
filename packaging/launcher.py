@@ -76,6 +76,10 @@ _SWAP_FAST_TIMEOUT = 5.0  # 快交接静默等待上限 5 秒
 _SWAP_SOOTHE_MS = 20_000  # 慢路径安抚弹窗驻留 20 秒
 _HANDOFF_POLL_TICK = 0.5  # 抢锁轮询间隔 0.5 秒
 
+# 旧壳确认接管后才退场，交接瞬间 .old 仍被占用，收尾限时重试补删
+_OLD_SHELL_WAIT = 10.0  # 补删旧壳备份总上限 10 秒
+_OLD_SHELL_TICK = 0.5  # 补删重试间隔 0.5 秒
+
 # 与主程序 instance_lock 的引导锁是同一把，两处改名必须同步
 # 实例锁名带身份码、启动器无从得知，故只探测引导锁防重复弹选择窗
 _BOOTSTRAP_MUTEX_NAME = "Local\\FinshinImpact-Bootstrap"
@@ -554,11 +558,12 @@ def _apply_shell_update(root: Path, handoff: bool = False) -> None:
     exe_path = root / _SHELL_EXE
     bak = exe_path.with_name(_SHELL_EXE + _SHELL_BAK_SUFFIX)
 
-    # 每次执行先清理上次换壳的遗留备份
+    # 先试删上次遗留的备份
+    # 旧壳进程尚未退场时删不掉属预期，交本次启动收尾补删
     try:
         bak.unlink(missing_ok=True)
     except OSError:
-        pass  # 上次旧壳仍存活或备份被占用，留到下次再清
+        pass
     new_exe = pending / _SHELL_EXE
     if not new_exe.is_file():
         return
@@ -613,6 +618,24 @@ def _handoff_wait(timeout: float) -> bool:
     return False
 
 
+def _retire_old_shell(root: Path) -> None:
+    """补删换壳遗留的旧壳备份
+
+    - 新壳启动收尾调用，旧壳退场释放文件后删掉
+    - 超时删不掉留给下次启动换壳开头清，全程静默
+    """
+    bak = root / (_SHELL_EXE + _SHELL_BAK_SUFFIX)
+    if not bak.is_file():
+        return
+    deadline = time.monotonic() + _OLD_SHELL_WAIT
+    while time.monotonic() < deadline:
+        try:
+            bak.unlink(missing_ok=True)
+            return
+        except OSError:
+            time.sleep(_OLD_SHELL_TICK)
+
+
 def _root_dir() -> Path:
     """发布包根目录
 
@@ -644,6 +667,7 @@ def main() -> None:
     """启动主流程
 
     - 依次：选择窗占用检查、换壳、装环境、检查升级、拉起主程序、回收进度窗口
+    - 回收窗口后补删旧壳备份，旧壳退场即删，删不掉留到下次启动
     """
     if _already_running():
         sys.exit(0)
@@ -654,6 +678,7 @@ def main() -> None:
     _check_update(root)
     _launch(root)
     _close_console()
+    _retire_old_shell(root)
 
 
 if __name__ == "__main__":
