@@ -33,6 +33,9 @@ _INSTALL_LOG = RUNTIME_DIR / "plugin-ops.log"
 # 调试级噪音行前缀，除这些外子进程输出一律直通进度窗
 _NOISE_PREFIXES = ("DEBUG", "TRACE")
 
+# GUI 进程派生 console 子进程会各开一个黑窗口，输出已管道捕获，窗口纯属多余
+_CREATE_NO_WINDOW = 0x08000000  # 与 launcher 同值：CREATE_NO_WINDOW 标志
+
 # 开发模式虚拟环境内的 uv 候选位置
 _VENV_DIRS = (".venv", "venv", "env")
 
@@ -145,6 +148,16 @@ def degraded(commands: list[str], on_line: ProgressFn | None) -> None:
     emit(on_line, PluginMessage.DEV_MANUAL.format(commands="\n".join(commands)))
 
 
+def clean_cache(on_line: ProgressFn | None = None) -> None:
+    """清除 uv 包缓存
+
+    - 缓存放包内是为断点续装命中，全量重建闭环后留着白占磁盘
+    - prune 只清悬空条目，成套缓存判全部在用删不动，用 clean 全清
+    - cache 子命令不吃 --python，只挂缓存目录配置
+    """
+    run_uv(["cache", "clean", "--cache-dir", str(_UV_CACHE_DIR)], None, on_line)
+
+
 def with_index_retry(args: list[str], on_line: ProgressFn | None) -> int:
     """按换源序列执行 pip 命令直至成功
 
@@ -200,6 +213,7 @@ def run_process(
 ) -> int:
     """执行子进程，原始输出写日志并转发进度窗
 
+    - 静默无窗执行，输出只进进度窗
     - stdout/stderr 合流，编码异常替换不中断
     - 非零退出时取末条失败行生成简短摘要
     """
@@ -211,6 +225,7 @@ def run_process(
         encoding="utf-8",
         errors="replace",
         env=env,
+        creationflags=_CREATE_NO_WINDOW,
     )
     raw: list[str] = []
     stream = process.stdout
