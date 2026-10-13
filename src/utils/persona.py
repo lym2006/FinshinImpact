@@ -9,7 +9,7 @@ from enum import Enum
 
 from profile_env import OWNER_PLACEHOLDER
 
-from .init_files import PERSONALITY_FILE
+from .paths import PERSONALITY_FILE
 
 _persona_text: str | None = None  # 实例人设进程内不变，读一次即缓存
 

@@ -42,7 +42,7 @@ class _ConfigManager:
         """点路径读取并校验
 
         - 非必填键缺失取模板默认值
-        - 必填键缺失照抛，校验轮已负责标红引导填写
+        - 必填键缺失直接抛错，由校验轮标红引导填写
         """
         keys = path.split(".")
         value: Any = self._config

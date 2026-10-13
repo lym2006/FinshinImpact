@@ -1,8 +1,8 @@
-# src/utils/net_probe.py
+# src/utils/network/probe.py
 """网络探测共享引擎
 
-- 通道阶梯规划与本地端口探活单源，连通校验与网络诊断共用
-- 定义行状态集与校验窗行骨架
+- 提供候选通道规划、端口探活与进度表行定义
+- 连通校验与网络诊断共用
 """
 
 import socket
@@ -63,9 +63,9 @@ class FrameKey:
 
 _PORT_TIMEOUT = 0.5  # 回环 TCP 探活上限：本机进程秒回，半秒已极宽
 
-# 并行探测的通道级超时预算（秒）：罩得住代理冷启动的慢 TLS 握手
-_PROBE_BUDGET = 6.0  # 代理通道全程上限：SOCKS 握手 + TLS + getMe
-_PROBE_BUDGET_DIRECT = 3.0  # 直连预算：墙内黑洞必吃满，快进快出不陪跑
+# 通道级探测超时预算（秒）
+_PROBE_BUDGET = 6.0  # 代理通道全程：SOCKS 握手 + TLS + getMe
+_PROBE_BUDGET_DIRECT = 3.0  # 直连被墙时必然等满，预算取短以快速失败
 
 # 常见本地代理软件默认监听端口（Clash/v2rayN/mihomo 等）
 _PROXY_PORTS = (7890, 7897, 7898, 7893, 10808, 10809, 8118, 20171, 20172)
@@ -84,12 +84,12 @@ class Channel:
 
 
 def plan_channels(configured: str, sys_proxy: str | None) -> list[Channel]:
-    """规划通道阶梯
+    """规划候选代理通道
 
-    - 配置代理 → 系统代理 → 直连
-    - 配置为空不出 cfg 项
-    - 系统代理只要开启就照常入梯，同址也各测各的
-    - 直连恒为末位兜底
+    - 顺序为配置代理、系统代理、直连
+    - 配置为空则不生成配置通道
+    - 系统代理已开启即入列，与配置同址也各测各的
+    - 直连恒为最后一项
     """
     cfg = configured.strip()
     channels = [Channel(RowId.CFG, cfg)] if cfg else []
@@ -100,9 +100,9 @@ def plan_channels(configured: str, sys_proxy: str | None) -> list[Channel]:
 
 
 def via_label(ch: Channel) -> str:
-    """通道称谓
+    """通道显示名
 
-    - 直连裸称，代理类一律带地址，两轮表格与日志共用
+    - 直连不带地址，代理一律带地址，校验与诊断两轮共用
     """
     if not ch.url:
         return CheckMessage.VIA_DIRECT
@@ -114,7 +114,8 @@ def via_label(ch: Channel) -> str:
 def probe_budget(url: str) -> float:
     """通道探测预算
 
-    - 直连是墙内黑洞快进快出，代理罩得住冷启动慢握手
+    - 直连失败响应快，取较短预算
+    - 代理首次握手慢，取较长预算
     """
     return _PROBE_BUDGET_DIRECT if not url else _PROBE_BUDGET
 
@@ -131,9 +132,9 @@ _VERIFY_ROWS = (
 
 
 def verify_skeleton() -> list[dict]:
-    """全等待态六行骨架
+    """六行等待态占位表
 
-    - 校验计划到达前的占位
+    - 校验计划生成前的初始显示
     """
     return [
         {"id": rid, "title": title, "status": RowStatus.PENDING, "detail": ""}
@@ -149,13 +150,12 @@ def verify_plan(
     reuse: bool = False,
     local_frame: dict | None = None,
 ) -> list[dict]:
-    """生成校验开局整表
+    """生成校验首帧整表
 
-    - 在场通道标进行中，缺席/复用行直接给定态
-    - 与诊断窗同款五态
-    - 阶梯里没有的通道行不再探测，按成因当场落定
-    - reuse=True 表示仅复查 token，未涉及的通道行标"复用已验证通道"
-    - local_frame 传入则本地行随开局帧先行落定，网络在跑时本地已亮
+    - 待探测通道标进行中，缺席与复用行直接给出状态
+    - 不探测的通道按原因直接给结论
+    - reuse 为真表示仅复查 token，未涉及的通道行标复用已验证通道
+    - local_frame 传入则本地行随首帧先行显示
     """
     kinds = {ch.kind for ch in channels}
     budgets = {ch.kind: probe_budget(ch.url) for ch in channels}
@@ -209,7 +209,7 @@ def scan_proxy_ports() -> list[str]:
     """扫描本机常见代理端口
 
     - 返回存活端口对应的 http URL 列表
-    - TCP 存活只证明进程在听，能否出网须由调用方以真实请求复测
+    - TCP 存活只说明端口有进程监听，能否出网须由调用方以真实请求复测
     """
     alive = _probe_ports(_PROXY_PORTS)
     return [

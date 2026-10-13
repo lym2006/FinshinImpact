@@ -70,7 +70,7 @@ class SettingsController(BaseController):
     def _on_config_ready_changed(self, ready: bool) -> None:
         """更新就绪缓存
 
-        - 校验通过检测窗一律自动收窗，失败驻留等读结果
+        - 校验通过自动关闭进度窗，失败保留窗口供查看
         """
         self._config_ready = ready
         if not ready:
@@ -107,7 +107,7 @@ class SettingsController(BaseController):
             self._is_dialog_open = False  # 面板已被用户关掉：复位防卡死
 
     def _close_panel_verified(self) -> None:
-        """通过统一收面板
+        """校验通过后关闭面板
 
         - 先关窗再弹一条已验证提示
         """
@@ -131,7 +131,7 @@ class SettingsController(BaseController):
     def show_setup_dialog(self, field_errors: dict | None = None) -> None:
         """外部信号启动强制向导
 
-        - 面板在前台则原地变身 SETUP
+        - 面板已打开则原地切换为 SETUP 模式
         """
         # 关闭流程进行中，不再打开弹窗
         if gui_bridge.is_shutdown_pending():

@@ -2,7 +2,7 @@
 """五态行表格
 
 - 网络诊断窗与连通校验窗共用的行渲染组件
-- 状态符号与颜色由弹窗令牌注入，本组件不持有话术
+- 状态符号与颜色取自弹窗令牌
 """
 
 import html
@@ -12,7 +12,7 @@ from PySide6.QtCore import QTimer
 from PySide6.QtGui import QResizeEvent
 from PySide6.QtWidgets import QTextEdit, QWidget
 
-from utils.net_probe import FrameKey, RowStatus
+from utils.network import FrameKey, RowStatus
 
 from .._theme import FiveStateDialogConfig
 
@@ -33,7 +33,7 @@ def _state_map(cfg: FiveStateDialogConfig) -> dict[str, tuple[str, str]]:
 class RowTable(QTextEdit):
     """五态行表格
 
-    - rows 帧整表重建，row 帧单行点亮，进行中行独立倒计时
+    - rows 帧整表重建，id 帧更新单行，进行中行各自计时
     """
 
     def __init__(
@@ -60,9 +60,9 @@ class RowTable(QTextEdit):
         self._clock.timeout.connect(self._advance_clock)
 
     def reset(self, rows: list[dict[str, Any]]) -> None:
-        """按骨架行整表重建
+        """按占位表整表重建
 
-        - 随行重挂预算与计时起点
+        - 按行重置超时预算与计时起点
         """
         self._rows = {r["id"]: [r["title"], r["status"], r["detail"]] for r in rows}
         self._budgets = {r["id"]: int(r["budget"]) for r in rows if "budget" in r}
@@ -75,9 +75,9 @@ class RowTable(QTextEdit):
     def apply(self, frame: dict[str, Any]) -> None:
         """消费一帧
 
-        - rows 键整表重建，id 键单行点亮
-        - 未知 id 与已定案行忽略
-        - 定案行拒改是并行版的迟到帧闸门：被取消探测的线程结果后到也不许翻案
+        - rows 键整表重建，id 键更新单行
+        - 未知 id 与已有结果的行忽略
+        - 结果先到的行不被迟到的探测帧覆盖
         """
         if FrameKey.ROWS in frame:
             self.reset(frame[FrameKey.ROWS])
@@ -96,7 +96,7 @@ class RowTable(QTextEdit):
         self._render()
 
     def _sync_clock(self) -> None:
-        """有在数行开钟"""
+        """有进行中的行则启动计时"""
         if self._elapsed and not self._clock.isActive():
             self._clock.start()
         elif not self._elapsed:
@@ -104,7 +104,7 @@ class RowTable(QTextEdit):
             self._clock.stop()
 
     def _advance_clock(self) -> None:
-        """在数行进一秒"""
+        """进行中的行计时加一秒"""
         for rid in list(self._elapsed):
             if self._rows.get(rid, ["", ""])[1] != RowStatus.CHECKING:
                 self._elapsed.pop(rid)
@@ -117,7 +117,7 @@ class RowTable(QTextEdit):
         """按当前状态全量重绘行表格 HTML
 
         - 进行中行追加计时后缀
-        - 重绘后控件高度收紧到内容
+        - 重绘后按内容收缩高度
         """
         lines: list[str] = []
         for rid, (title, status, detail) in self._rows.items():
@@ -142,9 +142,9 @@ class RowTable(QTextEdit):
         self._fit_height()
 
     def _fit_height(self) -> None:
-        """固定高度为文档实际高
+        """按文档实际高度固定控件高度
 
-        - 窗随行数与换行自动收紧，不出滚动条
+        - 窗口随行数与换行自动伸缩，不出现滚动条
         """
         doc = self.document()
         doc.setTextWidth(self.viewport().width())

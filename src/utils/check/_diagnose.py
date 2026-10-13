@@ -1,9 +1,9 @@
-# src/utils/diagnose.py
+# src/utils/check/_diagnose.py
 """网络连通诊断
 
-- 通道并行调度复用 verify_flow 公共核心，探针与校验轮同源同参（真 token 全复用）
-- 缺席通道开局静态给定态：配置留空与系统代理未开启当场落定
-- 端口复测与收口话术是诊断独有语义，逻辑留在本模块
+- 通道并发探测复用 _verify.run_channels
+- 配置留空或系统代理未开启的通道，首帧直接给结论
+- 全部通道失败时复测本机代理端口，输出结论行
 """
 
 import asyncio
@@ -12,21 +12,20 @@ from collections.abc import Awaitable, Callable, Sequence
 
 from messages import CheckMessage
 
-from .connectivity import attempt_channel
-from .logger import get_logger
-from .net_probe import (
+from ..logger import get_logger
+from ..network import (
     Channel,
     FieldKey,
     FrameKey,
     RowId,
     RowStatus,
-    extract_port,
-    port_alive,
-    probe_budget,
+    detect_system_proxy,
     via_label,
 )
-from .system_proxy import detect_system_proxy, registry_proxy
-from .verify_flow import run_channels
+from ..network.probe import extract_port, port_alive, probe_budget
+from ..network.proxy import registry_proxy
+from ._connectivity import attempt_channel
+from ._verify import run_channels
 
 # 诊断跑在后台线程的私有 loop，耗时句走此器落 debug
 _logger = get_logger("Mgr.Diagnose")
@@ -60,10 +59,9 @@ def _never_emit(_frame_data: dict) -> None:
 
 
 def _diagnose_plan(channels: Sequence[Channel]) -> list[dict]:
-    """开局整表
+    """生成诊断首帧整表
 
-    - 在场通道标进行中，缺席行直接给定态
-    - 在场判据以实际入梯为准，缺席成因静态可知（配置留空/系统代理未开启）
+    - 待探测通道标进行中，缺席行直接给结论
     """
     present = {ch.kind for ch in channels}
     budgets = {ch.kind: probe_budget(ch.url) for ch in channels}
@@ -89,7 +87,7 @@ def _diagnose_plan(channels: Sequence[Channel]) -> list[dict]:
 async def _port_hit(token: str, url: str) -> bool:
     """端口候选出网复测
 
-    - 探针同源，无 proxy 键错误即该端口可出网
+    - 探测结果无 proxy 键错误即该端口可出网
     """
     _, errors = await attempt_channel(token, url)
     return FieldKey.PROXY not in errors
@@ -98,9 +96,9 @@ async def _port_hit(token: str, url: str) -> bool:
 def _diagnose_probe(
     token: str,
 ) -> Callable[[Channel], Awaitable[tuple[str | None, dict[str, str], str]]]:
-    """造诊断探针
+    """构造诊断探针
 
-    - 与校验轮共用 attempt_channel，同网络栈、同预算、真 token 实测
+    - 与校验轮同走 attempt_channel，用真实 token 探测
     """
 
     async def probe(ch: Channel) -> tuple[str | None, dict[str, str], str]:
@@ -117,9 +115,9 @@ def _diagnose_probe(
 
 
 def _diagnose_channels(cfg: str, detected: str | None) -> list[Channel]:
-    """规划在场通道
+    """规划待探测通道
 
-    - 缺席行由开局帧直接给定态，不入梯
+    - 缺席通道不进入本列表，由首帧直接给结论
     """
     channels = [Channel(RowId.CFG, cfg)] if cfg else []
     if detected:
@@ -133,9 +131,9 @@ async def _alive_ports(
 ) -> list[int]:
     """探活本地监听端口并渲染端口行
 
-    - TCP 存活只证明进程在听，能否出网由结论行复测
-    - 回环探活并发全等：单个预算 0.5s，串行只会把秒数累加成人质
-    - stop 置真返回空表，调用方据此静默收尾
+    - TCP 存活只说明端口有进程监听，能否出网由结论行复测
+    - 回环探活并发，总时长约等于单个预算 0.5s
+    - stop 为真时返回空列表，调用方据此中止
     """
     sources = dict.fromkeys(
         p for p in (extract_port(cfg), extract_port(str(reg["server"]))) if p
@@ -166,8 +164,8 @@ async def _retest_ports(
 ) -> str | None:
     """存活端口并发复测
 
-    - 按端口序取首个可通定案，陪跑取消等落地
-    - 返回可出网地址，stop 置真返回 None
+    - 按端口序取首个可出网地址，其余在测任务取消并等结束
+    - 返回可出网地址，stop 为真返回 None
     """
     cands = [f"http://127.0.0.1:{p}" for p in alive[:_ALT_RETEST_LIMIT]]
     tasks = [asyncio.ensure_future(_port_hit(token, url)) for url in cands]
@@ -194,12 +192,11 @@ async def diagnose_flow(
     emit: Callable[[dict], None] | None = None,
     stop_check: Callable[[], bool] | None = None,
 ) -> None:
-    """跑一轮诊断
+    """执行一轮网络诊断
 
-    - 并行调度进公共核心，诊断独有收口在本地补齐
-    - 缺席通道静态给定态不入梯
-    - 全挂才扫端口并复测可用地址
-    - stop_check 置真即静默收尾，公共核心掐掉全部在途探测
+    - 通道探测走 run_channels，端口复测与结论行在本模块补齐
+    - 任一通道可用即通过，全部失败才扫本机端口复测
+    - stop_check 为真时中止并取消在测任务，不输出结论
     """
     frame = emit or _never_emit
     stop = stop_check or _never_stop
