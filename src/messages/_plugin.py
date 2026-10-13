@@ -1,0 +1,70 @@
+# src/messages/_plugin.py
+"""插件设置面板文案"""
+
+
+class PluginMessage:
+    """插件设置面板文案
+
+    - 面板标题、插件行文案、保存结算与缺库提示的全部话术
+    """
+
+    # 用：bootstrap._plugin._panel 窗口标题
+    TITLE = "插件设置（实例：{code}）"
+
+    # 用：bootstrap._plugin._panel 核心行勾选位替代文字
+    ROW_CORE = "必选"
+
+    # 用：bootstrap._plugin._panel 行尾状态标签
+    STATUS_INSTALLED = "已装"
+    STATUS_MISSING = "缺 {count} 个库"
+    STATUS_DEV_SKIP = "开发模式请手动安装"
+
+    # 用：bootstrap._plugin 启动结算进度窗标题
+    PROGRESS_RUNTIME = "正在结算插件依赖"
+
+    # 用：bootstrap._plugin 启动结算逐插件安装行
+    STARTUP_INSTALL = "正在为 {name} 安装依赖…"
+
+    # 用：bootstrap._plugin 启动结算无主库清理行
+    STARTUP_PURGE = "正在清理无任何实例启用的库…"
+
+    # 用：bootstrap._plugin 启动结算失败弹窗标题与正文
+    SETTLE_TITLE = "插件依赖结算"
+    STARTUP_FAIL = "部分插件库装卸未成功\n不阻断启动，相关命令可能不可用\n{items}"
+
+    # 用：bootstrap._plugin._panel 底栏按钮行
+    BTN_SAVE = "保存"
+    BTN_SAVE_START = "保存并启动"
+
+    # 用：bootstrap._plugin._support 换源重试行
+    INDEX_RETRY = "换源重试（第 {try_count} 次）：{url}"
+    INDEX_RETRY_NOTE = "上方报错无需处理，程序正在自动切换镜像源"
+
+    # 用：bootstrap._plugin._support 子进程失败摘要行
+    PROC_FAIL = "执行未成功：{reason}"
+    PROC_FAIL_FALLBACK = "原因详见运行日志插件装卸记录"
+
+    # 用：bootstrap._plugin._progress 任务异常中止行
+    TASK_FAIL = "任务异常中止，详情见运行日志"
+
+    # 用：bootstrap._plugin._assets 内核镜像回退行
+    CDN_FALLBACK = "npmmirror 不可用，已回退官方源重试，上方报错无需处理"
+
+    # 用：bootstrap._plugin._assets 资源声明非法行
+    ASSET_BAD = "资源声明非法，应为「模块名 资源名」两段：{asset}"
+
+    # 用：bootstrap._plugin._support 开发模式降级手动命令
+    DEV_MANUAL = "开发模式请在虚拟环境下手动执行：\n{commands}"
+    DEV_SYNC = "开发模式不支持同步依赖，请在虚拟环境手动操作"
+
+    # 用：bootstrap._plugin._maintain 全局同步大警告
+    SYNC_WARNING = (
+        "同步将重建环境为与清单一致\n已装的开发工具会保留，其余残留包会被移除，耗时较长"
+    )
+
+    # 用：bootstrap._plugin._maintain 同步进度窗标题
+    PROGRESS_SYNC = "正在同步重建环境"
+
+    # 用：bootstrap._plugin._progress 进度窗按钮
+    BTN_ABORT = "后台继续"
+    BTN_DONE = "完成"

@@ -2,9 +2,6 @@
 """选 bot 窗口文案"""
 
 
-from ._dialog import DialogMessage
-
-
 class PickerMessage:
     """选 bot 窗口文案
 
@@ -28,7 +25,8 @@ class PickerMessage:
     BTN_EDIT = "编辑"
     BTN_DELETE = "删除"
     BTN_START = "启动"
-    BTN_CANCEL = DialogMessage.BTN_CANCEL
+    BTN_PLUGINS = "插件设置"
+    BTN_SYNC = "依赖管理"
     BTN_OK = "确定"
 
     # 用：bootstrap._picker 新建与编辑共用的表单

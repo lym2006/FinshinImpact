@@ -1,12 +1,12 @@
-# src/bootstrap/_picker.py
+# src/bootstrap/_picker/_window.py
 """选 bot 窗口
 
 - 引导期选择、编辑或新建实例
-- 只依赖 Qt、profile_env 与 core.domain，不碰 utils 防路径提前冻结
 """
 
 from PySide6.QtWidgets import (
     QDialog,
+    QFrame,
     QHBoxLayout,
     QLabel,
     QListWidget,
@@ -19,11 +19,10 @@ from PySide6.QtWidgets import (
 from app_icon import ensure_app
 from messages import PickerMessage
 
-from ._picker_form import EditProfileDialog, NewProfileDialog
+from .._qss import build_bootstrap_qss
+from .._theme import PICKER
+from ._form import EditProfileDialog, NewProfileDialog
 from ._store import delete_profile, list_profiles, touch_profile
-
-_WINDOW_WIDTH = 520
-_WINDOW_HEIGHT = 400
 
 # Qt 自定义数据角色，列表项各挂各的数据
 _ROLE_CODE = 0x0100  # Qt.UserRole，列表项挂身份码
@@ -36,6 +35,25 @@ def _label_of(code: str, remark: str) -> str:
     - 列表行与删除确认共用同一套拼法
     """
     return f"{remark}（{code}）" if remark else code
+
+
+def _sync_entries(*buttons: QPushButton, item: object) -> None:
+    """按选中态联动实例级入口可用性"""
+    for button in buttons:
+        button.setEnabled(item is not None)
+
+
+def _run_sync(dialog: "_ProfilePickerDialog") -> None:
+    """发起全局依赖同步
+
+    - 同步对象是所有实例共享的 runtime 依赖层
+    """
+    if not dialog._selected()[0]:
+        return
+
+    from .._plugin import sync_environment
+
+    sync_environment(dialog)
 
 
 class _ProfilePickerDialog(QDialog):
@@ -52,7 +70,9 @@ class _ProfilePickerDialog(QDialog):
     def _build(self) -> None:
         """装配控件"""
         self.setWindowTitle(PickerMessage.TITLE)
-        self.resize(_WINDOW_WIDTH, _WINDOW_HEIGHT)
+        self.setStyleSheet(build_bootstrap_qss())
+        self.resize(PICKER.width, PICKER.height)
+        self.setMinimumSize(PICKER.min_width, PICKER.min_height)
 
         layout = QVBoxLayout(self)
         layout.addWidget(QLabel(PickerMessage.HINT))
@@ -68,20 +88,44 @@ class _ProfilePickerDialog(QDialog):
         edit_btn = QPushButton(PickerMessage.BTN_EDIT)
         edit_btn.clicked.connect(self._on_edit)
         delete_btn = QPushButton(PickerMessage.BTN_DELETE)
+        delete_btn.setObjectName("btn_danger")
         delete_btn.clicked.connect(self._on_delete)
+
+        # 分割线左侧改实例，右侧带选中实例走动作，两组语义不同
+        sep = QFrame()
+        sep.setFrameShape(QFrame.Shape.VLine)
+        sep.setObjectName("btn_sep")
+
+        # 面板操作必须针对具体实例，空选入口置灰
+        plugin_btn = QPushButton(PickerMessage.BTN_PLUGINS)
+        plugin_btn.setObjectName("btn_primary")
+        plugin_btn.clicked.connect(self._on_plugins)
+
+        sync_btn = QPushButton(PickerMessage.BTN_SYNC)
+        sync_btn.setObjectName("btn_primary")
+        sync_btn.clicked.connect(lambda: _run_sync(self))
+
+        # currentItemChanged 只在选中态变化时发，建钮时先按当前项定初值
+        entries = (plugin_btn, sync_btn)
+        self._list.currentItemChanged.connect(
+            lambda cur, *_: _sync_entries(*entries, item=cur)
+        )
+        for entry in entries:
+            entry.setEnabled(self._list.currentItem() is not None)
         start_btn = QPushButton(PickerMessage.BTN_START)
+        start_btn.setObjectName("btn_primary")
         start_btn.clicked.connect(self._on_start)
 
         # 首个入布局的按钮默认成自动默认钮，Enter会被新建抢答，显式定归启动
         start_btn.setDefault(True)
-        cancel_btn = QPushButton(PickerMessage.BTN_CANCEL)
-        cancel_btn.clicked.connect(self.reject)
         buttons.addWidget(new_btn)
         buttons.addWidget(edit_btn)
         buttons.addWidget(delete_btn)
-        buttons.addStretch()
+        buttons.addWidget(sep)
+        buttons.addWidget(plugin_btn)
+        buttons.addWidget(sync_btn)
         buttons.addWidget(start_btn)
-        buttons.addWidget(cancel_btn)
+        buttons.addStretch()
         layout.addLayout(buttons)
 
     def _reload(self) -> None:
@@ -102,12 +146,24 @@ class _ProfilePickerDialog(QDialog):
             return "", ""
         return item.data(_ROLE_CODE), item.data(_ROLE_REMARK)
 
+
     def _on_start(self) -> None:
         """启动选中实例"""
         self.code, _ = self._selected()
         if self.code:
             touch_profile(self.code)
             self.accept()
+
+    def _on_plugins(self) -> None:
+        """打开选中实例的插件面板"""
+        code, _ = self._selected()
+        if not code:
+            return
+
+        # 面板依赖 Qt，点击时才付出加载代价
+        from .._plugin import MODE_EDIT, open_panel
+
+        open_panel(code, MODE_EDIT)
 
     def _on_new(self) -> None:
         """转入新建窗，建成后回列表并选中"""
@@ -164,8 +220,7 @@ def pick_profile() -> str:
     """选择或新建实例身份
 
     - 返回身份码，用户取消返回空串
-    - 引导锁由调用方持有，本函数只管界面
-    - ensure_app 新建应用实例即挂图标，主程序 Main 复用同一个
+    - 经 ensure_app 创建应用实例并设置图标，主程序复用同一实例
     """
     ensure_app()
     dialog = _ProfilePickerDialog()

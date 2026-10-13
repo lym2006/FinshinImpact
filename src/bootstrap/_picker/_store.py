@@ -1,4 +1,4 @@
-# src/bootstrap/_store.py
+# src/bootstrap/_picker/_store.py
 """实例仓储
 
 - 扫描身份文件夹枚举已有实例
@@ -27,7 +27,7 @@ from profile_env import (
 # Telegram token 结构 bot_id:secret，bot_id 即机器人数字 ID，重生成 token 不变
 _TG_TOKEN_PATTERN = re.compile(r"(\d+):[A-Za-z0-9_-]+")
 
-# 引导期不许 import utils（会提前冻结路径），人设模板路径与 init_files 共用同一文件名常量
+# 引导期不许 import utils（paths 导入即冻结路径），人设模板路径与 paths 共用同一文件名常量
 _PERSONALITY_EXAMPLE = ASSETS_DIR / ASSET_PERSONA_EXAMPLE_NAME
 
 # 实例判定只认自描述文件，引导期必写，新建实例此刻还没有 config.toml
@@ -58,7 +58,7 @@ def code_for_token(platform: Platform, token: str) -> str:
 def _code_for_telegram(token: str) -> str:
     """Telegram 身份码推导
 
-    - bot_id 在重生成 token 后不变，资产不失联
+    - 重新生成 token 后 bot_id 不变，实例资产仍可定位
     """
     match = _TG_TOKEN_PATTERN.fullmatch(token.strip())
     return make_profile_code(Platform.TELEGRAM, match.group(1)) if match else ""
@@ -68,9 +68,8 @@ def list_profiles() -> list[tuple[str, str]]:
     """枚举已有实例
 
     - 扫 instances 下一级身份文件夹，返回 (身份码, 备注名) 列表
-    - 目录尚未建立即无实例，返回空列表
-    - 按最近使用（创建或启动）降序，刚碰过的置顶
-    - 从未使用时间戳缺 0，同秒并排按身份码降序兜底
+    - 目录不存在时返回空列表
+    - 按最近使用时间降序，时间缺失或相同时按身份码降序
     """
     profiles: list[tuple[float, str, str]] = []
 
@@ -106,9 +105,8 @@ def touch_profile(code: str) -> None:
 def create_profile(code: str, token: str, remark: str) -> None:
     """新建实例文件夹
 
-    - 只建目录、人设与自描述文件，不预写 config.toml
-    - 配置留给首次启动的向导生成，apikey/owner/triggers 由用户当场填
-    - token 与备注名落自描述文件，配置里不再存 token
+    - 只建目录、人设与自描述文件，config.toml 由首次启动的向导生成
+    - token 与备注名写进自描述文件
     - 创建即计入最近使用，新实例在选窗置顶
     """
     target = profile_dir(code)
@@ -158,7 +156,7 @@ def delete_profile(code: str) -> bool:
 def _read_remark(target: Path) -> str:
     """读取实例备注名
 
-    - 按已解析目录直读，不经身份码重净化派生
+    - 按传入目录直接读取，不重走身份码净化
     - 文件缺失或损坏一律当空备注，不阻断选择窗
     """
     try:
