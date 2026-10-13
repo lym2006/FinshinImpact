@@ -55,26 +55,6 @@ QTabBar::tab:selected {{
     color: {BODY.hover_color};
 }}"""
 
-# 勾选框（bool 配置行通用）
-_DIALOG_CHECK_QSS = f"""\
-QCheckBox {{
-    color: {BODY.color};
-    spacing: {SETTINGS_DIALOG.check_spacing}px;
-}}
-
-QCheckBox::indicator {{
-    width: {SETTINGS_DIALOG.check_size}px;
-    height: {SETTINGS_DIALOG.check_size}px;
-    border: {SETTINGS_DIALOG.border_width}px solid {SETTINGS_DIALOG.border_color};
-    border-radius: {GLOBAL.radius}px;
-    background-color: {TOOLBAR.bg};
-}}
-
-QCheckBox::indicator:checked {{
-    background-color: {BODY.selection_bg};
-    border-color: {BODY.selection_bg};
-}}"""
-
 # 忙碌等待弹窗
 WAIT_QSS = f"""\
 QLabel#wait_spinner {{
@@ -279,7 +259,6 @@ DIALOG_QSS = "\n".join(  # 弹窗 QSS 拼接
         _DIALOG_TEXTEDIT_QSS,
         DIALOG_BUTTON_QSS,
         _DIALOG_SCROLL_QSS,
-        _DIALOG_CHECK_QSS,
     ]
 )
 
