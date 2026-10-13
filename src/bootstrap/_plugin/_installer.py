@@ -22,7 +22,6 @@ from ._support import (
     degraded,
     dev_mode,
     emit,
-    run_uv,
     uv_cmd,
     with_index_retry,
 )
@@ -47,20 +46,6 @@ def install_deps(pins: list[str], on_line: ProgressFn | None = None) -> list[str
         if with_index_retry([*base, pin], on_line) != 0:
             failed.append(pin)
     return failed
-
-
-def uninstall_deps(names: list[str], on_line: ProgressFn | None = None) -> list[str]:
-    """卸载顶层包并返回失败清单
-
-    - 只卸声明名，传递依赖残留属已知行为
-    """
-    if not names:
-        return []
-    if dev_mode():
-        degraded([uv_cmd(f"pip uninstall -y {' '.join(names)}")], on_line)
-        return list(names)
-    argv = ["pip", "uninstall", *PIP_FLAGS, "--quiet", *names]
-    return [] if run_uv(argv, None, on_line) == 0 else list(names)
 
 
 def _installed_dev_pins() -> list[str]:
