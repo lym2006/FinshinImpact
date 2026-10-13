@@ -1,7 +1,7 @@
 # src/bootstrap/_plugin/_fingerprint.py
 """已装库指纹
 
-- 依赖并集摘要落 runtime，供升级后续装判定
+- 结算成功后留档 runtime，记录当时装的并集
 """
 
 import hashlib
