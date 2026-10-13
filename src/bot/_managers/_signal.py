@@ -1,4 +1,4 @@
-# src/bot/_managers/_signals.py
+# src/bot/_managers/_signal.py
 """信号处理
 
 - asyncio 线程执行 GUI 信号回调
@@ -54,7 +54,7 @@ class SignalHandler:
     def handle_abort(self) -> None:
         """取消校验
 
-        - 中止在途校验，内存回退可信值，当场宣告就绪
+        - 中止进行中的校验，配置回退上次可信值并宣告就绪
         """
         if self._apply_task is not None and not self._apply_task.done():
             self._apply_task.cancel()
@@ -63,7 +63,7 @@ class SignalHandler:
         gui_bridge.config_ready_changed.emit(True)
 
     def handle_shutdown_cancel(self) -> None:
-        """在 loop 线程复位关闭标志"""
+        """在事件循环线程复位关闭标志"""
         host = self._host
         if host._shutdown:
             host._logger.info("关闭已取消，恢复配置事件响应")

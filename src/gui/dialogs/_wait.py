@@ -3,7 +3,7 @@
 
 - 模态转圈：动画由弹窗嵌套事件循环驱动，界面不僵死
 - 后台结果到达后停圈显示，用户确认才关闭
-- cancelable 模式：进行中允许取消，结果到达自动收窗
+- cancelable 模式：进行中允许取消，结果到达自动关闭窗口
 """
 
 from PySide6.QtCore import Qt, QTimer
@@ -19,7 +19,7 @@ _MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
 
 
 class WaitDialog(BaseDialog):
-    """转圈等待 → 结果确认"""
+    """转圈等待后展示结果并确认"""
 
     def __init__(
         self, text: str, parent: QWidget | None = None, cancelable: bool = False
@@ -79,10 +79,10 @@ class WaitDialog(BaseDialog):
         self._spinner.setText(self._frames[self._idx])
 
     def finish(self, text: str, passed: bool = True) -> None:
-        """等待窗收口
+        """结束等待
 
-        - 停圈换文案
-        - 可取消版结果即终态，自动收窗不再要确认
+        - 停止动画并换成结果文案
+        - 可取消模式结果到达自动关闭窗口，不再要求确认
         - 重复调用只认首次
         """
         if self._done:

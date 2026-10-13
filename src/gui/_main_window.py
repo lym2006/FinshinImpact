@@ -148,9 +148,9 @@ class BotGUI(QMainWindow):
     def show_notice(self, message: str, critical: bool = False) -> None:
         """弹出统一通知
 
-        - critical 区分致命语义：致命确认后直退，跳过二次关闭确认
-        - 存在活动模态窗时延后重试，防被模态环吞掉一闪而退
-        - 版本检测等多行结果只进弹窗，面板不重复
+        - critical 为致命通知，确认后直接退出
+        - 已有模态窗时延后重试，防止弹窗被吞
+        - 多行长文只进弹窗，不再写入面板
         """
         if QApplication.activeModalWidget() is not None:
             QTimer.singleShot(
