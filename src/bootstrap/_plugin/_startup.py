@@ -2,8 +2,9 @@
 """启动结算
 
 - 插件依赖与资源的装卸只发生在启动实例前，按插件分组补缺
+- 结算与否以环境实测判定，环境被重建过指纹相符也补装
 - 所有实例都不再启用的库才卸载，仍被任一实例启用的保留
-- 指纹与全实例启用并集相符即免结算，全部装完才写指纹
+- 全部成功才写指纹留档，失败下次启动自动重试
 """
 
 from PySide6.QtWidgets import QMessageBox
@@ -26,7 +27,7 @@ from ._manifest import (
     top_package_name,
 )
 from ._progress import run_with_progress
-from ._support import ProgressFn, dev_mode, emit, is_pin_installed
+from ._support import ProgressFn, clean_cache, dev_mode, emit, is_pin_installed
 
 
 def _target_manifests(code: str) -> list[dict]:
@@ -55,14 +56,19 @@ def _union_digest() -> str:
     return installed_deps_digest(pins)
 
 
-def _runtime_pending() -> bool:
+def _runtime_pending(code: str) -> bool:
     """判断是否需要启动结算
 
     - 开发模式启动时跳过自动装卸，只打印手动命令
+    - 启用插件的 pip 包逐个实测，环境被同步等操作删过照样查得出
+    - 包齐时比对并集指纹，目录变动与禁用清退仍能引发结算
     """
-    if dev_mode() or read_fingerprint() == _union_digest():
+    if dev_mode():
         return False
-    return True
+    for manifest in _target_manifests(code):
+        if any(not is_pin_installed(pin) for pin in manifest[ManifestKey.DEPS]):
+            return True
+    return read_fingerprint() != _union_digest()
 
 
 def _install_targets(code: str, on_line: ProgressFn | None) -> list[str]:
@@ -127,11 +133,13 @@ def _ensure_runtime(code: str, on_line: ProgressFn | None = None) -> list[str]:
 
     - 先装本实例缺失的依赖，再卸所有实例都不用的库
     - 失败不写指纹，下次启动自动重试
+    - 全部成功才清包缓存，失败时留缓存供续装命中
     """
     failed = _install_targets(code, on_line)
     failed += _purge_orphans(on_line)
     if not failed:
         save_fingerprint(_union_digest())
+        clean_cache(on_line)
     return failed
 
 
@@ -141,7 +149,7 @@ def settle_runtime(code: str) -> None:
     - 失败弹窗提示但不阻断启动，相关命令可能不可用
     - 强关进度窗后任务转后台，本轮按失败计不写指纹
     """
-    if not _runtime_pending():
+    if not _runtime_pending(code):
         return
     failed = run_with_progress(
         PluginMessage.PROGRESS_RUNTIME, lambda on_line: _ensure_runtime(code, on_line)
