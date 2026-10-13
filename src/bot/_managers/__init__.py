@@ -14,7 +14,7 @@ from ._apply import ConfigApplier
 from ._initialization import InitializationManager
 from ._service import ServiceManager
 from ._settings import SettingsManager
-from ._signals import SignalHandler
+from ._signal import SignalHandler
 
 __all__ = ["BotManager"]
 
@@ -22,7 +22,7 @@ __all__ = ["BotManager"]
 class BotManager:
     """Bot 业务管理器
 
-    - 配置应用交 ConfigApplier，信号处理交 SignalHandler
+    - 配置应用与信号处理分别委托 ConfigApplier 和 SignalHandler
     """
 
     def __init__(self, loop: asyncio.AbstractEventLoop) -> None:
@@ -57,7 +57,7 @@ class BotManager:
         self._loop.call_soon_threadsafe(self._signals.handle_candidate)
 
     def on_config_abort(self) -> None:
-        """中止在途校验回调"""
+        """中止进行中校验的回调"""
         self._loop.call_soon_threadsafe(self._signals.handle_abort)
 
     def on_shutdown_request(self) -> None:

@@ -93,7 +93,7 @@ class ResetRegistry:
     def reset(self, field_key: str, restore_target: ConfigValue) -> None:
         """按控件类型回填恢复目标值
 
-        - 回填即等于默认：重估显隐
+        - 回填后重估按钮显隐
         """
         # 本行按钮随之消失
         widget = self._inputs.get(field_key)

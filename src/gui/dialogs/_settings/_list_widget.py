@@ -64,7 +64,7 @@ class ConfigListWidget(QWidget):
     def _build_bottom_bar(self) -> QWidget:
         """构建底部操作栏
 
-        - 布局留引用：恢复默认按钮由调用方事后挂入
+        - 保留布局引用，供调用方事后挂入恢复默认按钮
         """
         bar = QWidget()
         layout = QHBoxLayout(bar)
@@ -105,7 +105,7 @@ class ConfigListWidget(QWidget):
             self.list_widget.editItem(item)
 
     def add_item(self) -> None:
-        """外部可调用的添加逻辑"""
+        """添加一项配置文本"""
         item = QListWidgetItem()
         item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEditable)
         self.list_widget.addItem(item)
@@ -113,7 +113,7 @@ class ConfigListWidget(QWidget):
         self.list_widget.editItem(item)
 
     def remove_selected(self) -> None:
-        """外部可调用的删除逻辑"""
+        """删除选中项"""
         row = self.list_widget.currentRow()
         if row >= 0:
             self.list_widget.takeItem(row)
@@ -121,8 +121,7 @@ class ConfigListWidget(QWidget):
     def get_values(self) -> list[str]:
         """获取非空文本值
 
-        - 空项丢弃
-        - 防触发词误命中全部消息
+        - 丢弃空项，防止触发词匹配全部消息
         """
         return [
             text
@@ -133,7 +132,7 @@ class ConfigListWidget(QWidget):
     def set_items(self, items: list[str]) -> None:
         """整体替换列表内容
 
-        - 恢复默认专用：清空后按新列表重建行
+        - 供恢复默认使用，清空后按新列表重建
         """
         self.list_widget.clear()
         self._items = items
