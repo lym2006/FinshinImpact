@@ -9,8 +9,9 @@ from pathlib import Path
 from typing import Any
 
 from bot.error_guard import error_guard
-from utils import RECORDS_DIR, config_manager
+from utils import config_manager
 from utils.config.models import PersonaKey
+from utils.paths import RECORDS_DIR
 from utils.persona import build_persona
 
 from .utils import build_message

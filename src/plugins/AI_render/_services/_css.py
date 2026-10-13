@@ -1,4 +1,4 @@
-# src/plugins/AI/services/_render/_css.py
+# src/plugins/AI_render/_services/_css.py
 """渲染样式
 
 - 定义 CSS 模板与高亮组件映射
