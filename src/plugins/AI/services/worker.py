@@ -1,4 +1,4 @@
-# src/plugins/AI/services/_worker.py
+# src/plugins/AI/services/worker.py
 """对话工作循环
 
 - 实现流式接收、UI 更新与记录持久化
@@ -6,7 +6,8 @@
 
 import asyncio
 import time
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Awaitable, Callable
+from pathlib import Path
 from typing import Any, Literal
 
 from aiogram.exceptions import TelegramBadRequest
@@ -17,9 +18,25 @@ from ...messages import BotMessage
 from ..config import ai_config
 from ..core import AIClient, AITaskStoppedError, TelegramTaskItem, user_sessions
 from ..utils import build_message, make_data
-from ._render import render_html, screenshot
 
 _logger = get_logger("Plg.AI.Worker")
+
+# AI_render 经 set_render_provider 注入，未注入即渲染插件未启用
+_render_html: Callable[[str], str] | None = None
+_screenshot: Callable[[str, Path], Awaitable[None]] | None = None
+
+
+def set_render_provider(
+    render_html: Callable[[str], str],
+    screenshot: Callable[[str, Path], Awaitable[None]],
+) -> None:
+    """注册渲染出口
+
+    - 由 AI_render 加载时调用
+    """
+    global _render_html, _screenshot
+    _render_html = render_html
+    _screenshot = screenshot
 
 
 async def _send_long_message(task: TelegramTaskItem, text: str) -> None:
@@ -46,28 +63,37 @@ async def _send_long_message(task: TelegramTaskItem, text: str) -> None:
 
 
 async def _save_conversation_record(user: str, text: str, final_msg: str) -> None:
-    """写入对话记录"""
+    """写入对话记录
+
+    - txt/md 必写，渲染产物尽力而为，失败不影响记录
+    """
     rec_dir = ai_config.record_dir
 
+    # 格式化并写入 TXT 和 MD
+    wrt = (
+        f"{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}\n\n"
+        f"用户：{text}\n\n"
+        f"AI回复：\n{final_msg}\n\n\n"
+    )
     try:
-        # 生成 HTML 并截图
-        html_path = ai_config.record_dir / f"temp/{user}.html"
-        with open(html_path, "w", encoding="utf-8") as f:
-            f.write(render_html(final_msg))
-        await screenshot(user, html_path)
-
-        # 格式化并写入 TXT 和 MD
-        wrt = (
-            f"{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}\n\n"
-            f"用户：{text}\n\n"
-            f"AI回复：\n{final_msg}\n\n\n"
-        )
         with open(rec_dir / f"staged/{user}.txt", "a", encoding="utf8") as f:
             f.write(wrt)
         with open(rec_dir / f"temp/{user}.md", "a", encoding="utf8") as f:
             f.write(wrt)
     except Exception as e:
         _logger.send_error("保存本地对话记录失败", e)
+
+    if _render_html is None or _screenshot is None:
+        return
+
+    # 生成 HTML 并截图
+    try:
+        html_path = ai_config.record_dir / f"temp/{user}.html"
+        with open(html_path, "w", encoding="utf-8") as f:
+            f.write(_render_html(final_msg))
+        await _screenshot(user, html_path)
+    except Exception as e:
+        _logger.send_error("渲染对话记录图片失败", e)
 
 
 async def _handle_ai_message(
@@ -133,6 +159,10 @@ async def worker_loop(task: TelegramTaskItem, user: str) -> None:
         )
 
         await _save_conversation_record(user, text, final_msg)
+
+        # 渲染未启用无图可发，md_status 随渲染出口置位
+        if _screenshot is not None:
+            session.md_status = True
 
     except AITaskStoppedError:
         raise

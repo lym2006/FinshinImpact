@@ -1,7 +1,7 @@
 # src/plugins/AI/services/__init__.py
 """AI 服务门面
 
-- 提供工作循环与渲染服务出口
+- 提供对话分发与监控出口
 """
 
 from ._ai_chat import handle_ai_chat

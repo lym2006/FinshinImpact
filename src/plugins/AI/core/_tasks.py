@@ -18,7 +18,7 @@ from .models import TaskItem
 
 
 class TelegramTaskItem(TaskItem):
-    """注入 bot 的任务载体"""
+    """携带 bot 引用的任务载体"""
 
     def __init__(self, message: Message, bot: Bot) -> None:
         super().__init__(

@@ -1,10 +1,11 @@
 # packaging/launcher.py
 """发布包启动器
 
-- 首次启动自动安装嵌入式 Python、依赖与浏览器内核，装依赖走随包 uv
-- 依赖清单删项按包内 pyproject 清理清单卸载，启动时自动清旧残留
-- 启动前比对在线版本页，发现新版确认后整包升级，用户资产保留
-- 启动器本体随升级自动更换：当场换入并拉起新壳，新壳抢到引导锁后旧壳退场
+- 首次启动自动安装嵌入式 Python 与核心依赖，使用随包 uv
+- 插件依赖与浏览器内核由引导层面板按需装卸
+- 启动时按包内清理清单卸载已删依赖的旧残留
+- 启动前比对在线版本页，确认后整包升级并保留用户资产
+- 升级后拉起新版启动器，新版取得引导锁后旧进程退出
 """
 
 import ctypes
@@ -20,6 +21,7 @@ import urllib.request
 import zipfile
 from ctypes import wintypes
 from pathlib import Path
+from typing import Any
 
 from packaging.version import Version
 
@@ -42,28 +44,14 @@ _SPEED_EPS = 1e-6  # 1 微秒下限，起步防除零
 # 国内直连 GitHub 慢：公共加速镜像优先，官方源兜底
 _RELEASE_MIRRORS = ("https://gh-proxy.com/", "https://ghproxy.net/")
 
-# uv 索引按序重试：国内多源轮询，最后官方源兜底
-_UV_INDEX_URLS = (
-    "https://mirrors.cloud.tencent.com/pypi/simple",
-    "https://mirrors.aliyun.com/pypi/simple",
-    "https://pypi.tuna.tsinghua.edu.cn/simple",
-    "https://pypi.org/simple",
-)
-_PLAYWRIGHT_CDN = "https://cdn.npmmirror.com/binaries/playwright"
-
 # uv 随发布包 payload 下发，改名会坏 launcher 解包与 build 落盘两侧
 _UV_PAYLOAD_DIR = "payload"
 _UV_EXE_NAME = "uv.exe"
 _UV_ZIP_NAME = "uv.zip"
-_UV_CACHE_DIR = "uv-cache"  # 装包期缓存放包内，装完删除，不落用户目录
 
 # 升级保留用户资产（_internal 只装二进制依赖，换壳无需动）
-# instances 收纳全部实例资产，config.toml/data/logs 为旧版根目录资产，过渡期一并保留
 _PRESERVE_NAMES = (
     "instances",
-    "config.toml",
-    "data",
-    "logs",
     "runtime",
     "_update",
     "_internal",
@@ -97,6 +85,7 @@ _CreateMutexW.restype = wintypes.HANDLE  # 缺省 int 会在 64 位截断句柄
 _CloseHandle = ctypes.windll.kernel32.CloseHandle
 _MessageBoxTimeoutW = ctypes.windll.user32.MessageBoxTimeoutW
 
+
 def _info(text: str) -> None:
     """信息弹窗"""
     ctypes.windll.user32.MessageBoxW(0, text, _APP_TITLE, _MB_ICON_INFO)
@@ -108,7 +97,7 @@ def _wait_info(text: str, ms: int) -> None:
 
 
 def _bootstrap_taken() -> bool:
-    """引导锁占用静默探测"""
+    """静默探测引导锁是否被占用"""
     handle = _CreateMutexW(None, False, _BOOTSTRAP_MUTEX_NAME)
     if not handle:
         return False
@@ -140,6 +129,7 @@ def _fail_exit(text: str) -> None:
     """错误弹窗并退出"""
     ctypes.windll.user32.MessageBoxW(0, text, _APP_TITLE, _MB_ICON_ERROR)
     sys.exit(1)
+
 
 _console_open = False
 
@@ -183,6 +173,7 @@ def _hold_console() -> None:
         # 输入不可用多半无人值守，直接放行防卡死
         pass
 
+
 def _apply_system_proxy() -> None:
     """注册表系统代理临时注入环境变量
 
@@ -215,6 +206,7 @@ def _apply_system_proxy() -> None:
         proxy = f"http://{proxy}"
     os.environ["HTTP_PROXY"] = os.environ["HTTPS_PROXY"] = proxy
 
+
 def _pyproject_data(root: Path) -> dict:
     """读取发布包内 pyproject 的解析结果"""
     with open(root / "pyproject.toml", "rb") as f:
@@ -238,6 +230,26 @@ def _removed_deps(root: Path) -> list[str]:
     return list(tool.get("removed-dependencies", []))
 
 
+def _tool_settings(root: Path) -> dict:
+    """读取 [tool.finshin-impact] 表
+
+    - 换源序列与缓存目录的单源，bootstrap 装库器读同一张表
+    """
+    data = _pyproject_data(root)
+    return data.get("tool", {}).get(data["project"]["name"], {})
+
+
+def _require_setting(root: Path, key: str) -> Any:
+    """取配置表键值，缺键即报错
+
+    - 代码不写默认值，避免出现第二份不一致的副本
+    """
+    settings = _tool_settings(root)
+    if key not in settings:
+        raise RuntimeError(f"pyproject 缺 [tool.finshin-impact].{key}")
+    return settings[key]
+
+
 def _remote_version() -> str | None:
     """读取版本页在线版本号"""
     try:
@@ -248,6 +260,7 @@ def _remote_version() -> str | None:
         return str(data["project"]["version"])
     except Exception:
         return None
+
 
 def _list_digest(items: list[str]) -> str:
     """清单指纹
@@ -283,7 +296,7 @@ def _enable_site(runtime: Path) -> None:
 
 
 def _place_uv(root: Path, runtime: Path) -> Path:
-    """随包 uv 落位 runtime"""
+    """复制随包 uv 到 runtime"""
     exe = runtime / _UV_EXE_NAME
     if not exe.exists():
         # runtime 在升级保留名单、payload 不在，副本取完即删省磁盘
@@ -319,7 +332,7 @@ def _cleaned_ok(runtime: Path, removed: list[str]) -> bool:
 
 
 def _uv_with_index_retry(
-    uv: Path, python: Path, deps: list[str], cache: Path
+    root: Path, uv: Path, python: Path, deps: list[str], cache: Path
 ) -> None:
     """换源重试安装依赖"""
     base = [
@@ -334,7 +347,10 @@ def _uv_with_index_retry(
         "--cache-dir",
         str(cache),
     ]
-    for i, index in enumerate(_UV_INDEX_URLS):
+
+    # uv 索引按序重试：国内多源轮询，最后官方源兜底
+    index_urls = list(_require_setting(root, "uv-index-urls"))
+    for i, index in enumerate(index_urls):
         if i:
             print(f"换源重试（第 {i} 次）：{index}")
             print("上方报错无需处理，程序正在自动切换镜像源。\n\n")
@@ -343,67 +359,39 @@ def _uv_with_index_retry(
             return
         except subprocess.CalledProcessError:
             print("\n\n")
-            if i == len(_UV_INDEX_URLS) - 1:
+            if i == len(index_urls) - 1:
                 raise
-
-
-def _install_browser(runtime: Path) -> None:
-    """下载 Playwright 的 chromium 无头内核
-
-    - 装到用户目录，多程序共享
-    - 默认走 npmmirror 加速
-    """
-    # chromium-headless-shell 名与渲染端 launch 的 channel 同值，改一处必须两处同步
-    cmd = [
-        runtime / "python.exe",
-        "-m",
-        "playwright",
-        "install",
-        "chromium-headless-shell",
-    ]
-    env = os.environ.copy()
-    env["PLAYWRIGHT_DOWNLOAD_HOST"] = _PLAYWRIGHT_CDN
-    try:
-        subprocess.run(cmd, check=True, env=env)
-    except subprocess.CalledProcessError:
-        # 镜像不可用时清掉变量，回退官方源重试
-        print("\n\n")
-        del env["PLAYWRIGHT_DOWNLOAD_HOST"]
-        print("npmmirror 不可用，已回退官方源重试，上方报错无需处理。\n\n")
-        subprocess.run(cmd, check=True, env=env)
 
 
 def _ensure_runtime(root: Path) -> None:
     """补齐运行环境
 
-    - 嵌入式 Python → site 开关 → uv 落位 → 清理旧依赖 → 装依赖 → 浏览器内核
+    - 依次：解压嵌入式 Python、放开 site、部署 uv、清理旧依赖、装依赖
     """
     runtime = root / "runtime"
-    cache = runtime / _UV_CACHE_DIR
+
+    # 装包期缓存放包内，装完删除，不落用户目录
+    cache = runtime / str(_require_setting(root, "uv-cache-dir"))
     deps = _dependencies(root)
     removed = _removed_deps(root)
 
     # 旧壳升级用 pip 装完时 .cleaned 缺失，新壳须补跑一次清理再按新清单重装
-    need_clean = (runtime / "python.exe").exists() and not _cleaned_ok(
-        runtime, removed
-    )
+    need_clean = (runtime / "python.exe").exists() and not _cleaned_ok(runtime, removed)
     if _installed_ok(runtime, deps) and not need_clean:
         return
     _info("首次运行需要安装运行环境，期间保持网络畅通，可能需要几分钟。")
     _open_console()
     try:
-        print("[1/5] 解压嵌入式 Python…")
+        print("[1/4] 解压嵌入式 Python…")
         if not (runtime / "python.exe").exists():
             _extract_embed(runtime)
-        print("[2/5] 放开 site-packages…")
+        print("[2/4] 放开 site-packages…")
         _enable_site(runtime)
-        print("[3/5] 准备安装器 uv…")
+        print("[3/4] 准备安装器 uv…")
         uv = _place_uv(root, runtime)
-        print("[4/5] 清理旧依赖并安装（下方为 uv 实时输出）…")
+        print("[4/4] 清理旧依赖并安装（下方为 uv 实时输出）…")
         _cleanup_removed(uv, runtime / "python.exe", removed, cache)
-        _uv_with_index_retry(uv, runtime / "python.exe", deps, cache)
-        print("[5/5] 下载浏览器内核…")
-        _install_browser(runtime)
+        _uv_with_index_retry(root, uv, runtime / "python.exe", deps, cache)
         print("环境安装完成，即将启动主程序")
     except subprocess.CalledProcessError:
         # 失败不删缓存，续装直接命中省下载
@@ -419,6 +407,7 @@ def _ensure_runtime(root: Path) -> None:
     shutil.rmtree(cache, ignore_errors=True)
     (runtime / ".installed").write_text(_list_digest(deps))
     (runtime / ".cleaned").write_text(_list_digest(removed))
+
 
 def _report_progress(done: int, total: int, start: float) -> None:
     """单行刷新下载进度
@@ -475,7 +464,7 @@ def _apply_update(root: Path, version: str) -> bool:
     """整包升级
 
     - 下载新版并覆盖源码，用户资产保留
-    - 新壳有变化则暂存包根，由升级收尾当场换入
+    - 启动器有变化则暂存包根，升级收尾时换入
     """
     stage = root / "_update"
     try:
@@ -554,11 +543,12 @@ def _check_update(root: Path) -> None:
     ):
         sys.exit(1)
 
-def _apply_shell_update(root: Path, handoff: bool = False) -> None:
-    """启动器换壳
 
-    - 启动开头调用只换壳，沿用本次流程
-    - 升级收尾带 handoff 则拉起新壳，新壳持引导锁确认接管后旧壳退场，等不到就回退旧壳直接启动
+def _apply_shell_update(root: Path, handoff: bool = False) -> None:
+    """更换启动器本体
+
+    - 启动开头调用只换文件，沿用当前流程
+    - 升级收尾调用时拉起新版，新版取得引导锁后本进程退出，超时则本进程直接启动
     """
     pending = root / _SHELL_PENDING
     exe_path = root / _SHELL_EXE
@@ -610,10 +600,10 @@ def _apply_shell_update(root: Path, handoff: bool = False) -> None:
 
 
 def _handoff_wait(timeout: float) -> bool:
-    """抢锁轮询
+    """轮询等待新版取得引导锁
 
-    - 新壳拉起后弹选择窗即持有引导锁，探到即证明新版已接管
-    - 选窗停留等用户点击，必然横跨轮询窗口，不会漏判
+    - 新版弹出选择窗即持有引导锁，探测到锁被占用即判定接管完成
+    - 选择窗停留期间锁保持占用，不会漏判
     """
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:

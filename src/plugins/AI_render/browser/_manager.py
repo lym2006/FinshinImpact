@@ -1,4 +1,4 @@
-# src/plugins/AI/browser/_manager.py
+# src/plugins/AI_render/browser/_manager.py
 """浏览器生命周期
 
 - 实现懒加载单例与安全关闭
@@ -12,7 +12,7 @@ from utils import get_logger, register_lifecycle
 
 from ._config import browser_config
 
-_logger = get_logger("Plg.AI.Browser")
+_logger = get_logger("Plg.Render.Browser")
 
 
 class _BrowserManager:
@@ -41,7 +41,7 @@ class _BrowserManager:
             # 启动 Playwright 引擎
             self._playwright = await async_playwright().start()
 
-            # channel 与启动器安装的内核同名，改一处必须两处同步
+            # channel 与 plugin.toml assets 装的内核同名，改一处必须两处同步
             self._browser = await self._playwright.chromium.launch(
                 headless=True,
                 channel="chromium-headless-shell",
@@ -73,5 +73,4 @@ class _BrowserManager:
             _logger.info("全局浏览器资源已彻底释放")
 
 
-# AI 插件的全局单例
 browser_manager = _BrowserManager()

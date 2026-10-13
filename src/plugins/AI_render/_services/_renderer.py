@@ -1,4 +1,4 @@
-# src/plugins/AI/services/_render/_renderer.py
+# src/plugins/AI_render/_services/_renderer.py
 """渲染核心
 
 - 实现 Markdown 转 HTML 与清洗
