@@ -1,10 +1,11 @@
 # src/bootstrap/_plugin/_startup.py
 """启动结算
 
-- 插件依赖与资源的装卸只发生在启动实例前，按插件分组补缺
-- 结算与否以环境实测判定，环境被重建过指纹相符也补装
-- 所有实例都不再启用的库才卸载，仍被任一实例启用的保留
-- 全部成功才写指纹留档，失败下次启动自动重试
+- 插件依赖与资源的安装只发生在启动实例前，装完才起，不带错误启动
+- 装失败即禁用相关插件并弹窗告知，降级为不含该插件的启动
+- 禁用与卸载分开：结算只装不删，清库只走选窗依赖管理
+- 判定以环境实测优先，环境被重建过指纹相符也补装
+- 全部成功才写指纹留档并清缓存，失败下次启动自动重试
 """
 
 from PySide6.QtWidgets import QMessageBox
@@ -13,17 +14,18 @@ from app_icon import ensure_app
 from core.domain import ManifestKey, StateKey
 from messages import PluginMessage
 
-from ._assets import install_assets, uninstall_assets
+from ._assets import install_assets
 from ._fingerprint import installed_deps_digest, read_fingerprint, save_fingerprint
-from ._installer import install_deps, uninstall_deps
+from ._installer import install_deps
 from ._manifest import (
+    catalog_digest,
     core_dependencies,
     enabled_assets_union,
     enabled_deps_union,
-    enabled_names_union,
     load_manifests,
     load_state,
     plugins_root,
+    save_state,
     top_package_name,
 )
 from ._progress import run_with_progress
@@ -61,7 +63,7 @@ def _runtime_pending(code: str) -> bool:
 
     - 开发模式启动时跳过自动装卸，只打印手动命令
     - 启用插件的 pip 包逐个实测，环境被同步等操作删过照样查得出
-    - 包齐时比对并集指纹，目录变动与禁用清退仍能引发结算
+    - 包齐时比对并集指纹，目录变动与启用集变化仍能引发结算
     """
     if dev_mode():
         return False
@@ -88,66 +90,61 @@ def _install_targets(code: str, on_line: ProgressFn | None) -> list[str]:
     return failed
 
 
-def _purge_orphans(on_line: ProgressFn | None) -> list[str]:
-    """卸载所有实例都不再启用的库
-
-    - 保留清单并入 core 与全实例启用并集，仍被引用的顶层包不卸
-    - 资源模块未安装即跳过，playwright 缺失时 uninstall 命令会报错
-    - 顺序先资源后包，内核卸载依赖 playwright 模块仍在
-    """
-    root = plugins_root()
-    if root is None:
-        return []
-    holders = enabled_names_union()
-    keep_tops = {
-        top_package_name(pin)
-        for pin in [*core_dependencies(), *enabled_deps_union()]
-    }
-    keep_assets = set(enabled_assets_union())
-
-    tops: list[str] = []
-    assets: list[str] = []
-    for manifest in load_manifests(root):
-        if manifest[ManifestKey.NAME] in holders:
-            continue
-        for pin in manifest[ManifestKey.DEPS]:
-            top = top_package_name(pin)
-            if (
-                top not in keep_tops
-                and top not in tops
-                and is_pin_installed(pin)
-            ):
-                tops.append(top)
-        for asset in manifest[ManifestKey.ASSETS]:
-            if asset not in keep_assets and is_pin_installed(asset):
-                assets.append(asset)
-
-    if not tops and not assets:
-        return []
-    emit(on_line, PluginMessage.STARTUP_PURGE)
-    return uninstall_assets(assets, on_line) + uninstall_deps(tops, on_line)
-
-
 def _ensure_runtime(code: str, on_line: ProgressFn | None = None) -> list[str]:
     """结算 runtime 依赖并返回失败项
 
-    - 先装本实例缺失的依赖，再卸所有实例都不用的库
+    - 只补装本实例启用插件缺的依赖，不清退任何库
     - 失败不写指纹，下次启动自动重试
     - 全部成功才清包缓存，失败时留缓存供续装命中
     """
     failed = _install_targets(code, on_line)
-    failed += _purge_orphans(on_line)
     if not failed:
         save_fingerprint(_union_digest())
         clean_cache(on_line)
     return failed
 
 
-def settle_runtime(code: str) -> None:
-    """启动前结算 runtime 依赖
+def _disable_failed(code: str, failed: list[str]) -> list[str]:
+    """把安装失败的启用插件移出启用集并落盘
 
-    - 失败弹窗提示但不阻断启动，相关命令可能不可用
-    - 强关进度窗后任务转后台，本轮按失败计不写指纹
+    - 失败项按顶层包名或资源声明命中哪个插件就禁哪个
+    - 命中不了具体插件（整轮异常）时启用集全禁
+    - 只改启用集，不动已装库
+    """
+    root = plugins_root()
+    if root is None:
+        return []
+    enabled = [
+        name
+        for name in load_state(code).get(StateKey.ENABLED, [])
+        if isinstance(name, str)
+    ]
+    if not enabled:
+        return []
+
+    tops = {top_package_name(item) for item in failed}
+    dropped: list[str] = []
+    for manifest in load_manifests(root):
+        name = manifest[ManifestKey.NAME]
+        if name not in enabled:
+            continue
+        deps = {top_package_name(pin) for pin in manifest[ManifestKey.DEPS]}
+        assets = set(manifest[ManifestKey.ASSETS])
+        if deps & tops or assets & set(failed):
+            dropped.append(name)
+    if not dropped:
+        dropped = list(enabled)
+
+    keep = [name for name in enabled if name not in dropped]
+    save_state(code, keep, catalog_digest(load_manifests(root)))
+    return dropped
+
+
+def settle_runtime(code: str) -> None:
+    """启动前结算 runtime 依赖，装完才放行启动
+
+    - 装失败即禁用相关插件并弹窗告知，不带着错误启动
+    - 进度窗任务未完禁关，强退进程等于放弃本次启动
     """
     if not _runtime_pending(code):
         return
@@ -156,9 +153,15 @@ def settle_runtime(code: str) -> None:
     )
     if not failed:
         return
+    dropped = _disable_failed(code, failed)
     ensure_app()
     box = QMessageBox()
     box.setIcon(QMessageBox.Icon.Warning)
     box.setWindowTitle(PluginMessage.SETTLE_TITLE)
-    box.setText(PluginMessage.STARTUP_FAIL.format(items="\n".join(map(str, failed))))
+    box.setText(
+        PluginMessage.STARTUP_FAIL.format(
+            plugins="、".join(dropped),
+            items="\n".join(map(str, failed)),
+        )
+    )
     box.exec()

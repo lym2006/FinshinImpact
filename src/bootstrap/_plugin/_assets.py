@@ -1,5 +1,5 @@
 # src/bootstrap/_plugin/_assets.py
-"""非 pip 资源装卸
+"""非 pip 资源安装
 
 - playwright 内核等资源通过模块子命令安装，声明按模块名与资源名两段拼 argv
 - 镜像下载失败时清除环境变量回退官方源
@@ -29,7 +29,7 @@ def install_assets(assets: list[str], on_line: ProgressFn | None = None) -> list
     """
     failed: list[str] = []
     for asset in assets:
-        argv = _asset_argv(asset, "install")
+        argv = _install_argv(asset)
         if argv is None:
             emit(on_line, PluginMessage.ASSET_BAD.format(asset=asset))
             failed.append(asset)
@@ -49,44 +49,13 @@ def install_assets(assets: list[str], on_line: ProgressFn | None = None) -> list
     return failed
 
 
-def uninstall_assets(
-    assets: list[str], on_line: ProgressFn | None = None
-) -> list[str]:
-    """卸载非 pip 资源并返回失败清单
-
-    - 卸载不接资源名，只清本安装产物，按模块去重各执行一次
-    - 共用同一内核的其他实例会被牵连，由调用方判定是否仍被启用
-    """
-    failed: list[str] = []
-    done: set[str] = set()
-    for asset in assets:
-        argv = _asset_argv(asset, "uninstall")
-        if argv is None:
-            emit(on_line, PluginMessage.ASSET_BAD.format(asset=asset))
-            failed.append(asset)
-            continue
-        if argv[2] in done:
-            continue
-        done.add(argv[2])
-        if dev_mode():
-            degraded([py_cmd(argv[1:])], on_line)
-            failed.append(asset)
-            continue
-        if run_process(argv, on_line) != 0:
-            failed.append(asset)
-    return failed
-
-
-def _asset_argv(asset: str, action: str) -> list[str] | None:
-    """拆两段式 asset 值为子进程 argv
+def _install_argv(asset: str) -> list[str] | None:
+    """拆两段式 asset 值为安装 argv
 
     - 空格分词必须恰为 模块名+资源名 两段，否则返回 None
-    - install 拼上资源名
-    - uninstall 只认模块名，资源名不参与
     """
     parts = asset.split()
     if len(parts) != 2:
         return None
     module, res = parts
-    tail = [res] if action == "install" else []
-    return [str(python_target()), "-m", module, action, *tail]
+    return [str(python_target()), "-m", module, "install", res]

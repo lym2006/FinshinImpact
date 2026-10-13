@@ -179,35 +179,6 @@ def enabled_deps_union(exclude_code: str = "") -> list[str]:
     return _enabled_field_union(exclude_code, ManifestKey.DEPS)
 
 
-def enabled_names_union() -> set[str]:
-    """汇总全部实例启用插件名
-
-    - core 插件恒含
-
-    - 卸载判定看插件整体是否仍有实例启用，与字段级并集分工不同
-    - 状态文件解析不出 catalog 时视为该实例全部启用，防误删独有库
-    """
-    root = plugins_root()
-    manifests = load_manifests(root) if root else []
-    field = ManifestKey.NAME
-    names = {m[field] for m in manifests if m[ManifestKey.CORE]}
-    all_names = {m[field] for m in manifests}
-
-    if INSTANCES_DIR.is_dir():
-        for path in sorted(INSTANCES_DIR.iterdir()):
-            if not path.is_dir():
-                continue
-            state = load_state(path.name)
-            broken = (path / PluginFile.STATE).is_file() and not state.get(
-                StateKey.CATALOG
-            )
-            if broken:
-                names |= all_names
-                continue
-            names.update(state.get(StateKey.ENABLED, []))
-    return names
-
-
 def enabled_assets_union(exclude_code: str = "") -> list[str]:
     """汇总全部实例已启用插件的资源并集
 

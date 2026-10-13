@@ -25,12 +25,11 @@ class PluginMessage:
     # 用：bootstrap._plugin 启动结算逐插件安装行
     STARTUP_INSTALL = "正在为 {name} 安装依赖…"
 
-    # 用：bootstrap._plugin 启动结算无主库清理行
-    STARTUP_PURGE = "正在清理无任何实例启用的库…"
-
     # 用：bootstrap._plugin 启动结算失败弹窗标题与正文
     SETTLE_TITLE = "插件依赖结算"
-    STARTUP_FAIL = "部分插件库装卸未成功\n不阻断启动，相关命令可能不可用\n{items}"
+    STARTUP_FAIL = (
+        "以下插件依赖安装失败，已自动禁用\n{plugins}\n失败项\n{items}\n下次启动会自动重试"
+    )
 
     # 用：bootstrap._plugin._panel 底栏按钮行
     BTN_SAVE = "保存"
@@ -65,6 +64,5 @@ class PluginMessage:
     # 用：bootstrap._plugin._maintain 同步进度窗标题
     PROGRESS_SYNC = "正在同步重建环境"
 
-    # 用：bootstrap._plugin._progress 进度窗按钮
-    BTN_ABORT = "后台继续"
+    # 用：bootstrap._plugin._progress 进度窗完成按钮
     BTN_DONE = "完成"
