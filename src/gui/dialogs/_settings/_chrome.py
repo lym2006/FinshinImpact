@@ -28,9 +28,9 @@ from ._persona import PersonaPreviewRow
 
 
 def _clear_layout(layout: QHBoxLayout) -> None:
-    """腾空按钮条
+    """清空按钮条
 
-    - 逐项摘控件交还 GC
+    - 逐项移除控件交给垃圾回收
     """
     # 容器自身由调用方 removeItem
     while layout.count():
@@ -175,8 +175,8 @@ class ChromeBuilder:
     ) -> None:
         """人设预览挂载
 
-        - 三个联动控件缺一不挂，缺件说明模板已改键
-        - 人设输入行与预览按钮行共槽堆叠，切换勾选态整页等高不跳动
+        - 三个联动控件缺一即不挂载，缺件说明模板已改键
+        - 输入行与预览按钮行共用堆叠槽，切换时整页等高不跳动
         """
         if namespace != PersonaKey.NAMESPACE:
             return

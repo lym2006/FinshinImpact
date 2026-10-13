@@ -2,7 +2,7 @@
 """异常基类
 
 - 定义 fatal 致命等级与标记机制
-- 实现关键字参数存为属性供模板渲染
+- 关键字参数存为属性供文案模板渲染
 """
 
 from typing import Any, ClassVar

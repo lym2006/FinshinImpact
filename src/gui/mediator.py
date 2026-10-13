@@ -52,7 +52,7 @@ class GUIBridge(QObject):
         return self._is_shutdown_pending
 
     def set_shutdown_pending(self, pending: bool) -> None:
-        """标记/解除关闭流程"""
+        """标记或解除关闭流程"""
         self._is_shutdown_pending = pending
 
 

@@ -13,7 +13,7 @@ from ..dto import MsgReferenceDTO, OutboundPayloadDTO, PrincipalDTO
 class InteractionPort(ABC):
     """交互端口
 
-    - 屏蔽平台底层差异
+    - 统一各平台的消息收发差异
     """
 
     @abstractmethod
@@ -29,7 +29,6 @@ class InteractionPort(ABC):
 
         - reply_ref 非空时引用该消息
         - mention 为真时提及目标主体
-        - 具体引用和提及实现由 Adapter 内部处理
         """
 
     @abstractmethod
@@ -40,8 +39,7 @@ class InteractionPort(ABC):
     def mention_fragment(self, principal: PrincipalDTO) -> str:
         """生成提及文本片段
 
-        - 纯字符串拼装，不发请求
-        - 不同平台返回格式不同，由 Adapter 决定
+        - 各平台返回格式不同，由子类实现
         """
 
 
