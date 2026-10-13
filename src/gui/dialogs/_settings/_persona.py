@@ -21,7 +21,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from utils.init_files import PERSONALITY_FILE
+from utils.paths import PERSONALITY_FILE
 from utils.persona import PersonaSource, build_persona, persona_source
 
 from ..._qss import build_settings_dialog_qss
@@ -92,7 +92,7 @@ class _PersonaPreviewDialog(BaseDialog):
 class PersonaPreviewRow(QWidget):
     """人设预览按钮行
 
-    - 与人设输入行共槽等高互斥，切换勾选态整页不跳动
+    - 与人设输入行共用堆叠槽，切换时整页高度不变
     - 预览弹窗实时取当前编辑值，文件缺失回退也在弹窗标注
     """
 
@@ -150,9 +150,9 @@ class PersonaPreviewRow(QWidget):
         return True
 
     def sync(self) -> None:
-        """按勾选态切堆叠槽页
+        """按勾选态切换堆叠页
 
-        - 堆叠高度恒取两页最大值，切换不跳版面
+        - 高度取两页最大值，切换时版面不跳动
         """
         use_file = bool(self._use_file and self._use_file.isChecked())
         if self._slot is not None:

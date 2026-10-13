@@ -2,7 +2,7 @@
 """弹窗令牌
 
 - 定义各专属弹窗的尺寸、文案与配色
-- 弹窗话术字段一律代理引用 messages，令牌不持有话术字面量
+- 弹窗话术字段一律代理引用 messages
 - 诊断窗与校验窗共用五态基类，同款渲染令牌一处一源
 """
 
@@ -55,7 +55,7 @@ class SettingsDialogConfig:
     btn_pressed_bg: str = "#1A4060"  # 主按钮按下背景色
 
     # 勾选框
-    check_size: int = 14  # 指示器边长
+    check_size: int = 18  # 指示器边长，与 bootstrap PANEL.check_size 同步
     check_spacing: int = 6  # 指示器与文字间距
 
     # 人设预览
