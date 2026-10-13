@@ -5,11 +5,11 @@
 class CheckMessage:
     """检查进度窗文案
 
-    - 行骨架、通道称谓、轮次差异句、探测错误与面板日志五段话术的聚合入口
-    - 校验轮与诊断轮共窗共词，轮专属句按 VERIFY_ / ADVICE_ 前缀分组
+    - 覆盖进度表行、通道名、轮次文案、探测错误与面板日志
+    - 轮专属文案按 VERIFY_ / ADVICE_ 前缀分组
     """
 
-    # 用：utils/net_probe.py 与 utils/diagnose.py 两轮的表行名（界面与生成器共用）
+    # 用：utils/network/probe.py 与 utils/check/_diagnose.py 两轮的表行名（界面与生成器共用）
     ROW_CFG = "配置代理通道"
     ROW_SYS = "系统代理通道"
     ROW_DIRECT = "直连通道"
