@@ -1,7 +1,7 @@
 # src/bot/_managers/_port_probe.py
 """本机端口复测
 
-- 校验全挂时扫本机代理端口并复测出网
+- 校验全部失败时扫本机代理端口并复测出网
 - 渲染端口行进度帧，仅探测提示不自动采用
 """
 
@@ -9,16 +9,15 @@ import asyncio
 
 from gui.mediator import gui_bridge
 from messages import CheckMessage
-from utils.connectivity import attempt_channel
-from utils.net_probe import FieldKey, RowId, RowStatus, scan_proxy_ports
-from utils.verify_flow import ChannelOutcome
+from utils.check import ChannelOutcome, attempt_channel
+from utils.network import FieldKey, RowId, RowStatus, scan_proxy_ports
 
 
 async def verify_port_row(outcome: ChannelOutcome, token: str, token_only: bool) -> str:
     """渲染本机端口复测行
 
-    - 通道判通则标跳过
-    - 全挂才扫本机端口：仅探测复测，不自动采用、不写配置
+    - 已有通道可用时标跳过
+    - 全部通道失败才扫本机端口，结果仅供提示，不自动采用
     - 返回命中的代理 URL，无则空串
     """
     if outcome.passed:
@@ -57,8 +56,8 @@ async def _probe_ports(token: str) -> tuple[str, int]:
     """本机端口扫描复测
 
     - 返回 (首个 getMe 实测可通的 URL 或空串, 存活端口数)
-    - TCP 存活不等于可出网，复测不过不提示
-    - 全端口并发发射、按列表序收口：端口序即优先级，定案后剩余取消等落地
+    - TCP 存活不等于可出网，复测通过才提示
+    - 全端口并发探测，按列表顺序取首个可通者，其余取消
     """
     urls = await asyncio.to_thread(scan_proxy_ports)
     if not urls:

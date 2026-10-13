@@ -19,7 +19,8 @@ from tenacity import (
 )
 
 from gui.mediator import gui_bridge
-from utils import TEMP_DIR, get_logger, register_lifecycle, unregister_lifecycle
+from utils import get_logger, register_lifecycle, unregister_lifecycle
+from utils.paths import TEMP_DIR
 
 
 def _retry_if_network_running(state: RetryCallState) -> bool:
@@ -44,7 +45,7 @@ _logger = get_logger("Service")
 
 
 class BotService:
-    """服务线程一体化引擎"""
+    """Bot 服务线程"""
 
     def __init__(self, bot: Bot, dispatcher: Dispatcher) -> None:
         self._bot = bot
@@ -64,7 +65,7 @@ class BotService:
         return self._stop_event.is_set()
 
     def start(self) -> None:
-        """后台线程 + 轮询"""
+        """启动服务线程"""
         if self._thread and self._thread.is_alive():
             _logger.error("引擎启动失败: 已在运行")
             return

@@ -40,7 +40,7 @@ class ShutdownController(BaseController):
     def request_exit_from(self, source: QWidget | None = None) -> None:
         """响应向导的退出请求
 
-        - 确认框以向导为父级盖在其上
+        - 确认框以向导为父级置顶显示
         - 取消后向导与已填内容原样保留
         """
         self._on_close_intercepted(source)

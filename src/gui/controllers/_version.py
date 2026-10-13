@@ -10,7 +10,7 @@ import asyncio
 from PySide6.QtCore import QThread, Signal
 
 from exceptions import MAP_KEY_VERSION, MAPS, NewVersionError, VersionError
-from utils.version_checker import check_updates
+from utils.check import check_updates
 
 from .._theme import WAIT_DIALOG
 from ..dialogs import NoticeDialog, WaitDialog
@@ -48,8 +48,8 @@ class VersionController(BaseController):
     def _execute(self) -> None:
         """检查版本更新
 
-        - 转圈窗可取消（关窗即弃线程）
-        - 结果经统一通知弹窗承载全文
+        - 等待窗可取消，关窗即弃用线程
+        - 结果全文经统一通知弹窗展示
         """
         # 面板只记首行摘要，新版提示文案与成败态同源透出
         dialog = WaitDialog(WAIT_DIALOG.check_text, parent=self.gui, cancelable=True)
