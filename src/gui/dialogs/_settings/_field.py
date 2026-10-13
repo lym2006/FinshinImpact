@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from theme import TickedCheckBox
 from utils.config import PENDING_MARK
 from utils.config.models import (
     REQUIRED_KEYS,
@@ -161,7 +162,7 @@ class FieldBuilder:
     ) -> tuple[ConfigValue, ConfigValue, bool]:
         """取上屏值与恢复目标
 
-        - 必填项空态上屏，不挂恢复按钮（占位假值不是可恢复的默认）
+        - 必填项空态上屏且不挂恢复按钮
         - 非必填项恢复目标是模板默认值
         """
         # 禁模板占位假值冒充用户配置，用户不改即沿用默认值
@@ -209,11 +210,13 @@ class FieldBuilder:
     ) -> QCheckBox | QTextEdit | QLineEdit:
         """按值形态选控件
 
-        - bool 项走勾选框，勾选框自身不挂文字，标签与说明走通用右侧结构
+        - bool 项用勾选框且不挂文字，标签与说明走通用右侧结构
         - 含换行的字符串走多行编辑
         """
         if isinstance(field.default, bool):
-            bool_box = QCheckBox()
+            bool_box = TickedCheckBox(
+                SETTINGS_DIALOG.check_size, SETTINGS_DIALOG.check_spacing
+            )
             bool_box.setChecked(bool(current_value))
             return bool_box
         if isinstance(current_value, str) and "\n" in current_value:
@@ -232,7 +235,7 @@ class FieldBuilder:
     ) -> QWidget:
         """构造右侧区域
 
-        - 输入框（可带恢复按钮） + 说明文字
+        - 输入框与可选恢复按钮，外加说明文字
         """
         right_wrapper = QWidget()
         v_layout = QVBoxLayout(right_wrapper)

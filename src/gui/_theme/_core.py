@@ -9,6 +9,7 @@ from pathlib import Path
 
 from messages import MiscMessage
 from profile_env import ASSET_EMOJI_FONT_NAME, ASSET_FONT_NAME, ASSETS_DIR
+from theme import PALETTE
 
 
 @dataclass(frozen=True)
@@ -26,10 +27,10 @@ class WindowConfig:
 class GlobalConfig:
     """全局基础配置
 
-    - 仅存放整个 App 共享的视觉基因与全局文案
+    - 存放整个 App 共享的视觉参数与全局文案
     """
 
-    radius: int = 4  # 全局默认圆角
+    radius: int = PALETTE.radius  # 全局默认圆角
     already_running: str = MiscMessage.ALREADY_RUNNING
 
 
@@ -46,12 +47,13 @@ class FontConfig:
 class BodyConfig:
     """主窗口与中央容器配置"""
 
-    bg: str = "#1E1E1E"  # 背景色
-    color: str = "#D4D4D4"  # 文字色
-    hover_bg: str = "#3A3A3A"  # 悬停背景色
-    hover_color: str = "#FFFFFF"  # 悬停文字色
-    selection_bg: str = "#264F78"  # 选中背景色
-    selection_color: str = "#FFFFFF"  # 选中文字色
+    bg: str = PALETTE.bg  # 背景色
+    color: str = PALETTE.color  # 文字色
+    hover_bg: str = PALETTE.hover_bg  # 悬停背景色
+    hover_color: str = PALETTE.hover_color  # 悬停文字色
+    selection_bg: str = PALETTE.sel_bg  # 选中背景色
+    selection_color: str = PALETTE.sel_color  # 选中文字色
+    disabled_color: str = PALETTE.disabled_color  # 置灰文字色
     padding: int = 8  # 仪表盘内边距
 
 
@@ -59,19 +61,19 @@ class BodyConfig:
 class ToolbarConfig:
     """工具栏配置"""
 
-    bg: str = "#2D2D2D"  # 背景色
+    bg: str = PALETTE.input_bg  # 背景色
     height: int = 50  # 高度
     border_width: int = 1  # 底部分割线宽度
-    border_color: str = "#444444"  # 底部分割线颜色
+    border_color: str = PALETTE.border_color  # 底部分割线颜色
 
 
 @dataclass(frozen=True)
 class ButtonConfig:
     """按钮配置"""
 
-    bg: str = "#3C3C3C"  # 默认背景色
+    bg: str = PALETTE.list_bg  # 默认背景色
     hover_bg: str = "#505050"  # 悬停背景色
-    pressed_bg: str = "#2A2A2A"  # 按下背景色
+    pressed_bg: str = PALETTE.pressed_bg  # 按下背景色
     min_width: int = 100  # 最小宽度
     height: int = 32  # 高度
     padding_v: int = 6  # 垂直内边距
@@ -82,16 +84,16 @@ class ButtonConfig:
 class ButtonDangerConfig:
     """危险操作按钮配置"""
 
-    bg: str = "#D32F2F"  # 背景色
-    hover_bg: str = "#B71C1C"  # 悬停色
-    pressed_bg: str = "#9A0007"  # 按下色
+    bg: str = PALETTE.danger_bg  # 背景色
+    hover_bg: str = PALETTE.danger_hover_bg  # 悬停色
+    pressed_bg: str = PALETTE.danger_pressed_bg  # 按下色
 
 
 @dataclass(frozen=True)
 class ScrollbarConfig:
     """滚动条配置"""
 
-    bg: str = "#1E1E1E"  # 轨道背景色
+    bg: str = PALETTE.bg  # 轨道背景色
     handle_bg: str = "#555555"  # 滑块背景色
     handle_hover_bg: str = "#777777"  # 滑块悬停色
     width: int = 10  # 宽度
