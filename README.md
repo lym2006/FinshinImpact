@@ -27,7 +27,7 @@
    - 🚀 [国内镜像加速（推荐）](https://gh-proxy.com/#https://github.com/lym2006/FinshinImpact/releases)：打开最新条目在 `Assets` 里下载，无需代理；
    - 📦 [GitHub Releases](https://github.com/lym2006/FinshinImpact/releases)：官方直连，需代理时走这条。
 3. **解压**：解压到任意 **可写目录**（如 `D:\FinshinImpact`）。
-4. **首次启动**：双击 `FinshinImpact\FinshinImpact.exe`，确认后自动安装运行环境（嵌入式 Python、依赖、浏览器内核，默认走国内镜像加速），进度窗口实时显示安装步骤与下载速率，期间保持网络畅通。
+4. **首次启动**：双击 `FinshinImpact\FinshinImpact.exe`，确认后自动安装运行环境（嵌入式 Python 与核心依赖，默认走国内镜像加速），进度窗口实时显示安装步骤与下载速率，期间保持网络畅通。插件依赖与浏览器内核在启用对应插件时按需安装。
 5. **创建并运行实例**：运行后先弹出「选择机器人」窗口，点「新建」填入 Bot Token 即生成专属实例文件夹 `instances\<身份码>\`（同机可建多个、并存运行）；随后管理面板弹出配置向导，填入 API Key 与主人 ID 等即开始收发消息。
 
 **注意**：升级会整树替换 `src\` 与 `assets\`，自定义文件 **一定不要** 放这两个目录。
@@ -60,7 +60,8 @@
 - **优雅退出**: 关闭拦截 + 确认弹窗 + 资源清理钩子统一调度，致命错误弹窗提示后安全退出，避免闪退。
 - **插件化设计**: 模块位于 `src/plugins` 目录，支持动态加载，易于扩展和维护。
 - **完善日志系统**: 三级日志按内容语义自动标记，异常上下文自动归集，仪表盘与日志文件各取所需。
-- **Markdown 渲染**: 对话内容可渲染，阅读体验提升。
+- **插件化功能**: 渲染、对话等功能由插件提供，「插件设置」面板勾选启用，未启用即命令消失。
+- **Markdown 渲染**（可选插件 `AI_render`）: 对话内容可渲染为图片，`/md` 重发上一条回复。
 
 [⤴️ 返回目录](#menu)
 
@@ -104,8 +105,8 @@
 | **桌面 GUI** | [`PySide6`](https://www.qt.io/qt-for-python)（管理面板与仪表盘日志） |
 | **依赖管理** | [`pyproject.toml`](pyproject.toml) |
 | **代码规范** | [`ruff.toml`](ruff.toml) 独立配置，统一代码风格、导入排序及格式化 |
-| **浏览器驱动** | `Playwright` / `chromium`（根据步骤下载） |
-| **HTML 清洗** | `bleach`（XSS 防御白名单清洗） |
+| **浏览器驱动** | `Playwright` / `chromium-headless-shell`（`AI_render` 插件按需安装） |
+| **HTML 清洗** | `bleach`（XSS 防御白名单清洗，随 `AI_render` 安装） |
 | **日志系统** | `logging`，强制静默第三方库噪音，增强自定义 `Logger` |
 
 [⤴️ 返回目录](#menu)
@@ -119,6 +120,7 @@
 - 📦 **打包教程**（发布原理与操作）：[`docs/packaging.md`](docs/packaging.md)
 - 📝 **提交规范**（commit 格式模板）：[`.gitmessage`](.gitmessage)
 - 🚀 **发布工作流**（CHANGELOG、commit、tag、release 四件套）：[`docs/release-workflow.md`](docs/release-workflow.md)
+- 🧩 **插件清单模板**（plugin.toml 字段与示例）：[`assets/plugin.example.toml`](assets/plugin.example.toml)，新增插件流程见开发手册
 - ⚙️ **配置模板**（全部可改项与注释）：[`assets/config.telegram.example.toml`](assets/config.telegram.example.toml)
 
 [⤴️ 返回目录](#menu)
