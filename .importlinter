@@ -11,6 +11,7 @@ root_packages =
     exceptions
     gui
     messages
+    theme
 include_external_packages = True
 
 [importlinter:contract:core-zero-deps]

@@ -1,8 +1,7 @@
 # src/gui/_qss/__init__.py
 """QSS 门面
 
-- 非空门面：转发主窗口与弹窗七个样式构建函数
-- 消费方按原路径 from ._qss import build_xxx_qss 直连不变
+- 转发主窗口与弹窗的七个样式构建函数
 """
 
 from ._dialog import (
