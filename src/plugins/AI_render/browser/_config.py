@@ -1,4 +1,4 @@
-# src/plugins/AI/browser/_config.py
+# src/plugins/AI_render/browser/_config.py
 """浏览器启动配置
 
 - 定义 Playwright 启动参数
