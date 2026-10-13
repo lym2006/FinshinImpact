@@ -1,10 +1,8 @@
-# src/utils/verify_flow.py
+# src/utils/check/_verify.py
 """连通校验公共核心
 
-- 通道并行调度单源：全通道同时发射、按阶梯顺序首成裁决、同款进度帧
-- 探测方式由调用方以探针注入，本模块不关心 token 与网络栈细节
-- 超时预算归探针自持
-- 端口复测与结论聚合留各调用方
+- 全部通道并发探测，按优先级顺序取首个成功的通道
+- 校验窗与诊断窗共用本核心与同款进度帧
 """
 
 import asyncio
@@ -13,8 +11,8 @@ from dataclasses import dataclass, field
 
 from messages import CheckMessage
 
-from .config import AppConfigData, AppSchema, validate_types
-from .net_probe import Channel, FieldKey, RowId, RowStatus
+from ..config import AppConfigData, AppSchema, validate_types
+from ..network import Channel, FieldKey, RowId, RowStatus
 
 # 探针契约：返回 (生效地址或 None, 字段错误字典, 表格展示句)
 # 表格展示句留空时由核心按"称谓：可达/不可用"统一拼装，缺席句等特例显式覆盖
@@ -29,7 +27,7 @@ _Verdict = tuple[bool, str | None, dict[str, str], str]
 
 @dataclass
 class ChannelOutcome:
-    """一轮通道并行调度的收口"""
+    """一轮通道并发探测的结果"""
 
     resolved: str | None = None
     errors: dict[str, str] = field(default_factory=dict)
@@ -45,7 +43,7 @@ def _never_stop() -> bool:
 async def _probe_safe(ch: Channel, probe: _Probe) -> _Verdict:
     """执行单通道探针
 
-    - 探针自身异常折为该通道 fail，不原样上抛
+    - 探针异常记为该通道失败，不上抛
     """
     try:
         resolved, errors, detail = await probe(ch)
@@ -58,9 +56,9 @@ async def _probe_safe(ch: Channel, probe: _Probe) -> _Verdict:
 
 
 def _settle_frame(ch: Channel, verdict: _Verdict, via_label: _ViaLabel) -> dict:
-    """组单行终态帧
+    """组装单行终态帧
 
-    - 展示句留空即按称谓统一拼装成败句
+    - 展示句留空时按通道名统一生成成败文案
     """
     ok, _, _, detail = verdict
     text = detail or CheckMessage.REACH.format(
@@ -81,15 +79,12 @@ async def run_channels(
     via_label: _ViaLabel,
     stop_check: _StopCheck | None = None,
 ) -> ChannelOutcome:
-    """全通道并行发射
+    """并发探测全部通道
 
-    - 阶梯顺序，首成定案
-    - 两窗同帧协议
-    - 在场通道同标 checking
-    - 败即红，成则定案才绿
-    - 高优未决时低优可通不抢答，落选者清场跳过
-    - 首个可走即定案，余者在途取消
-    - stop_check 为真则整体让路，不发终态帧
+    - 所有通道先标 checking，按优先级取首个成功的通道
+    - 高优先级未出结果时，低优先级成功不提前采用
+    - 选定后取消其余探测，未采用的通道标跳过
+    - stop_check 为真时中止整轮，不发终态帧
     """
     stop = stop_check or _never_stop
     outcome = ChannelOutcome()
@@ -166,8 +161,8 @@ async def run_channels(
 def local_row(schema: AppSchema, config: AppConfigData) -> tuple[dict, dict[str, str]]:
     """本地配置校验
 
-    - 返回（local 行终态帧，类型错误字典）
-    - 纯函数零阻塞，结果并入开局整表先行落定，网络在跑时本地已亮
+    - 返回 local 行终态帧与类型错误字典
+    - 结果并入整表首帧先行显示，不等网络探测
     """
     errors = validate_types(schema, config)
     frame = {

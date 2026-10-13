@@ -2,7 +2,7 @@
 """生命周期
 
 - 提供按对象注册的清理入口
-- 实现自退注销与退出兜底
+- 资源自行退出时注销，进程退出时统一清理
 - 清理失败以描述列表返回上层记录
 """
 
@@ -47,7 +47,7 @@ def unregister_lifecycle(target: _TargetType, type_: _LifecycleType) -> None:
 
 
 def shutdown_all() -> list[str]:
-    """进程退出兜底清理
+    """进程退出时统一清理
 
     - 线程安全且幂等
     - 返回失败项描述列表，由调用方记录

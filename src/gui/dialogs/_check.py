@@ -1,9 +1,9 @@
 # src/gui/dialogs/_check.py
 """检查进度窗
 
-- 校验轮与诊断轮共用的唯一表格窗：模块级工厂保单实例，换轮原地刷
-- 无×及写死置顶：flags 首显前定死，进行中出口只有「取消」
-- 不可中断轮（启动）：进行中不放按钮且屏蔽 Esc，强制跑完
+- 校验轮与诊断轮共用的唯一表格窗，换轮原地重置
+- 窗口置顶在首显前定死，进行中只留「取消」出口
+- 启动轮进行中无按钮并屏蔽 Esc，跑完才结束
 """
 
 from collections.abc import Callable
@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from utils.net_probe import RowId, RowStatus
+from utils.network import RowId, RowStatus
 
 from .._qss import build_check_dialog_qss
 from .._theme import CHECK_DIALOG
@@ -65,10 +65,9 @@ def current_check_window() -> "CheckDialog | None":
 class CheckDialog(BaseDialog):
     """检查进度表格窗
 
-    - 单实例换身份，谁开轮谁喂帧
-        - 中断轮：进行中唯一出口「取消」，点击即中断本轮交还重来
-        - 启动轮：进行中无按钮且屏蔽 Esc，跑完才亮「知道了」
-    - 成功由开轮方自动收窗，失败亮「知道了」驻留待读
+    - 单实例按轮次复用，进度帧由发起方传入
+    - 中断轮进行中只有「取消」，点击即中断本轮
+    - 启动轮进行中无按钮并屏蔽 Esc，跑完显示「知道了」
     """
 
     def __init__(self, parent: QWidget | None = None) -> None:
@@ -120,9 +119,9 @@ class CheckDialog(BaseDialog):
         self.finished.connect(self._dispatch_close)
 
     def _dispatch_close(self, result: int) -> None:
-        """收场分发
+        """关闭后分发
 
-        - 只回调当轮开轮方，实例常驻不销毁
+        - 只回调本轮发起方，实例常驻不销毁
         """
         self._running = False
         if self._on_close is not None:
@@ -140,11 +139,11 @@ class CheckDialog(BaseDialog):
         rows: list[dict],
         on_close: Callable[[int], None],
     ) -> None:
-        """在旧窗上原地开新一轮
+        """原地开启新一轮
 
-        - 换身份、换文案、复位表格与闸门
-        - 收口后窗隐藏、实例常驻，开轮即重新现身，调用方无需管显隐
-        - 单实例下只通知当轮控制器，杜绝多方抢接信号
+        - 重置轮次、文案、表格与结束状态
+        - 窗口隐藏后发起新一轮会自动重新显示
+        - 关闭回调只通知本轮发起方
         """
         self._round = round_id
         self._aborts = aborts
@@ -192,7 +191,7 @@ class CheckDialog(BaseDialog):
     def round(self) -> str:
         """当前轮次
 
-        - 跨控制器槽的守卫依据
+        - 控制器据此判别窗口归属
         """
         return self._round
 
@@ -200,7 +199,7 @@ class CheckDialog(BaseDialog):
     def settled(self) -> bool:
         """已出结果
 
-        - 区分中断本轮与自动收窗的依据
+        - 据此区分用户中断与正常结束
         """
         return self._done
 
@@ -211,17 +210,16 @@ class CheckDialog(BaseDialog):
 
     @property
     def is_running(self) -> bool:
-        """一轮在途且未出结果
+        """一轮进行中且未出结果
 
-        - 单实例忙碌守卫，任何新轮次此时必须让路
-        - 收口（含失败驻留）后来新轮，原地覆盖重开
+        - 为真时新轮次必须等待或放弃
         """
         return self._running
 
     def apply(self, frame: dict) -> None:
         """消费一帧进度
 
-        - plan 整表重建，row 单行点亮，advice 结果帧收口
+        - rows 帧整表重建，id 帧更新单行，结论帧结束本轮
         """
         if self._done:
             return
@@ -233,14 +231,14 @@ class CheckDialog(BaseDialog):
             self._finish(frame["status"] == RowStatus.OK)
 
     def force_apply(self, frame: dict) -> None:
-        """旁路收口闸门刷单行
+        """绕过结束状态直接更新单行
 
-        - 仅限验证通过原地转绿这类人工证据
+        - 仅用于验证通过后原地更新为通过
         """
         self._view.apply(frame)
 
     def _finish(self, passed: bool) -> None:
-        """停圈亮按钮
+        """停止动画并显示结果按钮
 
         - 重复调用只认首次
         """
@@ -260,9 +258,9 @@ class CheckDialog(BaseDialog):
         self._btn.clicked.connect(self.accept)
 
     def keyPressEvent(self, event: QKeyEvent) -> None:  # noqa: N802
-        """收口前屏蔽 Esc
+        """结果未出时屏蔽 Esc
 
-        - 无按钮轮的「强制」防键盘
+        - 防止键盘绕过无按钮轮的约束
         """
         if not self._done and event.key() == Qt.Key.Key_Escape:
             event.accept()
@@ -272,15 +270,15 @@ class CheckDialog(BaseDialog):
     def reject(self) -> None:
         """中断关闭
 
-        - 取消按钮路径，先解忙再关窗
+        - 取消按钮走此路径，先复位运行标志再关窗
         """
         self._running = False
         return super().reject()
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
-        """收口前拒关
+        """结果未出时拒绝关闭
 
-        - 防在途校验失去宿主
+        - 防止探测任务失去窗口宿主
         """
         if not self._done:
             event.ignore()

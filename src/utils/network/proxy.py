@@ -1,8 +1,8 @@
-# src/utils/system_proxy.py
+# src/utils/network/proxy.py
 """系统代理探测
 
 - 读取注册表系统代理并格式化为会话可用 URL
-- 提供配置留空时的自动兜底入口
+- 配置留空时可回退系统代理
 """
 
 import sys
@@ -40,7 +40,7 @@ def _pick_from_entries(raw: str) -> str | None:
 def _to_url(address: str) -> str | None:
     """裸地址补 http scheme
 
-    - mixed 端口 HTTP/SOCKS 双协议，统一按 http
+    - mixed 端口同时支持 HTTP 与 SOCKS，统一按 http
     """
     address = address.strip()
     if not address:

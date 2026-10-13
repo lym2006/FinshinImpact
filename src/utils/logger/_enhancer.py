@@ -1,7 +1,7 @@
 # src/utils/logger/_enhancer.py
-"""双规日志器
+"""双轨日志器
 
-- 实现用户与开发者双规输出
+- 面向用户与开发者双轨输出
 """
 
 import logging

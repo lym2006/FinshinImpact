@@ -10,7 +10,7 @@ import sys
 from ctypes import wintypes
 
 from messages import MiscMessage
-from utils import LOGS_DIR
+from utils.paths import LOGS_DIR
 
 from ._base import BaseController
 

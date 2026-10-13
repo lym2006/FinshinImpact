@@ -13,8 +13,14 @@ from PySide6.QtWidgets import QDialog, QWidget
 from messages import CheckMessage
 from profile_env import get_profile, read_token
 from utils import config_manager
-from utils.diagnose import diagnose_flow
-from utils.net_probe import FieldKey, FrameKey, RowId, RowStatus, verify_skeleton
+from utils.check import diagnose_flow
+from utils.network import (
+    FieldKey,
+    FrameKey,
+    RowId,
+    RowStatus,
+    verify_skeleton,
+)
 
 from ..dialogs import (
     Round,
@@ -89,13 +95,13 @@ class DiagnoseController(BaseController):
         )
 
     def _settle_startup(self, *_args: object) -> None:
-        """启动校验结论落闩"""
+        """标记启动校验结论已处理"""
         self._startup_settled = True
 
     def _execute(self) -> None:
         """在唯一窗上开诊断轮
 
-        - 启动期与他轮在途一律日志拦截
+        - 启动校验未结束或其他轮次进行中时记日志返回
         """
         if not self._startup_settled:
             self.logger.info(CheckMessage.STARTUP_BUSY)
@@ -120,10 +126,9 @@ class DiagnoseController(BaseController):
         self._run(configured, token, win)
 
     def _run(self, configured: str, token: str, win: QWidget) -> None:
-        """诊断轮线程启动
+        """启动诊断线程
 
-        - 起线程跑一轮诊断
-        - 帧转发进窗
+        - 后台跑一轮诊断，帧转发进窗口
         """
         if any(w.isRunning() for w in self._workers):
             return
@@ -151,18 +156,18 @@ class DiagnoseController(BaseController):
             gui_bridge.request_force_setup.emit({FieldKey.PROXY: frame["detail"]})
 
     def _on_round_closed(self, result: int) -> None:
-        """窗收场
+        """窗口关闭回调
 
-        - 进行中被中断则抛弃在跑线程
+        - 进行中被中断则弃用诊断线程
         - 单例只 hide 不销毁
         """
         if result == QDialog.DialogCode.Rejected:
             self._abandon_workers()
 
     def _on_ready(self, ready: bool) -> None:
-        """启动通过落闩
+        """启动校验通过时更新状态
 
-        - 正停驻诊断轮时结论行原地刷绿
+        - 诊断窗停留时结论行原地更新为通过
         """
         if not ready:
             return
@@ -179,9 +184,9 @@ class DiagnoseController(BaseController):
         )
 
     def _abandon_workers(self) -> None:
-        """抛弃在跑线程
+        """弃用仍在运行的诊断线程
 
-        - 断开结果信号，摘除父级后交模块容器暂养
+        - 断开结果信号并解除父级，移交给模块级列表防止被回收
         """
         for worker in self._workers:
             worker.requestInterruption()
