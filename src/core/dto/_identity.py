@@ -22,9 +22,7 @@ class PrincipalDTO:
     def key(self) -> PrincipalKey:
         """全局唯一键
 
-        - 形如
-            - tg:g100123:456
-            - qq:u123:123
+        - 形如 tg:g100123:456 或 qq:u123:123
         """
         return PrincipalKey(f"{self.platform}:{self.container}:{self.user}")
 
