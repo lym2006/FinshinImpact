@@ -3,7 +3,6 @@
 
 - /history：发送对话记录文档
 - /clear：清除当前会话记忆
-- /md：以图片形式发送上次回复
 """
 
 from pathlib import Path
@@ -49,16 +48,3 @@ async def clear_history(message: Message) -> None:
     user_sessions[user].message = list(ai_config.init)
     file_path.unlink(missing_ok=True)
     await message.answer(BotMessage.HISTORY_MEMORY_CLEARED)
-
-
-@history.message(Command("md"))
-@session_guard
-async def send_markdown(message: Message) -> None:
-    """图片形式发送回复"""
-    user = get_name(message)
-    img_path = ai_config.record_dir / f"temp/{user}.png"
-
-    if user_sessions[user].md_status and img_path.exists():
-        await message.answer_photo(FSInputFile(img_path))
-    else:
-        await message.answer(BotMessage.HISTORY_NO_CONTENT)

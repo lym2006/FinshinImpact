@@ -1,7 +1,7 @@
-# src/plugins/AI/browser/__init__.py
+# src/plugins/AI_render/browser/__init__.py
 """浏览器单例句柄
 
-- 提供 AI 全局浏览器共享入口
+- 提供渲染插件全局浏览器入口
 """
 
 from ._manager import browser_manager

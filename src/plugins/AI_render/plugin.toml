@@ -1,0 +1,18 @@
+name = "AI_render"
+title = "Markdown 渲染"
+summary = "回复渲染为图片，提供 /md 命令"
+core = false
+order = 10
+deps = [
+    "markdown==3.10.2",
+    "bleach==6.4.0",
+    "numpy==2.4.3",
+    "playwright==1.62.0",
+]
+assets = ["playwright chromium-headless-shell"]
+
+[[help]]
+
+[[help.commands]]
+cmd = "md"
+desc = "以markdown格式输出上一次回复内容（图片）"

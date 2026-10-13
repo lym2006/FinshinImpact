@@ -1,4 +1,4 @@
-# src/plugins/AI/services/_render/_screenshot.py
+# src/plugins/AI_render/_services/_screenshot.py
 """截图服务
 
 - 实现懒加载浏览器与并发控制
@@ -12,13 +12,13 @@ import numpy as np
 from PIL import Image
 from playwright.async_api import Error as PlaywrightError
 
+from plugins.AI.config import ai_config
 from utils import get_logger
 
-from ...browser import browser_manager
-from ...config import ai_config
+from ..browser import browser_manager
 from ._config import render_config
 
-_logger = get_logger("Plg.AI.Render")
+_logger = get_logger("Plg.Render")
 
 # 全局状态管理
 _semaphore = asyncio.Semaphore(render_config.max_concurrent_screenshots)

@@ -1,4 +1,4 @@
-# src/plugins/AI/services/_render/_theme.py
+# src/plugins/AI_render/_services/_theme.py
 """渲染主题
 
 - 定义 Design Tokens 与 CSS 生成

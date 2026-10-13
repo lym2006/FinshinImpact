@@ -14,7 +14,7 @@ from utils import get_logger
 from ..config import ai_config
 from ..core import AITaskStoppedError, task_queues, user_sessions
 from ..state import user_locks
-from ._worker import worker_loop
+from .worker import worker_loop
 
 _logger = get_logger("Plg.AI.Monitor")
 
