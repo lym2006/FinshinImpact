@@ -1,8 +1,8 @@
 # src/bootstrap/_plugin/_installer.py
 """插件装库器
 
-- 子进程驱动 uv 装卸插件依赖，环境定位与执行管线在 _support
-- 资源装卸拆至 _assets，已装指纹拆至 _fingerprint，启动结算编排拆至 _startup
+- 子进程驱动 uv 装卸插件依赖，环境定位在 _env，执行管线在 _support
+- 资源装卸拆至 _assets，启动结算编排拆至 _startup
 - 同步依赖先 compile 闭包再 sync，已装 dev 工具与解释器基建并入保留清单
 """
 
@@ -14,17 +14,9 @@ from pathlib import Path
 from messages import PluginMessage
 from profile_env import ROOT_DIR
 
+from ._env import PIP_FLAGS, PYPROJECT, dev_mode, uv_cmd
 from ._manifest import dev_dependencies, top_package_name
-from ._support import (
-    PIP_FLAGS,
-    PYPROJECT,
-    ProgressFn,
-    degraded,
-    dev_mode,
-    emit,
-    uv_cmd,
-    with_index_retry,
-)
+from ._support import ProgressFn, degraded, emit, with_index_retry
 
 
 def install_deps(pins: list[str], on_line: ProgressFn | None = None) -> list[str]:
@@ -126,11 +118,14 @@ def sync_env(keep: list[str], on_line: ProgressFn | None = None) -> list[str]:
             str(pins_path),
             *PIP_FLAGS,
             "--no-header",
+            "-q",
             "-o",
             str(lock_path),
         ]
+        emit(on_line, PluginMessage.STAGE_COMPILE)
         if with_index_retry(compile_argv, on_line) != 0:
             return list(keep)
         sync_argv = ["pip", "sync", *PIP_FLAGS, "--no-progress", str(lock_path)]
+        emit(on_line, PluginMessage.STAGE_SYNC)
         code = with_index_retry(sync_argv, on_line)
     return [] if code == 0 else list(keep)

@@ -6,8 +6,7 @@
 """
 
 import importlib
-
-from aiogram import Dispatcher
+from typing import TYPE_CHECKING
 
 from core.domain import PLUGINS_PKG, PluginFile
 from core.dto import PluginManifestDTO
@@ -16,11 +15,14 @@ from exceptions import PluginsMissingError
 from ..paths import PROFILE_DIR
 from ._manifest import enabled_manifests
 
+if TYPE_CHECKING:
+    from aiogram import Dispatcher
+
 # 逐项报告：(插件名, 是否成功, 失败原因)
 _PluginReport = list[tuple[str, bool, str]]
 
 
-def register_routers(dispatcher: Dispatcher) -> _PluginReport:
+def register_routers(dispatcher: "Dispatcher") -> _PluginReport:
     """按启用序列注册插件
 
     - 返回逐项报告，未启用的插件不进报告

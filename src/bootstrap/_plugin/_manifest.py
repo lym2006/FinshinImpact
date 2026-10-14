@@ -77,9 +77,7 @@ def load_manifests(plugins_path: Path) -> list[dict[str, Any]]:
         data = _read_toml(path / PluginFile.MANIFEST)
         if not data or not isinstance(data.get(ManifestKey.NAME), str):
             continue
-        manifests.append(
-            {key: data.get(key, _DEFAULTS[key]) for key in _MINIMAL_KEYS}
-        )
+        manifests.append({key: data.get(key, _DEFAULTS[key]) for key in _MINIMAL_KEYS})
 
     manifests.sort(key=lambda item: (item[ManifestKey.ORDER], item[ManifestKey.NAME]))
     return manifests
@@ -177,14 +175,6 @@ def enabled_deps_union(exclude_code: str = "") -> list[str]:
     - exclude_code 为本次操作发起实例，卸载判定须排除
     """
     return _enabled_field_union(exclude_code, ManifestKey.DEPS)
-
-
-def enabled_assets_union(exclude_code: str = "") -> list[str]:
-    """汇总全部实例已启用插件的资源并集
-
-    - 与依赖并集同构，卸载判定共用
-    """
-    return _enabled_field_union(exclude_code, ManifestKey.ASSETS)
 
 
 def _enabled_field_union(exclude_code: str, field: str) -> list[str]:

@@ -28,7 +28,7 @@ from theme import TickedCheckBox
 
 from .._qss import build_bootstrap_qss
 from .._theme import PANEL
-from ._installer import dev_mode
+from ._env import dev_mode
 from ._manifest import (
     catalog_digest,
     load_manifests,

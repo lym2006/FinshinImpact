@@ -4,7 +4,7 @@
 - 代发插件面板入口与自动弹面板判定
 """
 
-from ._maintain import sync_environment
+from ._maintain import open_maintain_menu
 from ._manifest import panel_needed
 from ._panel import MODE_AUTO, MODE_EDIT, open_panel
 from ._startup import settle_runtime
@@ -18,5 +18,5 @@ __all__ = [
     "panel_needed",
     "settle_runtime",
     # 环境维护
-    "sync_environment",
+    "open_maintain_menu",
 ]

@@ -1,31 +1,29 @@
 # src/bootstrap/_plugin/_support.py
 """装库执行支撑
 
-- 提供 uv 定位、工具配置单源与子进程执行管线，installer/assets/fingerprint 共用
-- 子进程原始输出全量写运行日志，过滤调试噪音后转发进度窗
+- 子进程执行管线：换源重试、噪音过滤、心跳补行、原始输出落运行日志
+- 环境定位与工具配置读取在 _env
 """
 
 import importlib.metadata
-import shutil
 import subprocess
-import sys
-import tomllib
+import threading
 from collections.abc import Callable
-from pathlib import Path
-from typing import Any
 
 from messages import PluginMessage
-from profile_env import ROOT_DIR
 
+from ._env import (
+    RUNTIME_DIR,
+    UV_CACHE_DIR,
+    UV_INDEX_URLS,
+    dev_mode,
+    find_uv,
+    uv_cmd,
+)
 from ._manifest import top_package_name
 
 # 进度回调签名，逐行接收子进程输出
 ProgressFn = Callable[[str], None]
-
-PYPROJECT = ROOT_DIR / "pyproject.toml"
-
-RUNTIME_DIR = ROOT_DIR / "runtime"
-_PY_EXE = RUNTIME_DIR / "python.exe"
 
 # 子进程原始输出留痕，用户可见面收敛后的完整事实源
 _INSTALL_LOG = RUNTIME_DIR / "plugin-ops.log"
@@ -36,96 +34,11 @@ _NOISE_PREFIXES = ("DEBUG", "TRACE")
 # GUI 进程派生 console 子进程会各开一个黑窗口，输出已管道捕获，窗口纯属多余
 _CREATE_NO_WINDOW = 0x08000000  # 与 launcher 同值：CREATE_NO_WINDOW 标志
 
-# 开发模式虚拟环境内的 uv 候选位置
-_VENV_DIRS = (".venv", "venv", "env")
+# 子进程静默多久刷一次等待秒数（秒）
+_HEARTBEAT_INTERVAL = 1
 
-# 各 bin 目录布局对应的可执行文件名
-_UV_NAMES = {"bin": "uv", "Scripts": "uv.exe"}
-
-
-def _tool_settings() -> dict:
-    """读 pyproject 的 [tool.finshin-impact] 表
-
-    - 换源序列与缓存目录的单源，launcher 读同一张表
-    """
-    try:
-        with open(PYPROJECT, "rb") as handle:
-            data = tomllib.load(handle)
-    except (OSError, tomllib.TOMLDecodeError):
-        return {}
-    return data.get("tool", {}).get("finshin-impact", {})
-
-
-_SETTINGS = _tool_settings()
-
-
-def _require(key: str) -> Any:
-    """取配置表键值，缺键即报错
-
-    - 缺键直接抛错，把配置问题暴露出来
-    - 代码不写默认值，避免出现第二份不一致的副本
-    """
-    if key not in _SETTINGS:
-        raise RuntimeError(f"pyproject 缺 [tool.finshin-impact].{key}")
-    return _SETTINGS[key]
-
-
-# uv 索引按序重试：国内多源轮询，最后官方源兜底
-_UV_INDEX_URLS = tuple(_require("uv-index-urls"))
-
-# 内核下载走配置镜像，失败清变量回退官方源
-PLAYWRIGHT_CDN = str(_require("playwright-cdn"))
-
-_UV_CACHE_DIR = RUNTIME_DIR / str(_require("uv-cache-dir"))
-
-
-def _find_uv() -> Path | None:
-    """定位可用 uv 可执行文件
-
-    - 依次查找 runtime 目录、venv 同目录、PATH
-    - 全部找不到返回 None，装库降级为打印手动命令
-    """
-    exe = RUNTIME_DIR / "uv.exe"
-    if exe.is_file():
-        return exe
-    for name in _VENV_DIRS:
-        for stem in ("bin", "Scripts"):
-            cand = ROOT_DIR / name / stem / _UV_NAMES[stem]
-            if cand.is_file():
-                return cand
-    return Path(uv) if (uv := shutil.which("uv")) else None
-
-
-def python_target() -> str:
-    """pip 子命令 --python 指向的目标解释器"""
-    if _PY_EXE.is_file():
-        return str(_PY_EXE)
-    return str(Path(sys.executable))
-
-
-# uv pip 子命令公共选项，须紧跟子命令名之后拼装
-PIP_FLAGS = ["--python", python_target(), "--cache-dir", str(_UV_CACHE_DIR)]
-
-
-def dev_mode() -> bool:
-    """判断是否开发模式
-
-    - 找不到任何 uv 即降级，装库只打印手动命令
-    """
-    return _find_uv() is None
-
-
-def uv_cmd(pip_args: str) -> str:
-    """生成开发模式下供手动执行的 uv 命令"""
-    return f"uv {pip_args}"
-
-
-def py_cmd(args: list[str]) -> str:
-    """生成开发模式下供手动执行的 python -m 命令
-
-    - 解释器路径写作 python，可直接粘贴进终端执行
-    """
-    return " ".join(["python", *args[1:]])
+# 心跳线程收尾等待上限（秒）
+_HEARTBEAT_JOIN_TIMEOUT = 2
 
 
 def emit(on_line: ProgressFn | None, text: str) -> None:
@@ -153,8 +66,12 @@ def clean_cache(on_line: ProgressFn | None = None) -> None:
 
     - 缓存放包内是为断点续装命中，装齐后留着只占磁盘
     - cache 子命令不吃 --python，只挂缓存目录配置
+    - 开发模式无 uv，降级为打印等效手动命令
     """
-    _run_uv(["cache", "clean", "--cache-dir", str(_UV_CACHE_DIR)], None, on_line)
+    if dev_mode():
+        degraded([uv_cmd(f"cache clean --cache-dir {UV_CACHE_DIR}")], on_line)
+        return
+    _run_uv(["cache", "clean", "--cache-dir", str(UV_CACHE_DIR)], None, on_line)
 
 
 def with_index_retry(args: list[str], on_line: ProgressFn | None) -> int:
@@ -163,7 +80,7 @@ def with_index_retry(args: list[str], on_line: ProgressFn | None) -> int:
     - 返回最后一次的退出码，全源落空即非零
     """
     code = 1
-    for i, index in enumerate(_UV_INDEX_URLS):
+    for i, index in enumerate(UV_INDEX_URLS):
         if i:
             emit(on_line, PluginMessage.INDEX_RETRY.format(try_count=i, url=index))
             emit(on_line, PluginMessage.INDEX_RETRY_NOTE)
@@ -180,8 +97,7 @@ def _run_uv(
 
     - index_url 传入即挂 --index-url，清缓存类命令走 None
     """
-    uv = _find_uv()
-    argv = [str(uv), *args]
+    argv = [str(find_uv()), *args]
     if index_url:
         argv += ["--index-url", index_url]
     return run_process(argv, on_line)
@@ -190,6 +106,47 @@ def _run_uv(
 def _is_noise(line: str) -> bool:
     """判断单行是否为调试噪音，其余输出转发进度窗"""
     return line.lstrip().startswith(_NOISE_PREFIXES)
+
+
+class _Heartbeat(threading.Thread):
+    """子进程静默心跳
+
+    - 持续无输出按间隔发一行等待提示
+    - 原位刷新由进度窗渲染层负责，主侧收到任何输出即重置计时
+    """
+
+    def __init__(self, on_line: ProgressFn | None) -> None:
+        super().__init__(daemon=True, name="InstallHeartbeat")
+        self._on_line = on_line
+        self._halted = threading.Event()
+        self._tick = threading.Event()
+        self._seconds = 0
+
+    def touch(self) -> None:
+        """宣告当前静默期结束，心跳归零"""
+        self._seconds = 0
+        self._tick.set()
+
+    def halt(self) -> None:
+        """请求线程退出"""
+        self._halted.set()
+        self._tick.set()
+
+    def run(self) -> None:
+        while not self._halted.is_set():
+            self._tick.clear()
+            if self._tick.wait(_HEARTBEAT_INTERVAL):
+                continue
+            self._seconds += _HEARTBEAT_INTERVAL
+            emit(self._on_line, PluginMessage.HEARTBEAT.format(seconds=self._seconds))
+
+
+def _join_heartbeat(beat: _Heartbeat | None) -> None:
+    """停心跳并等线程收尾"""
+    if beat is None:
+        return
+    beat.halt()
+    beat.join(timeout=_HEARTBEAT_JOIN_TIMEOUT)
 
 
 def log_ops(lines: list[str]) -> None:
@@ -214,6 +171,7 @@ def run_process(
 
     - 静默无窗执行，输出只进进度窗
     - stdout/stderr 合流，编码异常替换不中断
+    - 持续无输出由心跳补等待行，任务结束即停
     - 非零退出时取末条失败行生成简短摘要
     """
     process = subprocess.Popen(
@@ -227,19 +185,43 @@ def run_process(
         creationflags=_CREATE_NO_WINDOW,
     )
     raw: list[str] = []
+    beat = _Heartbeat(on_line) if on_line is not None else None
+    if beat is not None:
+        beat.start()
     stream = process.stdout
     if stream is not None:
         for line in stream:
             stripped = line.rstrip()
             raw.append(stripped)
             if stripped and not _is_noise(stripped):
+                if beat is not None:
+                    beat.touch()
                 emit(on_line, stripped)
     code = process.wait()
+    _join_heartbeat(beat)
     log_ops(raw)
     if code != 0 and on_line is not None:
-        last_err = next(
-            (ln for ln in reversed(raw) if ln and not _is_noise(ln)), ""
-        )
+        last_err = next((ln for ln in reversed(raw) if ln and not _is_noise(ln)), "")
         reason = last_err[:80] if last_err else PluginMessage.PROC_FAIL_FALLBACK
         emit(on_line, PluginMessage.PROC_FAIL.format(reason=reason))
     return code
+
+
+def capture_output(argv: list[str]) -> str:
+    """执行子进程并回取全部输出
+
+    - 探测类短命令专用：不落日志、不起心跳，失败一律回空串
+    - 调用方按输出内容判定，退出码不单独表达结论
+    """
+    try:
+        done = subprocess.run(
+            argv,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            creationflags=_CREATE_NO_WINDOW,
+        )
+    except OSError:
+        return ""
+    return done.stdout if done.returncode == 0 else ""
