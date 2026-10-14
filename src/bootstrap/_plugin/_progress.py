@@ -2,14 +2,15 @@
 """引导期进度窗
 
 - 后台线程执行装卸任务，子进程输出逐行滚动展示
-- 任务未完禁关，做完才能继续启动
+- 心跳行按协议标记在末行原位刷新，静默期表现为跳秒而非刷屏
+- 任务未完 × 摘除、按钮停在"进行中"，做完才放行关闭
 """
 
 from collections.abc import Callable
 from typing import Any
 
-from PySide6.QtCore import QThread, Signal
-from PySide6.QtGui import QCloseEvent, QFont
+from PySide6.QtCore import Qt, QThread, Signal
+from PySide6.QtGui import QCloseEvent, QFont, QTextCursor
 from PySide6.QtWidgets import (
     QDialog,
     QHBoxLayout,
@@ -61,6 +62,8 @@ class _Task(QThread):
             self.lines.append(text)
             self.line_written.emit(text)
 
+        # 开场首行即任务名：日志区一开窗就有内容，不空屏等子进程出声
+        on_line(self.title)
         try:
             self.failed = list(self._fn(on_line))
         except Exception as exc:
@@ -82,6 +85,9 @@ class _ProgressDialog(QDialog):
         self.setStyleSheet(build_bootstrap_qss())
         self.resize(_WINDOW_WIDTH, _LOG_HEIGHT)
 
+        # × 构造时摘除且全程不恢复：模态期间改窗口标志会重建句柄致 exec 卡死
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowCloseButtonHint)
+
         layout = QVBoxLayout(self)
         self._log = QPlainTextEdit()
         self._log.setReadOnly(True)
@@ -89,7 +95,7 @@ class _ProgressDialog(QDialog):
         self._log.setFont(QFont(_LOG_FONT_FAMILY, _LOG_FONT_SIZE))
         layout.addWidget(self._log)
 
-        self._button = QPushButton(PluginMessage.BTN_DONE)
+        self._button = QPushButton(PluginMessage.BTN_RUNNING)
         self._button.setEnabled(False)
         self._button.clicked.connect(self.accept)
         row = QHBoxLayout()
@@ -111,10 +117,31 @@ class _ProgressDialog(QDialog):
     def _drain(self) -> None:
         # 索引去重：缓冲快照与信号尾随可能重叠打行
         for line in self._task.lines[self._seen :]:
-            self._log.appendPlainText(line)
+            self._write(line)
         self._seen = len(self._task.lines)
 
+    def _write(self, line: str) -> None:
+        """向日志区写一行，心跳行原位刷新"""
+        if not line.startswith(PluginMessage.HEARTBEAT_MARK):
+            self._log.appendPlainText(line)
+            return
+        cursor = self._log.textCursor()
+        cursor.movePosition(QTextCursor.MoveOperation.End)
+        cursor.movePosition(
+            QTextCursor.MoveOperation.StartOfLine,
+            QTextCursor.MoveMode.KeepAnchor,
+        )
+
+        # 末行须已是心跳才原位替换，真输出行绝不被覆盖
+        if cursor.selectedText().startswith(PluginMessage.HEARTBEAT_MARK):
+            cursor.insertText(line)
+            bar = self._log.verticalScrollBar()
+            bar.setValue(bar.maximum())
+            return
+        self._log.appendPlainText(line)
+
     def _finish(self) -> None:
+        self._button.setText(PluginMessage.BTN_DONE)
         self._button.setEnabled(True)
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
