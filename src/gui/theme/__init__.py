@@ -1,4 +1,4 @@
-# src/gui/_theme/__init__.py
+# src/gui/theme/__init__.py
 """主题门面
 
 - 汇总核心与弹窗令牌并实例化
@@ -20,11 +20,10 @@ from ._dialogs import (
     CheckDialogConfig,
     FiveStateDialogConfig,
     NoticeDialogConfig,
-    SettingsDialogConfig,
-    SettingsListConfig,
     ShutdownDialogConfig,
     WaitDialogConfig,
 )
+from ._settings import SettingsDialogConfig, SettingsListConfig
 
 __all__ = [
     # 核心令牌类型

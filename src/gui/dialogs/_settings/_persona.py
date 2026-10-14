@@ -25,7 +25,7 @@ from utils.paths import PERSONALITY_FILE
 from utils.persona import PersonaSource, build_persona, persona_source
 
 from ..._qss import build_settings_dialog_qss
-from ..._theme import SETTINGS_DIALOG
+from ...theme import SETTINGS_DIALOG
 from .._base import BaseDialog
 from .._notice import NoticeDialog
 

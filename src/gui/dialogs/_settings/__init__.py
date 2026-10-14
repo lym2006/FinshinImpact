@@ -15,8 +15,8 @@ from utils.config import PENDING_MARK
 from utils.config.models import AppConfigData, AppSchema
 
 from ..._qss import build_settings_dialog_qss
-from ..._theme import SETTINGS_DIALOG
 from ...mediator import gui_bridge
+from ...theme import SETTINGS_DIALOG
 from .._base import BaseDialog
 from ._change import ChangeConfirmDialog
 from ._chrome import ChromeBuilder
