@@ -6,7 +6,6 @@
 
 from PySide6.QtWidgets import (
     QDialog,
-    QFrame,
     QHBoxLayout,
     QLabel,
     QListWidget,
@@ -43,17 +42,17 @@ def _sync_entries(*buttons: QPushButton, item: object) -> None:
         button.setEnabled(item is not None)
 
 
-def _run_sync(dialog: "_ProfilePickerDialog") -> None:
-    """发起全局依赖同步
+def _run_sync(button: QPushButton, dialog: "_ProfilePickerDialog") -> None:
+    """弹出全局依赖管理菜单
 
     - 同步对象是所有实例共享的 runtime 依赖层
     """
     if not dialog._selected()[0]:
         return
 
-    from .._plugin import sync_environment
+    from .._plugin import open_maintain_menu
 
-    sync_environment(dialog)
+    open_maintain_menu(button, dialog)
 
 
 class _ProfilePickerDialog(QDialog):
@@ -91,19 +90,14 @@ class _ProfilePickerDialog(QDialog):
         delete_btn.setObjectName("btn_danger")
         delete_btn.clicked.connect(self._on_delete)
 
-        # 分割线左侧改实例，右侧带选中实例走动作，两组语义不同
-        sep = QFrame()
-        sep.setFrameShape(QFrame.Shape.VLine)
-        sep.setObjectName("btn_sep")
-
         # 面板操作必须针对具体实例，空选入口置灰
         plugin_btn = QPushButton(PickerMessage.BTN_PLUGINS)
-        plugin_btn.setObjectName("btn_primary")
+        plugin_btn.setObjectName("btn_secondary")
         plugin_btn.clicked.connect(self._on_plugins)
 
         sync_btn = QPushButton(PickerMessage.BTN_SYNC)
-        sync_btn.setObjectName("btn_primary")
-        sync_btn.clicked.connect(lambda: _run_sync(self))
+        sync_btn.setObjectName("btn_secondary")
+        sync_btn.clicked.connect(lambda: _run_sync(sync_btn, self))
 
         # currentItemChanged 只在选中态变化时发，建钮时先按当前项定初值
         entries = (plugin_btn, sync_btn)
@@ -112,20 +106,22 @@ class _ProfilePickerDialog(QDialog):
         )
         for entry in entries:
             entry.setEnabled(self._list.currentItem() is not None)
+
         start_btn = QPushButton(PickerMessage.BTN_START)
-        start_btn.setObjectName("btn_primary")
+        start_btn.setObjectName("btn_start")
         start_btn.clicked.connect(self._on_start)
 
         # 首个入布局的按钮默认成自动默认钮，Enter会被新建抢答，显式定归启动
         start_btn.setDefault(True)
+
+        # 左组改实例、右组走动作，中间拉伸拉开两组语义
         buttons.addWidget(new_btn)
         buttons.addWidget(edit_btn)
         buttons.addWidget(delete_btn)
-        buttons.addWidget(sep)
+        buttons.addStretch()
         buttons.addWidget(plugin_btn)
         buttons.addWidget(sync_btn)
         buttons.addWidget(start_btn)
-        buttons.addStretch()
         layout.addLayout(buttons)
 
     def _reload(self) -> None:
@@ -145,7 +141,6 @@ class _ProfilePickerDialog(QDialog):
         if not item:
             return "", ""
         return item.data(_ROLE_CODE), item.data(_ROLE_REMARK)
-
 
     def _on_start(self) -> None:
         """启动选中实例"""

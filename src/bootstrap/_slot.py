@@ -63,8 +63,7 @@ def _acquire_slot() -> _SlotResult:
         if panel_needed(code) and not open_panel(code, MODE_AUTO):
             return _SlotResult.CANCEL
 
-        # 启用集变动只在此刻结算，缺库补装，装完才起
-        # 装失败禁用相关插件
+        # 启用集变动此刻结算，缺库补装装完才起，装失败禁用相关插件
         settle_runtime(code)
 
         if not acquire_instance_lock():
@@ -115,7 +114,7 @@ def _handle(result: _SlotResult) -> int | None:
         _popup(PickerMessage.TITLE, PickerMessage.BUSY, icon_warning=False)
         return 0
 
-    from gui._theme import GLOBAL, WINDOW
+    from gui.theme import GLOBAL, WINDOW
 
     _popup(WINDOW.title, GLOBAL.already_running)
     return 0
@@ -126,11 +125,25 @@ def main() -> int:
 
     - 完成资格判定后，持锁进程才导入主程序
     - 须先写入身份码环境变量，再导入路径常量
+    - 导入主程序耗时长，先弹提示卡垫住无窗空白期
     """
     code = _handle(_acquire_slot())
     if code is not None:
         return code
 
+    from ._picker import show_launch_wait
+    from ._warmup import start_warmup
+
+    wait = show_launch_wait(get_profile())
+
+    def on_ready() -> None:
+        """主窗就绪，收起提示卡并预热字节码"""
+        wait.close()
+        start_warmup()
+
     from bot import Main
 
-    return Main().main()
+    try:
+        return Main(on_ready=on_ready).main()
+    finally:
+        wait.close()

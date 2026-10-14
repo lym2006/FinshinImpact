@@ -14,8 +14,7 @@ from messages import CheckMessage
 from ..config import AppConfigData, AppSchema, validate_types
 from ..network import Channel, FieldKey, RowId, RowStatus
 
-# 探针契约：返回 (生效地址或 None, 字段错误字典, 表格展示句)
-# 表格展示句留空时由核心按"称谓：可达/不可用"统一拼装，缺席句等特例显式覆盖
+# 探针展示句留空时由核心按"称谓：可达/不可用"拼装，缺席句等特例显式覆盖
 _Probe = Callable[[Channel], Awaitable[tuple[str | None, dict[str, str], str]]]
 _Emit = Callable[[dict], None]
 _StopCheck = Callable[[], bool]
