@@ -4,7 +4,7 @@
 - GUI 可见文案收敛进 src/messages/，gui 下 f-string 裸写业务话术提示
 - Bot 对话话术收敛进 plugins/messages.py，插件内长中文提示裸写提示
 - 运行日志不收敛：logger/print 调用内中文不报
-- _theme 令牌文件禁持有话术字面量
+- theme 令牌文件禁持有话术字面量
 """
 
 from __future__ import annotations
@@ -46,7 +46,7 @@ def check(files: list[FileData]) -> list[Finding]:
             "src/plugins/messages.py",
         ):
             findings.extend(_check_bot_text(file))
-        if file.module.startswith("gui._theme"):
+        if file.module.startswith("gui.theme"):
             findings.extend(_check_theme_tokens(file))
     return findings
 
