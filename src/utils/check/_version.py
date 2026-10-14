@@ -61,7 +61,9 @@ async def _get_remote_version() -> str | NoReturn:
         data = tomllib.loads(cast(str, text))
         return data["project"]["version"]
     except NetworkError as e:
-        raise RemoteVersionError(MAPS[MAP_KEY_NETWORK][type(e)].format(**vars(e))) from e
+        raise RemoteVersionError(
+            MAPS[MAP_KEY_NETWORK][type(e)].format(**vars(e))
+        ) from e
     except Exception as e:
         raise RemoteVersionError(VersionMessage.REMOTE_BROKEN) from e
 

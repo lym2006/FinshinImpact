@@ -5,7 +5,7 @@
 - 底层网络栈在 utils.network，编排实现分列 _connectivity/_verify/_diagnose/_version
 """
 
-from ._connectivity import attempt_channel
+from ._connectivity import attempt_channel, preload_engine
 from ._diagnose import diagnose_flow
 from ._verify import ChannelOutcome, local_row, run_channels
 from ._version import check_updates
@@ -13,6 +13,7 @@ from ._version import check_updates
 __all__ = [
     # 单通道探测
     "attempt_channel",
+    "preload_engine",
     # 并行调度核心
     "run_channels",
     "local_row",

@@ -24,7 +24,7 @@ from ..network import (
 )
 from ..network.probe import extract_port, port_alive, probe_budget
 from ..network.proxy import registry_proxy
-from ._connectivity import attempt_channel
+from ._connectivity import attempt_channel, preload_engine
 from ._verify import run_channels
 
 # 诊断跑在后台线程的私有 loop，耗时句走此器落 debug
@@ -206,6 +206,9 @@ async def diagnose_flow(
     cfg = configured_proxy.strip()
 
     channels = _diagnose_channels(cfg, detected)
+
+    # 首帧把通道行点亮为检测中即启动界面倒计时，引擎导入费须在这之前付完
+    preload_engine()
     frame({FrameKey.ROWS: _diagnose_plan(channels)})
 
     outcome = await run_channels(
