@@ -4,7 +4,7 @@
 - 定义各弹窗共用的 QSS 片段常量
 """
 
-from .._theme import (
+from ..theme import (
     BODY,
     BTN,
     GLOBAL,

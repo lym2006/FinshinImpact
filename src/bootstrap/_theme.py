@@ -58,6 +58,18 @@ class _ButtonConfig:
     height: int = 30  # 最小高度
     padding_v: int = 5  # 垂直内边距
     padding_h: int = 14  # 水平内边距
+    start_width: int = 120  # 主操作启动钮定宽，视觉重心
+
+
+@dataclass(frozen=True)
+class _LaunchConfig:
+    """启动提示卡尺寸"""
+
+    width: int = 430  # 默认宽度，图标与两行文案一行放平
+    height: int = 118  # 默认高度
+    gap: int = 16  # 图标与文案列间距
+    icon_size: int = 44  # 应用图标边长
+    text_gap: int = 6  # 正文与副注行距
 
 
 # 实例单例
@@ -65,3 +77,4 @@ PICKER = _PickerConfig()
 FORM = _FormConfig()
 PANEL = _PanelConfig()
 BTN = _ButtonConfig()
+LAUNCH = _LaunchConfig()

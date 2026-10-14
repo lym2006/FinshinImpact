@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (
 from utils.config.models import ConfigValue
 
 from ..._qss import build_change_dialog_qss
-from ..._theme import CHANGE_DIALOG, SETTINGS_DIALOG
+from ...theme import CHANGE_DIALOG, SETTINGS_DIALOG
 from .._base import BaseDialog
 from ._diff import make_diff_cell, split_diff, to_lines
 

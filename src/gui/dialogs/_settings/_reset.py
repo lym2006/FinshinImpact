@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (
 
 from utils.config.models import ConfigValue, FieldSchema
 
-from ..._theme import SETTINGS_DIALOG
+from ...theme import SETTINGS_DIALOG
 from ._list_widget import ConfigListWidget
 
 InputWidget: TypeAlias = ConfigListWidget | QLineEdit | QTextEdit | QCheckBox

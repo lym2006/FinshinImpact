@@ -82,6 +82,7 @@ class SettingsManager(BaseManager):
 
         - 通过则记录生效通道
         """
+        t0 = time.monotonic()
         schema = get_schema()
         prev_token, prev_cfg = self._net_state
         token, raw = self._get_config()
@@ -104,6 +105,7 @@ class SettingsManager(BaseManager):
 
         self._settle(outcome.resolved, configured)
         self.last_errors = {**net_errors, **type_errors}
+        self.logger.info(CheckMessage.ROUND_COST.format(cost=time.monotonic() - t0))
         return self._emit_advice(schema)
 
     def _plan_channels(

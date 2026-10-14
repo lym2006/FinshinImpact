@@ -12,8 +12,8 @@ from PySide6.QtCore import QThread, Signal
 from exceptions import MAP_KEY_VERSION, MAPS, NewVersionError, VersionError
 from utils.check import check_updates
 
-from .._theme import WAIT_DIALOG
 from ..dialogs import NoticeDialog, WaitDialog
+from ..theme import WAIT_DIALOG
 from ._base import BaseController
 
 _ERR_MAP_VERSION = MAPS[MAP_KEY_VERSION]

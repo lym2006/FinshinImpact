@@ -22,7 +22,7 @@ from PySide6.QtWidgets import (
 
 from utils.config.models import AppSchema, PersonaKey, TabSchema
 
-from ..._theme import GLOBAL, SETTINGS_DIALOG
+from ...theme import GLOBAL, SETTINGS_DIALOG
 from ._field import FieldBuilder
 from ._persona import PersonaPreviewRow
 

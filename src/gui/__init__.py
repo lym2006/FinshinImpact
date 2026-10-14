@@ -9,8 +9,8 @@ from utils.logger import GUI_FORMATTER, get_logger
 
 from ._main_window import BotGUI
 from ._qss import build_global_qss
-from ._theme import BODY, FONT, TOOLBAR, WINDOW
 from .controllers import BaseController, build_controllers
+from .theme import BODY, FONT, GLOBAL, TOOLBAR, WINDOW
 
 _logger = get_logger("GUI")
 
@@ -18,6 +18,9 @@ _logger = get_logger("GUI")
 __all__ = [
     # 类型
     "BotGUI",
+    # 主题令牌，跨包使用方走门面导入
+    "GLOBAL",
+    "WINDOW",
     # 唯一创建和初始化 GUI 方法
     "create_gui",
 ]
@@ -40,14 +43,10 @@ def create_gui() -> tuple[BotGUI, dict[str, BaseController]]:
     registered_keys = {btn_id.replace("btn_", "", 1) for btn_id, _ in controllers}
 
     if unregistered := registered_keys - valid_ui_keys:
-        raise ValueError(
-            MiscMessage.CTRL_BIND_FAIL.format(keys=unregistered)
-        )
+        raise ValueError(MiscMessage.CTRL_BIND_FAIL.format(keys=unregistered))
 
     if missing := valid_ui_keys - registered_keys:
-        raise ValueError(
-            MiscMessage.CTRL_MISSING.format(keys=missing)
-        )
+        raise ValueError(MiscMessage.CTRL_MISSING.format(keys=missing))
 
     # 注入依赖并返回
     botgui.set_action_map(dict(controllers))
