@@ -14,7 +14,7 @@ from PySide6.QtWidgets import QTextEdit, QWidget
 
 from utils.network import FrameKey, RowStatus
 
-from .._theme import FiveStateDialogConfig
+from ..theme import FiveStateDialogConfig
 
 _CLOCK_MS = 1000  # 倒计时步进：一秒一跳，与探测预算的秒刻度对齐
 

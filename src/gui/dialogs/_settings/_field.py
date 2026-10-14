@@ -31,7 +31,7 @@ from utils.config.models import (
     is_blank,
 )
 
-from ..._theme import GLOBAL, SETTINGS_DIALOG
+from ...theme import GLOBAL, SETTINGS_DIALOG
 from ._list_widget import ConfigListWidget
 from ._reset import Inputs, ResetRegistry
 

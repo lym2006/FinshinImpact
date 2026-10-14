@@ -4,7 +4,7 @@
 - 按弹窗组合共用片段与专属表格样式
 """
 
-from .._theme import (
+from ..theme import (
     BODY,
     CHANGE_DIALOG,
     GLOBAL,

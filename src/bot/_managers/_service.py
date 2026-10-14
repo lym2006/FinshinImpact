@@ -5,17 +5,18 @@
 - 提供组件构建与停止清理入口
 """
 
+from __future__ import annotations
+
 import asyncio
 from collections.abc import Callable
+from typing import TYPE_CHECKING
 
-from aiogram import Bot, Dispatcher
-
-from utils.middleware import LoggingMiddleware
-from utils.network import SSLUnverifiedSession
-from utils.plugin import register_routers
-
-from .._service import BotService
 from ._base import BaseManager
+
+if TYPE_CHECKING:
+    from aiogram import Bot, Dispatcher
+
+    from .._service import BotService
 
 
 class ServiceManager(BaseManager):
@@ -33,6 +34,8 @@ class ServiceManager(BaseManager):
 
     async def _execute(self) -> None:
         """启动 Bot 服务"""
+        from .._service import BotService
+
         self.stop_service()  # 停掉旧服务（如果有）
 
         self.logger.info("正在创建引擎...")
@@ -43,7 +46,16 @@ class ServiceManager(BaseManager):
         self.logger.info("引擎启动成功")
 
     def _create_components(self) -> tuple[Bot, Dispatcher]:
-        """按配置构建 Bot 与分发器"""
+        """按配置构建 Bot 与分发器
+
+        - aiogram 重依赖此刻才入场，主窗启动不受其拖累
+        """
+        from aiogram import Bot, Dispatcher
+
+        from utils.middleware import LoggingMiddleware
+        from utils.network import SSLUnverifiedSession
+        from utils.plugin import register_routers
+
         token, proxy = self._get_config()
         bot = Bot(token=token, session=SSLUnverifiedSession(proxy=proxy))
         dispatcher = Dispatcher()

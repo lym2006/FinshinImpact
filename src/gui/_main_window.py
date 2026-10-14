@@ -21,8 +21,8 @@ from PySide6.QtWidgets import (
 from utils.logger import get_logger
 
 from ._dashboard import DashboardWidget, TextHandler
-from ._theme import BodyConfig, FontConfig, ToolbarConfig, WindowConfig
 from .dialogs import NoticeDialog
+from .theme import BodyConfig, FontConfig, ToolbarConfig, WindowConfig
 
 # 通知重试
 _NOTICE_RETRY_DELAY_MS = 800  # 模态占用时 0.8 秒后重弹

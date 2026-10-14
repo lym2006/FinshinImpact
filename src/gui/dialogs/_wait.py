@@ -11,7 +11,7 @@ from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
 from .._qss import build_wait_dialog_qss
-from .._theme import GLOBAL, WAIT_DIALOG
+from ..theme import GLOBAL, WAIT_DIALOG
 from ._base import BaseDialog
 
 # Qt 布局四边

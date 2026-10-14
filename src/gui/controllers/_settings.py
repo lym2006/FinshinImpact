@@ -16,7 +16,6 @@ from utils.config import (
     save_config,
 )
 
-from .._theme import NOTICE_DIALOG, SETTINGS_DIALOG
 from ..dialogs import (
     ChangeConfirmDialog,
     ConfigMode,
@@ -25,6 +24,7 @@ from ..dialogs import (
     current_check_window,
 )
 from ..mediator import gui_bridge
+from ..theme import NOTICE_DIALOG, SETTINGS_DIALOG
 from ._base import BaseController
 from ._verify import VerifyCoordinator
 

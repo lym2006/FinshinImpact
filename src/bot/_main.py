@@ -7,16 +7,20 @@
 
 import asyncio
 import threading
+import time
+from collections.abc import Callable
 from concurrent.futures import Future
 from typing import cast
 
 from app_icon import ensure_app
-from gui import create_gui
-from gui._theme import WINDOW
-from gui.controllers import SettingsController, ShutdownController
+from gui import BotGUI, create_gui
+from gui.controllers import BaseController, SettingsController, ShutdownController
 from gui.mediator import gui_bridge
+from gui.theme import WINDOW
+from messages import CheckMessage
 from profile_env import get_profile
 from utils import get_logger
+from utils.check import preload_engine
 from utils.lifecycle import shutdown_all
 
 from ._managers import BotManager
@@ -28,8 +32,9 @@ _LOOP_JOIN_TIMEOUT = 5  # 等事件循环线程退出最多 5 秒
 class Main:
     """Bot 主程序"""
 
-    def __init__(self) -> None:
+    def __init__(self, on_ready: Callable[[], None] | None = None) -> None:
         self.logger = get_logger("Main")
+        self._on_ready = on_ready
         self._loop = asyncio.new_event_loop()
         self._manager = BotManager(self._loop)
         self._bot_task: Future | None = None  # 跨线程完成句柄，非 asyncio 任务
@@ -39,7 +44,13 @@ class Main:
         """主函数"""
         try:
             # 实例锁由 bootstrap 统一抢占，此处不再重复抢
+            t0 = time.monotonic()
             app = ensure_app()
+
+            # 引擎首次导入约 5 秒同步阻塞，此刻等待窗定格画面正罩着主线程
+            # 挪到此处付掉，校验窗与倒计时从此只见网络时间
+            preload_engine()
+
             window, instances = create_gui()
 
             # 多实例任务栏区分：标题带身份码，无身份码维持原标题
@@ -48,48 +59,14 @@ class Main:
                 window.setWindowTitle(f"{WINDOW.title} - {profile}")
             window.show()
             app.processEvents()
+
+            # 主窗已就位，收起引导层的启动等待窗
+            if self._on_ready is not None:
+                self._on_ready()
+            self.logger.info(CheckMessage.READY_COST.format(cost=time.monotonic() - t0))
             self.logger.debug("GUI 加载完成")
 
-            # 获取控制器
-            settings_controller = cast(SettingsController, instances.get("settings"))
-            shutdown_controller = cast(ShutdownController, instances.get("shutdown"))
-            window.set_shutdown_handler(shutdown_controller.shutdown_now)
-
-            # 强制配置信号：投递到 GUI 线程，呼出 SETUP 面板
-            gui_bridge.request_force_setup.connect(
-                settings_controller.show_setup_dialog, "强制配置", queued=True
-            )
-
-            # 配置保存信号：唤醒验证循环或触发热重载
-            gui_bridge.config_saved.connect(self._manager.on_config_saved, "配置唤醒")
-
-            # 候选校验信号：候选已在内存，通过才落盘
-            gui_bridge.config_candidate.connect(
-                self._manager.on_config_candidate, "候选唤醒"
-            )
-
-            # 取消校验信号：中止在途校验并回退候选
-            gui_bridge.config_abort.connect(self._manager.on_config_abort, "取消校验")
-
-            # 关闭请求信号：Manager 层统一处理服务停止与清理放行
-            gui_bridge.request_shutdown.connect(
-                self._manager.on_shutdown_request, "关闭唤醒"
-            )
-
-            # 取消关闭信号：Manager 复位，恢复响应配置事件
-            gui_bridge.request_shutdown_cancel.connect(
-                self._manager.on_shutdown_cancelled, "取消关闭"
-            )
-
-            # 通知弹窗：(文案, 是否致命) Queued 投递到 GUI 线程，致命确认后直退
-            gui_bridge.request_notice.connect(
-                window.show_notice, "通知弹窗", queued=True
-            )
-
-            # 向导内"退出程序"按钮：携带向导窗口，确认框以其为父级
-            gui_bridge.request_exit.connect(
-                shutdown_controller.request_exit_from, "弹窗退出"
-            )
+            self._wire_signals(window, instances)
 
             # 启动后台线程
             loop_thread = threading.Thread(
@@ -114,6 +91,49 @@ class Main:
             return 1
         finally:
             self._cleanup()
+
+    def _wire_signals(
+        self, window: BotGUI, instances: dict[str, BaseController]
+    ) -> None:
+        """接通总线信号到 GUI 与 Manager"""
+        # 获取控制器
+        settings_controller = cast(SettingsController, instances.get("settings"))
+        shutdown_controller = cast(ShutdownController, instances.get("shutdown"))
+        window.set_shutdown_handler(shutdown_controller.shutdown_now)
+
+        # 强制配置信号：投递到 GUI 线程，呼出 SETUP 面板
+        gui_bridge.request_force_setup.connect(
+            settings_controller.show_setup_dialog, "强制配置", queued=True
+        )
+
+        # 配置保存信号：唤醒验证循环或触发热重载
+        gui_bridge.config_saved.connect(self._manager.on_config_saved, "配置唤醒")
+
+        # 候选校验信号：候选已在内存，通过才落盘
+        gui_bridge.config_candidate.connect(
+            self._manager.on_config_candidate, "候选唤醒"
+        )
+
+        # 取消校验信号：中止在途校验并回退候选
+        gui_bridge.config_abort.connect(self._manager.on_config_abort, "取消校验")
+
+        # 关闭请求信号：Manager 层统一处理服务停止与清理放行
+        gui_bridge.request_shutdown.connect(
+            self._manager.on_shutdown_request, "关闭唤醒"
+        )
+
+        # 取消关闭信号：Manager 复位，恢复响应配置事件
+        gui_bridge.request_shutdown_cancel.connect(
+            self._manager.on_shutdown_cancelled, "取消关闭"
+        )
+
+        # 通知弹窗：(文案, 是否致命) Queued 投递到 GUI 线程，致命确认后直退
+        gui_bridge.request_notice.connect(window.show_notice, "通知弹窗", queued=True)
+
+        # 向导内"退出程序"按钮：携带向导窗口，确认框以其为父级
+        gui_bridge.request_exit.connect(
+            shutdown_controller.request_exit_from, "弹窗退出"
+        )
 
     def _cleanup(self) -> None:
         """统一清理资源

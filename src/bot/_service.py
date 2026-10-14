@@ -8,9 +8,8 @@
 import asyncio
 import shutil
 import threading
+from typing import TYPE_CHECKING
 
-from aiogram import Bot, Dispatcher
-from aiogram.exceptions import TelegramNetworkError
 from tenacity import (
     RetryCallState,
     retry,
@@ -22,9 +21,14 @@ from gui.mediator import gui_bridge
 from utils import get_logger, register_lifecycle, unregister_lifecycle
 from utils.paths import TEMP_DIR
 
+if TYPE_CHECKING:
+    from aiogram import Bot, Dispatcher
+
 
 def _retry_if_network_running(state: RetryCallState) -> bool:
     """判定是否需要重连"""
+    from aiogram.exceptions import TelegramNetworkError
+
     if state.outcome is None or not state.outcome.failed:
         return False
 
@@ -47,7 +51,7 @@ _logger = get_logger("Service")
 class BotService:
     """Bot 服务线程"""
 
-    def __init__(self, bot: Bot, dispatcher: Dispatcher) -> None:
+    def __init__(self, bot: "Bot", dispatcher: "Dispatcher") -> None:
         self._bot = bot
         self._dispatcher = dispatcher
         self._loop: asyncio.AbstractEventLoop | None = None
