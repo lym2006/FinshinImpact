@@ -46,7 +46,7 @@ from ._network import (
     NetworkError,
     RequestTimeoutError,
 )
-from ._plugins import AIError, AITaskStoppedError, PluginsMissingError
+from ._plugins import AIError, AITaskStoppedError, PluginsError, PluginsMissingError
 from ._version import (
     VERSION_MAP,
     LocalVersionError,
@@ -114,6 +114,7 @@ __all__ = [
     "FontRegisterError",
     "FontFamilyError",
     # 插件
+    "PluginsError",
     "PluginsMissingError",
     "AIError",
     "AITaskStoppedError",

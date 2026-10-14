@@ -18,7 +18,7 @@ from ..utils import retry_sending
 ai_chat = Router()
 
 
-class ChatFilter(Filter):
+class _ChatFilter(Filter):
     """筛选出需要 AI 处理的文本消息"""
 
     async def __call__(self, message: Message) -> bool:
@@ -44,7 +44,7 @@ class ChatFilter(Filter):
                 return False  # 其他类型一律忽略
 
 
-@ai_chat.message(ChatFilter())
+@ai_chat.message(_ChatFilter())
 @session_guard
 @retry_sending()
 async def process_ai_chat(message: Message, bot: Bot) -> None:
