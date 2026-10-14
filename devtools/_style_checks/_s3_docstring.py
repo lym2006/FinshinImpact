@@ -124,9 +124,7 @@ def _check_title(file: FileData, line: int, title: str) -> list[Finding]:
     return findings
 
 
-def _check_detail(
-    file: FileData, title_line: int, detail: list[str]
-) -> list[Finding]:
+def _check_detail(file: FileData, title_line: int, detail: list[str]) -> list[Finding]:
     """详情段规则检查"""
     if not detail:
         return []

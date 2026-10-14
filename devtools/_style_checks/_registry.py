@@ -14,6 +14,7 @@ from ._s2_split import check as _check_split
 from ._s3_docstring import check as _check_docstring
 from ._s4_comment import check as _check_comment
 from ._s5_naming import check as _check_naming
+from ._s5d_access import check as _check_access
 from ._s6_magic import check as _check_magic
 from ._s7_text import check as _check_text
 from ._s8_messages import check as _check_messages
@@ -41,4 +42,5 @@ def run_checks(files: list[FileData], graph: ImportGraph) -> list[Finding]:
     for file_check in _FILE_CHECKS:
         findings.extend(file_check(files))
     findings.extend(_check_naming(files, graph))
+    findings.extend(_check_access(files, graph))
     return findings
