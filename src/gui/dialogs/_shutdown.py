@@ -8,7 +8,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
-from .._theme import GLOBAL, SHUTDOWN_DIALOG
+from ..theme import GLOBAL, SHUTDOWN_DIALOG
 from ._base import BaseDialog
 
 # Qt 布局四边

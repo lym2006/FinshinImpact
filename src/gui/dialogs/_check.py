@@ -22,7 +22,7 @@ from PySide6.QtWidgets import (
 from utils.network import RowId, RowStatus
 
 from .._qss import build_check_dialog_qss
-from .._theme import CHECK_DIALOG
+from ..theme import CHECK_DIALOG
 from ._base import BaseDialog
 from ._table import RowTable
 
