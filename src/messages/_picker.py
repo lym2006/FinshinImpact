@@ -20,13 +20,17 @@ class PickerMessage:
     # 用：bootstrap._slot 引导锁被占弹窗
     BUSY = "已有一个选择窗口在打开，请在该窗口操作"
 
+    # 用：bootstrap._picker._launch 启动提示卡正文
+    LAUNCHING = "正在启动 {label}…"
+    LAUNCHING_NOTE = "装载组件期间界面暂不刷新，就绪后自动进入主窗口"
+
     # 用：bootstrap._picker 各窗底部按钮
     BTN_NEW = "新建"
     BTN_EDIT = "编辑"
     BTN_DELETE = "删除"
     BTN_START = "启动"
     BTN_PLUGINS = "插件设置"
-    BTN_SYNC = "依赖管理"
+    BTN_SYNC = "依赖管理 ▾"
     BTN_OK = "确定"
 
     # 用：bootstrap._picker 新建与编辑共用的表单

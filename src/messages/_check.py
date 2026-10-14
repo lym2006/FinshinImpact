@@ -120,6 +120,12 @@ class CheckMessage:
     # 用：单通道耗时（debug 级，面板不展示）
     COST = "通道 {via} 探测耗时 {cost:.1f}s"
 
+    # 用：bot/_main.py 主窗就绪时的启动耗时反馈（面板可见，等待有回音）
+    READY_COST = "主程序就绪耗时 {cost:.1f}s"
+
+    # 用：bot/_managers/_settings.py 校验轮收尾的整轮耗时反馈（面板可见）
+    ROUND_COST = "连通校验耗时 {cost:.1f}s"
+
     # 用：校验通过的日志句
     PASS = "连通校验通过：生效通道 {via}"
 

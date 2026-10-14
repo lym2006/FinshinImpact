@@ -10,8 +10,6 @@ import re
 from collections.abc import Awaitable, Callable
 
 import aiohttp_socks
-from aiogram import Bot
-from aiogram.exceptions import TelegramNetworkError, TelegramUnauthorizedError
 from aiohttp import ClientOSError
 
 from exceptions import (
@@ -28,7 +26,6 @@ from exceptions import (
 from messages import CheckMessage
 
 from ..config import PENDING_MARK
-from ..network import SSLUnverifiedSession
 from ..network.probe import FieldKey, probe_budget
 
 # 构造期异常消息 → 配置键的解析规则
@@ -55,6 +52,8 @@ def _map_construct_error(e: Exception, proxy: str) -> ConnectivityError:
 
 def _map_request_error(e: Exception, proxy: str) -> ConnectivityError:
     """映射请求期异常"""
+    from aiogram.exceptions import TelegramNetworkError, TelegramUnauthorizedError
+
     # 子类分支必须排在父类前
     if isinstance(e, TelegramUnauthorizedError):
         return TokenError()
@@ -81,6 +80,8 @@ async def _probe_proxy(proxy: str) -> None:
 
     - 构造期异常须映射为业务异常，防上层误判致命
     """
+    from ..network import SSLUnverifiedSession
+
     try:
         SSLUnverifiedSession(proxy=proxy)
     except (ValueError, UnicodeError) as e:
@@ -92,6 +93,10 @@ async def get_me(token: str, proxy: str) -> None:
 
     - 失败抛 ConnectivityError 族
     """
+    from aiogram import Bot
+
+    from ..network import SSLUnverifiedSession
+
     bot: Bot | None = None
     try:
         session = SSLUnverifiedSession(proxy=proxy)
@@ -116,6 +121,18 @@ async def get_me(token: str, proxy: str) -> None:
 def _is_token_wellformed(token: str) -> bool:
     """本地校验 Token 结构"""
     return re.fullmatch(r"\d+:[A-Za-z0-9_-]+", token.strip()) is not None
+
+
+def preload_engine() -> None:
+    """预触引擎导入链
+
+    - aiogram 经门面 PEP 562 懒加载，首触约 5 秒同步导入落在计时窗内会饿死 wait_for 与界面倒计时
+    - 须在轮次首帧点亮通道行之前调用，倒计时走出的才是纯网络时间
+    - 模块加载一次即全局命中缓存，重复调用近乎零耗时
+    """
+    from aiogram import Bot as _Bot  # noqa: F401
+
+    from ..network import SSLUnverifiedSession as _Session  # noqa: F401
 
 
 async def _check_config(
@@ -162,10 +179,12 @@ async def _check_config(
 async def attempt_channel(token: str, proxy: str) -> tuple[str | None, dict[str, str]]:
     """预算内探测单个通道
 
+    - 轮次入口已在首帧前预触引擎，此处兜底端口复测等直调方
     - 返回 (生效通道或 None, 错误字典)
     - 空错误即该通道通过
     - 超时预算按通道类型取值，直连短、代理长
     """
+    preload_engine()
     try:
         errors = await asyncio.wait_for(
             _check_config(token, proxy), timeout=probe_budget(proxy)
