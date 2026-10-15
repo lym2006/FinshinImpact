@@ -4,6 +4,7 @@
 - 子进程驱动 uv 装卸插件依赖，环境定位在 _env，执行管线在 _support
 - 资源装卸拆至 _assets，启动结算编排拆至 _startup
 - 同步依赖先 compile 闭包再 sync，已装 dev 工具与解释器基建并入保留清单
+- 装完即编字节码，下次启动导入直接命中缓存
 """
 
 import importlib.metadata
@@ -28,9 +29,17 @@ def install_deps(pins: list[str], on_line: ProgressFn | None = None) -> list[str
     if not pins:
         return []
     if dev_mode():
-        degraded([uv_cmd(f"pip install {' '.join(pins)}")], on_line)
+        degraded([uv_cmd(f"pip install --compile-bytecode {' '.join(pins)}")], on_line)
         return list(pins)
-    base = ["pip", "install", *PIP_FLAGS, "--link-mode", "copy", "--no-progress"]
+    base = [
+        "pip",
+        "install",
+        *PIP_FLAGS,
+        "--link-mode",
+        "copy",
+        "--no-progress",
+        "--compile-bytecode",
+    ]
     if with_index_retry([*base, *pins], on_line) == 0:
         return []
     failed: list[str] = []
@@ -125,7 +134,14 @@ def sync_env(keep: list[str], on_line: ProgressFn | None = None) -> list[str]:
         emit(on_line, PluginMessage.STAGE_COMPILE)
         if with_index_retry(compile_argv, on_line) != 0:
             return list(keep)
-        sync_argv = ["pip", "sync", *PIP_FLAGS, "--no-progress", str(lock_path)]
+        sync_argv = [
+            "pip",
+            "sync",
+            *PIP_FLAGS,
+            "--no-progress",
+            "--compile-bytecode",
+            str(lock_path),
+        ]
         emit(on_line, PluginMessage.STAGE_SYNC)
         code = with_index_retry(sync_argv, on_line)
     return [] if code == 0 else list(keep)
