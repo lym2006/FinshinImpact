@@ -4,8 +4,12 @@
 - 引导锁内完成实例身份选择与实例锁抢占
 - 非正常启动结果分别提示并给出退出码
 - 抢到实例锁才导入主程序，路径常量在导入期随身份码确定
+- 引擎重依赖后台线程预热，主线程全程泵事件让提示卡秒表连走
 """
 
+import importlib
+import threading
+import time
 from enum import IntEnum
 
 from instance_lock import (
@@ -14,6 +18,12 @@ from instance_lock import (
     release_bootstrap_lock,
 )
 from profile_env import get_profile, set_profile
+
+# 主程序 GUI 装配链，分步导入时逐模块各泵一轮
+_GUI_MODULES = ("gui", "gui.controllers", "gui.mediator", "gui.theme")
+
+# 等引擎后台预热的轮询步长，泵够密秒表才看得出在走
+_JOIN_PUMP_S = 0.2
 
 
 class _SlotResult(IntEnum):
@@ -120,6 +130,70 @@ def _handle(result: _SlotResult) -> int | None:
     return 0
 
 
+def _pump() -> None:
+    """泵一轮事件让提示卡应答重绘
+
+    - 排除用户输入，半初始化界面收不到点击
+    - 秒表与重绘全靠本函数泵出，泵点越密跳秒越顺
+    """
+    from PySide6.QtCore import QCoreApplication, QEventLoop
+
+    QCoreApplication.processEvents(QEventLoop.ProcessEventsFlag.ExcludeUserInputEvents)
+
+
+def _preload_engine_async() -> threading.Thread:
+    """后台线程预热引擎导入链
+
+    - aiogram 是 5 秒级原子导入块，主线程泵不动它，只能挪走
+    - 纯网络与序列化依赖不碰 Qt，子线程导入不触绑线程约束
+    """
+    thread = threading.Thread(
+        target=_preload_engine_worker,
+        daemon=True,
+        name="EnginePreload",
+    )
+    thread.start()
+    return thread
+
+
+def _preload_engine_worker() -> None:
+    """子线程里付引擎导入费"""
+    try:
+        from utils.check import preload_engine
+
+        preload_engine()
+    except Exception:  # noqa: BLE001  预热失败交主线程兜底重导
+        pass
+
+
+def _wait_preload(thread: threading.Thread) -> None:
+    """等预热线程收尾，等待期持续泵事件
+
+    - 分段 join 而非硬等，秒表在等待期间照常逐秒走
+    """
+    while thread.is_alive():
+        thread.join(_JOIN_PUMP_S)
+        _pump()
+
+
+def _pump_imports() -> threading.Thread:
+    """分步导入主程序装配链，步间各泵一轮事件
+
+    - 引擎预热先交后台线程跑，主线程导 GUI 链与之并行
+    - 拆步顺序与 bot._main 顶层导入对齐，重段各自独占一个泵区间
+    - preload_engine 幂等，Main.main 内原调用兜底
+    """
+    importlib.import_module("utils")
+    preload = _preload_engine_async()
+    _pump()
+    for name in _GUI_MODULES:
+        importlib.import_module(name)
+        _pump()
+    importlib.import_module("bot._managers")
+    _pump()
+    return preload
+
+
 def main() -> int:
     """引导入口
 
@@ -134,6 +208,7 @@ def main() -> int:
     from ._picker import show_launch_wait
     from ._warmup import start_warmup
 
+    t0 = time.monotonic()
     wait = show_launch_wait(get_profile())
 
     def on_ready() -> None:
@@ -141,9 +216,11 @@ def main() -> int:
         wait.close()
         start_warmup()
 
+    preload = _pump_imports()
+    _wait_preload(preload)
     from bot import Main
 
     try:
-        return Main(on_ready=on_ready).main()
+        return Main(on_ready=on_ready, t0=t0).main()
     finally:
         wait.close()
