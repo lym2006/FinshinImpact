@@ -40,14 +40,14 @@ python -m PyInstaller --version   # 应打印 6.22.3
 
 版本号在构建前定稿，zip 名取自 `pyproject.toml`，全程只构建这一次：
 
-1. `pyproject.toml` 的 `version` 改为发布号；`CHANGELOG.md` 的 `[Unreleased]` 改为新版本号并补空 `[Unreleased]`，如有 `Planned` 则原样保留在新 `[Unreleased]`；
+1. `pyproject.toml` 的 `version` 改为发布号；`CHANGELOG.md` 新增 `[新版本号]` 段（预发布号发的写实录段，正式号写的写对上一稳定版的概括段），Unreleased 的正式条目并入该段、`Planned` 原样留在 Unreleased；
 2. 构建：
 
 ```powershell
 python packaging\build.py
 ```
 
-编译启动器 → 白名单组装（排除 `*.egg-info` 等开发残留）→ 下载嵌入式 `Python` 与 `uv`（镜像优先、官方兜底，zip 逐条目校验并比对官方 sha256，不过会中止）。成功标志：末行打印 `完成：dist\FinshinImpact-vX.Y.Z.zip`——第三步测试与第四步上传用的都是这个包，不要再重跑构建。
+编译启动器 → 白名单组装（排除 `*.egg-info` 等开发残留）→ 下载嵌入式 `Python` 与 `uv`（镜像优先、官方兜底，zip 逐条目校验并比对官方 sha256，不过会中止）→ 用随包嵌入式解释器预编暂存区 `src` 与 `main.py` 字节码（checked-hash 模式扛得住解压改时间，magic 与用户端天然一致），用户解压即热、首启不再现场编译。成功标志：末行打印 `完成：dist\FinshinImpact-vX.Y.Z.zip`——第三步测试与第四步上传用的都是这个包，不要再重跑构建。
 
 参数：`--no-launcher` 跳过编译环节；`--check` 自检六行：本地版本号、远端 tag、本地 zip（大小+sha256 前缀）、在线版本页、发布物官方直连、发布物 gh-proxy（后两行 HEAD 探测远端资产，大小与本地包一致才算上传闭环；推 tag 前"tag 缺失"、发布前"不可达"属正常）。
 
