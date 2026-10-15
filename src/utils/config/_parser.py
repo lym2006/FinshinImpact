@@ -10,7 +10,14 @@ from pathlib import Path
 
 from exceptions import ConfigParseError, ConfigTemplateMissingError
 
-from .models import AppConfigData, AppSchema, FieldSchema, TabData, TabSchema
+from .models import (
+    ENUM_FIELDS,
+    AppConfigData,
+    AppSchema,
+    FieldSchema,
+    TabData,
+    TabSchema,
+)
 
 
 class ConfigParser:
@@ -103,6 +110,14 @@ class ConfigParser:
                         desc = lines[idx - 1].strip()[2:]
                     break  # 找到这个 key 后，跳出文本行循环，继续下一个 key
 
-            fields.append(FieldSchema(key=key, label=label, desc=desc, default=default))
+            fields.append(
+                FieldSchema(
+                    key=key,
+                    label=label,
+                    desc=desc,
+                    default=default,
+                    options=ENUM_FIELDS.get(key, ()),
+                )
+            )
 
         return fields

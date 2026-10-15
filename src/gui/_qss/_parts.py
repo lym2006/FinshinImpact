@@ -98,6 +98,30 @@ QTextEdit:focus {{
     border: {SETTINGS_DIALOG.border_width}px solid {BODY.selection_bg};
 }}"""
 
+# 下拉选择
+_DIALOG_COMBO_QSS = f"""\
+QComboBox {{
+    background-color: {TOOLBAR.bg};
+    color: {BODY.color};
+    border: {SETTINGS_DIALOG.border_width}px solid {SETTINGS_DIALOG.border_color};
+    border-radius: {GLOBAL.radius}px;
+    padding: {SETTINGS_DIALOG.input_padding_v}px {SETTINGS_DIALOG.input_padding_h}px;
+}}
+
+QComboBox:hover,
+QComboBox:focus {{
+    border: {SETTINGS_DIALOG.border_width}px solid {BODY.selection_bg};
+}}
+
+QComboBox QAbstractItemView {{
+    background-color: {TOOLBAR.bg};
+    color: {BODY.color};
+    selection-background-color: {BODY.selection_bg};
+    selection-color: {BODY.selection_color};
+    border: {SETTINGS_DIALOG.border_width}px solid {SETTINGS_DIALOG.border_color};
+    outline: none;
+}}"""
+
 # 主按钮（高亮）
 DIALOG_BUTTON_QSS = f"""\
 QPushButton#btn_primary {{
@@ -257,6 +281,7 @@ DIALOG_QSS = "\n".join(  # 弹窗 QSS 拼接
         DIALOG_LABEL_QSS,
         _DIALOG_LINEEDIT_QSS,
         _DIALOG_TEXTEDIT_QSS,
+        _DIALOG_COMBO_QSS,
         DIALOG_BUTTON_QSS,
         _DIALOG_SCROLL_QSS,
     ]

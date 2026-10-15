@@ -8,8 +8,10 @@
 from collections.abc import Callable
 from typing import TypeAlias
 
+from PySide6.QtCore import SignalInstance
 from PySide6.QtWidgets import (
     QCheckBox,
+    QComboBox,
     QHBoxLayout,
     QLineEdit,
     QPushButton,
@@ -22,12 +24,29 @@ from utils.config.models import ConfigValue, FieldSchema
 from ...theme import SETTINGS_DIALOG
 from ._list_widget import ConfigListWidget
 
-InputWidget: TypeAlias = ConfigListWidget | QLineEdit | QTextEdit | QCheckBox
+InputWidget: TypeAlias = (
+    ConfigListWidget | QLineEdit | QTextEdit | QCheckBox | QComboBox
+)
 Inputs: TypeAlias = dict[str, InputWidget]
-
 
 # Qt 布局四边
 _MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
+
+
+def _value_signal(widget: InputWidget) -> SignalInstance | None:
+    """取控件的值变化信号源
+
+    - 列表控件的变更信号属私有实现，不回挂
+    - 枚举下拉不登记恢复钮，无信号可挂
+    """
+    match widget:
+        case QCheckBox():
+            return widget.toggled
+        case QTextEdit():
+            return widget.textChanged
+        case QLineEdit():
+            return widget.textChanged
+    return None
 
 
 class ResetRegistry:
@@ -76,10 +95,14 @@ class ResetRegistry:
         """登记恢复按钮
 
         - 初始隐藏
+        - 控件值一变就全局重估，按钮不隔窗滞留旧显隐
         """
         # 显隐统一交给刷新时机判定
         btn.setVisible(False)
         self._rows[field_key] = (btn, field, restore_target)
+        widget = self._inputs.get(field_key)
+        if widget is not None and (sig := _value_signal(widget)) is not None:
+            sig.connect(self.refresh)
 
     def refresh(self) -> None:
         """重估全部恢复按钮显隐
