@@ -11,8 +11,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-# 环境变量与净化规则
-# 改名需同步 development.md 与选窗读写两侧
+# 实例身份码环境变量名，改名需同步 development.md 与选窗读写两侧
 PROFILE_ENV = "FINSHINIMPACT_PROFILE"
 _CODE_PATTERN = re.compile(
     r"[A-Za-z0-9-]+"
