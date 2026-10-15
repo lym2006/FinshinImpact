@@ -2,6 +2,7 @@
 """发布构建脚本
 
 - 编译启动器并组装 zip 发布物
+- 暂存区源码用随包嵌入式解释器预编字节码，用户解压即热
 - 原料下载在 pack_fetch，发布自检在 pack_release
 """
 
@@ -10,6 +11,7 @@ import hashlib
 import shutil
 import subprocess
 import sys
+import tempfile
 import zipfile
 from pathlib import Path
 
@@ -145,6 +147,32 @@ def _write_runtime_seed(launcher_dir: Path) -> None:
     shutil.copy2(pack_fetch.fetch_uv(), payload / UV_ZIP_NAME)
 
 
+def _precompile_stage() -> None:
+    """用随包嵌入式解释器预编暂存区源码字节码
+
+    - checked-hash 失效模式，pyc 不认 mtime，扛得住 zip 往返
+    - 构建机解释器版本与嵌入式不一致也不作废产物
+    """
+    with tempfile.TemporaryDirectory(prefix="finshin-embed-") as tmp:
+        embed = Path(tmp) / "embed"
+        with zipfile.ZipFile(pack_fetch.fetch_embed()) as zf:
+            zf.extractall(embed)
+        py = embed / "python.exe"
+        targets = [STAGE / "src", STAGE / "main.py"]
+        subprocess.run(
+            [
+                str(py),
+                "-m",
+                "compileall",
+                "-q",
+                "--invalidation-mode",
+                "checked-hash",
+                *(str(t) for t in targets),
+            ],
+            check=True,
+        )
+
+
 def _assemble(launcher_dir: Path) -> Path:
     """组装发布目录并压缩为 zip"""
     version = local_version(ROOT)
@@ -169,6 +197,7 @@ def _assemble(launcher_dir: Path) -> Path:
 
     (STAGE / "main.py").write_text(_MAIN_PY, encoding="utf-8")
     _write_runtime_seed(launcher_dir)
+    _precompile_stage()
     zip_name = DIST / f"{APP_NAME}-v{version}.zip"
     if zip_name.exists():
         zip_name.unlink()
