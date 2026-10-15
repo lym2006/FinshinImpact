@@ -24,6 +24,7 @@ runtime/
 # --- 项目特定忽略项 ---
 tests/
 docs/design/
+uv.lock
 
 # --- 操作系统文件 ---
 Thumbs.db
