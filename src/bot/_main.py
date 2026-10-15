@@ -32,9 +32,14 @@ _LOOP_JOIN_TIMEOUT = 5  # 等事件循环线程退出最多 5 秒
 class Main:
     """Bot 主程序"""
 
-    def __init__(self, on_ready: Callable[[], None] | None = None) -> None:
+    def __init__(
+        self,
+        on_ready: Callable[[], None] | None = None,
+        t0: float | None = None,
+    ) -> None:
         self.logger = get_logger("Main")
         self._on_ready = on_ready
+        self._t0 = t0 if t0 is not None else time.monotonic()
         self._loop = asyncio.new_event_loop()
         self._manager = BotManager(self._loop)
         self._bot_task: Future | None = None  # 跨线程完成句柄，非 asyncio 任务
@@ -44,11 +49,9 @@ class Main:
         """主函数"""
         try:
             # 实例锁由 bootstrap 统一抢占，此处不再重复抢
-            t0 = time.monotonic()
             app = ensure_app()
 
-            # 引擎首次导入约 5 秒同步阻塞，此刻等待窗定格画面正罩着主线程
-            # 挪到此处付掉，校验窗与倒计时从此只见网络时间
+            # 引擎重依赖已由引导层后台线程预热，此处命中缓存近乎零耗时
             preload_engine()
 
             window, instances = create_gui()
@@ -63,7 +66,9 @@ class Main:
             # 主窗已就位，收起引导层的启动等待窗
             if self._on_ready is not None:
                 self._on_ready()
-            self.logger.info(CheckMessage.READY_COST.format(cost=time.monotonic() - t0))
+            self.logger.info(
+                CheckMessage.READY_COST.format(cost=time.monotonic() - self._t0)
+            )
             self.logger.debug("GUI 加载完成")
 
             self._wire_signals(window, instances)
