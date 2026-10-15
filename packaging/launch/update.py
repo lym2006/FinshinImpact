@@ -31,8 +31,9 @@ from . import console, dialogs, runtime, shell
 
 # 分块粒度 64 KB（刷进度）
 _DOWNLOAD_CHUNK = 64 * 1024
-_DOWNLOAD_TIMEOUT = 60.0  # 发布物下载超时 60 秒
+_DOWNLOAD_TIMEOUT = 20.0  # 建连与单块读取超时 20 秒
 _BYTES_PER_MB = 1024 * 1024  # 1 MB
+_BYTES_PER_KB = 1024  # 1 KB
 _SPEED_EPS = 1e-6  # 1 微秒下限，起步防除零
 
 
@@ -124,17 +125,22 @@ def _report_progress(done: int, total: int, start: float) -> None:
     """单行刷新下载进度
 
     - 含百分比、字节量与速率
+    - 速率低于 1 MB/s 改用 KB/s
     """
     elapsed = max(time.monotonic() - start, _SPEED_EPS)
-    speed = done / elapsed / _BYTES_PER_MB
+    bps = done / elapsed
+    if bps < _BYTES_PER_MB:
+        speed = f"{bps / _BYTES_PER_KB:.0f} KB/s"
+    else:
+        speed = f"{bps / _BYTES_PER_MB:.1f} MB/s"
     if total:
         line = (
             f"\r  {done / total * 100:5.1f}%"
             f"  {done / _BYTES_PER_MB:.1f}/{total / _BYTES_PER_MB:.1f} MB"
-            f"  {speed:.1f} MB/s        "
+            f"  {speed}        "
         )
     else:
-        line = f"\r  已下载 {done / _BYTES_PER_MB:.1f} MB  {speed:.1f} MB/s        "
+        line = f"\r  已下载 {done / _BYTES_PER_MB:.1f} MB  {speed}        "
     print(line, end="", flush=True)
 
 
