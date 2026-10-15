@@ -9,6 +9,7 @@ from collections.abc import Callable
 
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
+    QComboBox,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -20,11 +21,21 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from utils.config.models import AppSchema, PersonaKey, TabSchema
+from utils.config.models import (
+    PROXY_FIELD,
+    PROXY_MODE_FIELD,
+    AppSchema,
+    PersonaKey,
+    ProxyMode,
+    TabSchema,
+)
 
 from ...theme import GLOBAL, SETTINGS_DIALOG
 from ._field import FieldBuilder
 from ._persona import PersonaPreviewRow
+
+# 仅这两档用得上代理项，其余模式整行隐藏
+_PROXY_EDITABLE_MODES = (ProxyMode.AUTO, ProxyMode.CFG)
 
 
 def _clear_layout(layout: QHBoxLayout) -> None:
@@ -75,6 +86,7 @@ class ChromeBuilder:
         self.tab_titles: dict[str, tuple[int, str]] = {}
         self.save_btn: QPushButton | None = None
         self.save_text: str = ""
+        self.proxy_row: QWidget | None = None
 
     def build(
         self, schema: AppSchema, is_setup: bool, error_namespaces: set[str]
@@ -162,9 +174,35 @@ class ChromeBuilder:
         self._mount_persona_preview(
             tab_schema.namespace, main_layout, label_width, rows
         )
+        self._mount_proxy_mode_lock(tab_schema.namespace, rows)
         main_layout.addStretch()
         scroll.setWidget(container)
         return scroll
+
+    def _mount_proxy_mode_lock(self, namespace: str, rows: dict[str, QWidget]) -> None:
+        """代理项随模式显隐
+
+        - 仅系统代理与仅直连两档用不到代理项，整行隐藏
+        - 标题、输入框与恢复钮同消，值保留在控件里切回即现
+        - 两个控件缺一即不接线，缺件说明模板已改键
+        """
+        if namespace != "basic":
+            return
+        inputs = self._fields.inputs
+        mode_combo = inputs.get(PROXY_MODE_FIELD)
+        proxy_row = rows.get(PROXY_FIELD)
+        if not isinstance(mode_combo, QComboBox) or proxy_row is None:
+            return
+        self.proxy_row = proxy_row
+
+        def sync(mode_value: object) -> None:
+            proxy_row.setVisible(str(mode_value) in _PROXY_EDITABLE_MODES)
+
+            # 切换即重估全部恢复钮，否则按钮显隐停在开窗时的旧值
+            self._fields.refresh_resets()
+
+        mode_combo.currentIndexChanged.connect(lambda: sync(mode_combo.currentData()))
+        sync(mode_combo.currentData())
 
     def _mount_persona_preview(
         self,

@@ -62,6 +62,11 @@ def validate_types(schema: AppSchema, data: AppConfigData) -> dict[str, str]:
                 errors[fld.key] = f"类型应为 {tname}，当前 {value!r}"
                 continue
 
+            if fld.options and value not in {k for k, _ in fld.options}:
+                legal = " / ".join(v for v, _ in fld.options)
+                errors[fld.key] = f"取值应为 {legal} 之一，当前 {value!r}"
+                continue
+
             bounds = _BOUNDS.get(fld.key)
             if bounds and expected is float:
                 lo, hi = bounds
