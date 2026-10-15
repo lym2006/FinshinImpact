@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 from messages import CheckMessage
 from utils.config import AppConfigData
-from utils.network import verify_skeleton
+from utils.network import RowId, RowStatus, verify_skeleton
 
 from ..dialogs import CheckDialog, Round, current_check_window, open_check_window
 from ..mediator import gui_bridge
@@ -127,14 +127,27 @@ class VerifyCoordinator:
     def on_frame(self, frame: dict) -> None:
         """进度帧转发
 
+        - 结论帧即轮次收口，无窗轮次的缓存行帧随之作废
         - 窗口未开时先缓存，开窗后补播
         - 其他轮次占用时直接丢弃
         """
         wait = self.window()
         if wait is not None:
             wait.apply(frame)
-        elif current_check_window() is None:
+            return
+        if self._is_conclusion(frame):
+            self.pre_frames = []
+            return
+        if current_check_window() is None:
             self.pre_frames.append(frame)
+
+    @staticmethod
+    def _is_conclusion(frame: dict) -> bool:
+        """结论帧判定"""
+        return frame.get("id") == RowId.ADVICE and frame.get("status") in (
+            RowStatus.OK,
+            RowStatus.FAIL,
+        )
 
     def open_startup_wait(self) -> None:
         """启动校验延迟弹窗
