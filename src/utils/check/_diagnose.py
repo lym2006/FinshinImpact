@@ -22,7 +22,13 @@ from ..network import (
     detect_system_proxy,
     via_label,
 )
-from ..network.probe import extract_port, port_alive, probe_budget
+from ..network.probe import (
+    extract_port,
+    plan_channels,
+    port_alive,
+    probe_budget,
+    sys_deduped,
+)
 from ..network.proxy import registry_proxy
 from ._connectivity import attempt_channel, preload_engine
 from ._verify import run_channels
@@ -58,10 +64,11 @@ def _never_emit(_frame_data: dict) -> None:
     return None
 
 
-def _diagnose_plan(channels: Sequence[Channel]) -> list[dict]:
+def _diagnose_plan(channels: Sequence[Channel], sys_dedup: bool = False) -> list[dict]:
     """生成诊断首帧整表
 
     - 待探测通道标进行中，缺席行直接给结论
+    - sys_dedup 为真时系统代理行标同端点去重而非缺席
     """
     present = {ch.kind for ch in channels}
     budgets = {ch.kind: probe_budget(ch.url) for ch in channels}
@@ -73,6 +80,8 @@ def _diagnose_plan(channels: Sequence[Channel]) -> list[dict]:
     for rid, title in _ROWS:
         if rid in present:
             status, detail = RowStatus.CHECKING, ""
+        elif rid == RowId.SYS and sys_dedup:
+            status, detail = RowStatus.SKIP, CheckMessage.SYS_DEDUP
         elif rid in absent:
             status, detail = absent[rid]
         else:
@@ -112,18 +121,6 @@ def _diagnose_probe(
         return resolved, errors, ""
 
     return probe
-
-
-def _diagnose_channels(cfg: str, detected: str | None) -> list[Channel]:
-    """规划待探测通道
-
-    - 缺席通道不进入本列表，由首帧直接给结论
-    """
-    channels = [Channel(RowId.CFG, cfg)] if cfg else []
-    if detected:
-        channels.append(Channel(RowId.SYS, detected))
-    channels.append(Channel(RowId.DIRECT, ""))
-    return channels
 
 
 async def _alive_ports(
@@ -205,11 +202,11 @@ async def diagnose_flow(
     detected = detect_system_proxy()
     cfg = configured_proxy.strip()
 
-    channels = _diagnose_channels(cfg, detected)
+    channels = plan_channels(cfg, detected)
 
     # 首帧把通道行点亮为检测中即启动界面倒计时，引擎导入费须在这之前付完
     preload_engine()
-    frame({FrameKey.ROWS: _diagnose_plan(channels)})
+    frame({FrameKey.ROWS: _diagnose_plan(channels, sys_deduped(cfg, detected))})
 
     outcome = await run_channels(
         channels, _diagnose_probe(token), frame, via_label, stop

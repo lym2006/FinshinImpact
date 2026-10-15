@@ -19,7 +19,9 @@ from utils.check import (
     run_channels,
 )
 from utils.config import (
+    PROXY_MODE_FIELD,
     AppSchema,
+    ProxyMode,
     ensure_config,
     get_schema,
     load_config,
@@ -32,9 +34,11 @@ from utils.network import (
     RowStatus,
     detect_system_proxy,
     plan_channels,
+    sys_deduped,
     verify_plan,
     via_label,
 )
+from utils.network.probe import single_row_of
 
 from ._base import BaseManager
 from ._port_probe import verify_port_row
@@ -81,6 +85,8 @@ class SettingsManager(BaseManager):
         """按字段变化分流的连通校验
 
         - 通过则记录生效通道
+        - 单路模式只测选定通道，缺席不发探测
+        - 自动模式全挂先原地重检一轮再报失败
         """
         t0 = time.monotonic()
         schema = get_schema()
@@ -88,11 +94,25 @@ class SettingsManager(BaseManager):
         token, raw = self._get_config()
         configured = raw.strip()
         self._net_state = (token, configured)
+        basic = config_manager.get_all().get("basic") or {}
+        mode = str(basic.get(PROXY_MODE_FIELD, ProxyMode.AUTO)).strip()
 
-        channels, token_only = self._plan_channels(
-            token, configured, prev_token, prev_cfg
+        channels, token_only, sys_dedup = self._plan_channels(
+            token, configured, prev_token, prev_cfg, mode
         )
-        type_errors = self._emit_opening(channels, token_only, schema)
+
+        # 复用轮次只测 token，通道行保持全行标复用，不按模式裁
+        single = None if token_only else single_row_of(mode)
+        type_errors = self._emit_opening(
+            channels, token_only, sys_dedup, single, schema
+        )
+        if single is not None and not channels:
+            # 单路选路缺地址：代理行被联动隐藏，缺席句标红落在可见的模式行上
+            type_errors = {**type_errors, PROXY_MODE_FIELD: single[2]}
+            self.resolved_proxy = None
+            self.last_errors = type_errors
+            self.logger.info(CheckMessage.ROUND_COST.format(cost=time.monotonic() - t0))
+            return self._emit_advice(schema)
 
         outcome = await run_channels(
             channels,
@@ -100,20 +120,38 @@ class SettingsManager(BaseManager):
             gui_bridge.verify_progress.emit,
             via_label,
         )
-        port_hint = await verify_port_row(outcome, token, token_only)
+        if not outcome.passed and mode == ProxyMode.AUTO and not token_only:
+            # 首轮全挂多为冷启动握手慢：趁热连接原地重检一轮再定性
+            self.logger.info(CheckMessage.RETRY_HEAD)
+            outcome = await run_channels(
+                channels,
+                self._make_probe(token),
+                gui_bridge.verify_progress.emit,
+                via_label,
+            )
+        if single is not None:
+            port_hint = ""
+        else:
+            port_hint = await verify_port_row(outcome, token, token_only)
         net_errors = self._aggregate_errors(outcome, channels, port_hint)
 
-        self._settle(outcome.resolved, configured)
+        self._settle(outcome.resolved, configured, mode == ProxyMode.AUTO)
         self.last_errors = {**net_errors, **type_errors}
         self.logger.info(CheckMessage.ROUND_COST.format(cost=time.monotonic() - t0))
         return self._emit_advice(schema)
 
     def _plan_channels(
-        self, token: str, configured: str, prev_token: str, prev_cfg: str
-    ) -> tuple[list[Channel], bool]:
+        self,
+        token: str,
+        configured: str,
+        prev_token: str,
+        prev_cfg: str,
+        mode: str,
+    ) -> tuple[list[Channel], bool, bool]:
         """规划候选通道
 
         - 仅 token 变则复用生效通道，不重跑候选链
+        - 返回 (通道表, token 复查标志, 系统代理去重标志)
         """
         token_only = (
             self.resolved_proxy is not None
@@ -128,11 +166,21 @@ class SettingsManager(BaseManager):
                 if not reuse
                 else (RowId.CFG if reuse == configured else RowId.SYS)
             )
-            return [Channel(kind, reuse)], True
-        return plan_channels(configured, detect_system_proxy()), False
+            return [Channel(kind, reuse)], True, False
+        detected = detect_system_proxy()
+        return (
+            plan_channels(configured, detected, mode),
+            False,
+            sys_deduped(configured, detected),
+        )
 
     def _emit_opening(
-        self, channels: list[Channel], token_only: bool, schema: AppSchema
+        self,
+        channels: list[Channel],
+        token_only: bool,
+        sys_dedup: bool,
+        single: tuple[str, str, str] | None,
+        schema: AppSchema,
     ) -> dict[str, str]:
         """发送首帧进度整表
 
@@ -146,6 +194,8 @@ class SettingsManager(BaseManager):
                     channels,
                     reuse=token_only,
                     local_frame=local_frame,
+                    sys_dedup=sys_dedup,
+                    single=single,
                 )
             }
         )
@@ -192,8 +242,11 @@ class SettingsManager(BaseManager):
             errors = {FieldKey.PROXY: base}
         return errors
 
-    def _settle(self, resolved: str | None, configured: str) -> None:
-        """记录生效通道"""
+    def _settle(self, resolved: str | None, configured: str, warn_stale: bool) -> None:
+        """记录生效通道
+
+        - 单路模式本路不通即失败，不发跨路降级告警
+        """
         self.resolved_proxy = resolved
         if resolved is None:
             return
@@ -205,7 +258,8 @@ class SettingsManager(BaseManager):
             else CheckMessage.VIA_SYSTEM.format(proxy=resolved)
         )
         self.logger.info(CheckMessage.PASS.format(via=via))
-        self._warn_stale(configured, resolved)
+        if warn_stale:
+            self._warn_stale(configured, resolved)
 
     def _emit_advice(self, schema: AppSchema) -> bool:
         """发送结论帧
