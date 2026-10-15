@@ -4,7 +4,7 @@
 - 引导锁内完成实例身份选择与实例锁抢占
 - 非正常启动结果分别提示并给出退出码
 - 抢到实例锁才导入主程序，路径常量在导入期随身份码确定
-- 引擎重依赖后台线程预热，主线程全程泵事件让提示卡秒表连走
+- utils 与引擎重依赖后台线程导入，主线程全程泵事件让提示卡秒表连走
 """
 
 import importlib
@@ -22,7 +22,10 @@ from profile_env import get_profile, set_profile
 # 主程序 GUI 装配链，分步导入时逐模块各泵一轮
 _GUI_MODULES = ("gui", "gui.controllers", "gui.mediator", "gui.theme")
 
-# 等引擎后台预热的轮询步长，泵够密秒表才看得出在走
+# utils 后台导入落位后放行主线程续导 GUI 链
+_UTILS_READY = threading.Event()
+
+# 等后台导入落位的轮询步长，泵够密秒表才看得出在走
 _JOIN_PUMP_S = 0.2
 
 
@@ -142,10 +145,11 @@ def _pump() -> None:
 
 
 def _preload_engine_async() -> threading.Thread:
-    """后台线程预热引擎导入链
+    """后台线程导入 utils 并预热引擎链
 
-    - aiogram 是 5 秒级原子导入块，主线程泵不动它，只能挪走
+    - utils 与 aiogram 都是杀软扫描敏感的冷盘重块，主线程泵不动它们
     - 纯网络与序列化依赖不碰 Qt，子线程导入不触绑线程约束
+    - utils 落位即发信号，主线程泵到信号才续导依赖它的 GUI 链
     """
     thread = threading.Thread(
         target=_preload_engine_worker,
@@ -157,7 +161,16 @@ def _preload_engine_async() -> threading.Thread:
 
 
 def _preload_engine_worker() -> None:
-    """子线程里付引擎导入费"""
+    """子线程里付 utils 与引擎导入费
+
+    - utils 先落位发信号，导入失败也放行，交主线程兜底重导
+    """
+    try:
+        importlib.import_module("utils")
+    except Exception:  # noqa: BLE001  预热失败交主线程兜底重导
+        pass
+    finally:
+        _UTILS_READY.set()
     try:
         from utils.check import preload_engine
 
@@ -167,25 +180,24 @@ def _preload_engine_worker() -> None:
 
 
 def _wait_preload(thread: threading.Thread) -> None:
-    """等预热线程收尾，等待期持续泵事件
-
-    - 分段 join 而非硬等，秒表在等待期间照常逐秒走
-    """
+    """泵着等预热线程收尾，等待期秒表照常逐秒走"""
     while thread.is_alive():
         thread.join(_JOIN_PUMP_S)
         _pump()
+    _pump()
 
 
 def _pump_imports() -> threading.Thread:
-    """分步导入主程序装配链，步间各泵一轮事件
+    """后台预热打底，主线程分步导入装配链并步间泵事件
 
-    - 引擎预热先交后台线程跑，主线程导 GUI 链与之并行
-    - 拆步顺序与 bot._main 顶层导入对齐，重段各自独占一个泵区间
+    - utils 与引擎交后台线程，主线程泵到 utils 落位才续导 GUI 链
+    - GUI 链与 aiogram 预热并行，拆步顺序与 bot._main 顶层导入对齐
     - preload_engine 幂等，Main.main 内原调用兜底
     """
-    importlib.import_module("utils")
     preload = _preload_engine_async()
-    _pump()
+    while not _UTILS_READY.is_set():
+        _UTILS_READY.wait(_JOIN_PUMP_S)
+        _pump()
     for name in _GUI_MODULES:
         importlib.import_module(name)
         _pump()
