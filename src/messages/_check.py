@@ -48,6 +48,15 @@ class CheckMessage:
     # 用：系统代理行——不可用收口句（未开启或地址解析不出）
     SYS_UNAVAILABLE = "无可用系统代理（未开启或地址不可解析）"
 
+    # 用：系统代理行——与配置代理同端口，被去重不重复探测
+    SYS_DEDUP = "跳过（与配置代理同端口）"
+
+    # 用：单路模式选配置代理但代理项留空
+    MODE_CFG_ABSENT = "代理项为空，本模式只测该项，请先填写代理地址"
+
+    # 用：单路模式选系统代理但无可用地址
+    MODE_SYS_ABSENT = "系统代理未开启或地址不可解析，请先开启系统代理"
+
     # 用：端口行——探活符号与默认组标注
     DIAG_PORT_ALIVE = "✓"
     DIAG_PORT_DEAD = "✗"
@@ -116,6 +125,9 @@ class CheckMessage:
     REASON_STARTUP = "启动"
     REASON_SAVE = "保存"
     REASON_RECHECK = "复验"
+
+    # 用：bot/_managers/_settings.py 首轮全挂自动重检的面板反馈
+    RETRY_HEAD = "首轮全部不通，热连接自动重检一轮"
 
     # 用：单通道耗时（debug 级，面板不展示）
     COST = "通道 {via} 探测耗时 {cost:.1f}s"
