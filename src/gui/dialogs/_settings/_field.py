@@ -11,6 +11,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QFontMetrics
 from PySide6.QtWidgets import (
     QCheckBox,
+    QComboBox,
     QFormLayout,
     QLabel,
     QLineEdit,
@@ -131,6 +132,8 @@ class FieldBuilder:
                 return widget.get_values()
             case QCheckBox():
                 return widget.isChecked()
+            case QComboBox():
+                return widget.currentData()
             case QTextEdit():
                 return widget.toPlainText().strip()
             case QLineEdit():
@@ -207,10 +210,11 @@ class FieldBuilder:
 
     def _build_input(
         self, field: FieldSchema, current_value: ConfigValue
-    ) -> QCheckBox | QTextEdit | QLineEdit:
+    ) -> QCheckBox | QComboBox | QTextEdit | QLineEdit:
         """按值形态选控件
 
         - bool 项用勾选框且不挂文字，标签与说明走通用右侧结构
+        - 枚举项渲染下拉，显示文案挂 userData 取键值
         - 含换行的字符串走多行编辑
         """
         if isinstance(field.default, bool):
@@ -219,6 +223,17 @@ class FieldBuilder:
             )
             bool_box.setChecked(bool(current_value))
             return bool_box
+        if field.options:
+            combo = QComboBox()
+            for value, text in field.options:
+                combo.addItem(text, value)
+            index = combo.findData(current_value)
+            if index < 0:
+                # 手改的非法枚举值原样入列，标红引导改回而非吞值
+                combo.addItem(str(current_value), current_value)
+                index = combo.count() - 1
+            combo.setCurrentIndex(index)
+            return combo
         if isinstance(current_value, str) and "\n" in current_value:
             editor = QTextEdit()
             editor.setPlainText(current_value)
@@ -236,12 +251,13 @@ class FieldBuilder:
         """构造右侧区域
 
         - 输入框与可选恢复按钮，外加说明文字
+        - 枚举项不挂恢复钮：选中即意图，无"偏离默认"可恢复
         """
         right_wrapper = QWidget()
         v_layout = QVBoxLayout(right_wrapper)
         v_layout.setContentsMargins(*[SETTINGS_DIALOG.margin] * _MARGIN_EDGES)
         v_layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
-        if required:
+        if required or field.options:
             v_layout.addWidget(input_widget)
         else:
             row, btn = self._resets.wrap(input_widget, field.key, restore_target)

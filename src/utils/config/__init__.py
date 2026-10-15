@@ -14,8 +14,10 @@ from ._validator import validate_types
 from .models import (
     PENDING_MARK,
     PROXY_FIELD,
+    PROXY_MODE_FIELD,
     AppConfigData,
     AppSchema,
+    ProxyMode,
 )
 
 # CONFIG_EXAMPLE 在 paths 已按身份码前缀定好平台模板，导入期绑定即正确
@@ -26,6 +28,8 @@ __all__ = [
     # 占位标记（re-export 自 models）
     "PENDING_MARK",
     "PROXY_FIELD",
+    "PROXY_MODE_FIELD",
+    "ProxyMode",
     # 核心生命周期控制
     "ensure_config",
     # 数据读写

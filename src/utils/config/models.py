@@ -6,6 +6,8 @@
 
 from dataclasses import dataclass, field
 
+from messages import DialogMessage
+
 # 单个 TOML 配置值
 ConfigValue = str | bool | float | list[str] | None
 
@@ -37,8 +39,33 @@ class PersonaKey:
 # 前置项失败导致某项无法验证时的文案前缀（proxy 坏则 token 测不了）
 PENDING_MARK = "暂未检测"
 
-# 代理三级解析（配置→系统→直连）：模式不落盘、GUI 不代填，交给启动校验与诊断
+# 代理三级解析（配置→系统→直连）：模式字段决定校验只探哪一路
 PROXY_FIELD = "proxy"
+
+PROXY_MODE_FIELD = "proxy_mode"
+
+
+class ProxyMode:
+    """代理模式协议串
+
+    - 配置字段 basic.proxy_mode 与校验编排共用
+    """
+
+    AUTO = "auto"
+    CFG = "cfg"
+    SYS = "sys"
+    DIRECT = "direct"
+
+
+# 枚举字段注册表：字段键 → (值, 界面文案) 选项表，渲染与取值校验单源
+ENUM_FIELDS: dict[str, tuple[tuple[str, str], ...]] = {
+    PROXY_MODE_FIELD: (
+        (ProxyMode.AUTO, DialogMessage.SETUP_MODE_AUTO),
+        (ProxyMode.CFG, DialogMessage.SETUP_MODE_CFG),
+        (ProxyMode.SYS, DialogMessage.SETUP_MODE_SYS),
+        (ProxyMode.DIRECT, DialogMessage.SETUP_MODE_DIRECT),
+    )
+}
 
 # 必填项缺失或留空的校验文案
 REQUIRED_MARK = "必填项未填写"
@@ -74,6 +101,7 @@ class FieldSchema:
     label: str  # 界面上显示的标题
     desc: str  # 鼠标悬停时的提示语
     default: ConfigValue  # 默认值
+    options: tuple[tuple[str, str], ...] = ()  # 非空即枚举字段，渲染为下拉
 
 
 @dataclass
