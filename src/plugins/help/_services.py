@@ -70,6 +70,7 @@ def _build_menu_data() -> list[dict[str, str]]:
     rows.extend(_MENU_TAIL)
     return rows
 
+
 _HELP = _HelpRenderConfig()
 
 

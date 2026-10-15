@@ -31,7 +31,6 @@ class PluginFile(StrEnum):
 
     MANIFEST = "plugin.toml"  # 位于各插件目录，存插件自描述清单
     STATE = "plugins.toml"  # 位于实例目录，存启用集与 catalog 指纹
-    FINGERPRINT = ".installed-plugins"  # 位于 runtime，存已装依赖并集摘要
 
 
 class ManifestKey(StrEnum):

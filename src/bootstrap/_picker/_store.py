@@ -102,6 +102,11 @@ def touch_profile(code: str) -> None:
     write_profile_data(code, data)
 
 
+def remark_of(code: str) -> str:
+    """取实例备注名，缺失返回空串"""
+    return str(read_profile_data(code).get(_REMARK_KEY, ""))
+
+
 def create_profile(code: str, token: str, remark: str) -> None:
     """新建实例文件夹
 

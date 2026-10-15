@@ -109,9 +109,72 @@ QPushButton#btn_danger:pressed {{
     background-color: {SURFACE.danger_pressed_bg};
 }}
 
-QFrame#btn_sep {{
-    color: {SURFACE.border_color};
-    max-width: 1px;
+QPushButton#btn_danger:disabled {{
+    background-color: {SURFACE.bg};
+    color: {SURFACE.disabled_color};
+}}
+
+QPushButton#btn_secondary {{
+    background-color: transparent;
+    color: {SURFACE.color};
+    border: 1px solid {SURFACE.border_color};
+}}
+
+QPushButton#btn_secondary:hover {{
+    background-color: {SURFACE.hover_bg};
+    border: 1px solid {SURFACE.sel_bg};
+    color: {SURFACE.hover_color};
+}}
+
+QPushButton#btn_secondary:disabled {{
+    border: 1px solid {SURFACE.border_color};
+}}
+
+QPushButton#btn_start {{
+    background-color: {SURFACE.sel_bg};
+    color: {SURFACE.sel_color};
+    font-weight: bold;
+    min-width: {BTN.start_width}px;
+}}
+
+QPushButton#btn_start:hover {{
+    background-color: {SURFACE.primary_hover_bg};
+}}
+
+QPushButton#btn_start:pressed {{
+    background-color: {SURFACE.primary_pressed_bg};
+}}"""
+
+# 下拉菜单
+_MENU_QSS = f"""\
+QMenu {{
+    background-color: {SURFACE.input_bg};
+    color: {SURFACE.color};
+    border: 1px solid {SURFACE.border_color};
+    padding: 4px;
+}}
+
+QMenu::item {{
+    padding: {BTN.padding_v}px {BTN.padding_h}px;
+    border-radius: {SURFACE.radius}px;
+}}
+
+QMenu::item:selected {{
+    background-color: {SURFACE.hover_bg};
+    color: {SURFACE.hover_color};
+}}
+
+QMenu::item:disabled {{
+    color: {SURFACE.disabled_color};
+}}
+
+QMenu::item[danger="true"] {{
+    color: {SURFACE.danger_bg};
+}}
+
+QMenu::item[danger="true"]:selected {{
+    background-color: {SURFACE.danger_bg};
+    color: {SURFACE.sel_color};
 }}"""
 
 # 列表
@@ -181,14 +244,29 @@ QPlainTextEdit#progress_log {{
     border-radius: {SURFACE.radius}px;
 }}"""
 
-_BOOTSTRAP_QSS = "\n".join(  # 引导期三窗共用皮肤
+# 启动等待窗
+_LAUNCH_QSS = f"""\
+QLabel#launch_text {{
+    color: {SURFACE.color};
+    font-weight: bold;
+    background-color: transparent;
+}}
+
+QLabel#launch_note {{
+    color: {SURFACE.disabled_color};
+    background-color: transparent;
+}}"""
+
+_BOOTSTRAP_QSS = "\n".join(  # 引导期各窗共用皮肤
     [
         _DARK_QSS,
         _INPUT_QSS,
         _BUTTON_QSS,
+        _MENU_QSS,
         _LIST_QSS,
         _SCROLL_QSS,
         _PROGRESS_QSS,
+        _LAUNCH_QSS,
     ]
 )
 
