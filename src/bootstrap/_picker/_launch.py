@@ -40,6 +40,9 @@ class _LaunchWaitDialog(QDialog):
             | Qt.WindowType.Tool
         )
 
+        # 定格期主线程冻结，直点本卡触发的重绘无人应答会刷白，点击一律放行到下层
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+
         row = QHBoxLayout(self)
         row.setSpacing(LAUNCH.gap)
 
