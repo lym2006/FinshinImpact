@@ -21,8 +21,8 @@ class PickerMessage:
     BUSY = "已有一个选择窗口在打开，请在该窗口操作"
 
     # 用：bootstrap._picker._launch 启动提示卡正文
-    LAUNCHING = "正在启动 {label}…"
-    LAUNCHING_NOTE = "装载组件期间界面暂不刷新，就绪后自动进入主窗口"
+    LAUNCHING = "正在启动 {label}…\n\n请勿点击"
+    LAUNCHING_NOTE = "等待组件装载就绪后自动进入主窗口"
 
     # 用：bootstrap._picker 各窗底部按钮
     BTN_NEW = "新建"
