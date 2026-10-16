@@ -13,8 +13,8 @@ from pathlib import Path
 from typing import Any
 
 from core.domain import (
+    MANIFEST_FIELDS,
     PLUGINS_PKG,
-    CommandPriority,
     ManifestKey,
     PluginFile,
     StateKey,
@@ -25,17 +25,9 @@ from profile_env import INSTANCES_DIR, ROOT_DIR, profile_dir
 _PIN_SPLIT = re.compile(r"[<>=!~\[;\s]+")
 
 # 面板与裁决所需的最小字段集，help 段面板不消费故排除
-_MINIMAL_KEYS = frozenset(ManifestKey) - {ManifestKey.HELP}
+_MINIMAL_KEYS = frozenset(spec.key for spec in MANIFEST_FIELDS)
 
-_DEFAULTS: dict[str, Any] = {
-    ManifestKey.NAME: "",
-    ManifestKey.TITLE: "",
-    ManifestKey.CORE: False,
-    ManifestKey.ORDER: CommandPriority.NORMAL.value,
-    ManifestKey.DEPS: [],
-    ManifestKey.ASSETS: [],
-    ManifestKey.SUMMARY: "",
-}
+_DEFAULTS: dict[str, Any] = {spec.key: spec.default for spec in MANIFEST_FIELDS}
 
 
 def plugins_root() -> Path | None:

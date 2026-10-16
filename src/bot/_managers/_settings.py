@@ -9,6 +9,7 @@ import time
 from collections.abc import Awaitable, Callable
 from typing import cast
 
+from core.domain import ConfigKey, ConfigNamespace, ProxyMode
 from gui.mediator import gui_bridge
 from messages import CheckMessage
 from utils import config_manager
@@ -19,9 +20,7 @@ from utils.check import (
     run_channels,
 )
 from utils.config import (
-    PROXY_MODE_FIELD,
     AppSchema,
-    ProxyMode,
     ensure_config,
     get_schema,
     load_config,
@@ -94,8 +93,8 @@ class SettingsManager(BaseManager):
         token, raw = self._get_config()
         configured = raw.strip()
         self._net_state = (token, configured)
-        basic = config_manager.get_all().get("basic") or {}
-        mode = str(basic.get(PROXY_MODE_FIELD, ProxyMode.AUTO)).strip()
+        proxy = config_manager.get_all().get(ConfigNamespace.PROXY) or {}
+        mode = str(proxy.get(ConfigKey.PROXY_MODE, ProxyMode.AUTO)).strip()
 
         channels, token_only, sys_dedup = self._plan_channels(
             token, configured, prev_token, prev_cfg, mode
@@ -108,7 +107,7 @@ class SettingsManager(BaseManager):
         )
         if single is not None and not channels:
             # 单路选路缺地址：代理行被联动隐藏，缺席句标红落在可见的模式行上
-            type_errors = {**type_errors, PROXY_MODE_FIELD: single[2]}
+            type_errors = {**type_errors, ConfigKey.PROXY_MODE: single[2]}
             self.resolved_proxy = None
             self.last_errors = type_errors
             self.logger.info(CheckMessage.ROUND_COST.format(cost=time.monotonic() - t0))

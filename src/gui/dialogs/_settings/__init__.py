@@ -11,7 +11,7 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QCloseEvent, QFont, QKeyEvent, QShowEvent
 from PySide6.QtWidgets import QWidget
 
-from utils.config import PENDING_MARK
+from messages import ConfigMessage
 from utils.config.models import AppConfigData, AppSchema
 
 from ..._qss import build_settings_dialog_qss
@@ -145,7 +145,7 @@ class SettingsDialog(BaseDialog):
         bad = self._resolve_error_namespaces(self._schema)
         for key, (label, title) in self._fields.labels.items():
             err = self._field_errors.get(key)
-            if err and err.startswith(PENDING_MARK):
+            if err and err.startswith(ConfigMessage.PENDING_MARK):
                 label.setText(f"❔ {title}")
                 label.setStyleSheet(_PENDING_QSS)
             elif err:
