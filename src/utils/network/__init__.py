@@ -1,14 +1,15 @@
 # src/utils/network/__init__.py
 """网络栈门面
 
-- 代发 HTTP 客户端、SSL 会话、系统代理与探测协议键符号
-- 底层实现分列 _client/_session/proxy/probe，校验与诊断编排在 utils.check
+- 代发 HTTP 客户端、SSL 会话、链路状态、系统代理与探测协议键符号
+- 底层实现分列 _client/_session/_link/probe/proxy，校验与诊断编排在 utils.check
 - 会话类继承 aiogram，经模块 __getattr__ 延迟代发，门面导入不拖引擎入场
 """
 
 from typing import TYPE_CHECKING, Any
 
 from ._client import BaseClient
+from ._link import LinkStatus, link_report
 from .probe import (
     Channel,
     FieldKey,
@@ -25,15 +26,19 @@ from .probe import (
 from .proxy import detect_system_proxy
 
 if TYPE_CHECKING:
-    from ._session import SSLUnverifiedSession
+    from ._session import SSLUnverifiedSession, is_link_failure
 
 # 延迟代发的符号 → 所在实现模块
-_LAZY = {"SSLUnverifiedSession": "_session"}
+_LAZY = {"SSLUnverifiedSession": "_session", "is_link_failure": "_session"}
 
 __all__ = [
     # HTTP 与会话
     "BaseClient",
     "SSLUnverifiedSession",
+    "is_link_failure",
+    # 链路状态
+    "LinkStatus",
+    "link_report",
     # 系统代理
     "detect_system_proxy",
     # 通道与协议键
