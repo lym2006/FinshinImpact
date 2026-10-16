@@ -30,7 +30,9 @@ class TelegramAdapter(BaseAdapter):
         self._bot = Bot(token=token, session=SSLUnverifiedSession(proxy=proxy))
         self._dispatcher = Dispatcher()
         self._interaction = TelegramInteractionPort(self._bot)
-        self._dispatcher.update.outer_middleware(NormalizeMiddleware(self._interaction))
+        self._dispatcher.update.outer_middleware(
+            NormalizeMiddleware(self._interaction, self._bot)
+        )
 
     @property
     def platform(self) -> Platform:
