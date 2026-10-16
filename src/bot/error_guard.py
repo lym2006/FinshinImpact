@@ -21,7 +21,7 @@ from exceptions import (
     ProxyError,
 )
 from gui.mediator import gui_bridge
-from utils.config.models import REQUIRED_MARK
+from messages import ConfigMessage
 from utils.logger import get_logger
 
 P = ParamSpec("P")
@@ -35,7 +35,7 @@ def _setup_errors(exc: BotError) -> dict[str, str]:
     - 整段缺失时 missing_key 是 section 名，字段键取点路径尾段
     """
     if isinstance(exc, ConfigPathMissingError):
-        return {exc.key_path.rpartition(".")[2]: REQUIRED_MARK}
+        return {exc.key_path.rpartition(".")[2]: ConfigMessage.REQUIRED_MARK}
     return {}
 
 

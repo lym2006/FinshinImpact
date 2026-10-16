@@ -4,32 +4,15 @@
 - 提供检查、读写与校验出口
 """
 
-from exceptions import ConfigTemplateMissingError
-
-from ..paths import CONFIG_EXAMPLE, CONFIG_FILE
+from ..paths import CONFIG_FILE, PLATFORM
 from ._differ import compare_configs
 from ._io import ConfigIO
-from ._parser import ConfigParser
+from ._schema import build_schema
 from ._validator import validate_types
-from .models import (
-    PENDING_MARK,
-    PROXY_FIELD,
-    PROXY_MODE_FIELD,
-    AppConfigData,
-    AppSchema,
-    ProxyMode,
-)
-
-# CONFIG_EXAMPLE 在 paths 已按身份码前缀定好平台模板，导入期绑定即正确
-_PARSER = ConfigParser(CONFIG_EXAMPLE)
-
+from ._writer import render_config
+from .models import AppConfigData, AppSchema
 
 __all__ = [
-    # 占位标记（re-export 自 models）
-    "PENDING_MARK",
-    "PROXY_FIELD",
-    "PROXY_MODE_FIELD",
-    "ProxyMode",
     # 核心生命周期控制
     "ensure_config",
     # 数据读写
@@ -40,6 +23,9 @@ __all__ = [
     "compare_configs",
     # 类型校验
     "validate_types",
+    # 数据结构
+    "AppConfigData",
+    "AppSchema",
 ]
 
 
@@ -51,43 +37,21 @@ def _io() -> ConfigIO:
     return ConfigIO(CONFIG_FILE)
 
 
-def _write_clean_config() -> None:
-    """从模板生成纯数据配置
-
-    - 注释只存模板，防 tomlkit 合并搅乱排版
-    """
-    lines = CONFIG_EXAMPLE.read_text(encoding="utf-8").splitlines()
-    kept: list[str] = []
-    for line in lines:
-        if line.lstrip().startswith("#"):
-            continue
-
-        # 压缩连续空行，保持段落间隔为一行
-        if not line.strip() and (not kept or not kept[-1].strip()):
-            continue
-        kept.append(line)
-    CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
-    CONFIG_FILE.write_text("\n".join(kept) + "\n", encoding="utf-8")
-
-
 def ensure_config() -> None:
     """确保配置文件存在
 
-    - 缺失则从模板生成后照常返回
+    - 缺失则按平台段表生成初值后返回
     - 必填项留空由本地校验报出，向导据此标红引导填写
     """
     if CONFIG_FILE.exists():
         return
-
-    if not CONFIG_EXAMPLE.exists():
-        raise ConfigTemplateMissingError() from None
-
-    _write_clean_config()
+    CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
+    CONFIG_FILE.write_text(render_config(PLATFORM), encoding="utf-8")
 
 
 def get_schema() -> AppSchema:
-    """获取 Schema 树"""
-    return _PARSER.parse()
+    """获取当前实例平台的 Schema 树"""
+    return build_schema(PLATFORM)
 
 
 def load_config() -> AppConfigData:

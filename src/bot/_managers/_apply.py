@@ -7,6 +7,7 @@
 
 from typing import TYPE_CHECKING
 
+from core.domain import ConfigKey, ConfigNamespace
 from gui.mediator import gui_bridge
 from messages import CheckMessage
 from profile_env import get_profile, read_token
@@ -121,4 +122,6 @@ class ConfigApplier:
 
         - token 只从实例自描述文件读
         """
-        return read_token(get_profile()), config_manager.get("basic.proxy", str).strip()
+        return read_token(get_profile()), config_manager.get(
+            ConfigKey.PROXY.path(ConfigNamespace.PROXY), str
+        ).strip()

@@ -21,14 +21,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from utils.config.models import (
-    PROXY_FIELD,
-    PROXY_MODE_FIELD,
-    AppSchema,
-    PersonaKey,
-    ProxyMode,
-    TabSchema,
-)
+from core.domain import ConfigKey, ConfigNamespace, ProxyMode
+from utils.config.models import AppSchema, TabSchema
 
 from ...theme import GLOBAL, SETTINGS_DIALOG
 from ._field import FieldBuilder
@@ -184,13 +178,13 @@ class ChromeBuilder:
 
         - 仅系统代理与仅直连两档用不到代理项，整行隐藏
         - 标题、输入框与恢复钮同消，值保留在控件里切回即现
-        - 两个控件缺一即不接线，缺件说明模板已改键
+        - 两个控件缺一即不接线，缺件说明字段表已改键
         """
-        if namespace != "basic":
+        if namespace != ConfigNamespace.PROXY:
             return
         inputs = self._fields.inputs
-        mode_combo = inputs.get(PROXY_MODE_FIELD)
-        proxy_row = rows.get(PROXY_FIELD)
+        mode_combo = inputs.get(ConfigKey.PROXY_MODE)
+        proxy_row = rows.get(ConfigKey.PROXY)
         if not isinstance(mode_combo, QComboBox) or proxy_row is None:
             return
         self.proxy_row = proxy_row
@@ -213,16 +207,16 @@ class ChromeBuilder:
     ) -> None:
         """人设预览挂载
 
-        - 三个联动控件缺一即不挂载，缺件说明模板已改键
+        - 三个联动控件缺一即不挂载，缺件说明字段表已改键
         - 输入行与预览按钮行共用堆叠槽，切换时整页等高不跳动
         """
-        if namespace != PersonaKey.NAMESPACE:
+        if namespace != ConfigNamespace.CHORE:
             return
         inputs = self._fields.inputs
-        use_file = inputs.get(PersonaKey.USE_FILE)
-        personality = inputs.get(PersonaKey.PERSONALITY)
-        owner = inputs.get(PersonaKey.OWNER)
-        personality_row = rows.get(PersonaKey.PERSONALITY)
+        use_file = inputs.get(ConfigKey.USE_FILE)
+        personality = inputs.get(ConfigKey.PERSONALITY)
+        owner = inputs.get(ConfigKey.OWNER)
+        personality_row = rows.get(ConfigKey.PERSONALITY)
         if use_file is None or personality is None or owner is None:
             return
         if personality_row is None:

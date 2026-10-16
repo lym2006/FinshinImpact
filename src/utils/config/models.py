@@ -1,15 +1,13 @@
 # src/utils/config/models.py
 """配置数据模型
 
-- 定义值类型别名与校验规则枚举
+- 定义运行期配置数据结构别名
+- 定义界面渲染用的字段与页签结构体
 """
 
 from dataclasses import dataclass, field
 
-from messages import DialogMessage
-
-# 单个 TOML 配置值
-ConfigValue = str | bool | float | list[str] | None
+from core.domain import ConfigValue
 
 # 运行时配置数据结构
 TabData = dict[str, ConfigValue]  # 一个标签页
@@ -18,73 +16,11 @@ TabData = dict[str, ConfigValue]  # 一个标签页
 AppConfigData = dict[str, TabData]
 
 
-class PersonaKey:
-    """人设配置键
-
-    - 配置向导预览与 AI 人设组装必须取同一组键名
-    - 成员存 TOML 短键名，点分路径由 path 派生
-    """
-
-    NAMESPACE: str = "chore"
-    USE_FILE: str = "use_file"
-    PERSONALITY: str = "personality"
-    OWNER: str = "owner"
-
-    @classmethod
-    def path(cls, key: str) -> str:
-        """拼点分路径"""
-        return f"{cls.NAMESPACE}.{key}"
-
-
-# 前置项失败导致某项无法验证时的文案前缀（proxy 坏则 token 测不了）
-PENDING_MARK = "暂未检测"
-
-# 代理三级解析（配置→系统→直连）：模式字段决定校验只探哪一路
-PROXY_FIELD = "proxy"
-
-PROXY_MODE_FIELD = "proxy_mode"
-
-
-class ProxyMode:
-    """代理模式协议串
-
-    - 配置字段 basic.proxy_mode 与校验编排共用
-    """
-
-    AUTO = "auto"
-    CFG = "cfg"
-    SYS = "sys"
-    DIRECT = "direct"
-
-
-# 枚举字段注册表：字段键 → (值, 界面文案) 选项表，渲染与取值校验单源
-ENUM_FIELDS: dict[str, tuple[tuple[str, str], ...]] = {
-    PROXY_MODE_FIELD: (
-        (ProxyMode.AUTO, DialogMessage.SETUP_MODE_AUTO),
-        (ProxyMode.CFG, DialogMessage.SETUP_MODE_CFG),
-        (ProxyMode.SYS, DialogMessage.SETUP_MODE_SYS),
-        (ProxyMode.DIRECT, DialogMessage.SETUP_MODE_DIRECT),
-    )
-}
-
-# 必填项缺失或留空的校验文案
-REQUIRED_MARK = "必填项未填写"
-
-# 必填项点分路径清单：硬编码防用户改配置绕过，防模板占位假值当真值上屏
-REQUIRED_KEYS: frozenset[str] = frozenset(
-    {
-        "ai.api_key",
-        PersonaKey.path(PersonaKey.OWNER),
-        "chore.triggers",
-    }
-)
-
-
 def is_blank(value: object) -> bool:
     """必填项空值判定
 
     - 空白字符串与空列表视为未填写
-    - 数值与布尔无空态：0 和 False 都是合法填写，不许误伤
+    - 数值与布尔无空态，0 和 False 都是合法填写
     """
     if isinstance(value, str):
         return not value.strip()
@@ -95,13 +31,21 @@ def is_blank(value: object) -> bool:
 
 @dataclass
 class FieldSchema:
-    """单个配置项的 UI 属性"""
+    """单个配置项的 UI 属性
+
+    - value_type 缺省时按 default 类型校验
+    - options 非空即枚举字段，每项为「值 文案」对
+    - bounds 为闭区间，仅 float 字段生效
+    """
 
     key: str  # 对应 TOML 里的键名
     label: str  # 界面上显示的标题
     desc: str  # 鼠标悬停时的提示语
     default: ConfigValue  # 默认值
-    options: tuple[tuple[str, str], ...] = ()  # 非空即枚举字段，渲染为下拉
+    options: tuple[tuple[str, str], ...] = ()
+    value_type: type | None = None
+    required: bool = False
+    bounds: tuple[float, float] | None = None
 
 
 @dataclass

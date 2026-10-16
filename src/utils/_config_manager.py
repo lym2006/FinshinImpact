@@ -2,7 +2,7 @@
 """配置管理器
 
 - 按点分路径读取配置
-- 非必填缺键回退模板默认值，必填缺键维持抛错
+- 非必填缺键回退 schema 默认值，必填缺键维持抛错
 """
 
 from copy import deepcopy
@@ -11,7 +11,7 @@ from typing import Any, TypeVar, cast, get_origin
 from exceptions import ConfigAttrError, ConfigPathMissingError
 
 from .config import AppConfigData, AppSchema, get_schema
-from .config.models import REQUIRED_KEYS, ConfigValue
+from .config.models import ConfigValue
 
 T = TypeVar("T")
 
@@ -20,7 +20,7 @@ class _ConfigManager:
     """全局配置管理器"""
 
     def __init__(self) -> None:
-        # 模板解析懒加载：缺模板时不炸导入链，GUI 可先起来再弹致命窗
+        # schema 懒加载：缺配置时不炸导入链，GUI 可先起来再弹致命窗
         self._schema: AppSchema | None = None
         self._config: AppConfigData = {}
 
@@ -29,6 +29,16 @@ class _ConfigManager:
         if self._schema is None:
             self._schema = get_schema()
         return self._schema
+
+    @property
+    def _required_paths(self) -> frozenset[str]:
+        """必填键点分路径集合"""
+        return frozenset(
+            f"{tab.namespace}.{fld.key}"
+            for tab in self.schema
+            for fld in tab.fields
+            if fld.required
+        )
 
     def load(self, config_data: AppConfigData) -> None:
         """全量加载/覆盖配置"""
@@ -41,7 +51,7 @@ class _ConfigManager:
     def get(self, path: str, expected_type: type[T]) -> T:
         """点路径读取并校验
 
-        - 非必填键缺失取模板默认值
+        - 非必填键缺失取 schema 默认值
         - 必填键缺失直接抛错，由校验轮标红引导填写
         """
         keys = path.split(".")
@@ -51,10 +61,10 @@ class _ConfigManager:
         for key in keys:
             if isinstance(value, dict) and key in value:
                 value = value[key]
-            elif path in REQUIRED_KEYS:
+            elif path in self._required_paths:
                 raise ConfigPathMissingError(path, key) from None
             else:
-                value = self._template_default(path)
+                value = self._schema_default(path)
                 break
 
         # 空值检查
@@ -82,8 +92,8 @@ class _ConfigManager:
 
         return cast(T, value)
 
-    def _template_default(self, path: str) -> ConfigValue:
-        """按点路径取模板默认值"""
+    def _schema_default(self, path: str) -> ConfigValue:
+        """按点路径取 schema 默认值"""
         ns, _, key = path.partition(".")
         for tab in self.schema:
             if tab.namespace != ns:
@@ -93,7 +103,7 @@ class _ConfigManager:
                     # deepcopy 隔离：防调用方就地改写 schema 里的共享默认对象
                     return deepcopy(fld.default)
 
-        # 模板也没有该字段属代码错误，照抛缺键
+        # schema 也没有该字段属代码错误，照抛缺键
         raise ConfigPathMissingError(path, key) from None
 
 

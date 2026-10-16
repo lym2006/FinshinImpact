@@ -8,6 +8,7 @@
 
 from PySide6.QtCore import QTimer
 
+from core.domain import ConfigKey, ConfigNamespace
 from exceptions import ConfigOutputError
 from messages import CheckMessage
 from utils import config_manager
@@ -208,7 +209,10 @@ class SettingsController(BaseController):
         # 有风险（向导态/代理留空）或有任何改动都要复验，通道没变时 Manager 跳过重启
         risky = (
             self._current_mode == ConfigMode.SETUP
-            or not str(config_manager.get("basic.proxy", str) or "").strip()
+            or not str(
+                config_manager.get(ConfigKey.PROXY.path(ConfigNamespace.PROXY), str)
+                or ""
+            ).strip()
         )
         if not changes and not risky:
             NoticeDialog.notify(NOTICE_DIALOG.not_changed, parent=dialog)

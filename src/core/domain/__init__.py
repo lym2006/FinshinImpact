@@ -9,15 +9,27 @@ from ._container import make_container
 from ._content import ContentKind
 from ._platform import ChatScope, Platform, make_profile_code, platform_of_profile
 from ._plugin import (
+    MANIFEST_FIELDS,
+    ORDER_TIERS,
     PLUGINS_PKG,
     CommandPriority,
     HelpKey,
+    ManifestField,
     ManifestKey,
     PluginFile,
     StateKey,
 )
 from ._role import ChatRole, CommandRole
 from ._task import TaskKind, TaskPayload, TaskPriority, TaskStatus
+from .config import (
+    TABS_BY_PLATFORM,
+    ConfigKey,
+    ConfigNamespace,
+    ConfigValue,
+    FieldSpec,
+    ProxyMode,
+    TabSpec,
+)
 
 __all__ = [
     # 字段创建
@@ -33,6 +45,9 @@ __all__ = [
     "CommandPriority",
     "PluginFile",
     "ManifestKey",
+    "ManifestField",
+    "MANIFEST_FIELDS",
+    "ORDER_TIERS",
     "HelpKey",
     "StateKey",
     # 内容与角色
@@ -46,4 +61,12 @@ __all__ = [
     "TaskKind",
     "TaskStatus",
     "TaskPriority",
+    # 配置结构
+    "ConfigValue",
+    "ConfigNamespace",
+    "ConfigKey",
+    "ProxyMode",
+    "FieldSpec",
+    "TabSpec",
+    "TABS_BY_PLATFORM",
 ]
