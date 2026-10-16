@@ -8,6 +8,7 @@
 
 from ._check import CheckMessage
 from ._dialog import DialogMessage
+from ._engine import EngineMessage
 from ._misc import MiscMessage
 from ._picker import PickerMessage
 from ._plugin import PluginMessage
@@ -23,4 +24,6 @@ __all__ = [
     # 网络检查与更新
     "CheckMessage",
     "VersionMessage",
+    # 引擎与链路
+    "EngineMessage",
 ]
