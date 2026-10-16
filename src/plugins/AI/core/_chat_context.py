@@ -56,16 +56,6 @@ def session_guard(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
             user_sessions[user] = _create_new_session()
             _logger.debug(f"[Decorator] 已为 {user} 初始化会话")
 
-            # 将系统提示词写入本地文件
-            file_path = ai_config.record_dir / f"temp/{user}.md"
-            content = ai_config.init[0]["content"]
-            log_content = (
-                f"{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}\n\n"
-                f"系统：\n{content}\n\n\n\n\n"
-            )
-            with open(file_path, "a", encoding="utf-8") as f:
-                f.write(log_content)
-
         # 检查并初始化任务队列
         if user not in task_queues:
             task_queues[user] = TaskQueue()
