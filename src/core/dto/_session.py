@@ -17,9 +17,8 @@ class MessageDTO:
     role: ChatRole
     content: str  # 媒体信息剥离，历史只存文本
     created_at: float = 0.0
-    sender_id: str = ""  # 用于标识身份
-    sender_name: str = ""  # 用于称呼
-    summary: str = ""  # 上下文压缩内容
+    sender_id: str = ""  # 判归属防冒名
+    sender_name: str = ""  # 记当时名不回改
 
 
 @dataclass(frozen=True, slots=True)
@@ -32,6 +31,8 @@ class SessionDTO:
     platform: Platform
     container: Container
     messages: tuple[MessageDTO, ...] = ()
+    summary: str = ""  # 压缩摘要，覆盖旧的
+    container_name: str = ""
     is_active: bool = False
     last_active: float = 0.0
 
