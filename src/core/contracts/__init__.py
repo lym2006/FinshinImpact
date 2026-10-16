@@ -5,9 +5,10 @@
 - 仅包含抽象接口与协议定义
 """
 
-from ._adapter import InteractionPort
+from ._adapter import BaseAdapter, InteractionPort
 
 __all__ = [
     # 适配器
     "InteractionPort",
+    "BaseAdapter",
 ]
