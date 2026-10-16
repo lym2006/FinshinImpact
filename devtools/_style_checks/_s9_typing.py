@@ -5,7 +5,7 @@
 - __init__ 返回 -> None（ruff D 不管这里）
 - 豁免：self/cls、简单 lambda、super 纯转发的 vararg/kwarg
 - super().__init__(*args, **kwargs) 转发不引入 ParamSpec 提示
-- # type: ignore 不再校验（允许三类无法机检，且已免注原因）
+- # type: ignore 豁免校验，允许三类无法机检且已免注原因
 """
 
 from __future__ import annotations

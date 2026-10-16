@@ -133,7 +133,7 @@ class SettingsController(BaseController):
 
         - 面板已打开则原地切换为 SETUP 模式
         """
-        # 关闭流程进行中，不再打开弹窗
+        # 关闭流程进行中，跳过强制配置向导
         if gui_bridge.is_shutdown_pending():
             self.logger.info("关闭流程进行中，跳过强制配置向导")
             return

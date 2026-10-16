@@ -45,7 +45,6 @@ class SessionDTO:
 class SessionPatchDTO:
     """会话增量
 
-    - 修改会话的唯一入参形态
     - None 表示不修改
     """
 

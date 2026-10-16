@@ -15,7 +15,7 @@ from core.dto import InboundEventDTO, MsgReferenceDTO, OutboundPayloadDTO
 class HandlerContext:
     """处理上下文
 
-    - handler 的唯一依赖入口
+    - handler 经此取入站事件与外发端口
     """
 
     event: InboundEventDTO

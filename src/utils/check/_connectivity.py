@@ -126,10 +126,9 @@ def _is_token_wellformed(token: str) -> bool:
 def preload_engine() -> None:
     """预触引擎导入链
 
-    - aiogram 经门面 PEP 562 懒加载，首触约 5 秒同步导入落在计时窗内会饿死 wait_for 与界面倒计时
-    - 须在轮次首帧点亮通道行之前调用，倒计时走出的才是纯网络时间
-    - 模块加载一次即全局命中缓存，重复调用近乎零耗时
+    - 须在轮次首帧点亮通道行之前调用
     """
+    # aiogram 经 PEP 562 懒加载，首触约 5 秒同步导入会饿死 wait_for 与界面倒计时
     from aiogram import Bot as _Bot  # noqa: F401
 
     from ..network import SSLUnverifiedSession as _Session  # noqa: F401

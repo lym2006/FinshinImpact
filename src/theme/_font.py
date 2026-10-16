@@ -2,7 +2,7 @@
 """输出字体加载
 
 - 注册并加载项目自带字体，供日志面板等输出内容显式使用
-- 应用全局字体保持系统默认，异常沿用 exceptions 字体族
+- 应用全局字体保持系统默认，异常提示用 exceptions 字体族
 """
 
 from pathlib import Path
@@ -31,7 +31,7 @@ def _fallback_font(size: int) -> QFont:
 def _family_of(path: Path) -> str:
     """注册字体文件并返回族名，失败抛字体异常族
 
-    - 命中缓存直接复用，不重复加载
+    - 命中缓存直接返回
     """
     key = str(path)
     if key in _FAMILY_CACHE:
