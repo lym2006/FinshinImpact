@@ -159,6 +159,39 @@ class NoticeDialogConfig:
 
 
 @dataclass(frozen=True)
+class LinkDialogConfig:
+    """断连计时弹窗专属配置"""
+
+    # 尺寸配置
+    width: int = 340
+    height: int = 170
+    pad: int = 24
+    spacing: int = 12
+    btn_width: int = 110
+    btn_height: int = 32
+
+    # 字体配置
+    font_name: str = "Microsoft YaHei"  # 字体家族名
+    head_font_size: int = 13  # 提示行字号
+    retries_font_size: int = 12  # 重试次数行字号
+    timer_font_size: int = 26  # 计时行字号
+
+    # 文案配置
+    title: str = DialogMessage.LINK_TITLE
+    head: str = DialogMessage.LINK_HEAD
+    elapsed_fmt: str = DialogMessage.LINK_ELAPSED
+    retries_fmt: str = DialogMessage.LINK_RETRIES
+    mute_text: str = DialogMessage.LINK_MUTE
+
+    # 颜色配置
+    bg_color: str = "#2b2b2b"  # 弹窗背景色
+    text_color: str = "#ffffff"  # 提示文字颜色
+    timer_color: str = _FAIL_COLOR  # 计时行红显
+    mute_bg: str = "#3c3c3c"  # 静默按钮背景
+    btn_color: str = "#ffffff"  # 按钮文字色
+
+
+@dataclass(frozen=True)
 class ChangeDialogConfig:
     """配置变更二次确认弹窗专属配置"""
 

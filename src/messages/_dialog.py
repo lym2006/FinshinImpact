@@ -85,3 +85,10 @@ class DialogMessage:
     CHANGE_COL_MOD = "新配置"
     CHANGE_RETURN = "返回修改"
     CHANGE_CONFIRM = "确认保存"
+
+    # 用：theme LinkDialogConfig 文案字段
+    LINK_TITLE = "网络重连中"
+    LINK_HEAD = "链路已断开，正在等待恢复"
+    LINK_ELAPSED = "已断线 {timer}"
+    LINK_RETRIES = "已尝试重连 {n} 次"
+    LINK_MUTE = "本次不提示"

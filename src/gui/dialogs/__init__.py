@@ -10,6 +10,7 @@ from ._check import (
     current_check_window,
     open_check_window,
 )
+from ._link import LinkDialog
 from ._notice import NoticeDialog
 from ._settings import (
     ChangeConfirmDialog,
@@ -28,6 +29,8 @@ __all__ = [
     "ShutdownDialog",
     # 通用通知
     "NoticeDialog",
+    # 断连计时
+    "LinkDialog",
     # 检查进度（单实例）
     "CheckDialog",
     "Round",
