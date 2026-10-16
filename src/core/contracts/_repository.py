@@ -1,13 +1,12 @@
 # src/core/contracts/_repository.py
 """仓库契约
 
-- 定义主体、会话、任务、媒体、黑名单的存取接口与事务边界
+- 定义主体、会话、任务、媒体、命令授权的存取接口
 """
 
 from abc import ABC, abstractmethod
 
-from ..domain import TaskStatus
-from ..domain.ids import PrincipalKey, SessionKey, TaskId
+from ..domain.ids import PrincipalKey, SessionKey, TaskId, UserKey
 from ..dto import (
     MediaEntryDTO,
     MsgReferenceDTO,
@@ -88,14 +87,7 @@ class TaskRepository(ABC):
     async def list_unfinished(self, key: PrincipalKey) -> tuple[TaskDTO, ...]:
         """列出主体未完成任务
 
-        - 重启恢复与 /status 展示共用
-        """
-
-    @abstractmethod
-    async def list_by_status(self, status: TaskStatus) -> tuple[TaskDTO, ...]:
-        """按状态查询
-
-        - 进程启动时恢复 running 中断任务
+        - /clear 圈定范围与 /status 展示共用
         """
 
     @abstractmethod
@@ -119,27 +111,33 @@ class MediaRepository(ABC):
         """清除主体全部媒体索引"""
 
 
-class BlacklistRepository(ABC):
-    """黑名单仓储"""
+class GrantRepository(ABC):
+    """命令授权仓储
+
+    - owner 名单在 config，不进本表
+    - user_key 为 platform:user 二段键，不含 container
+    """
 
     @abstractmethod
-    async def add(self, key: PrincipalKey, reason: str = "") -> bool:
-        """加入黑名单
+    async def grant(
+        self,
+        user_key: UserKey,
+        granted_by: PrincipalKey,
+        expires_at: float | None = None,
+    ) -> bool:
+        """授予权限
+
+        - 返回是否新增
+        - expires_at 为 None 即永久
+        """
+
+    @abstractmethod
+    async def revoke(self, user_key: UserKey) -> bool:
+        """撤销权限
 
         - 返回是否存在
         """
 
     @abstractmethod
-    async def remove(self, key: PrincipalKey) -> bool:
-        """移出黑名单
-
-        - 返回是否存在
-        """
-
-    @abstractmethod
-    async def contains(self, key: PrincipalKey) -> bool:
+    async def contains(self, user_key: UserKey) -> bool:
         """判定是否命中"""
-
-    @abstractmethod
-    async def list_all(self) -> tuple[str, ...]:
-        """列出全部条目"""
