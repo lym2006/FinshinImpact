@@ -4,9 +4,12 @@
 - 定义插件加载优先级词表
 - 定义插件相关文件名词表
 - 定义插件数据契约的键名词表
+- 定义插件清单标量字段的类型、必填与默认
 """
 
+from dataclasses import dataclass
 from enum import IntEnum, StrEnum
+from typing import Any
 
 PLUGINS_PKG = "plugins"  # 插件树顶层包名，find_spec 与动态导入路径共用同值
 
@@ -71,3 +74,31 @@ class StateKey(StrEnum):
 
     ENABLED = "enabled"
     CATALOG = "catalog"
+
+
+@dataclass(frozen=True, slots=True)
+class ManifestField:
+    """插件清单标量字段规格
+
+    - deps/assets 值类型为 list，成员一律 str
+    - order 值类型为 int，取值须落在 CommandPriority 档位
+    """
+
+    key: ManifestKey
+    value_type: type
+    default: Any
+    required: bool = False
+
+
+MANIFEST_FIELDS: tuple[ManifestField, ...] = (
+    ManifestField(ManifestKey.NAME, str, "", required=True),
+    ManifestField(ManifestKey.TITLE, str, "", required=True),
+    ManifestField(ManifestKey.SUMMARY, str, "", required=True),
+    ManifestField(ManifestKey.CORE, bool, False),
+    ManifestField(ManifestKey.ORDER, int, CommandPriority.NORMAL),
+    ManifestField(ManifestKey.DEPS, list, ()),
+    ManifestField(ManifestKey.ASSETS, list, ()),
+)
+
+# order 合法取值域，越界拒收
+ORDER_TIERS = frozenset(tier.value for tier in CommandPriority)

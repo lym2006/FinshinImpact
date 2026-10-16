@@ -12,6 +12,8 @@ from pathlib import Path
 from typing import Any, TypeGuard
 
 from core.domain import (
+    MANIFEST_FIELDS,
+    ORDER_TIERS,
     PLUGINS_PKG,
     CommandPriority,
     HelpKey,
@@ -22,16 +24,7 @@ from core.domain import (
 from core.dto import HelpCommandDTO, HelpSectionDTO, PluginManifestDTO
 
 # 清单标量字段与期望类型，deps/assets 列表成员一律 str
-_SCALAR_TYPES: dict[str, type] = {
-    ManifestKey.NAME: str,
-    ManifestKey.TITLE: str,
-    ManifestKey.SUMMARY: str,
-    ManifestKey.CORE: bool,
-    ManifestKey.DEPS: list,
-    ManifestKey.ASSETS: list,
-}
-
-_ORDER_TIERS = {tier.value for tier in CommandPriority}
+_SCALAR_TYPES: dict[str, type] = {spec.key: spec.value_type for spec in MANIFEST_FIELDS}
 
 # 帮助贡献键名白名单，未知键段整段拒收
 _HELP_SECTION_KEYS = frozenset({HelpKey.SECTION, HelpKey.NOTE, HelpKey.COMMANDS})
@@ -41,8 +34,8 @@ _HELP_COMMAND_ALLOWED = _HELP_COMMAND_KEYS | frozenset({HelpKey.FLAGS})
 # 清单开关项的段数：开关与说明各一段
 _FLAG_ITEM_LEN = 2
 
-# 清单必填三元组，缺任一拒收
-_REQUIRED_KEYS = (ManifestKey.NAME, ManifestKey.TITLE, ManifestKey.SUMMARY)
+# 清单必填项，缺任一拒收
+_REQUIRED_KEYS = tuple(spec.key for spec in MANIFEST_FIELDS if spec.required)
 
 
 def _plugins_dir() -> Path | None:
@@ -112,7 +105,7 @@ def _read_manifest(path: Path, dir_name: str) -> PluginManifestDTO | None:
         return None
 
     if (raw_order := data.get(ManifestKey.ORDER)) is not None:
-        if not isinstance(raw_order, int) or raw_order not in _ORDER_TIERS:
+        if not isinstance(raw_order, int) or raw_order not in ORDER_TIERS:
             return None
         kwargs[ManifestKey.ORDER] = CommandPriority(raw_order)
 

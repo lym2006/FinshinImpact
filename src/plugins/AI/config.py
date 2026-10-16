@@ -9,8 +9,8 @@ from pathlib import Path
 from typing import Any
 
 from bot.error_guard import error_guard
+from core.domain import ConfigKey, ConfigNamespace
 from utils import config_manager
-from utils.config.models import PersonaKey
 from utils.paths import RECORDS_DIR
 from utils.persona import build_persona
 
@@ -46,8 +46,8 @@ def _build_persona(fallback: str) -> str:
 
     - 勾选 use_file 则优先读实例人设文件，读不到回退配置字符串
     """
-    use_file = config_manager.get(PersonaKey.path(PersonaKey.USE_FILE), bool)
-    owner_id = config_manager.get(PersonaKey.path(PersonaKey.OWNER), str)
+    use_file = config_manager.get(ConfigKey.USE_FILE.path(ConfigNamespace.CHORE), bool)
+    owner_id = config_manager.get(ConfigKey.OWNER.path(ConfigNamespace.CHORE), str)
     return build_persona(fallback, use_file, owner_id)
 
 
@@ -69,7 +69,7 @@ class _DynamicAIConfig:
             "group_triggers": ("chore.triggers", list),
             "cleanup_time": ("data.clearup", float),
             "waiting_time": ("data.waiting", float),
-            "init": (PersonaKey.path(PersonaKey.PERSONALITY), str),
+            "init": (ConfigKey.PERSONALITY.path(ConfigNamespace.CHORE), str),
         }
 
     @error_guard("AI 配置读取", reraise=True)

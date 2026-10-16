@@ -7,6 +7,7 @@
 """
 
 from ._check import CheckMessage
+from ._config import ConfigMessage
 from ._dialog import DialogMessage
 from ._engine import EngineMessage
 from ._misc import MiscMessage
@@ -21,6 +22,7 @@ __all__ = [
     # 主窗与专属弹窗
     "MiscMessage",
     "DialogMessage",
+    "ConfigMessage",
     # 网络检查与更新
     "CheckMessage",
     "VersionMessage",

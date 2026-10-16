@@ -10,6 +10,7 @@ import asyncio
 from PySide6.QtCore import QThread, Signal
 from PySide6.QtWidgets import QDialog, QWidget
 
+from core.domain import ConfigKey, ConfigNamespace
 from messages import CheckMessage
 from profile_env import get_profile, read_token
 from utils import config_manager
@@ -114,7 +115,9 @@ class DiagnoseController(BaseController):
 
         configured = ""
         try:
-            configured = config_manager.get("basic.proxy", str)
+            configured = config_manager.get(
+                ConfigKey.PROXY.path(ConfigNamespace.PROXY), str
+            )
         except Exception:  # 配置未就绪按留空处理，不阻塞诊断
             pass
         token = read_token(get_profile())

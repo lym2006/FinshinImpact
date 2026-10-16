@@ -10,9 +10,8 @@ from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
+from core.domain import ProxyMode
 from messages import CheckMessage
-
-from ..config import ProxyMode
 
 
 class RowStatus:
@@ -73,7 +72,7 @@ _PROBE_BUDGET_DIRECT = 3.0  # 直连被墙时必然等满，预算取短以快�
 _PROXY_PORTS = (7890, 7897, 7898, 7893, 10808, 10809, 8118, 20171, 20172)
 
 # 单路模式的配置值 → 通道行 id，缺项值按自动全探处理
-_SINGLE_KINDS = {
+_SINGLE_KINDS: dict[str, str] = {
     ProxyMode.CFG: RowId.CFG,
     ProxyMode.SYS: RowId.SYS,
     ProxyMode.DIRECT: RowId.DIRECT,

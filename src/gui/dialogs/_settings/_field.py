@@ -20,10 +20,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from messages import ConfigMessage
 from theme import TickedCheckBox
-from utils.config import PENDING_MARK
 from utils.config.models import (
-    REQUIRED_KEYS,
     AppConfigData,
     AppSchema,
     ConfigValue,
@@ -43,7 +42,7 @@ _LABEL_WIDTH_MAX_EM = 8  # 标签列宽上限为 8 倍「M」字宽
 _ERROR_QSS = f"color: {SETTINGS_DIALOG.error_color};"
 _PENDING_QSS = f"color: {SETTINGS_DIALOG.pending_color};"
 
-# 必填项空态渲染值：按模板默认类型呈现"未填写"的样子
+# 必填项空态渲染值：按默认值类型呈现"未填写"的样子
 _BLANK_BY_TYPE: dict[type, ConfigValue] = {
     str: "",
     float: "",
@@ -77,7 +76,7 @@ class FieldBuilder:
         """渲染表单控件
 
         - 必填键缺失或留空一律空态上屏
-        - 非必填键缺失回退模板默认值
+        - 非必填键缺失回退默认值
         """
         container = QWidget()
         form = QFormLayout(container)
@@ -166,13 +165,13 @@ class FieldBuilder:
         """取上屏值与恢复目标
 
         - 必填项空态上屏且不挂恢复按钮
-        - 非必填项恢复目标是模板默认值
+        - 非必填项恢复目标是默认值
         """
-        # 禁模板占位假值冒充用户配置，用户不改即沿用默认值
+        # 禁默认值假值冒充用户配置，用户不改即沿用默认值
         ns_config = self._current.get(namespace) or {}
         present = field.key in ns_config
         current_value: ConfigValue = ns_config[field.key] if present else field.default
-        if f"{namespace}.{field.key}" not in REQUIRED_KEYS:
+        if not field.required:
             restore_target: ConfigValue = (
                 deepcopy(field.default)
                 if isinstance(field.default, list)
@@ -198,7 +197,7 @@ class FieldBuilder:
             Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
         )
         if err := errors.get(field.key):
-            if err.startswith(PENDING_MARK):
+            if err.startswith(ConfigMessage.PENDING_MARK):
                 # 前置项失败导致的"暂未检测"：黄字 ❔，不算本项错误
                 label_widget.setText(f"❔ {field.label}")
                 label_widget.setStyleSheet(_PENDING_QSS)

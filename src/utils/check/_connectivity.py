@@ -23,9 +23,8 @@ from exceptions import (
     TelegramServerError,
     TokenError,
 )
-from messages import CheckMessage
+from messages import CheckMessage, ConfigMessage
 
-from ..config import PENDING_MARK
 from ..network.probe import FieldKey, probe_budget
 
 # 构造期异常消息 → 配置键的解析规则
@@ -157,7 +156,9 @@ async def _check_config(
         errors[FieldKey.PROXY] = proxy_text
 
         # 代理坏时请求出不了本机，getMe 结果无意义：标暂未检测而非无效
-        errors[FieldKey.TOKEN] = CheckMessage.TOKEN_PENDING.format(mark=PENDING_MARK)
+        errors[FieldKey.TOKEN] = CheckMessage.TOKEN_PENDING.format(
+            mark=ConfigMessage.PENDING_MARK
+        )
         return errors
 
     if not _is_token_wellformed(token):
