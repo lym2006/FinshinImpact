@@ -17,6 +17,8 @@ from utils import get_logger
 from utils.paths import HELP_IMAGE, PROFILE_DIR
 from utils.plugin import enabled_manifests
 
+from ..messages import BotMessage
+
 # 帮助图属实例产物，落实例数据目录，随实例隔离不共用
 _SAVE_PATH = HELP_IMAGE
 
@@ -120,21 +122,18 @@ def _cache_hit(digest: str) -> bool:
         return False
 
 
-def resolve_single_help(text: str) -> str:
-    """解析单命令请求"""
-    try:
-        cmd_part = text[: text.index("-")]
-    except ValueError:
-        return "格式错误"
+def resolve_single_help(name: str) -> str:
+    """取单命令帮助文案
 
-    cmd = cmd_part.replace(" ", "").replace("/", "")
-    return help_list.get(cmd, "格式错误")
+    - 命令名取自入站事件的命令载体
+    """
+    return help_list.get(name, BotMessage.CMD_FORMAT_ERROR)
 
 
 def prewarm() -> None:
     """启动前按菜单指纹决定是否重画帮助图
 
-    - 指纹相同即复用现图，不重画
+    - 指纹相同即复用现图
     - 重画失败不阻断，首次请求时补画
     """
     digest = _menu_digest()
@@ -200,7 +199,7 @@ def _render_menu(digest: str) -> Path:
             (padding, padding + i * line_height), line, font=font, fill=_HELP.text_color
         )
 
-    # 保存并返回路径（图与指纹成对落盘，指纹命中即复用）
+    # 图与指纹成对落盘，缺一即判缓存未命中
     _SAVE_PATH.parent.mkdir(parents=True, exist_ok=True)
     img.save(_SAVE_PATH)
     _DIGEST_PATH.write_text(digest, encoding="utf-8")
