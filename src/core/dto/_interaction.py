@@ -6,7 +6,7 @@
 
 from dataclasses import dataclass
 
-from ..domain import ContentKind
+from ..domain import ChatScope, ContentKind
 from ._content import ContentDTO
 from ._identity import MsgReferenceDTO, PrincipalDTO
 
@@ -34,10 +34,14 @@ class InboundEventDTO:
     ref: MsgReferenceDTO
     principal: PrincipalDTO
     content: ContentDTO
+    scope: ChatScope
+    container_name: str = ""
+    display_name: str = ""  # 落 MessageDTO.sender_name
 
     is_command: bool = False
     command_name: str = ""
     command_args: tuple[str, ...] = ()
     reply_ref: MsgReferenceDTO | None = None
+    reply_text: str = ""  # 只取一层不下钻
     is_mention_bot: bool = False
     created_at: float = 0.0

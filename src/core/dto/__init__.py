@@ -2,7 +2,6 @@
 """数据传输对象门面
 
 - 定义跨层传递的不可变数据快照
-- 禁止反向依赖
 """
 
 from ._content import ContentDTO, MediaEntryDTO

@@ -17,4 +17,4 @@ PrincipalKey = NewType("PrincipalKey", str)  # PrincipalDTO.key
 # 平台原始标识
 UserId = NewType("UserId", str)
 MessageId = NewType("MessageId", str)
-TaskId = NewType("TaskId", str)  # MessageKey:TaskKind
+TaskId = NewType("TaskId", str)  # f"{TaskKind}:{MsgReferenceDTO.key}"
