@@ -4,6 +4,7 @@
 - GUI 可见文案收敛进 src/messages/，gui 下 f-string 裸写业务话术提示
 - Bot 对话话术收敛进 plugins/messages.py，插件内长中文提示裸写提示
 - 运行日志不收敛：logger/print 调用内中文不报
+- 日志器禁用长级别名，面板列宽只容五字符
 - theme 令牌文件禁持有话术字面量
 """
 
@@ -33,6 +34,11 @@ _GUI_LOG_CALLS: frozenset[str] = frozenset(
 )
 _MIN_BUSINESS_LEN = 6
 
+# 长级别名禁用：格式器列宽 %(levelname)-5s 按五字符定死，顶宽就歪一整列
+_BANNED_LEVELS: frozenset[str] = frozenset({"warning", "warn", "critical", "fatal"})
+# 日志器对象名尾缀，避开 QMessageBox.warning 这类同名控件方法
+_LOGGER_SUFFIXES: tuple[str, ...] = ("logger", "log")
+
 
 def check(files: list[FileData]) -> list[Finding]:
     """扫描日志与文案违规"""
@@ -40,6 +46,7 @@ def check(files: list[FileData]) -> list[Finding]:
     for file in files:
         if file.parse_error:
             continue
+        findings.extend(_check_log_levels(file))
         if file.module.startswith("gui"):
             findings.extend(_check_gui_text(file))
         if file.module.startswith("plugins") and file.rel not in (
@@ -48,6 +55,29 @@ def check(files: list[FileData]) -> list[Finding]:
             findings.extend(_check_bot_text(file))
         if file.module.startswith("gui.theme"):
             findings.extend(_check_theme_tokens(file))
+    return findings
+
+
+def _check_log_levels(file: FileData) -> list[Finding]:
+    """日志器上的禁用级别调用"""
+    findings: list[Finding] = []
+    for node in ast.walk(file.tree):
+        if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
+            continue
+        if node.func.attr not in _BANNED_LEVELS:
+            continue
+        owner = node.func.value
+        name = getattr(owner, "id", "") or getattr(owner, "attr", "")
+        if not name.lower().endswith(_LOGGER_SUFFIXES):
+            continue
+        findings.append(
+            _f(
+                file,
+                node.lineno,
+                f"日志器调用禁用级别 `{node.func.attr}`，面板列宽只容五字符，改用 info 或 debug",
+                hard=True,
+            )
+        )
     return findings
 
 

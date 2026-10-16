@@ -11,10 +11,12 @@ import asyncio
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
+from messages import EngineMessage
+
 from ._base import BaseManager
 
 if TYPE_CHECKING:
-    from aiogram import Bot, Dispatcher
+    from adapters.telegram.adapter import TelegramAdapter
 
     from .._service import BotService
 
@@ -38,46 +40,50 @@ class ServiceManager(BaseManager):
 
         self.stop_service()  # 停掉旧服务（如果有）
 
-        self.logger.info("正在创建引擎...")
-        bot, dispatcher = self._create_components()
-        self._service = BotService(bot, dispatcher)
+        self.logger.info(EngineMessage.CREATING)
+        adapter = self._create_components()
+        self._service = BotService(adapter)
 
         await asyncio.to_thread(self._service.start)
-        self.logger.info("引擎启动成功")
+        self.logger.info(EngineMessage.STARTED)
 
-    def _create_components(self) -> tuple[Bot, Dispatcher]:
-        """按配置构建 Bot 与分发器
+    def _create_components(self) -> TelegramAdapter:
+        """按配置构建适配器
 
         - aiogram 重依赖此刻才入场，主窗启动不受其拖累
         """
-        from aiogram import Bot, Dispatcher
-
+        from adapters.telegram.adapter import TelegramAdapter
         from utils.middleware import LoggingMiddleware
-        from utils.network import SSLUnverifiedSession
         from utils.plugin import register_routers
 
         token, proxy = self._get_config()
-        bot = Bot(token=token, session=SSLUnverifiedSession(proxy=proxy))
-        dispatcher = Dispatcher()
+        adapter = TelegramAdapter(token=token, proxy=proxy)
+        dispatcher = adapter.dispatcher
 
         # 注册中间件和路由
         dispatcher.update.outer_middleware(LoggingMiddleware())
         report = register_routers(dispatcher)
         total = len(report)
-        self.logger.info(f"插件注册完成，共 {total} 项")
+        self.logger.info(EngineMessage.PLUGINS_DONE.format(n=total))
         for index, (name, ok, reason) in enumerate(report, 1):
             if ok:
-                self.logger.info(f"[{index}/{total}] 插件 {name} 注册成功")
+                self.logger.info(
+                    EngineMessage.PLUGIN_OK.format(index=index, n=total, name=name)
+                )
             else:
-                self.logger.error(f"[{index}/{total}] 插件 '{name}' {reason}")
+                self.logger.error(
+                    EngineMessage.PLUGIN_FAIL.format(
+                        index=index, n=total, name=name, reason=reason
+                    )
+                )
 
-        return bot, dispatcher
+        return adapter
 
     def stop_service(self) -> None:
         """停止 Bot 服务"""
         if not self._service:
             return
-        self.logger.info("正在停止引擎...")
+        self.logger.info(EngineMessage.STOPPING)
         service = self._service
         self._service = None
         service.stop()
