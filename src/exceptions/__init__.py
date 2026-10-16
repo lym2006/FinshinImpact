@@ -29,6 +29,7 @@ from ._connectivity import (
     TelegramServerError,
     TokenError,
 )
+from ._domain import MessageVanishedError
 from ._gui import (
     GUI_MAP,
     DashboardWriteError,
@@ -105,6 +106,8 @@ __all__ = [
     "ProxySchemeError",
     "ProxyTimeoutError",
     "ProxyConnectionRefusedError",
+    # 领域
+    "MessageVanishedError",
     # GUI
     "GUIError",
     "DashboardWriteError",
