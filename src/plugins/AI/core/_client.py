@@ -30,7 +30,6 @@ class AIClient(BaseClient):
     ) -> AsyncGenerator[dict[str, Any], None]:
         """AI 流式聊天请求
 
-        - 复用 BaseClient 超时与错误处理
         - 解析 SSE delta
         """
         payload = {

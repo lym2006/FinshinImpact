@@ -40,7 +40,7 @@ class PluginManifestDTO:
 
     - deps 只写顶层依赖的 pin 版本串，不含传递依赖
     - assets 值为「模块名 资源名」两段
-    - summary 不参与目录摘要计算，描述改动不触发弹面板
+    - 目录摘要不含 summary，描述改动不触发弹面板
     """
 
     name: str

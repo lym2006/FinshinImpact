@@ -150,7 +150,7 @@ class BotGUI(QMainWindow):
 
         - critical 为致命通知，确认后直接退出
         - 已有模态窗时延后重试，防止弹窗被吞
-        - 多行长文只进弹窗，不再写入面板
+        - 多行长文只进弹窗
         """
         if QApplication.activeModalWidget() is not None:
             QTimer.singleShot(

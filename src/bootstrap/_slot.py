@@ -147,10 +147,10 @@ def _pump() -> None:
 def _preload_engine_async() -> threading.Thread:
     """后台线程导入 utils 并预热引擎链
 
-    - utils 与 aiogram 都是杀软扫描敏感的冷盘重块，主线程泵不动它们
-    - 纯网络与序列化依赖不碰 Qt，子线程导入不触绑线程约束
     - utils 落位即发信号，主线程泵到信号才续导依赖它的 GUI 链
     """
+    # utils 与 aiogram 是杀软扫描敏感的冷盘重块，主线程泵不动
+    # 两者的导入不绑定线程，才放到子线程执行
     thread = threading.Thread(
         target=_preload_engine_worker,
         daemon=True,
@@ -211,7 +211,7 @@ def main() -> int:
 
     - 完成资格判定后，持锁进程才导入主程序
     - 须先写入身份码环境变量，再导入路径常量
-    - 导入主程序耗时长，先弹提示卡垫住无窗空白期
+    - 导入主程序前先弹提示卡
     """
     code = _handle(_acquire_slot())
     if code is not None:
@@ -221,6 +221,8 @@ def main() -> int:
     from ._warmup import start_warmup
 
     t0 = time.monotonic()
+
+    # 主程序导入耗时长，提示卡垫住无窗空白期
     wait = show_launch_wait(get_profile())
 
     def on_ready() -> None:

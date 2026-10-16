@@ -48,7 +48,7 @@ class Main:
     def main(self) -> int:
         """主函数"""
         try:
-            # 实例锁由 bootstrap 统一抢占，此处不再重复抢
+            # 实例锁由 bootstrap 统一抢占
             app = ensure_app()
 
             # 引擎重依赖已由引导层后台线程预热，此处命中缓存近乎零耗时

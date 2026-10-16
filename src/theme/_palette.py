@@ -1,7 +1,7 @@
 # src/theme/_palette.py
 """跨层调色板
 
-- 引导层与主界面共用的颜色与圆角唯一来源
+- 定义引导层与主界面共用的颜色与圆角
 """
 
 from dataclasses import dataclass

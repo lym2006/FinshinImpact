@@ -1,7 +1,6 @@
 # src/utils/check/_diagnose.py
 """网络连通诊断
 
-- 通道并发探测复用 _verify.run_channels
 - 配置留空或系统代理未开启的通道，首帧直接给结论
 - 全部通道失败时复测本机代理端口，输出结论行
 """

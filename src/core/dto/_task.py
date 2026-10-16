@@ -35,10 +35,7 @@ class TaskDTO:
 
 @dataclass(frozen=True, slots=True)
 class TaskRequestDTO:
-    """任务创建请求
-
-    - enqueue 的唯一入参
-    """
+    """任务创建请求"""
 
     principal: PrincipalDTO
     kind: TaskKind
