@@ -7,6 +7,7 @@
 from messages import MiscMessage
 from utils.logger import GUI_FORMATTER, get_logger
 
+from ._link_watcher import LinkWatcher
 from ._main_window import BotGUI
 from ._qss import build_global_qss
 from .controllers import BaseController, build_controllers
@@ -51,6 +52,7 @@ def create_gui() -> tuple[BotGUI, dict[str, BaseController]]:
     # 注入依赖并返回
     botgui.set_action_map(dict(controllers))
     botgui.set_logger_handler()
+    LinkWatcher(botgui).start()
 
     # 将实例列表转换为以 BTN_KEY 为键的字典，方便 Main 查找
     instance_map = {inst.BTN_KEY: inst for inst in instances}

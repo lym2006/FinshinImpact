@@ -19,6 +19,7 @@ from ._dialogs import (
     ChangeDialogConfig,
     CheckDialogConfig,
     FiveStateDialogConfig,
+    LinkDialogConfig,
     NoticeDialogConfig,
     ShutdownDialogConfig,
     WaitDialogConfig,
@@ -44,6 +45,7 @@ __all__ = [
     "WaitDialogConfig",
     "NoticeDialogConfig",
     "FiveStateDialogConfig",
+    "LinkDialogConfig",
     # 实例单例
     "WINDOW",
     "FONT",
@@ -60,6 +62,7 @@ __all__ = [
     "CHECK_DIALOG",
     "WAIT_DIALOG",
     "NOTICE_DIALOG",
+    "LINK_DIALOG",
 ]
 
 # 在模块级别实例化，供外部导入使用
@@ -78,3 +81,4 @@ CHANGE_DIALOG = ChangeDialogConfig()
 CHECK_DIALOG = CheckDialogConfig()
 WAIT_DIALOG = WaitDialogConfig()
 NOTICE_DIALOG = NoticeDialogConfig()
+LINK_DIALOG = LinkDialogConfig()
