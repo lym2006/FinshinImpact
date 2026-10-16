@@ -75,7 +75,7 @@ class LinkWatcher(QObject):
         self._dialog = None
 
     def _on_mute(self) -> None:
-        """本次运行内不再弹"""
+        """本次运行内保持静默"""
         self._muted = True
         self._on_close()
 

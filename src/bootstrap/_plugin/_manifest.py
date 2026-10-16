@@ -2,6 +2,7 @@
 """引导期插件清单
 
 - 面板与启动判定读清单、算指纹、读写实例状态
+- 引导期不得 import utils
 """
 
 import hashlib
@@ -66,7 +67,6 @@ def load_manifests(plugins_path: Path) -> list[dict[str, Any]]:
 
     - 无清单或 name 非法的子目录跳过
     - 按 (order, name) 升序返回 dict 列表
-    - 与 utils/plugin/_manifest.py 的 _load_manifests 同源不同形，引导期禁 import utils 故各持一份
     """
     manifests: list[dict[str, Any]] = []
 
@@ -151,7 +151,7 @@ def top_package_name(pin: str) -> str:
 def core_dependencies() -> list[str]:
     """读取项目核心依赖清单
 
-    - 来源 pyproject 的 project.dependencies，与 launcher 同源
+    - 取 pyproject 的 project.dependencies 段
     - 发布包内 pyproject 为随包文件，缺失返回空表由调用方处理
     """
     data = _read_toml(ROOT_DIR / "pyproject.toml") or {}

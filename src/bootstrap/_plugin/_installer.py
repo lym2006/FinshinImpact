@@ -102,11 +102,10 @@ def _editable_project_pin() -> list[str]:
 def sync_env(keep: list[str], on_line: ProgressFn | None = None) -> list[str]:
     """按保留清单重建环境并返回失败清单
 
-    - uv pip sync 不做依赖解析，直喂顶层 pin 会误删全部传递依赖
     - 先 compile 出含传递依赖的闭包再喂 sync
     - 已装 dev 工具、项目 editable 安装、解释器基建并入保留清单
     - 整批执行，失败时失败清单为保留清单全体
-    - 耗时较长且会删除清单外的包，调用方须先向用户确认
+    - 会删除保留清单外的包，调用方须先向用户确认
     """
     if dev_mode():
         emit(on_line, PluginMessage.DEV_SYNC)
@@ -121,6 +120,8 @@ def sync_env(keep: list[str], on_line: ProgressFn | None = None) -> list[str]:
         pins_path = Path(stage) / "requirements.in"
         pins_path.write_text("\n".join(keep), encoding="utf-8")
         lock_path = Path(stage) / "requirements.txt"
+
+        # uv pip sync 不做依赖解析，直喂顶层 pin 会删掉全部传递依赖
         compile_argv = [
             "pip",
             "compile",

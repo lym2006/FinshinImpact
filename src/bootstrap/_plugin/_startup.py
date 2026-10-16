@@ -37,7 +37,7 @@ def _target_manifests(code: str) -> list[dict]:
     """取本实例应结算的插件清单
 
     - 范围为核心插件与本实例启用集
-    - core 插件读取侧恒并入，与 utils/plugin/_register 同源口径
+    - core 插件读取侧恒并入
     """
     root = plugins_root()
     if root is None:
