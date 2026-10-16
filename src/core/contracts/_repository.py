@@ -48,10 +48,7 @@ class SessionRepository(ABC):
     async def apply_patch(
         self, session_key: SessionKey, patch: SessionPatchDTO
     ) -> SessionDTO:
-        """应用会话增量
-
-        - 会话写入的唯一入口
-        """
+        """应用会话增量"""
 
     @abstractmethod
     async def trim_to(self, session_key: SessionKey, keep_count: int) -> int:

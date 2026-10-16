@@ -109,7 +109,7 @@ class NewProfileDialog(_ProfileFormDialog):
     def _build_head(self, form: QVBoxLayout) -> None:
         """平台下拉
 
-        - 未接线平台置灰不可选，仅作未来支持的预告
+        - 未接线平台置灰不可选
         """
         form.addWidget(QLabel(PickerMessage.NEW_PLATFORM_LABEL))
         self._platform = QComboBox()
@@ -125,7 +125,7 @@ class NewProfileDialog(_ProfileFormDialog):
         """校验 token 并新建实例"""
         token = self._token.text().strip()
 
-        # Qt userData 取出会退化成字符串，包回枚举让类型契约名副其实
+        # Qt userData 取出会退化成字符串，此处包回枚举
         platform = Platform(self._platform.currentData())
         code = code_for_token(platform, token)
         if not code:

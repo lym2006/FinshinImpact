@@ -2,7 +2,6 @@
 """启动提示卡
 
 - 选窗收场到主窗就绪之间给出可见的等待界面
-- 无边框窗不受系统"未响应"标题栏与白屏刷新影响
 - 启动导入分步泵事件，卡片靠正计时与重绘应答活着
 - 主程序导入须留在主线程跑，界面组件在导入期即建 QObject
 """
@@ -92,7 +91,7 @@ class _LaunchWaitDialog(QDialog):
         )
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
-        """收起卡片即停表，隐藏对象不再空转秒表"""
+        """收起卡片即停表"""
         self._timer.stop()
         super().closeEvent(event)
 

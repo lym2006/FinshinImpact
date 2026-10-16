@@ -45,9 +45,9 @@ def _require(key: str) -> Any:
     """取配置表键值，缺键即报错
 
     - 缺键直接抛错，把配置问题暴露出来
-    - 代码不写默认值，避免出现第二份不一致的副本
     """
     if key not in _SETTINGS:
+        # 代码兜底默认值会造出第二份不一致副本
         raise RuntimeError(f"pyproject 缺 [tool.finshin-impact].{key}")
     return _SETTINGS[key]
 

@@ -119,6 +119,6 @@ class ConfigApplier:
     def get_raw_config_func() -> tuple[str, str]:
         """读取校验专用的凭证与代理原值
 
-        - token 从实例自描述文件读，配置里不再存 token
+        - token 只从实例自描述文件读
         """
         return read_token(get_profile()), config_manager.get("basic.proxy", str).strip()

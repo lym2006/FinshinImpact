@@ -215,7 +215,7 @@ def pick_profile() -> str:
     """选择或新建实例身份
 
     - 返回身份码，用户取消返回空串
-    - 经 ensure_app 创建应用实例并设置图标，主程序复用同一实例
+    - 经 ensure_app 取应用实例并设置图标
     """
     ensure_app()
     dialog = _ProfilePickerDialog()

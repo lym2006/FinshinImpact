@@ -43,7 +43,7 @@ class VersionController(BaseController):
 
     # 契约声明
     LOGGER_NAME = "GUI.Version"
-    BTN_KEY = "update"  # 工具栏接线标识，与按钮表同源，改名需连动 _misc 与主窗
+    BTN_KEY = "update"  # 工具栏接线标识，改名需连动 _misc 与主窗
 
     def _execute(self) -> None:
         """检查版本更新
@@ -51,7 +51,7 @@ class VersionController(BaseController):
         - 等待窗可取消，关窗即弃用线程
         - 结果全文经统一通知弹窗展示
         """
-        # 面板只记首行摘要，新版提示文案与成败态同源透出
+        # 面板只记首行摘要，新版提示文案与成败态一并透出
         dialog = WaitDialog(WAIT_DIALOG.check_text, parent=self.gui, cancelable=True)
         worker = _VersionWorker()
         result: list[tuple[str, bool]] = []
