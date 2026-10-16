@@ -16,6 +16,7 @@ class BotMessage:
     # 命令
     CMD_NOT_FOUND = "命令不存在，请使用 /help "
     CMD_FORMAT_ERROR = "格式错误"
+    CMD_USAGE = "可用输入：{inputs}"
 
     # 历史记录
     HISTORY_EMPTY = "暂无历史记录"

@@ -60,6 +60,7 @@ class HelpKey(StrEnum):
     COMMANDS = "commands"
     CMD = "cmd"
     DESC = "desc"
+    FLAGS = "flags"
 
 
 class StateKey(StrEnum):

@@ -11,3 +11,4 @@ assets = []
 [[help.commands]]
 cmd = "help"
 desc = "查看帮助文档，命令后接 -h 可以单独查看该命令帮助"
+flags = []
