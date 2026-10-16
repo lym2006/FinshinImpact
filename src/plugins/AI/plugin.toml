@@ -13,7 +13,9 @@ note = "独立会话和思考过程"
 [[help.commands]]
 cmd = "history"
 desc = "显示历史记录"
+flags = []
 
 [[help.commands]]
 cmd = "clear"
 desc = "清空记忆"
+flags = []

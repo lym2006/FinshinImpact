@@ -13,8 +13,6 @@ from typing import Any
 
 from aiogram import BaseMiddleware, Bot
 from aiogram.enums import ChatType, ContentType, MessageEntityType
-from aiogram.filters import Command
-from aiogram.filters.command import CommandException
 from aiogram.types import Message, TelegramObject, Update
 
 from core.contracts import InteractionPort
@@ -34,11 +32,12 @@ from utils import get_logger
 # 协议串
 _COMMAND_PREFIX = "/"
 _BOT_PREFIX = "@"
+_FLAG_PREFIX = "-"
 _ANONYMOUS_USER = "unknown"  # 匿名代发无 user 段时的占位值
 
-# Telegram 侧命令名与机器人用户名的字符集
+# Telegram 侧命令名与 flag 的形状
 _COMMAND_NAME_RE = re.compile(r"[A-Za-z][A-Za-z0-9_]{0,31}")
-_BOT_USERNAME_RE = re.compile(r"[A-Za-z][A-Za-z0-9_]{4,31}")
+_FLAG_RE = re.compile(r"-[A-Za-z][A-Za-z0-9_-]*")
 
 _logger = get_logger("Adapter")
 
@@ -118,31 +117,37 @@ def build_ref(message: Message, container: Container) -> MsgReferenceDTO:
 
 
 def _parse_command(text: str) -> CommandDTO:
-    """解析命令形态
+    """解析命令三段
 
-    - 首个空格之后一律算参数
-    - 命令名与被 @ 的用户名按 Telegram 字符集校验
-    - 校验不过判格式错误
+    - 首个空格前的片段算命令头，须写成 /命令名
+    - 命令名按 Telegram 字符集校验，带 @ 段判非法
+    - 空格之后 `-` 开头的片段算 flag，其余算参数
+    - flag 只校验形状，支持哪些由命令自己判
     - 命令名保留原大小写
     """
     if not text.startswith(_COMMAND_PREFIX):
         return CommandDTO()
 
-    try:
-        raw = Command.extract_command(text)  # 与 aiogram 命令过滤器同口径
-    except CommandException:
+    pieces = text.split()
+    head = pieces[0][len(_COMMAND_PREFIX) :]
+    if not _COMMAND_NAME_RE.fullmatch(head):
         return CommandDTO(format_error=True)
 
-    if raw.prefix != _COMMAND_PREFIX or not _COMMAND_NAME_RE.fullmatch(raw.command):
-        return CommandDTO(format_error=True)
-    if raw.mention and not _BOT_USERNAME_RE.fullmatch(raw.mention):
-        return CommandDTO(format_error=True)
+    flags: list[str] = []
+    args: list[str] = []
+    for piece in pieces[1:]:
+        if piece.startswith(_FLAG_PREFIX):
+            if not _FLAG_RE.fullmatch(piece):
+                return CommandDTO(format_error=True)
+            flags.append(piece)
+            continue
+        args.append(piece)
 
     return CommandDTO(
         matched=True,
-        name=raw.command,
-        args=tuple(raw.args.split()) if raw.args else (),
-        mention=raw.mention or "",
+        head=head,
+        flags=tuple(flags),
+        args=tuple(args),
     )
 
 
@@ -150,7 +155,6 @@ def _mentions_bot(message: Message, identity: BotIdentity) -> bool:
     """判定正文是否点名本机器人
 
     - @ 用户名走 mention 实体，无用户名的点名走 text_mention 实体
-    - 命令尾的 /cmd@bot 段由命令载体单独承载
     """
     if not message.entities or not (identity.username or identity.user_id):
         return False

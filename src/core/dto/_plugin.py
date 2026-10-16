@@ -15,10 +15,13 @@ class HelpCommandDTO:
     """帮助菜单单命令
 
     - 与 plugin.toml 的 [[help.commands]] 同构
+    - flags 每项是「开关 说明」两项，开关带短横
+    - -h 全命令默认可用，不必登记
     """
 
     cmd: str
     desc: str
+    flags: tuple[tuple[str, str], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
