@@ -17,12 +17,6 @@ class ConfigMissingError(ConfigError):
     """可恢复的配置文件缺失异常"""
 
 
-class ConfigTemplateMissingError(ConfigError):
-    """配置模板缺失异常"""
-
-    fatal = True
-
-
 class ProfileMissingError(ConfigError):
     """实例身份缺失异常"""
 
@@ -37,12 +31,6 @@ class ConfigInputError(ConfigError):
 
 class ConfigOutputError(ConfigError):
     """配置写入错误异常"""
-
-    fatal = True
-
-
-class ConfigParseError(ConfigError):
-    """配置解析错误异常"""
 
     fatal = True
 
@@ -74,11 +62,9 @@ class ConfigAttrError(ConfigError):
 
 CONFIG_MAP = {
     ConfigMissingError: "缺少配置文件，自动打开面板填写",
-    ConfigTemplateMissingError: "缺少配置模板，阻止启动",
     ProfileMissingError: "实例身份缺失\n无法定位实例目录",
     ConfigInputError: "配置读取错误",
     ConfigOutputError: "配置写入错误",
-    ConfigParseError: "配置模板解析错误",
     ConfigPathMissingError: "配置缺失：{key_path}\n找不到键：'{missing_key}'",
     ConfigAttrError: "配置项：{key_path}"
     "\n期望类型：{expected_type}"

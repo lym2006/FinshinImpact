@@ -17,7 +17,7 @@ class DialogMessage:
     SETUP_RESET = "恢复默认"
     SETUP_RESET_ICON = "↺"
 
-    # 用：utils/config/models.py 代理模式下拉选项文案
+    # 用：utils/config/_schema.py 代理模式下拉选项文案
     SETUP_MODE_AUTO = "自动（配置→系统→直连）"
     SETUP_MODE_CFG = "仅配置代理"
     SETUP_MODE_SYS = "仅系统代理"

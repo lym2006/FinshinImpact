@@ -12,9 +12,7 @@ from ._config import (
     ConfigInputError,
     ConfigMissingError,
     ConfigOutputError,
-    ConfigParseError,
     ConfigPathMissingError,
-    ConfigTemplateMissingError,
     ProfileMissingError,
 )
 from ._connectivity import (
@@ -84,10 +82,8 @@ __all__ = [
     # 配置系统
     "ConfigError",
     "ConfigMissingError",
-    "ConfigTemplateMissingError",
     "ConfigInputError",
     "ConfigOutputError",
-    "ConfigParseError",
     "ConfigAttrError",
     "ConfigPathMissingError",
     "ProfileMissingError",

@@ -15,19 +15,15 @@ from profile_env import (
     profile_dir,
 )
 
-# 平台模板
-_TG_EXAMPLE = "config.telegram.example.toml"
-_QQ_EXAMPLE = "config.qq.example.toml"
-
-# 身份码前缀即平台来源，未知前缀回落 Telegram
-_PLATFORM_EXAMPLES = {Platform.TELEGRAM: _TG_EXAMPLE, Platform.QQ: _QQ_EXAMPLE}
-
 _PROFILE = get_profile()
 if not _PROFILE:
     # 空身份码拼进路径就是 instances 根本身，实例资产会互相覆盖，只能直接死
     raise ProfileMissingError() from None
 
 PROFILE_DIR = profile_dir(_PROFILE)
+
+# 身份码前缀即平台来源，不属已知平台时回落 Telegram
+PLATFORM = platform_of_profile(_PROFILE) or Platform.TELEGRAM
 
 CONFIG_FILE = PROFILE_DIR / "config.toml"
 PERSONALITY_FILE = PROFILE_DIR / INSTANCE_PERSONA_NAME
@@ -44,7 +40,4 @@ LOGS_DIR = PROFILE_DIR / "logs"
 BOT_LOG = LOGS_DIR / "bot.log"
 DEBUG_LOG = LOGS_DIR / "debug.log"
 
-# 身份码前缀不属已知平台时回落 Telegram
-_PLATFORM = platform_of_profile(_PROFILE) or Platform.TELEGRAM
-CONFIG_EXAMPLE = ASSETS_DIR / _PLATFORM_EXAMPLES.get(_PLATFORM, _TG_EXAMPLE)
 PERSONALITY_EXAMPLE = ASSETS_DIR / ASSET_PERSONA_EXAMPLE_NAME
