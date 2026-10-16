@@ -28,14 +28,15 @@ class OutboundPayloadDTO:
 class CommandDTO:
     """命令片段
 
-    - matched 为真时 name 与 args 才有效
+    - matched 为真时 head 与 flags、args 才有效
+    - flags 只报形状，命令支持哪些由命令自己判
     - format_error 标记以命令前缀开头但形态非法的消息
     """
 
     matched: bool = False
-    name: str = ""
+    head: str = ""
+    flags: tuple[str, ...] = ()
     args: tuple[str, ...] = ()
-    mention: str = ""  # 命令尾 @ 段，判定是否发给本 bot
     format_error: bool = False
 
 
@@ -54,5 +55,5 @@ class InboundEventDTO:
     reply_ref: MsgReferenceDTO | None = None
     reply_text: str = ""  # 只取被引用消息的一层文字
     reply_to_bot: bool = False  # 被引用消息由本 bot 发出
-    is_mention_bot: bool = False  # 正文实体点名本 bot
+    is_mention_bot: bool = False  # 正文点名本机器人
     created_at: float = 0.0
