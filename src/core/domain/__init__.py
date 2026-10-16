@@ -4,6 +4,7 @@
 - 定义业务类型，将不同平台的原始类型归一化
 """
 
+from ._command import CommandFlag
 from ._container import make_container
 from ._content import ContentKind
 from ._platform import ChatScope, Platform, make_profile_code, platform_of_profile
@@ -38,6 +39,8 @@ __all__ = [
     "ContentKind",
     "ChatRole",
     "CommandRole",
+    # 命令
+    "CommandFlag",
     # 任务
     "TaskPayload",
     "TaskKind",

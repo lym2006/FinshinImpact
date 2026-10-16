@@ -9,7 +9,7 @@
 import importlib.util
 import tomllib
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeGuard
 
 from core.domain import (
     PLUGINS_PKG,
@@ -36,6 +36,10 @@ _ORDER_TIERS = {tier.value for tier in CommandPriority}
 # 帮助贡献键名白名单，未知键段整段拒收
 _HELP_SECTION_KEYS = frozenset({HelpKey.SECTION, HelpKey.NOTE, HelpKey.COMMANDS})
 _HELP_COMMAND_KEYS = frozenset({HelpKey.CMD, HelpKey.DESC})
+_HELP_COMMAND_ALLOWED = _HELP_COMMAND_KEYS | frozenset({HelpKey.FLAGS})
+
+# 清单开关项的段数：开关与说明各一段
+_FLAG_ITEM_LEN = 2
 
 # 清单必填三元组，缺任一拒收
 _REQUIRED_KEYS = (ManifestKey.NAME, ManifestKey.TITLE, ManifestKey.SUMMARY)
@@ -125,7 +129,7 @@ def _read_help_sections(
 
     - 非列表入参视为无贡献
     - 段含未知键或类型错误时整段跳过
-    - 命令缺 cmd 或 desc 或类型非 str 时单条跳过
+    - 单条命令键集或类型不符时该条跳过
     """
     if not isinstance(raw_sections, list):
         return ()
@@ -146,15 +150,57 @@ def _read_help_sections(
             continue
 
         commands = tuple(
-            HelpCommandDTO(cmd=cmd[HelpKey.CMD], desc=cmd[HelpKey.DESC])
-            for cmd in raw_commands
-            if isinstance(cmd, dict)
-            and set(cmd) == _HELP_COMMAND_KEYS
-            and all(isinstance(v, str) for v in cmd.values())
+            command
+            for command in map(_parse_help_command, raw_commands)
+            if command is not None
         )
         sections.append(HelpSectionDTO(section=section, note=note, commands=commands))
 
     return tuple(sections)
+
+
+def _parse_help_command(raw: object) -> HelpCommandDTO | None:
+    """解析单条命令贡献
+
+    - 键集超出清单口径或必填类型不符时返回 None
+    - flags 可缺省，缺省为空元组
+    - 每项须是「开关 说明」两段非空文本
+    """
+    if not isinstance(raw, dict):
+        return None
+    if not _HELP_COMMAND_KEYS.issubset(raw) or not _HELP_COMMAND_ALLOWED.issuperset(
+        raw
+    ):
+        return None
+    if not all(isinstance(raw[key], str) for key in _HELP_COMMAND_KEYS):
+        return None
+
+    raw_flags = raw.get(HelpKey.FLAGS, [])
+    if not isinstance(raw_flags, list):
+        return None
+    flags: list[tuple[str, str]] = []
+    for raw_flag in raw_flags:
+        if not _is_flag_item(raw_flag):
+            return None
+        flags.append((raw_flag[0], raw_flag[1]))
+
+    return HelpCommandDTO(
+        cmd=raw[HelpKey.CMD],
+        desc=raw[HelpKey.DESC],
+        flags=tuple(flags),
+    )
+
+
+def _is_flag_item(raw_flag: object) -> TypeGuard[list[str]]:
+    """判定开关项是否为两段非空文本
+
+    - 段数、类型或空串任一不符即判否
+    """
+    return (
+        isinstance(raw_flag, list)
+        and len(raw_flag) == _FLAG_ITEM_LEN
+        and all(isinstance(part, str) and part for part in raw_flag)
+    )
 
 
 def _load_instance_enabled(state_path: Path) -> frozenset[str] | None:
