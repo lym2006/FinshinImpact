@@ -35,7 +35,7 @@ class ConfigMessage:
 
     # 用：utils/config/_schema.py 组装字段说明
     DESCS = {
-        "proxy_mode": "自动逐项尝试配置→系统→直连；单路档只校验选定一路，代理软件开 TUN 时选仅直连",
+        "proxy_mode": "自动逐项尝试配置→系统→直连。单路档只校验选定一路，代理软件开 TUN 时选仅直连",
         "proxy": "自动与仅配置代理两档使用该项，其余模式锁定本项",
         "network_timeout": "控制读取响应、写入请求及连接池等待的最大耗时",
         "api_key": "在千问 AI 平台自行创建并填入",
