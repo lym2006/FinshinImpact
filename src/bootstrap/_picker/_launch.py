@@ -8,7 +8,7 @@
 
 import time
 
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import (
     QDialog,
@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
 from app_icon import ensure_app
 from skin.messages import PickerMessage
 from skin.theme import LAUNCH
+from widgets import Ticker
 
 from .._qss import build_bootstrap_qss
 from ._store import remark_of
@@ -71,9 +72,8 @@ class _LaunchWaitDialog(QDialog):
         column.addWidget(self._note)
         row.addLayout(column, 1)
 
-        self._timer = QTimer(self)
-        self._timer.timeout.connect(self._tick)
-        self._timer.start(_TICK_MS)
+        self._timer = Ticker(self, _TICK_MS, self._tick)
+        self._timer.start()
 
         self._center_on_screen()
 

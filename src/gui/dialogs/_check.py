@@ -8,7 +8,7 @@
 
 from collections.abc import Callable
 
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QCloseEvent, QKeyEvent
 from PySide6.QtWidgets import (
     QApplication,
@@ -21,7 +21,7 @@ from PySide6.QtWidgets import (
 
 from skin.theme import CHECK_DIALOG
 from utils.network import RowId, RowStatus
-from widgets import BaseDialog
+from widgets import BaseDialog, Ticker
 
 from .._qss import build_check_dialog_qss
 from ._table import RowTable
@@ -113,9 +113,7 @@ class CheckDialog(BaseDialog):
         self._btn.setVisible(False)
         layout.addWidget(self._btn, alignment=Qt.AlignmentFlag.AlignRight)
 
-        self._tick = QTimer(self)
-        self._tick.setInterval(CHECK_DIALOG.tick_ms)
-        self._tick.timeout.connect(self._advance)
+        self._tick = Ticker(self, CHECK_DIALOG.tick_ms, self._advance)
         self.finished.connect(self._dispatch_close)
 
     def _dispatch_close(self, result: int) -> None:

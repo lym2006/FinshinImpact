@@ -6,8 +6,6 @@
 - 校验轮驱动进程级唯一 CheckDialog，交 VerifyCoordinator 协调
 """
 
-from PySide6.QtCore import QTimer
-
 from core.domain import ConfigKey, ConfigNamespace
 from exceptions import ConfigOutputError
 from skin.messages import CheckMessage
@@ -17,7 +15,7 @@ from utils.config import (
     compare_configs,
     save_config,
 )
-from widgets import NoticeDialog
+from widgets import NoticeDialog, Ticker
 
 from ..dialogs import (
     ChangeConfirmDialog,
@@ -77,7 +75,7 @@ class SettingsController(BaseController):
         if not ready:
             # 裸启动无面板无窗：1.2 秒后校验未完才弹等待窗，快路径不闪窗
             if not (self._panel or current_check_window()):
-                QTimer.singleShot(_STARTUP_WAIT_DELAY, self._verify.open_startup_wait)
+                Ticker.after(_STARTUP_WAIT_DELAY, self._verify.open_startup_wait)
             return
         was_validating = self._verify.validating
         was_pending = self._verify.save_pending

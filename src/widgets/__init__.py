@@ -1,7 +1,7 @@
 # src/widgets/__init__.py
 """可复用 UI 组件包
 
-- 代发跨包共用的弹窗基类、自绘勾选框与通用弹窗
+- 代发跨包共用的弹窗基类、自绘勾选框、通用弹窗与计时泵
 - 转发供业务弹窗装配复用的共用样式片段
 """
 
@@ -15,6 +15,7 @@ from ._dialog_qss import (
 )
 from ._notice import NoticeDialog
 from ._shutdown import ShutdownDialog
+from ._ticker import Ticker
 from ._wait import WaitDialog
 
 __all__ = [
@@ -26,6 +27,8 @@ __all__ = [
     "NoticeDialog",
     "WaitDialog",
     "ShutdownDialog",
+    # 计时泵
+    "Ticker",
     # 共用样式片段
     "DIALOG_BASE_QSS",
     "DIALOG_LABEL_QSS",
