@@ -79,7 +79,9 @@ class ConfigApplier:
             fingerprint = (
                 token,
                 proxy,
-                config_manager.get("global.network_timeout", float),
+                config_manager.get(
+                    ConfigKey.NETWORK_TIMEOUT.path(ConfigNamespace.GLOBAL), float
+                ),
             )
         except Exception:  # 参数不可得：不做跳过优化，照常重启
             fingerprint = None

@@ -7,13 +7,16 @@
 
 from dataclasses import dataclass, field
 
-from core.domain import ConfigValue
+from core.domain import ConfigKey, ConfigNamespace, ConfigValue
 
 # 运行时配置数据结构
 TabData = dict[str, ConfigValue]  # 一个标签页
 
 # 完整 TOML 配置文件结构
 AppConfigData = dict[str, TabData]
+
+# 配置校验错误表：键为出错字段，值为提示文案
+FieldErrors = dict[ConfigKey, str]
 
 
 def is_blank(value: object) -> bool:
@@ -33,17 +36,17 @@ def is_blank(value: object) -> bool:
 class FieldSchema:
     """单个配置项的 UI 属性
 
-    - value_type 缺省时按 default 类型校验
+    - key 为配置键枚举，落盘才取 .value
     - options 非空即枚举字段，每项为「值 文案」对
     - bounds 为闭区间，仅 float 字段生效
     """
 
-    key: str  # 对应 TOML 里的键名
-    label: str  # 界面上显示的标题
-    desc: str  # 鼠标悬停时的提示语
-    default: ConfigValue  # 默认值
+    key: ConfigKey
+    label: str
+    desc: str
+    default: ConfigValue
+    value_type: type
     options: tuple[tuple[str, str], ...] = ()
-    value_type: type | None = None
     required: bool = False
     bounds: tuple[float, float] | None = None
 
@@ -53,7 +56,7 @@ class TabSchema:
     """一个标签页的 UI 结构"""
 
     title: str  # Tab 标题
-    namespace: str  # TOML 顶层键名
+    namespace: ConfigNamespace  # TOML 顶层键名
     fields: list[FieldSchema] = field(default_factory=list)
 
 
