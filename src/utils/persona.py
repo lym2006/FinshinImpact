@@ -7,7 +7,7 @@
 
 from enum import Enum
 
-from profile_env import OWNER_PLACEHOLDER
+from system.profile_env import OWNER_PLACEHOLDER
 
 from .paths import PERSONALITY_FILE
 

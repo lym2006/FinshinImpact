@@ -1,4 +1,4 @@
-# src/app_icon.py
+# src/system/app_icon.py
 """应用图标
 
 - 设置应用图标与 Windows 任务栏身份
@@ -15,7 +15,7 @@ from typing import cast
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
 
-from profile_env import ASSETS_DIR
+from .profile_env import ASSETS_DIR
 
 # assets/app.ico 随 _COPY_DIRS 进发布包，开发态与发布态目录层级一致
 _ICON_PATH = ASSETS_DIR / "app.ico"

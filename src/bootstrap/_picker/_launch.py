@@ -17,9 +17,9 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from app_icon import ensure_app
 from skin.messages import PickerMessage
 from skin.theme import LAUNCH
+from system.app_icon import ensure_app
 from widgets import Ticker
 
 from .._qss import build_bootstrap_qss

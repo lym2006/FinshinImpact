@@ -9,8 +9,8 @@ from typing import TYPE_CHECKING
 
 from core.domain import ConfigKey, ConfigNamespace
 from gui.mediator import gui_bridge
-from profile_env import get_profile, read_token
 from skin.messages import CheckMessage
+from system.profile_env import get_profile, read_token
 from utils import config_manager
 from utils.network import FieldKey
 

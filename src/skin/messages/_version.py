@@ -1,4 +1,4 @@
-# src/messages/_version.py
+# src/skin/messages/_version.py
 """版本检测文案"""
 
 
