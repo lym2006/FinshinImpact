@@ -8,10 +8,15 @@
 
 ### 🔧 Changed
 
-- **底层标识符按三桶归名**：容器段取 `ContainerKey`，插件文件名词表取 `PluginFileName`，清单字段规格取 `ManifestFieldSpec`，回调别名统一 `XxxCallback` 词根。
-- **配置段名与段结构同词根改名**：`ConfigNamespace` 改 `ConfigSection`，`TabSpec` 改 `SectionSpec`，段名属性与形参统一用 `section`，平台段全表改 `SECTIONS_BY_PLATFORM`，面板侧仍按页签命名。
-- **探测字段错误键迁进校验包**：`FieldKey` 改名 `TelegramFieldKey`，从 `utils/network` 搬进 `utils/check`，消费方改从校验包引用。
-- **Telegram 专属配置键加标注**：`ConfigSection.PROXY`、`ConfigKey.PROXY`、`ConfigKey.PROXY_MODE` 与 `ProxyMode` 仍留在跨平台定义里，用注释与文档句标出只服务 Telegram。
+- **底层标识归名**：
+  - 全部为改名，行为不变。
+  - 容器段键取 `ContainerKey`。
+  - 插件文件名词表取 `PluginFileName`。
+  - 清单字段规格取 `ManifestFieldSpec`。
+  - 回调别名统一 `Callback` 词根。
+  - 配置段名取 `ConfigSection`，段结构取 `SectionSpec`，段名属性与形参同步换 `section`。
+  - 探测字段错误键取 `TelegramFieldKey`，改由校验包提供。
+  - 只服务 Telegram 的配置段、配置键与代理模式在定义处标注专属。
 
 ### 📝 Planned
 
