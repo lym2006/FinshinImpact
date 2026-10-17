@@ -1,10 +1,11 @@
 # src/widgets/__init__.py
 """可复用 UI 组件包
 
-- 代发跨包共用的弹窗基类、自绘勾选框、通用弹窗与计时泵
+- 代发跨包共用的应用实例工厂、弹窗基类、自绘勾选框、通用弹窗与计时泵
 - 转发供业务弹窗装配复用的共用样式片段
 """
 
+from ._app import ensure_app
 from ._base import BaseDialog
 from ._check import TickedCheckBox
 from ._dialog_qss import (
@@ -19,6 +20,8 @@ from ._ticker import Ticker
 from ._wait import WaitDialog
 
 __all__ = [
+    # 应用实例
+    "ensure_app",
     # 弹窗基类
     "BaseDialog",
     # 控件
