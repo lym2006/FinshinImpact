@@ -20,7 +20,7 @@ from instance_lock import (
 from profile_env import get_profile, set_profile
 
 # 主程序 GUI 装配链，分步导入时逐模块各泵一轮
-_GUI_MODULES = ("gui", "gui.controllers", "gui.mediator", "gui.theme")
+_GUI_MODULES = ("gui", "gui.controllers", "gui.mediator")
 
 # utils 后台导入落位后放行主线程续导 GUI 链
 _UTILS_READY = threading.Event()
