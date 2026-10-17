@@ -54,8 +54,8 @@ class LinkStatus:
     """链路快照"""
 
     down: bool  # 是否处于断连周期
-    elapsed: int  # 本轮已断秒数
-    retries: int  # 本轮累计失败次数
+    elapsed: int  # 本次断连已持续秒数
+    retries: int  # 本次断连累计失败次数
 
     @property
     def timer_text(self) -> str:
@@ -119,8 +119,8 @@ class _LinkReport:
         )
 
     def _span(self) -> str:
-        """本轮已断时长面板短串"""
+        """本次断连时长面板短串"""
         return _span_of(int(time.monotonic() - self._since))
 
 
-link_report = _LinkReport()  # 全局链路上报单例
+link_report = _LinkReport()  # 链路上报的进程级实例

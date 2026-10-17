@@ -87,7 +87,7 @@ class SettingsManager(BaseManager):
         - 通过则记录生效通道
         - 单路模式只测选定通道，缺席不发探测
         - 自动模式全挂先原地重检一轮再报失败
-        - 端口复测命中本轮已探测端点即按抖动采用该通道
+        - 端口复测命中本次已探测端点即按抖动采用该通道
         """
         t0 = time.monotonic()
         schema = get_schema()
@@ -102,7 +102,7 @@ class SettingsManager(BaseManager):
             token, configured, prev_token, prev_cfg, mode
         )
 
-        # 复用轮次只测 token，通道行保持全行标复用，不按模式裁
+        # token 单独重跑时通道未变，通道行保持全行标生效，不按模式裁
         single = None if token_only else single_row_of(mode)
         type_errors = self._emit_opening(
             channels, token_only, sys_dedup, single, schema
@@ -136,7 +136,7 @@ class SettingsManager(BaseManager):
             port_hint = await verify_port_row(outcome, token, token_only)
         net_errors = self._aggregate_errors(outcome, channels, port_hint)
         if not outcome.passed and port_hint and is_flap_hit(channels, port_hint):
-            # 复测用的正是本轮刚判失败那条通道：同地址重探即通属抖动，不推荐重填
+            # 复测用的正是刚判失败那条通道：同地址重探即通属抖动，不推荐重填
             outcome.passed = True
             outcome.resolved = configured
             net_errors.pop(TelegramFieldKey.PROXY, None)
@@ -156,7 +156,7 @@ class SettingsManager(BaseManager):
     ) -> tuple[list[Channel], bool, bool]:
         """规划候选通道
 
-        - 仅 token 变则复用生效通道，不重跑候选链
+        - 仅 token 变则直接采用生效通道，不重跑候选链
         - 返回 (通道表, token 复查标志, 系统代理去重标志)
         """
         token_only = (

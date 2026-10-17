@@ -110,7 +110,7 @@ class SettingsController(BaseController):
 
         - 先关窗再弹一条已验证提示
         """
-        # 向导与 EDIT 同路，SETUP 的标红残留随窗消失，无需分模式
+        # 向导与 EDIT 同路，SETUP 的标红残留随窗消失，两模式同处理
         if self._panel is None:
             return
         self._panel.accept()
@@ -232,7 +232,7 @@ class SettingsController(BaseController):
             gui_bridge.config_candidate.emit()
             return
 
-        # 二次确认以面板为父级：取消后面板仍在，无需重建
+        # 二次确认以面板为父级，取消后面板仍在
         if not ChangeConfirmDialog.confirm(logs, parent=dialog):
             return
 

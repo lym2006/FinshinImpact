@@ -96,7 +96,7 @@ def _same_endpoint(left: str, right: str) -> bool:
 
 
 def is_flap_hit(channels: Sequence[Channel], url: str) -> bool:
-    """复测命中地址是否本轮已探测过的代理通道
+    """复测命中地址是否为本次已探测过的代理通道
 
     - 同一端点两轮结论相反即代理抖动，不构成配置不通
     """
@@ -220,9 +220,9 @@ def verify_plan(
 ) -> list[dict]:
     """生成校验首帧整表
 
-    - 待探测通道标进行中，缺席与复用行直接给出状态
+    - 待探测通道标进行中，缺席与免测行直接给出状态
     - 不探测的通道按原因直接给结论
-    - reuse 为真表示仅复查 token，未涉及的通道行标复用已验证通道
+    - reuse 为真表示仅复查 token，未涉及的通道行标已验证通道
     - sys_dedup 为真时系统代理行标同端口去重而非缺席
     - single 传入即单路模式，表裁剪为该通道行加本地与结论行
     - local_frame 传入则本地行随首帧先行显示
