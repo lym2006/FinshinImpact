@@ -65,6 +65,9 @@ class CheckMessage:
     # 用：仅靠端口扫描发现可用通道
     DIAG_ADVICE_ALT = "当前配置不通：把 {url} 填入代理配置项即可"
 
+    # 用：诊断结论行——复测命中的正是本轮刚判失败的那条通道
+    DIAG_ADVICE_FLAP = "代理刚才不通、复测已通，属瞬时抖动，稍后重试即可"
+
     # 用：全链不通
     DIAG_ADVICE_NONE = "未找到可用通道：启动代理软件后重试，或开启 TUN"
 

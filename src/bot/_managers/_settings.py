@@ -38,7 +38,7 @@ from utils.network import (
     verify_plan,
     via_label,
 )
-from utils.network.probe import single_row_of
+from utils.network.probe import is_flap_hit, single_row_of
 
 from ._base import BaseManager
 from ._port_probe import verify_port_row
@@ -87,6 +87,7 @@ class SettingsManager(BaseManager):
         - 通过则记录生效通道
         - 单路模式只测选定通道，缺席不发探测
         - 自动模式全挂先原地重检一轮再报失败
+        - 端口复测命中本轮已探测端点即按抖动采用该通道
         """
         t0 = time.monotonic()
         schema = get_schema()
@@ -134,6 +135,11 @@ class SettingsManager(BaseManager):
         else:
             port_hint = await verify_port_row(outcome, token, token_only)
         net_errors = self._aggregate_errors(outcome, channels, port_hint)
+        if not outcome.passed and port_hint and is_flap_hit(channels, port_hint):
+            # 复测用的正是本轮刚判失败那条通道：同地址重探即通属抖动，不推荐重填
+            outcome.passed = True
+            outcome.resolved = configured
+            net_errors.pop(FieldKey.PROXY, None)
 
         self._settle(outcome.resolved, configured, mode == ProxyMode.AUTO)
         self.last_errors = {**net_errors, **type_errors}
