@@ -53,7 +53,7 @@ def check(files: list[FileData]) -> list[Finding]:
             "src/plugins/messages.py",
         ):
             findings.extend(_check_bot_text(file))
-        if file.module.startswith("gui.theme"):
+        if file.module.startswith("skin.theme"):
             findings.extend(_check_theme_tokens(file))
     return findings
 
