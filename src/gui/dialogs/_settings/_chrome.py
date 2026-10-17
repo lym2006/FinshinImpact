@@ -47,7 +47,7 @@ def _clear_layout(layout: QHBoxLayout) -> None:
 class ChromeBuilder:
     """骨架装配器
 
-    - 持有根布局、页签与按钮条引用，供弹窗跨模式复用
+    - 持有根布局、页签与按钮条引用，供弹窗跨模式续用
     """
 
     def __init__(

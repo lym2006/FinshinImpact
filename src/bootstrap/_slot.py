@@ -149,7 +149,7 @@ def _preload_engine_async() -> threading.Thread:
 
     - utils 落位即发信号，主线程泵到信号才续导依赖它的 GUI 链
     """
-    # utils 与 aiogram 是杀软扫描敏感的冷盘重块，主线程泵不动
+    # utils 与 aiogram 冷盘会被杀软逐文件扫描，主线程泵不动
     # 两者的导入不绑定线程，才放到子线程执行
     thread = threading.Thread(
         target=_preload_engine_worker,
@@ -222,7 +222,7 @@ def main() -> int:
 
     t0 = time.monotonic()
 
-    # 主程序导入耗时长，提示卡垫住无窗空白期
+    # 主程序导入完成前有无窗空白期，提示卡垫住这段
     wait = show_launch_wait(get_profile())
 
     def on_ready() -> None:

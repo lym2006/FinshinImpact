@@ -31,7 +31,7 @@ class VerifyCoordinator:
         # 复验在途标记：无落盘动作，通过只收检测窗
         self.validating: bool = False
 
-        # 保存在途标记：本轮通过时由 Qt 侧落盘候选
+        # 保存在途标记：本次通过时由 Qt 侧落盘候选
         self.save_pending: bool = False
 
         # 待落盘候选：校验通过才写入磁盘，关面板/取消即弃
@@ -102,7 +102,7 @@ class VerifyCoordinator:
             gui_bridge.config_abort.emit()
             return
 
-        # 复验在途无候选，只弃在途标志，被中断的校验轮收尾必发 ready，面板届时解除忙碌
+        # 复验在途无候选，只弃在途标志，被中断的校验轮收尾必发 ready，面板收到即解除忙碌
         if self.validating:
             self.validating = False
             if self._host._panel is not None:

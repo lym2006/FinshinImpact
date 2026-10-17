@@ -65,8 +65,8 @@ def current_check_window() -> "CheckDialog | None":
 class CheckDialog(BaseDialog):
     """检查进度表格窗
 
-    - 单实例按轮次复用，进度帧由发起方传入
-    - 中断轮进行中只有「取消」，点击即中断本轮
+    - 单实例按轮次续用，进度帧由发起方传入
+    - 中断轮进行中只有「取消」，点击即中断当轮
     - 启动轮进行中无按钮并屏蔽 Esc，跑完显示「知道了」
     """
 
@@ -119,7 +119,7 @@ class CheckDialog(BaseDialog):
     def _dispatch_close(self, result: int) -> None:
         """关闭后分发
 
-        - 只回调本轮发起方，实例常驻不销毁
+        - 只回调本次发起方，实例常驻不销毁
         """
         self._running = False
         if self._on_close is not None:
@@ -141,7 +141,7 @@ class CheckDialog(BaseDialog):
 
         - 重置轮次、文案、表格与结束状态
         - 窗口隐藏后发起新一轮会自动重新显示
-        - 关闭回调只通知本轮发起方
+        - 关闭回调只通知本次发起方
         """
         self._round = round_id
         self._aborts = aborts
@@ -217,7 +217,7 @@ class CheckDialog(BaseDialog):
     def apply(self, frame: dict) -> None:
         """消费一帧进度
 
-        - rows 帧整表重建，id 帧更新单行，结论帧结束本轮
+        - rows 帧整表重建，id 帧更新单行，结论帧结束当轮
         """
         if self._done:
             return

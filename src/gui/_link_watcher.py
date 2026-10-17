@@ -24,7 +24,7 @@ class LinkWatcher(QObject):
     """断连计时弹窗轮询器
 
     - 断连即弹，恢复即收
-    - 叉号只压本轮断连，静默压本次运行
+    - 叉号只压本次断连，静默压本次运行
     - 配置面板开着时只记日志不弹窗，面板关掉若仍断连再补弹
     """
 
@@ -76,7 +76,7 @@ class LinkWatcher(QObject):
         self._dialog = dialog
 
     def _on_close(self) -> None:
-        """收起本轮，下次断连再弹"""
+        """收起本次断连弹窗，再断连再弹"""
         self._dismissed = True
         self._dialog = None
 

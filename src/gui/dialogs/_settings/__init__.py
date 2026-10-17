@@ -178,7 +178,7 @@ class SettingsDialog(BaseDialog):
 
         - 保留已填内容，更换按钮并挂上提示
         """
-        # 只拆提示行与按钮条两个可再生部件，模态与×两模式同款出生定死，无需动
+        # 只拆提示行与按钮条两个可再生部件，模态与×两模式同款出生定死
         self._mode = ConfigMode.SETUP
         self._field_errors = dict(field_errors or {})
         self._error_sections = self._resolve_error_sections(self._schema)

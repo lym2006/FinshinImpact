@@ -30,7 +30,7 @@ class ConfigApplier:
     def __init__(self, host: "BotManager") -> None:
         self._host = host
 
-        # 候选校验轮标记：内存已是候选值，本轮跳过磁盘重载
+        # 候选校验轮标记：内存已是候选值，本次跳过磁盘重载
         self.skip_reload = False
 
         # 最近一次生效并重启过引擎的参数指纹：一致则跳过重启防闪断
@@ -86,7 +86,7 @@ class ConfigApplier:
         except Exception:  # 参数不可得：不做跳过优化，照常重启
             fingerprint = None
         if fingerprint is not None and self._last_applied == fingerprint:
-            # 生效通道与引擎参数未变：验证通过即复用，不闪断重启
+            # 生效通道与引擎参数未变：验证通过即保持引擎运行，不闪断重启
             host._logger.info("配置验证通过，运行参数未变，跳过重启")
             return
         host.stop_service()
