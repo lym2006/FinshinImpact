@@ -6,6 +6,10 @@
 
 ## [Unreleased]
 
+### 🔧 Changed
+
+- **底层标识符按三桶归名**：容器段取 `ContainerKey`，插件文件名词表取 `PluginFileName`，清单字段规格取 `ManifestFieldSpec`，回调别名统一 `XxxCallback` 词根。
+
 ### 📝 Planned
 
 - **热重启做成弹窗**：重启服务等耗时操作接入通用转圈壳，届时 WaitDialog 获得第二个用户、Version 专属命名再议。

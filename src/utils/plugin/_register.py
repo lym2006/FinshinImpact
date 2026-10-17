@@ -8,7 +8,7 @@
 import importlib
 from typing import TYPE_CHECKING
 
-from core.domain import PLUGINS_PKG, PluginFile
+from core.domain import PLUGINS_PKG, PluginFileName
 from core.dto import PluginManifestDTO
 from exceptions import PluginsMissingError
 
@@ -84,4 +84,4 @@ def _resolve_plugins() -> list[PluginManifestDTO]:
     - 与帮助聚合共用 enabled_manifests 取序列
     - 序列为空时走全失败分支抛 PluginsMissingError
     """
-    return enabled_manifests(PROFILE_DIR / PluginFile.STATE)
+    return enabled_manifests(PROFILE_DIR / PluginFileName.STATE)

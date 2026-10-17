@@ -14,9 +14,9 @@ from ._plugin import (
     PLUGINS_PKG,
     CommandPriority,
     HelpKey,
-    ManifestField,
+    ManifestFieldSpec,
     ManifestKey,
-    PluginFile,
+    PluginFileName,
     StateKey,
 )
 from ._role import ChatRole, CommandRole
@@ -43,9 +43,9 @@ __all__ = [
     # 插件
     "PLUGINS_PKG",
     "CommandPriority",
-    "PluginFile",
+    "PluginFileName",
     "ManifestKey",
-    "ManifestField",
+    "ManifestFieldSpec",
     "MANIFEST_FIELDS",
     "ORDER_TIERS",
     "HelpKey",

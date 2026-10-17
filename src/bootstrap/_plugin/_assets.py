@@ -12,7 +12,7 @@ from pathlib import Path
 from skin.messages import PluginMessage
 
 from ._env import PLAYWRIGHT_CDN, dev_mode, py_cmd, python_target
-from ._support import ProgressFn, capture_output, degraded, emit, run_process
+from ._support import ProgressCallback, capture_output, degraded, emit, run_process
 
 # 浏览器内核根目录随平台而异，Windows 在 LOCALAPPDATA，类 Unix 在 ~/.cache
 _BROWSER_DIR_NAME = "ms-playwright"
@@ -61,7 +61,9 @@ def is_asset_installed(asset: str) -> bool:
     return bool(locs) and all(Path(loc).is_dir() for loc in locs)
 
 
-def install_assets(assets: list[str], on_line: ProgressFn | None = None) -> list[str]:
+def install_assets(
+    assets: list[str], on_line: ProgressCallback | None = None
+) -> list[str]:
     """下载非 pip 资源并返回失败清单
 
     - asset 值 = 模块名与资源名两段，拼 [-m, 模块, install, 资源]

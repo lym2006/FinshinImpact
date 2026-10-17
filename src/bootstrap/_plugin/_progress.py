@@ -34,10 +34,10 @@ _WINDOW_WIDTH = 640
 _LOG_HEIGHT = 320
 
 # 逐行回调签名
-_LineFn = Callable[[str], None]
+_LineCallback = Callable[[str], None]
 
 # 任务函数签名：收逐行回调、回失败项列表
-_TaskFn = Callable[[_LineFn], list[Any]]
+_TaskCallback = Callable[[_LineCallback], list[Any]]
 
 
 class _Task(QThread):
@@ -46,7 +46,7 @@ class _Task(QThread):
     line_written = Signal(str)
     result_ready = Signal(list)
 
-    def __init__(self, fn: _TaskFn, title: str) -> None:
+    def __init__(self, fn: _TaskCallback, title: str) -> None:
         super().__init__()
         self._fn = fn
         self.title = title
@@ -76,7 +76,7 @@ class _Task(QThread):
 class _ProgressDialog(QDialog):
     """模态进度窗，任务未完禁关"""
 
-    def __init__(self, title: str, fn: _TaskFn) -> None:
+    def __init__(self, title: str, fn: _TaskCallback) -> None:
         """起窗即启动任务线程"""
         super().__init__()
         self._seen = 0
@@ -158,7 +158,7 @@ class _ProgressDialog(QDialog):
         super().reject()
 
 
-def run_with_progress(title: str, fn: _TaskFn) -> list[Any]:
+def run_with_progress(title: str, fn: _TaskCallback) -> list[Any]:
     """模态起进度窗跑任务，返回失败项列表"""
     ensure_app()
     dialog = _ProgressDialog(title, fn)
