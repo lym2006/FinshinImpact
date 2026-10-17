@@ -10,7 +10,7 @@ import subprocess
 import threading
 from collections.abc import Callable
 
-from messages import PluginMessage
+from skin.messages import PluginMessage
 
 from ._env import (
     RUNTIME_DIR,

@@ -21,7 +21,7 @@ from exceptions import (
     ProxyError,
 )
 from gui.mediator import gui_bridge
-from messages import ConfigMessage
+from skin.messages import ConfigMessage
 from utils.logger import get_logger
 
 P = ParamSpec("P")

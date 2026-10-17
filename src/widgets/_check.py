@@ -16,7 +16,7 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import QCheckBox
 
-from theme import PALETTE
+from skin.theme import PALETTE
 
 # 对勾三顶点在框内的比例坐标，(起笔, 拐点, 收笔)
 _CHECK_POINTS = ((0.22, 0.55), (0.42, 0.74), (0.78, 0.28))

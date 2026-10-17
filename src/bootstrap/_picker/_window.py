@@ -16,10 +16,10 @@ from PySide6.QtWidgets import (
 )
 
 from app_icon import ensure_app
-from messages import PickerMessage
+from skin.messages import PickerMessage
+from skin.theme import PICKER
 
 from .._qss import build_bootstrap_qss
-from .._theme import PICKER
 from ._form import EditProfileDialog, NewProfileDialog
 from ._store import delete_profile, list_profiles, touch_profile
 

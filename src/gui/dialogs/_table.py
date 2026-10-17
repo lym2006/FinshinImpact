@@ -12,14 +12,13 @@ from PySide6.QtCore import QTimer
 from PySide6.QtGui import QResizeEvent
 from PySide6.QtWidgets import QTextEdit, QWidget
 
+from skin.theme import FiveStateDialogTheme
 from utils.network import FrameKey, RowStatus
-
-from ..theme import FiveStateDialogConfig
 
 _CLOCK_MS = 1000  # 倒计时步进：一秒一跳，与探测预算的秒刻度对齐
 
 
-def _state_map(cfg: FiveStateDialogConfig) -> dict[str, tuple[str, str]]:
+def _state_map(cfg: FiveStateDialogTheme) -> dict[str, tuple[str, str]]:
     """按弹窗令牌拼状态到符号颜色的渲染表"""
     return {
         RowStatus.PENDING: (cfg.pending_mark, cfg.pending_color),
@@ -37,7 +36,7 @@ class RowTable(QTextEdit):
     """
 
     def __init__(
-        self, cfg: FiveStateDialogConfig, parent: QWidget | None = None
+        self, cfg: FiveStateDialogTheme, parent: QWidget | None = None
     ) -> None:
         super().__init__(parent)
         self._states = _state_map(cfg)

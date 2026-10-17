@@ -4,14 +4,14 @@
 - 提供 BotGUI 类型与装配入口
 """
 
-from messages import MiscMessage
+from skin.messages import MiscMessage
+from skin.theme import BODY, FONT, GLOBAL, TOOLBAR, WINDOW
 from utils.logger import GUI_FORMATTER, get_logger
 
 from ._link_watcher import LinkWatcher
 from ._main_window import BotGUI
 from ._qss import build_global_qss
 from .controllers import BaseController, build_controllers
-from .theme import BODY, FONT, GLOBAL, TOOLBAR, WINDOW
 
 _logger = get_logger("GUI")
 

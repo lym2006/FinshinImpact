@@ -13,7 +13,7 @@ from core.domain import (
     ProxyMode,
     TabSpec,
 )
-from messages import ConfigMessage, DialogMessage
+from skin.messages import ConfigMessage, DialogMessage
 
 from .models import AppSchema, FieldSchema, TabSchema
 

@@ -19,11 +19,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from skin.theme import CHECK_DIALOG
 from utils.network import RowId, RowStatus
 from widgets import BaseDialog
 
 from .._qss import build_check_dialog_qss
-from ..theme import CHECK_DIALOG
 from ._table import RowTable
 
 # Qt 布局四边

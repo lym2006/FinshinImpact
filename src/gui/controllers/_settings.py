@@ -10,22 +10,22 @@ from PySide6.QtCore import QTimer
 
 from core.domain import ConfigKey, ConfigNamespace
 from exceptions import ConfigOutputError
-from messages import CheckMessage
+from skin.messages import CheckMessage
+from skin.theme import NOTICE_DIALOG, SETTINGS_DIALOG
 from utils import config_manager
 from utils.config import (
     compare_configs,
     save_config,
 )
+from widgets import NoticeDialog
 
 from ..dialogs import (
     ChangeConfirmDialog,
     ConfigMode,
-    NoticeDialog,
     SettingsDialog,
     current_check_window,
 )
 from ..mediator import gui_bridge
-from ..theme import NOTICE_DIALOG, SETTINGS_DIALOG
 from ._base import BaseController
 from ._verify import VerifyCoordinator
 
