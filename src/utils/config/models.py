@@ -7,7 +7,7 @@
 
 from dataclasses import dataclass, field
 
-from core.domain import ConfigKey, ConfigNamespace, ConfigValue
+from core.domain import ConfigKey, ConfigSection, ConfigValue
 
 # 运行时配置数据结构
 TabData = dict[str, ConfigValue]  # 一个标签页
@@ -56,7 +56,7 @@ class TabSchema:
     """一个标签页的 UI 结构"""
 
     title: str  # Tab 标题
-    namespace: ConfigNamespace  # TOML 顶层键名
+    section: ConfigSection  # TOML 顶层键名
     fields: list[FieldSchema] = field(default_factory=list)
 
 
