@@ -27,14 +27,14 @@ def validate_types(schema: AppSchema, data: AppConfigData) -> FieldErrors:
     errors: FieldErrors = {}
 
     for tab in schema:
-        ns_data = data.get(tab.namespace, {})
+        section_data = data.get(tab.section, {})
         for fld in tab.fields:
-            if fld.key not in ns_data:
+            if fld.key not in section_data:
                 if fld.required:
                     errors[fld.key] = ConfigMessage.REQUIRED_MARK
                 continue
 
-            value = ns_data[fld.key]
+            value = section_data[fld.key]
             if fld.required and is_blank(value):
                 errors[fld.key] = ConfigMessage.REQUIRED_MARK
                 continue

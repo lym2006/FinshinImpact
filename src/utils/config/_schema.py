@@ -6,12 +6,12 @@
 """
 
 from core.domain import (
-    TABS_BY_PLATFORM,
+    SECTIONS_BY_PLATFORM,
     ConfigKey,
     FieldSpec,
     Platform,
     ProxyMode,
-    TabSpec,
+    SectionSpec,
 )
 from skin.messages import ConfigMessage, DialogMessage
 
@@ -30,14 +30,14 @@ _OPTION_LABELS: dict[ConfigKey, dict[str, str]] = {
 
 def build_schema(platform: Platform) -> AppSchema:
     """按平台组装 AppSchema"""
-    return [_build_tab(tab) for tab in TABS_BY_PLATFORM[platform]]
+    return [_build_tab(tab) for tab in SECTIONS_BY_PLATFORM[platform]]
 
 
-def _build_tab(tab: TabSpec) -> TabSchema:
+def _build_tab(tab: SectionSpec) -> TabSchema:
     """组装单个页签"""
     return TabSchema(
-        title=ConfigMessage.TAB_TITLES[tab.namespace],
-        namespace=tab.namespace,
+        title=ConfigMessage.TAB_TITLES[tab.section],
+        section=tab.section,
         fields=[_build_field(spec) for spec in tab.fields],
     )
 

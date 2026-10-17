@@ -9,7 +9,7 @@ import time
 from collections.abc import Awaitable, Callable
 from typing import cast
 
-from core.domain import ConfigKey, ConfigNamespace, ProxyMode
+from core.domain import ConfigKey, ConfigSection, ProxyMode
 from gui.mediator import gui_bridge
 from skin.messages import CheckMessage
 from utils import config_manager
@@ -95,7 +95,7 @@ class SettingsManager(BaseManager):
         token, raw = self._get_config()
         configured = raw.strip()
         self._net_state = (token, configured)
-        proxy = config_manager.get_all().get(ConfigNamespace.PROXY) or {}
+        proxy = config_manager.get_all().get(ConfigSection.PROXY) or {}
         mode = str(proxy.get(ConfigKey.PROXY_MODE, ProxyMode.AUTO)).strip()
 
         channels, token_only, sys_dedup = self._plan_channels(
