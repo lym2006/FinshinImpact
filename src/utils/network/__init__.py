@@ -12,7 +12,6 @@ from ._client import BaseClient
 from ._link import LinkStatus, link_report
 from .probe import (
     Channel,
-    FieldKey,
     FrameKey,
     RowId,
     RowStatus,
@@ -43,7 +42,6 @@ __all__ = [
     "detect_system_proxy",
     # 通道与协议键
     "Channel",
-    "FieldKey",
     "FrameKey",
     "RowId",
     "RowStatus",
