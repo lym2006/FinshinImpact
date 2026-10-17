@@ -21,7 +21,6 @@ from PySide6.QtWidgets import (
 )
 
 from messages import ConfigMessage
-from theme import TickedCheckBox
 from utils.config.models import (
     AppConfigData,
     AppSchema,
@@ -30,6 +29,7 @@ from utils.config.models import (
     TabData,
     is_blank,
 )
+from widgets import TickedCheckBox
 
 from ...theme import GLOBAL, SETTINGS_DIALOG
 from ._list_widget import ConfigListWidget

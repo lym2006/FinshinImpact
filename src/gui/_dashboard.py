@@ -12,7 +12,7 @@ from PySide6.QtGui import QTextCursor
 from PySide6.QtWidgets import QTextEdit, QWidget
 
 from exceptions import DashboardWriteError
-from theme import load_font
+from widgets.font import load_font
 
 from .theme import FontConfig
 

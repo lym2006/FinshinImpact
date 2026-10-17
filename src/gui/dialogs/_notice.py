@@ -7,9 +7,10 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget
 
+from widgets import BaseDialog
+
 from .._qss import build_notice_dialog_qss
 from ..theme import NOTICE_DIALOG
-from ._base import BaseDialog
 
 # Qt 布局四边
 _MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
