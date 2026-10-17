@@ -46,7 +46,7 @@ SHELL_EXE = EXE_NAME
 SHELL_PENDING = "_shell_update"
 SHELL_BAK_SUFFIX = ".old"
 
-# 与 app_icon.py 是同一份约定，两处改名必须同步：任务栏身份锚定到壳 exe 路径
+# 与 app_identity.py 是同一份约定，两处改名必须同步：任务栏身份锚定到壳 exe 路径
 AUMID_ANCHOR_VAR = "FINSHINIMPACT_EXE_PATH"
 
 # Windows 进程创建标志，协议值与系统语义一致

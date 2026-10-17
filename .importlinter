@@ -32,6 +32,14 @@ forbidden_modules =
     cv2
     numpy
 
+[importlinter:contract:system-no-qt]
+name = system free of Qt
+type = forbidden
+source_modules =
+    system
+forbidden_modules =
+    PySide6
+
 [importlinter:contract:data-adapters-isolation]
 name = data and adapters isolation
 type = forbidden

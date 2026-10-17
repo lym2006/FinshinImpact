@@ -17,11 +17,11 @@ from gui.controllers import BaseController, SettingsController, ShutdownControll
 from gui.mediator import gui_bridge
 from skin.messages import CheckMessage
 from skin.theme import WINDOW
-from system.app_icon import ensure_app
 from system.profile_env import get_profile
 from utils import get_logger
 from utils.check import preload_engine
 from utils.lifecycle import shutdown_all
+from widgets import ensure_app
 
 from ._managers import BotManager
 
