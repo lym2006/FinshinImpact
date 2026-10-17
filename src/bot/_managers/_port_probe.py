@@ -8,7 +8,7 @@
 import asyncio
 
 from gui.mediator import gui_bridge
-from messages import CheckMessage
+from skin.messages import CheckMessage
 from utils.check import ChannelOutcome, attempt_channel
 from utils.network import FieldKey, RowId, RowStatus, scan_proxy_ports
 

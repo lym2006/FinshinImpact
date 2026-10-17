@@ -11,7 +11,7 @@ import threading
 from typing import TYPE_CHECKING
 
 from gui.mediator import gui_bridge
-from messages import EngineMessage
+from skin.messages import EngineMessage
 from utils import get_logger, register_lifecycle, unregister_lifecycle
 from utils.network import link_report
 from utils.paths import TEMP_DIR

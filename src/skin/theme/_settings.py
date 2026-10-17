@@ -1,4 +1,4 @@
-# src/gui/theme/_settings.py
+# src/skin/theme/_settings.py
 """配置面板弹窗令牌
 
 - 定义配置编辑弹窗与列表项的尺寸、文案与配色
@@ -7,11 +7,11 @@
 
 from dataclasses import dataclass
 
-from messages import DialogMessage
+from skin.messages import DialogMessage
 
 
 @dataclass(frozen=True)
-class SettingsDialogConfig:
+class SettingsDialogTheme:
     """配置编辑弹窗专属配置"""
 
     # 主体
@@ -92,7 +92,7 @@ class SettingsDialogConfig:
 
 
 @dataclass(frozen=True)
-class SettingsListConfig:
+class SettingsListTheme:
     """配置编辑列表项配置"""
 
     # 主按钮

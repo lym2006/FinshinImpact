@@ -22,9 +22,9 @@ from PySide6.QtWidgets import (
 )
 
 from core.domain import ConfigKey, ConfigNamespace, ProxyMode
+from skin.theme import GLOBAL, SETTINGS_DIALOG
 from utils.config.models import AppSchema, TabSchema
 
-from ...theme import GLOBAL, SETTINGS_DIALOG
 from ._field import FieldBuilder
 from ._persona import PersonaPreviewRow
 

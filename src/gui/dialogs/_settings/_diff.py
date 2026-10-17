@@ -10,7 +10,7 @@ import html
 
 from PySide6.QtWidgets import QTextEdit
 
-from ...theme import CHANGE_DIALOG
+from skin.theme import CHANGE_DIALOG
 
 _DIFF_STYLE = {
     "same": "",

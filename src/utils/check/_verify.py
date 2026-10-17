@@ -10,7 +10,7 @@ from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass, field
 
 from core.domain import ConfigKey
-from messages import CheckMessage
+from skin.messages import CheckMessage
 
 from ..config import AppConfigData, AppSchema, validate_types
 from ..network import Channel, FieldKey, RowId, RowStatus
