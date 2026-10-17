@@ -12,6 +12,7 @@ root_packages =
     gui
     messages
     theme
+    widgets
 include_external_packages = True
 
 [importlinter:contract:core-zero-deps]
@@ -56,6 +57,7 @@ layers =
     bot
     adapters
     gui
+    widgets
     theme
     utils
     exceptions
