@@ -22,13 +22,13 @@ from ._plugin import (
 from ._role import ChatRole, CommandRole
 from ._task import TaskKind, TaskPayload, TaskPriority, TaskStatus
 from .config import (
-    TABS_BY_PLATFORM,
+    SECTIONS_BY_PLATFORM,
     ConfigKey,
-    ConfigNamespace,
+    ConfigSection,
     ConfigValue,
     FieldSpec,
     ProxyMode,
-    TabSpec,
+    SectionSpec,
 )
 
 __all__ = [
@@ -63,10 +63,10 @@ __all__ = [
     "TaskPriority",
     # 配置结构
     "ConfigValue",
-    "ConfigNamespace",
+    "ConfigSection",
     "ConfigKey",
     "ProxyMode",
     "FieldSpec",
-    "TabSpec",
-    "TABS_BY_PLATFORM",
+    "SectionSpec",
+    "SECTIONS_BY_PLATFORM",
 ]

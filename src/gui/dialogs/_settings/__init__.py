@@ -64,8 +64,8 @@ class SettingsDialog(BaseDialog):
         # SETUP 模式字段级错误：{字段键: 悬浮文案}
         self._field_errors: dict[str, str] = dict(field_errors or {})
 
-        # 出错字段所在 namespace，用于标红对应标签页
-        self._error_namespaces = self._resolve_error_namespaces(schema)
+        # 出错字段所在段，用于标红对应标签页
+        self._error_sections = self._resolve_error_sections(schema)
         self.setStyleSheet(build_settings_dialog_qss())
         self._schema = schema
         self._mode = mode
@@ -87,7 +87,7 @@ class SettingsDialog(BaseDialog):
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowCloseButtonHint)
 
         self.setMinimumSize(SETTINGS_DIALOG.min_width, SETTINGS_DIALOG.min_height)
-        self._chrome.build(schema, self._is_setup(), self._error_namespaces)
+        self._chrome.build(schema, self._is_setup(), self._error_sections)
 
     def _is_setup(self) -> bool:
         """当前是否 SETUP 模式"""
@@ -127,12 +127,12 @@ class SettingsDialog(BaseDialog):
         # 确认框取消时本窗与已填内容原样保留
         gui_bridge.request_exit.emit(self)
 
-    def _resolve_error_namespaces(self, schema: AppSchema) -> set[str]:
+    def _resolve_error_sections(self, schema: AppSchema) -> set[str]:
         """定位出错字段所在页"""
         bad: set[str] = set()
         for tab in schema:
             if any(f.key in self._field_errors for f in tab.fields):
-                bad.add(tab.namespace)
+                bad.add(tab.section)
         return bad
 
     def apply_errors(self, field_errors: dict[str, str] | None) -> None:
@@ -142,7 +142,7 @@ class SettingsDialog(BaseDialog):
         - 增撤标签页 ⚠ 标记
         """
         self._field_errors = dict(field_errors or {})
-        bad = self._resolve_error_namespaces(self._schema)
+        bad = self._resolve_error_sections(self._schema)
         for key, (label, title) in self._fields.labels.items():
             err = self._field_errors.get(key)
             if err and err.startswith(ConfigMessage.PENDING_MARK):
@@ -155,8 +155,8 @@ class SettingsDialog(BaseDialog):
                 label.setText(title)
                 label.setStyleSheet("")
             label.setToolTip(err or "")
-        for ns, (index, title) in self._chrome.tab_titles.items():
-            mark = "⚠ " if ns in bad else ""
+        for section, (index, title) in self._chrome.tab_titles.items():
+            mark = "⚠ " if section in bad else ""
             if self._chrome.tabs is None:
                 continue
             self._chrome.tabs.setTabText(index, f"{mark}{title}")
@@ -181,7 +181,7 @@ class SettingsDialog(BaseDialog):
         # 只拆提示行与按钮条两个可再生部件，模态与×两模式同款出生定死，无需动
         self._mode = ConfigMode.SETUP
         self._field_errors = dict(field_errors or {})
-        self._error_namespaces = self._resolve_error_namespaces(self._schema)
+        self._error_sections = self._resolve_error_sections(self._schema)
         self._chrome.rebuild(self._is_setup())
         self.apply_errors(self._field_errors)
 

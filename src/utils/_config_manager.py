@@ -35,7 +35,7 @@ class _ConfigManager:
     def _required_paths(self) -> frozenset[ConfigPath]:
         """必填键点分路径集合"""
         return frozenset(
-            ConfigPath(f"{tab.namespace}.{fld.key}")
+            ConfigPath(f"{tab.section}.{fld.key}")
             for tab in self.schema
             for fld in tab.fields
             if fld.required
@@ -95,9 +95,9 @@ class _ConfigManager:
 
     def _schema_default(self, path: ConfigPath) -> ConfigValue:
         """按点路径取 schema 默认值"""
-        ns, _, key = path.partition(".")
+        section, _, key = path.partition(".")
         for tab in self.schema:
-            if tab.namespace != ns:
+            if tab.section != section:
                 continue
             for fld in tab.fields:
                 if fld.key == key:

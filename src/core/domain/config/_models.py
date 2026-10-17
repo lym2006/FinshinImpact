@@ -4,7 +4,7 @@
 - 定义配置值类型别名
 - 定义段名与键名枚举
 - 定义代理模式取值域
-- 定义字段与页签结构体
+- 定义字段与段结构体
 """
 
 from dataclasses import dataclass
@@ -16,7 +16,7 @@ from ..ids import ConfigPath
 ConfigValue = str | bool | float | list[str] | None
 
 
-class ConfigNamespace(StrEnum):
+class ConfigSection(StrEnum):
     """配置段名
 
     - 与 config.toml 顶层表名一一对应
@@ -47,9 +47,9 @@ class ConfigKey(StrEnum):
     CLEARUP = "clearup"
     WAITING = "waiting"
 
-    def path(self, namespace: ConfigNamespace) -> ConfigPath:
+    def path(self, section: ConfigSection) -> ConfigPath:
         """拼点分路径"""
-        return ConfigPath(f"{namespace}.{self}")
+        return ConfigPath(f"{section}.{self}")
 
 
 class ProxyMode(StrEnum):
@@ -72,7 +72,7 @@ class FieldSpec:
     - bounds 为闭区间，仅 float 字段生效
     """
 
-    namespace: ConfigNamespace
+    section: ConfigSection
     key: ConfigKey
     value_type: type
     default: ConfigValue
@@ -83,15 +83,15 @@ class FieldSpec:
     @property
     def path(self) -> ConfigPath:
         """拼点分路径"""
-        return ConfigPath(f"{self.namespace}.{self.key}")
+        return ConfigPath(f"{self.section}.{self.key}")
 
 
 @dataclass(frozen=True, slots=True)
-class TabSpec:
+class SectionSpec:
     """一个配置段的结构定义
 
     - fields 顺序即面板该页字段顺序
     """
 
-    namespace: ConfigNamespace
+    section: ConfigSection
     fields: tuple[FieldSpec, ...]

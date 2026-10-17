@@ -5,12 +5,12 @@
 """
 
 from .._platform import Platform
-from ._models import TabSpec
-from ._qq import QQ_TABS
-from ._shared import SHARED_TABS
-from ._tg import PROXY_TAB
+from ._models import SectionSpec
+from ._qq import QQ_SECTIONS
+from ._shared import SHARED_SECTIONS
+from ._tg import PROXY_SECTION
 
-TABS_BY_PLATFORM: dict[Platform, tuple[TabSpec, ...]] = {
-    Platform.TELEGRAM: (PROXY_TAB, *SHARED_TABS),
-    Platform.QQ: (*SHARED_TABS, *QQ_TABS),
+SECTIONS_BY_PLATFORM: dict[Platform, tuple[SectionSpec, ...]] = {
+    Platform.TELEGRAM: (PROXY_SECTION, *SHARED_SECTIONS),
+    Platform.QQ: (*SHARED_SECTIONS, *QQ_SECTIONS),
 }

@@ -5,6 +5,6 @@
 - 段名与键待 OneBot 连接参数定案后补入
 """
 
-from ._models import TabSpec
+from ._models import SectionSpec
 
-QQ_TABS: tuple[TabSpec, ...] = ()
+QQ_SECTIONS: tuple[SectionSpec, ...] = ()

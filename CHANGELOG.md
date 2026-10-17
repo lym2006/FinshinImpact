@@ -9,6 +9,7 @@
 ### 🔧 Changed
 
 - **底层标识符按三桶归名**：容器段取 `ContainerKey`，插件文件名词表取 `PluginFileName`，清单字段规格取 `ManifestFieldSpec`，回调别名统一 `XxxCallback` 词根。
+- **配置段名与段结构同词根改名**：`ConfigNamespace` 改 `ConfigSection`，`TabSpec` 改 `SectionSpec`，段名属性与形参统一用 `section`，平台段全表改 `SECTIONS_BY_PLATFORM`，面板侧仍按页签命名。
 
 ### 📝 Planned
 

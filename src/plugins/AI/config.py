@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from bot.error_guard import error_guard
-from core.domain import ConfigKey, ConfigNamespace
+from core.domain import ConfigKey, ConfigSection
 from core.domain.ids import ConfigPath
 from utils import config_manager
 from utils.paths import RECORDS_DIR
@@ -47,8 +47,8 @@ def _build_persona(fallback: str) -> str:
 
     - 勾选 use_file 则优先读实例人设文件，读不到回退配置字符串
     """
-    use_file = config_manager.get(ConfigKey.USE_FILE.path(ConfigNamespace.CHORE), bool)
-    owner_id = config_manager.get(ConfigKey.OWNER.path(ConfigNamespace.CHORE), str)
+    use_file = config_manager.get(ConfigKey.USE_FILE.path(ConfigSection.CHORE), bool)
+    owner_id = config_manager.get(ConfigKey.OWNER.path(ConfigSection.CHORE), str)
     return build_persona(fallback, use_file, owner_id)
 
 
@@ -64,13 +64,13 @@ class _DynamicAIConfig:
 
         # 定义动态属性的获取规则：属性名 -> (配置中心路径, 类型)
         self._dynamic_attr_map: dict[str, tuple[ConfigPath, type]] = {
-            "timeout": (ConfigKey.NETWORK_TIMEOUT.path(ConfigNamespace.GLOBAL), float),
-            "api_key": (ConfigKey.API_KEY.path(ConfigNamespace.AI), str),
-            "temperature": (ConfigKey.TEMPERATURE.path(ConfigNamespace.AI), float),
-            "group_triggers": (ConfigKey.TRIGGERS.path(ConfigNamespace.CHORE), list),
-            "cleanup_time": (ConfigKey.CLEARUP.path(ConfigNamespace.DATA), float),
-            "waiting_time": (ConfigKey.WAITING.path(ConfigNamespace.DATA), float),
-            "init": (ConfigKey.PERSONALITY.path(ConfigNamespace.CHORE), str),
+            "timeout": (ConfigKey.NETWORK_TIMEOUT.path(ConfigSection.GLOBAL), float),
+            "api_key": (ConfigKey.API_KEY.path(ConfigSection.AI), str),
+            "temperature": (ConfigKey.TEMPERATURE.path(ConfigSection.AI), float),
+            "group_triggers": (ConfigKey.TRIGGERS.path(ConfigSection.CHORE), list),
+            "cleanup_time": (ConfigKey.CLEARUP.path(ConfigSection.DATA), float),
+            "waiting_time": (ConfigKey.WAITING.path(ConfigSection.DATA), float),
+            "init": (ConfigKey.PERSONALITY.path(ConfigSection.CHORE), str),
         }
 
     @error_guard("AI 配置读取", reraise=True)
