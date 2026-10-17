@@ -11,7 +11,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-# 实例身份码环境变量名，改名需同步 development.md 与选窗读写两侧
+# 实例身份码环境变量名，值在 development.md 有字面引用，改值须同步
 PROFILE_ENV = "FINSHINIMPACT_PROFILE"
 _CODE_PATTERN = re.compile(
     r"[A-Za-z0-9-]+"
@@ -28,36 +28,6 @@ TOKEN_KEY = "token"  # 自描述文件里的键名，改名即令全部既有实
 OWNER_PLACEHOLDER = "{OWNER_ID}"  # 人设正文的主人占位符，模板写侧与注入读侧必须同值
 
 
-def _sanitize_profile(code: str) -> str:
-    """净化身份码
-
-    - 含非法字符或为空一律回落空串
-    - 空串代表无身份实例，走根目录单套路径
-    """
-    code = code.strip()
-    return code if _CODE_PATTERN.fullmatch(code) else ""
-
-
-def get_profile() -> str:
-    """读取当前实例身份码
-
-    - 每次实时读环境变量，不缓存
-    - 引导入口写完身份后 utils 才首次导入取值，缓存会锁死空身份
-    """
-    return _sanitize_profile(os.environ.get(PROFILE_ENV, ""))
-
-
-def set_profile(code: str) -> str:
-    """写入当前实例身份码
-
-    - 路径常量在导入期确定，身份码只能经环境变量跨模块传递
-    - 返回净化后的身份码，调用方据此建实例文件夹
-    """
-    clean = _sanitize_profile(code)
-    os.environ[PROFILE_ENV] = clean
-    return clean
-
-
 def _find_root() -> Path:
     """逐级上溯特征文件定位项目根目录"""
     current = Path(__file__).resolve().parent
@@ -72,18 +42,46 @@ def _find_root() -> Path:
 
 # 路径单源，引导层与 utils 共用
 ROOT_DIR = _find_root()
-INSTANCES_DIR = ROOT_DIR / "instances"  # 整体不进版本库
-ASSETS_DIR = ROOT_DIR / "assets"  # 随构建白名单进发布包，不随实例复制
+INSTANCES_DIR = ROOT_DIR / "instances"
+ASSETS_DIR = ROOT_DIR / "assets"
+
+
+def _sanitize_profile(code: str) -> str:
+    """净化身份码
+
+    - 含非法字符或为空一律回落空串
+    - 空串代表无身份实例，走根目录单套路径
+    """
+    code = code.strip()
+    return code if _CODE_PATTERN.fullmatch(code) else ""
+
+
+def get_profile() -> str:
+    """读取当前实例身份码
+
+    - 每次实时读环境变量，不缓存
+    """
+    return _sanitize_profile(os.environ.get(PROFILE_ENV, ""))
+
+
+def set_profile(code: str) -> str:
+    """写入当前实例身份码
+
+    - 返回净化后的身份码，调用方据此建实例文件夹
+    """
+    clean = _sanitize_profile(code)
+    os.environ[PROFILE_ENV] = clean
+    return clean
 
 
 def profile_dir(code: str) -> Path:
     """按身份码定位实例目录
 
     - 空身份码直接抛错，绝不回退父目录
-    - pathlib 下 `INSTANCES_DIR / ""` 就是父目录本身，回退会让实例资产散落
     """
     clean = _sanitize_profile(code)
     if not clean:
+        # INSTANCES_DIR / "" 就是父目录本身，回退会让实例资产散落根目录
         raise ValueError("身份码为空，无法定位实例目录")
     return INSTANCES_DIR / clean
 
