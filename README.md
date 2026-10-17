@@ -121,7 +121,7 @@
 - 📝 **提交规范**（commit 格式模板）：[`.gitmessage`](.gitmessage)
 - 🚀 **发布工作流**（CHANGELOG、commit、tag、release 四件套）：[`docs/release-workflow.md`](docs/release-workflow.md)
 - 🧩 **插件清单模板**（plugin.toml 字段与示例）：[`assets/plugin.example.toml`](assets/plugin.example.toml)，新增插件流程见开发手册
-- ⚙️ **配置字段表**（全部可改项、默认值与平台归属）：[`docs/design/config-schema-domain.md`](docs/design/config-schema-domain.md)
+- ⚙️ **配置字段表**（全部可改项、默认值与平台归属）：单源在 [`src/core/domain/config/`](src/core/domain/config/)（`_shared.py`/`_tg.py`/`_qq.py` 定字段、`_table.py` 按平台拼段）
 
 [⤴️ 返回目录](#menu)
 
