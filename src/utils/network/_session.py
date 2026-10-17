@@ -30,7 +30,8 @@ _LINK_ERRORS: tuple[type[BaseException], ...] = (
     asyncio.TimeoutError,
 )
 
-# 秒，会话级请求超时；请求挂死到此刻才判失败，即断连检测延迟上限
+# 秒，会话级请求超时
+# 请求挂死到此刻才判失败，即断连检测延迟上限
 _REQUEST_TIMEOUT = 30.0
 
 if TYPE_CHECKING:
@@ -50,14 +51,20 @@ class SSLUnverifiedSession(AiohttpSession):
 
     - 禁 SSL 校验，仅限受信任代理环境
     - 链路失败与恢复在此上报，异常类型原样抛出，重试由轮询循环负责
+    - report_link 为假时跳过链路上报
     """
 
     def __init__(
-        self, proxy: str | None = None, verify: bool = False, **kwargs
+        self,
+        proxy: str | None = None,
+        verify: bool = False,
+        report_link: bool = True,
+        **kwargs,
     ) -> None:
         # 空串归一为 None：TUN/直连场景 proxy 留空时必须真·不走代理
         super().__init__(proxy=proxy or None, timeout=_REQUEST_TIMEOUT, **kwargs)
         self._connector_init["ssl"] = verify
+        self._report_link = report_link
 
     async def make_request(
         self,
@@ -69,8 +76,9 @@ class SSLUnverifiedSession(AiohttpSession):
         try:
             result = await super().make_request(bot, method, timeout=timeout)
         except Exception as exc:
-            if is_link_failure(exc):
+            if self._report_link and is_link_failure(exc):
                 link_report.failed(type(method).__name__, exc)
             raise
-        link_report.recovered()
+        if self._report_link:
+            link_report.recovered()
         return result
