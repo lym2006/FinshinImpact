@@ -1,17 +1,11 @@
 # src/utils/network/proxy.py
 """系统代理探测
 
-- 读取注册表系统代理并格式化为会话可用 URL
+- 把注册表系统代理原始值格式化为会话可用 URL
 - 配置留空时可回退系统代理
 """
 
-import sys
-
-_PROXY_KEY = r"Software\Microsoft\Windows\CurrentVersion\Internet Settings"
-
-# 注册表代理值名，与 packaging/launcher.py 独立副本同值（exe 不导入 src）
-_PROXY_ENABLE_VALUE = "ProxyEnable"
-_PROXY_SERVER_VALUE = "ProxyServer"
+from system.registry import read_proxy_registry
 
 
 def _pick_from_entries(raw: str) -> str | None:
@@ -55,26 +49,8 @@ def registry_proxy() -> dict:
 
     - 失败按未开启处理
     """
-    info = {"enable": None, "server": ""}
-    if sys.platform != "win32":
-        return info
-
-    try:
-        import winreg
-
-        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, _PROXY_KEY) as key:
-            info["enable"] = winreg.QueryValueEx(key, _PROXY_ENABLE_VALUE)[0]
-            for value_name in (_PROXY_SERVER_VALUE, "PriProxy"):
-                try:
-                    raw = str(winreg.QueryValueEx(key, value_name)[0]).strip()
-                except OSError:
-                    continue
-                if raw:
-                    info["server"] = raw
-                    break
-    except OSError:
-        pass
-    return info
+    reg = read_proxy_registry()
+    return {"enable": reg.enable, "server": reg.server}
 
 
 def detect_system_proxy() -> str | None:
