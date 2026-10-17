@@ -17,7 +17,7 @@ from aiogram.types import Message, TelegramObject, Update
 
 from core.contracts import InteractionPort
 from core.domain import ChatScope, ContentKind, Platform, make_container
-from core.domain.ids import Container, MessageId, UserId
+from core.domain.ids import ContainerKey, MessageId, UserId
 from core.dto import (
     CommandDTO,
     ContentDTO,
@@ -107,7 +107,7 @@ def _display_name(message: Message) -> str:
     return ""
 
 
-def build_ref(message: Message, container: Container) -> MsgReferenceDTO:
+def build_ref(message: Message, container: ContainerKey) -> MsgReferenceDTO:
     """构造消息定位三元组"""
     return MsgReferenceDTO(
         platform=Platform.TELEGRAM,

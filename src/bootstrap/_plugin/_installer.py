@@ -17,10 +17,10 @@ from system.profile_env import ROOT_DIR
 
 from ._env import PIP_FLAGS, PYPROJECT, dev_mode, uv_cmd
 from ._manifest import dev_dependencies, top_package_name
-from ._support import ProgressFn, degraded, emit, with_index_retry
+from ._support import ProgressCallback, degraded, emit, with_index_retry
 
 
-def install_deps(pins: list[str], on_line: ProgressFn | None = None) -> list[str]:
+def install_deps(pins: list[str], on_line: ProgressCallback | None = None) -> list[str]:
     """安装依赖并返回失败清单
 
     - 整批安装走换源序列，整批失败转逐包重试收集差集
@@ -99,7 +99,7 @@ def _editable_project_pin() -> list[str]:
     return [f"-e {ROOT_DIR}"]
 
 
-def sync_env(keep: list[str], on_line: ProgressFn | None = None) -> list[str]:
+def sync_env(keep: list[str], on_line: ProgressCallback | None = None) -> list[str]:
     """按保留清单重建环境并返回失败清单
 
     - 先 compile 出含传递依赖的闭包再喂 sync

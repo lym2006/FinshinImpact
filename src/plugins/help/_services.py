@@ -12,7 +12,7 @@ from typing import TypeAlias
 
 from PIL import Image, ImageDraw, ImageFont
 
-from core.domain import CommandFlag, PluginFile
+from core.domain import CommandFlag, PluginFileName
 from core.dto import HelpCommandDTO
 from system.profile_env import ASSET_FONT_NAME, ASSETS_DIR
 from utils import get_logger
@@ -70,7 +70,7 @@ def _build_menu_data() -> list[_MenuRow]:
     - 命令行带上清单原条目
     """
     rows: list[_MenuRow] = [*_MENU_HEAD]
-    for manifest in enabled_manifests(PROFILE_DIR / PluginFile.STATE):
+    for manifest in enabled_manifests(PROFILE_DIR / PluginFileName.STATE):
         for section in manifest.help_section:
             if section.section:
                 rows.append(("section", section.section, None))
