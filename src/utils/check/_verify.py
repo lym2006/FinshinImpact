@@ -13,7 +13,8 @@ from core.domain import ConfigKey
 from skin.messages import CheckMessage
 
 from ..config import AppConfigData, AppSchema, validate_types
-from ..network import Channel, FieldKey, RowId, RowStatus
+from ..network import Channel, RowId, RowStatus
+from ._fields import TelegramFieldKey
 
 # 探针展示句留空时由核心按"称谓：可达/不可用"拼装，缺席句等特例显式覆盖
 _ProbeCallback = Callable[[Channel], Awaitable[tuple[str | None, dict[str, str], str]]]
@@ -50,8 +51,13 @@ async def _probe_safe(ch: Channel, probe: _ProbeCallback) -> _Verdict:
     except asyncio.CancelledError:
         raise
     except Exception as e:
-        return False, None, {FieldKey.PROXY: CheckMessage.SELF_CRASH.format(err=e)}, ""
-    ok = resolved is not None or bool(errors and FieldKey.PROXY not in errors)
+        return (
+            False,
+            None,
+            {TelegramFieldKey.PROXY: CheckMessage.SELF_CRASH.format(err=e)},
+            "",
+        )
+    ok = resolved is not None or bool(errors and TelegramFieldKey.PROXY not in errors)
     return ok, resolved, errors, detail
 
 

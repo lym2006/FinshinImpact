@@ -27,17 +27,6 @@ class RowStatus:
     SKIP = "skip"
 
 
-class FieldKey:
-    """探测错误字典的键协议
-
-    - 区分 proxy 错与 token 错，禁止跨模块裸写
-    - proxy 兼作向导标红字段键，token 不进面板仅作致命判定
-    """
-
-    PROXY = "proxy"
-    TOKEN = "token"
-
-
 class RowId:
     """进度表行协议串
 
