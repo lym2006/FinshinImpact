@@ -14,14 +14,13 @@ from PySide6.QtWidgets import (
     QApplication,
     QHBoxLayout,
     QLabel,
-    QPushButton,
     QVBoxLayout,
     QWidget,
 )
 
 from skin.theme import CHECK_DIALOG
 from utils.network import RowId, RowStatus
-from widgets import BaseDialog, Ticker
+from widgets import BaseDialog, ButtonStyle, Ticker, make_button
 
 from .._qss import build_check_dialog_qss
 from ._table import RowTable
@@ -105,8 +104,7 @@ class CheckDialog(BaseDialog):
         self._view = RowTable(CHECK_DIALOG)
         layout.addWidget(self._view)
 
-        self._btn = QPushButton(CHECK_DIALOG.cancel_text)
-        self._btn.setObjectName("btn_primary")
+        self._btn = make_button(CHECK_DIALOG.cancel_text, ButtonStyle.PRIMARY)
         self._btn.clicked.connect(self.reject)
 
         # 进行中唯一出口是「取消」，不可中断轮宁可没按钮，也不给假出口

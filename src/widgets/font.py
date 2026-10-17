@@ -1,8 +1,8 @@
 # src/widgets/font.py
 """输出字体加载
 
-- 注册并加载项目自带字体，供日志面板等输出内容显式使用
-- 应用全局字体保持系统默认，异常提示用 exceptions 字体族
+- 注册并加载项目自带字体，返回可用 QFont 供输出内容显式使用
+- 加载失败按 silent 决定回落系统等宽字体还是抛异常
 """
 
 from pathlib import Path
@@ -17,7 +17,7 @@ from exceptions import (
     FontRegisterError,
 )
 
-# 成功族名按路径缓存，主字体 17MB 全进程只注册一次
+# 成功族名按路径缓存，全进程只注册一次
 _FAMILY_CACHE: dict[str, str] = {}
 
 
@@ -29,7 +29,7 @@ def _fallback_font(size: int) -> QFont:
 
 
 def _family_of(path: Path) -> str:
-    """注册字体文件并返回族名，失败抛字体异常族
+    """注册字体文件并返回族名
 
     - 命中缓存直接返回
     """

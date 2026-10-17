@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
 
 from skin.theme import SETTINGS_DIALOG
 from utils.config.models import ConfigValue, FieldSchema
+from widgets import ButtonStyle, make_button
 
 from ._list_widget import ConfigListWidget
 
@@ -76,8 +77,7 @@ class ResetRegistry:
         h_layout.setContentsMargins(*[SETTINGS_DIALOG.margin] * _MARGIN_EDGES)
         h_layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
         h_layout.addWidget(widget, stretch=1)
-        btn = QPushButton(SETTINGS_DIALOG.reset_icon)
-        btn.setObjectName("btn_reset")
+        btn = make_button(SETTINGS_DIALOG.reset_icon, ButtonStyle.RESET)
         btn.setToolTip(SETTINGS_DIALOG.reset_text)
 
         # 恢复只回填控件：落盘仍走正常保存链路，diff 窗就是唯一确认点

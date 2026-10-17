@@ -9,13 +9,11 @@ from typing import cast
 
 from PySide6.QtGui import QStandardItemModel
 from PySide6.QtWidgets import (
-    QComboBox,
     QDialog,
     QHBoxLayout,
     QLabel,
     QLineEdit,
     QMessageBox,
-    QPushButton,
     QVBoxLayout,
 )
 
@@ -23,6 +21,7 @@ from core.domain import Platform, platform_of_profile
 from skin.messages import PickerMessage
 from skin.theme import FORM
 from system.profile_env import read_token
+from widgets import ButtonStyle, make_button, make_combo
 
 from .._qss import build_bootstrap_qss
 from ._store import code_for_token, create_profile, update_profile
@@ -76,8 +75,7 @@ class _ProfileFormDialog(QDialog):
         form.addStretch()
 
         buttons = QHBoxLayout()
-        ok = QPushButton(PickerMessage.BTN_OK)
-        ok.setObjectName("btn_primary")
+        ok = make_button(PickerMessage.BTN_OK, ButtonStyle.PRIMARY)
         ok.clicked.connect(self._on_ok)
         buttons.addStretch()
         buttons.addWidget(ok)
@@ -112,13 +110,12 @@ class NewProfileDialog(_ProfileFormDialog):
         - 未接线平台置灰不可选
         """
         form.addWidget(QLabel(PickerMessage.NEW_PLATFORM_LABEL))
-        self._platform = QComboBox()
-        for platform, label in _PLATFORM_ITEMS:
-            self._platform.addItem(label, platform)
+        self._platform = make_combo(_PLATFORM_ITEMS)
+        model = cast(QStandardItemModel, self._platform.model())
+        for platform, _label in _PLATFORM_ITEMS:
             if platform not in _SUPPORTED_PLATFORMS:
                 # 存根把 model() 标成基类，实为 combo 自持的项模型，置灰只在子类有
-                model = cast(QStandardItemModel, self._platform.model())
-                model.item(self._platform.count() - 1).setEnabled(False)
+                model.item(self._platform.findData(platform)).setEnabled(False)
         form.addWidget(self._platform)
 
     def _on_ok(self) -> None:

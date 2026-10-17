@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
 from core.domain import ConfigKey, ConfigSection, ProxyMode
 from skin.theme import GLOBAL, SETTINGS_DIALOG
 from utils.config.models import AppSchema, TabSchema
+from widgets import ButtonStyle, make_button
 
 from ._field import FieldBuilder
 from ._persona import PersonaPreviewRow
@@ -246,8 +247,7 @@ class ChromeBuilder:
         if is_setup:
             btn_exit = QPushButton(SETTINGS_DIALOG.exit_text)
             btn_exit.clicked.connect(self._on_exit)
-            btn_finish = QPushButton(SETTINGS_DIALOG.finish_text)
-            btn_finish.setObjectName("btn_primary")
+            btn_finish = make_button(SETTINGS_DIALOG.finish_text, ButtonStyle.PRIMARY)
             btn_finish.setMinimumWidth(SETTINGS_DIALOG.finish_btn_min_width)
 
             # 发信号而非 accept：校验通过才关窗，失败则原窗保留已填内容
@@ -259,8 +259,7 @@ class ChromeBuilder:
 
         btn_cancel = QPushButton(SETTINGS_DIALOG.cancel_text)
         btn_cancel.clicked.connect(self._on_cancel)
-        btn_save = QPushButton(SETTINGS_DIALOG.save_text)
-        btn_save.setObjectName("btn_primary")
+        btn_save = make_button(SETTINGS_DIALOG.save_text, ButtonStyle.PRIMARY)
         btn_save.clicked.connect(self._on_save)
         self.save_btn, self.save_text = btn_save, SETTINGS_DIALOG.save_text
         btn_layout.addWidget(btn_cancel)

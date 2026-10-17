@@ -30,7 +30,7 @@ from utils.config.models import (
     TabData,
     is_blank,
 )
-from widgets import TickedCheckBox
+from widgets import TickedCheckBox, make_combo
 
 from ._list_widget import ConfigListWidget
 from ._reset import Inputs, ResetRegistry
@@ -225,9 +225,7 @@ class FieldBuilder:
             bool_box.setChecked(bool(current_value))
             return bool_box
         if field.options:
-            combo = QComboBox()
-            for value, text in field.options:
-                combo.addItem(text, value)
+            combo = make_combo(field.options)
             index = combo.findData(current_value)
             if index < 0:
                 # 手改的非法枚举值原样入列，标红引导改回而非吞值

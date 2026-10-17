@@ -11,6 +11,10 @@ from skin.theme import (
 from skin.theme import (
     PALETTE as SURFACE,
 )
+from widgets import ButtonStyle, build_combo_qss
+
+# 引导期控件统一描边宽度（像素）
+_BORDER_PX = 1
 
 # 窗口与标签
 _DARK_QSS = f"""\
@@ -37,27 +41,21 @@ QLineEdit {{
 
 QLineEdit:focus {{
     border: 1px solid {SURFACE.sel_bg};
-}}
-
-QComboBox {{
-    background-color: {SURFACE.input_bg};
-    color: {SURFACE.color};
-    border: 1px solid {SURFACE.border_color};
-    border-radius: {SURFACE.radius}px;
-    padding: {GUIDE_BTN.padding_v}px {GUIDE_BTN.padding_h // 2}px;
-}}
-
-QComboBox:hover {{
-    border: 1px solid {SURFACE.hover_bg};
-}}
-
-QComboBox QAbstractItemView {{
-    background-color: {SURFACE.input_bg};
-    color: {SURFACE.color};
-    border: 1px solid {SURFACE.border_color};
-    selection-background-color: {SURFACE.sel_bg};
-    selection-color: {SURFACE.sel_color};
 }}"""
+
+# 下拉选择框
+_COMBO_QSS = build_combo_qss(
+    bg=SURFACE.input_bg,
+    fg=SURFACE.color,
+    border_color=SURFACE.border_color,
+    border_width=_BORDER_PX,
+    radius=SURFACE.radius,
+    pad_v=GUIDE_BTN.padding_v,
+    pad_h=GUIDE_BTN.padding_h // 2,
+    accent_border=SURFACE.hover_bg,
+    sel_bg=SURFACE.sel_bg,
+    sel_color=SURFACE.sel_color,
+)
 
 # 按钮
 _BUTTON_QSS = f"""\
@@ -85,65 +83,65 @@ QPushButton:disabled {{
     background-color: {SURFACE.bg};
 }}
 
-QPushButton#btn_primary {{
+QPushButton#{ButtonStyle.PRIMARY} {{
     background-color: {SURFACE.sel_bg};
     color: {SURFACE.sel_color};
 }}
 
-QPushButton#btn_primary:hover {{
+QPushButton#{ButtonStyle.PRIMARY}:hover {{
     background-color: {SURFACE.primary_hover_bg};
 }}
 
-QPushButton#btn_primary:pressed {{
+QPushButton#{ButtonStyle.PRIMARY}:pressed {{
     background-color: {SURFACE.primary_pressed_bg};
 }}
 
-QPushButton#btn_danger {{
+QPushButton#{ButtonStyle.DANGER} {{
     background-color: {SURFACE.danger_bg};
     color: {SURFACE.sel_color};
 }}
 
-QPushButton#btn_danger:hover {{
+QPushButton#{ButtonStyle.DANGER}:hover {{
     background-color: {SURFACE.danger_hover_bg};
 }}
 
-QPushButton#btn_danger:pressed {{
+QPushButton#{ButtonStyle.DANGER}:pressed {{
     background-color: {SURFACE.danger_pressed_bg};
 }}
 
-QPushButton#btn_danger:disabled {{
+QPushButton#{ButtonStyle.DANGER}:disabled {{
     background-color: {SURFACE.bg};
     color: {SURFACE.disabled_color};
 }}
 
-QPushButton#btn_secondary {{
+QPushButton#{ButtonStyle.SECONDARY} {{
     background-color: transparent;
     color: {SURFACE.color};
     border: 1px solid {SURFACE.border_color};
 }}
 
-QPushButton#btn_secondary:hover {{
+QPushButton#{ButtonStyle.SECONDARY}:hover {{
     background-color: {SURFACE.hover_bg};
     border: 1px solid {SURFACE.sel_bg};
     color: {SURFACE.hover_color};
 }}
 
-QPushButton#btn_secondary:disabled {{
+QPushButton#{ButtonStyle.SECONDARY}:disabled {{
     border: 1px solid {SURFACE.border_color};
 }}
 
-QPushButton#btn_start {{
+QPushButton#{ButtonStyle.START} {{
     background-color: {SURFACE.sel_bg};
     color: {SURFACE.sel_color};
     font-weight: bold;
     min-width: {GUIDE_BTN.start_width}px;
 }}
 
-QPushButton#btn_start:hover {{
+QPushButton#{ButtonStyle.START}:hover {{
     background-color: {SURFACE.primary_hover_bg};
 }}
 
-QPushButton#btn_start:pressed {{
+QPushButton#{ButtonStyle.START}:pressed {{
     background-color: {SURFACE.primary_pressed_bg};
 }}"""
 
@@ -263,6 +261,7 @@ _BOOTSTRAP_QSS = "\n".join(  # 引导期各窗共用皮肤
     [
         _DARK_QSS,
         _INPUT_QSS,
+        _COMBO_QSS,
         _BUTTON_QSS,
         _MENU_QSS,
         _LIST_QSS,
