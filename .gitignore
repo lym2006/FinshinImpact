@@ -25,6 +25,7 @@ runtime/
 tests/
 docs/design/
 uv.lock
+.qoderignore
 
 # --- 操作系统文件 ---
 Thumbs.db
