@@ -98,7 +98,8 @@ async def get_me(token: str, proxy: str) -> None:
 
     bot: Bot | None = None
     try:
-        session = SSLUnverifiedSession(proxy=proxy)
+        # 探测轮的成败属配置校验不属引擎链路，喂进断连状态机会误弹计时框
+        session = SSLUnverifiedSession(proxy=proxy, report_link=False)
         bot = Bot(token=token, session=session)
         await bot.get_me()
     except TimeoutError as e:
