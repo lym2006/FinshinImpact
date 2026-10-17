@@ -11,7 +11,7 @@ import asyncio
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
-from messages import EngineMessage
+from skin.messages import EngineMessage
 
 from ._base import BaseManager
 

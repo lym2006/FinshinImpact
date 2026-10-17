@@ -18,10 +18,10 @@ from PySide6.QtWidgets import (
 )
 
 from app_icon import ensure_app
-from messages import PickerMessage
+from skin.messages import PickerMessage
+from skin.theme import LAUNCH
 
 from .._qss import build_bootstrap_qss
-from .._theme import LAUNCH
 from ._store import remark_of
 
 # 正计时刷新间隔，1 秒一格

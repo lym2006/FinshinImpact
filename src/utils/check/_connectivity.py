@@ -23,7 +23,7 @@ from exceptions import (
     TelegramServerError,
     TokenError,
 )
-from messages import CheckMessage, ConfigMessage
+from skin.messages import CheckMessage, ConfigMessage
 
 from ..network.probe import FieldKey, probe_budget
 

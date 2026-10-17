@@ -4,10 +4,12 @@
 - 拼出选窗、表单窗、插件面板、进度窗共用的 QSS
 """
 
-from ._theme import (
-    BTN,
+from skin.theme import (
+    GUIDE_BTN,
     PANEL,
-    SURFACE,
+)
+from skin.theme import (
+    PALETTE as SURFACE,
 )
 
 # 窗口与标签
@@ -28,7 +30,7 @@ QLineEdit {{
     color: {SURFACE.color};
     border: 1px solid {SURFACE.border_color};
     border-radius: {SURFACE.radius}px;
-    padding: {BTN.padding_v}px {BTN.padding_h // 2}px;
+    padding: {GUIDE_BTN.padding_v}px {GUIDE_BTN.padding_h // 2}px;
     selection-background-color: {SURFACE.sel_bg};
     selection-color: {SURFACE.sel_color};
 }}
@@ -42,7 +44,7 @@ QComboBox {{
     color: {SURFACE.color};
     border: 1px solid {SURFACE.border_color};
     border-radius: {SURFACE.radius}px;
-    padding: {BTN.padding_v}px {BTN.padding_h // 2}px;
+    padding: {GUIDE_BTN.padding_v}px {GUIDE_BTN.padding_h // 2}px;
 }}
 
 QComboBox:hover {{
@@ -64,9 +66,9 @@ QPushButton {{
     color: {SURFACE.color};
     border: none;
     border-radius: {SURFACE.radius}px;
-    padding: {BTN.padding_v}px {BTN.padding_h}px;
-    min-width: {BTN.min_width}px;
-    min-height: {BTN.height}px;
+    padding: {GUIDE_BTN.padding_v}px {GUIDE_BTN.padding_h}px;
+    min-width: {GUIDE_BTN.min_width}px;
+    min-height: {GUIDE_BTN.height}px;
 }}
 
 QPushButton:hover {{
@@ -134,7 +136,7 @@ QPushButton#btn_start {{
     background-color: {SURFACE.sel_bg};
     color: {SURFACE.sel_color};
     font-weight: bold;
-    min-width: {BTN.start_width}px;
+    min-width: {GUIDE_BTN.start_width}px;
 }}
 
 QPushButton#btn_start:hover {{
@@ -155,7 +157,7 @@ QMenu {{
 }}
 
 QMenu::item {{
-    padding: {BTN.padding_v}px {BTN.padding_h}px;
+    padding: {GUIDE_BTN.padding_v}px {GUIDE_BTN.padding_h}px;
     border-radius: {SURFACE.radius}px;
 }}
 

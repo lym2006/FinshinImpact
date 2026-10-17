@@ -10,7 +10,8 @@ import os
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QDialog, QWidget
 
-from ..dialogs import ShutdownDialog
+from widgets import ShutdownDialog
+
 from ..mediator import gui_bridge
 from ._base import BaseController
 from ._decorator import gui_guard

@@ -1,4 +1,4 @@
-# src/theme/_palette.py
+# src/skin/theme/_palette.py
 """跨层调色板
 
 - 定义引导层与主界面共用的颜色与圆角
@@ -8,7 +8,7 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
-class _PaletteConfig:
+class _PaletteTheme:
     """深色主题调色板
 
     - 字段按用途命名，消费方按用途取值
@@ -34,4 +34,4 @@ class _PaletteConfig:
     radius: int = 4  # 全局圆角
 
 
-PALETTE = _PaletteConfig()
+PALETTE = _PaletteTheme()

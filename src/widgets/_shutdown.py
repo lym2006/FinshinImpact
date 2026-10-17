@@ -1,4 +1,4 @@
-# src/gui/dialogs/_shutdown.py
+# src/widgets/_shutdown.py
 """关闭确认弹窗
 
 - 提供退出进度反馈，防强杀泄漏
@@ -8,9 +8,9 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
-from widgets import BaseDialog
+from skin.theme import GLOBAL, SHUTDOWN_DIALOG
 
-from ..theme import GLOBAL, SHUTDOWN_DIALOG
+from ._base import BaseDialog
 
 # Qt 布局四边
 _MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值

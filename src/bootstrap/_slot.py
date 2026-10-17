@@ -122,12 +122,12 @@ def _handle(result: _SlotResult) -> int | None:
         return 0
 
     if result is _SlotResult.PICKER_BUSY:
-        from messages import PickerMessage
+        from skin.messages import PickerMessage
 
         _popup(PickerMessage.TITLE, PickerMessage.BUSY, icon_warning=False)
         return 0
 
-    from gui.theme import GLOBAL, WINDOW
+    from skin.theme import GLOBAL, WINDOW
 
     _popup(WINDOW.title, GLOBAL.already_running)
     return 0

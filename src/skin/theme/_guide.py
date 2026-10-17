@@ -1,19 +1,15 @@
-# src/bootstrap/_theme.py
+# src/skin/theme/_guide.py
 """引导期视觉令牌
 
 - 选窗、表单窗、插件面板、进度窗共用一套尺寸与间距
-- 颜色取自公共调色板，本层只定义尺寸
+- 颜色取自调色板，本层只定义尺寸
 """
 
 from dataclasses import dataclass
 
-from theme import PALETTE
-
-SURFACE = PALETTE
-
 
 @dataclass(frozen=True)
-class _PickerConfig:
+class PickerTheme:
     """实例选窗尺寸"""
 
     width: int = 840  # 默认宽度，容下六个按钮一行不挤
@@ -23,7 +19,7 @@ class _PickerConfig:
 
 
 @dataclass(frozen=True)
-class _FormConfig:
+class FormTheme:
     """实例表单窗尺寸"""
 
     width: int = 460  # 默认宽度
@@ -33,7 +29,7 @@ class _FormConfig:
 
 
 @dataclass(frozen=True)
-class _PanelConfig:
+class PanelTheme:
     """插件面板尺寸"""
 
     width: int = 620  # 默认宽度
@@ -51,7 +47,7 @@ class _PanelConfig:
 
 
 @dataclass(frozen=True)
-class _ButtonConfig:
+class GuideButtonTheme:
     """按钮尺寸"""
 
     min_width: int = 90  # 最小宽度
@@ -62,7 +58,7 @@ class _ButtonConfig:
 
 
 @dataclass(frozen=True)
-class _LaunchConfig:
+class LaunchTheme:
     """启动提示卡尺寸"""
 
     width: int = 430  # 默认宽度，图标与两行文案一行放平
@@ -70,11 +66,3 @@ class _LaunchConfig:
     gap: int = 16  # 图标与文案列间距
     icon_size: int = 44  # 应用图标边长
     text_gap: int = 6  # 正文与副注行距
-
-
-# 实例单例
-PICKER = _PickerConfig()
-FORM = _FormConfig()
-PANEL = _PanelConfig()
-BTN = _ButtonConfig()
-LAUNCH = _LaunchConfig()

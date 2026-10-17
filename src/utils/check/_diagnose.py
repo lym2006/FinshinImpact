@@ -9,7 +9,7 @@ import asyncio
 import time
 from collections.abc import Awaitable, Callable, Sequence
 
-from messages import CheckMessage
+from skin.messages import CheckMessage
 
 from ..logger import get_logger
 from ..network import (

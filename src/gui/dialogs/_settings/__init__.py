@@ -11,13 +11,13 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QCloseEvent, QFont, QKeyEvent, QShowEvent
 from PySide6.QtWidgets import QWidget
 
-from messages import ConfigMessage
+from skin.messages import ConfigMessage
+from skin.theme import SETTINGS_DIALOG
 from utils.config.models import AppConfigData, AppSchema
 from widgets import BaseDialog
 
 from ..._qss import build_settings_dialog_qss
 from ...mediator import gui_bridge
-from ...theme import SETTINGS_DIALOG
 from ._change import ChangeConfirmDialog
 from ._chrome import ChromeBuilder
 from ._field import FieldBuilder

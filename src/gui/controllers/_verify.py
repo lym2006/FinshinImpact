@@ -7,7 +7,7 @@
 
 from typing import TYPE_CHECKING
 
-from messages import CheckMessage
+from skin.messages import CheckMessage
 from utils.config import AppConfigData
 from utils.network import RowId, RowStatus, verify_skeleton
 

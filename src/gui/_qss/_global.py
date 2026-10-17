@@ -4,7 +4,7 @@
 - 拼装主窗口与中央容器的全局 QSS
 """
 
-from ..theme import (
+from skin.theme import (
     BODY,
     BTN,
     BTN_DANGER,

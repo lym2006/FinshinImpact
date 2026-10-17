@@ -11,7 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
 from core.domain import ProxyMode
-from messages import CheckMessage
+from skin.messages import CheckMessage
 
 
 class RowStatus:

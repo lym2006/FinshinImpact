@@ -11,8 +11,8 @@ from PySide6.QtCore import QThread, Signal
 from PySide6.QtWidgets import QDialog, QWidget
 
 from core.domain import ConfigKey, ConfigNamespace
-from messages import CheckMessage
 from profile_env import get_profile, read_token
+from skin.messages import CheckMessage
 from utils import config_manager
 from utils.check import diagnose_flow
 from utils.network import (

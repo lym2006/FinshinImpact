@@ -19,9 +19,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from skin.theme import SETTINGS_DIALOG
 from utils.config.models import ConfigValue, FieldSchema
 
-from ...theme import SETTINGS_DIALOG
 from ._list_widget import ConfigListWidget
 
 InputWidget: TypeAlias = (

@@ -8,7 +8,7 @@ from collections.abc import Callable
 from functools import wraps
 from typing import ParamSpec, TypeVar, cast
 
-from messages import MiscMessage
+from skin.messages import MiscMessage
 from utils.logger import get_logger
 
 _logger = get_logger("GUI.Guard")
