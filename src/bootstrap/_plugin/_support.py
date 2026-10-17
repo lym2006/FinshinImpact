@@ -6,11 +6,11 @@
 """
 
 import importlib.metadata
-import subprocess
 import threading
 from collections.abc import Callable
 
 from skin.messages import PluginMessage
+from system.proc import popen_hidden, run_hidden
 
 from ._env import (
     RUNTIME_DIR,
@@ -30,9 +30,6 @@ _INSTALL_LOG = RUNTIME_DIR / "plugin-ops.log"
 
 # 调试级噪音行前缀，除这些外子进程输出一律直通进度窗
 _NOISE_PREFIXES = ("DEBUG", "TRACE")
-
-# GUI 进程派生 console 子进程会各开一个黑窗口，输出已管道捕获，窗口纯属多余
-_CREATE_NO_WINDOW = 0x08000000  # 与 launcher 同值：CREATE_NO_WINDOW 标志
 
 # 子进程静默多久刷一次等待秒数（秒）
 _HEARTBEAT_INTERVAL = 1
@@ -174,16 +171,7 @@ def run_process(
     - 持续无输出由心跳补等待行，任务结束即停
     - 非零退出时取末条失败行生成简短摘要
     """
-    process = subprocess.Popen(
-        argv,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        env=env,
-        creationflags=_CREATE_NO_WINDOW,
-    )
+    process = popen_hidden(argv, env)
     raw: list[str] = []
     beat = _Heartbeat(on_line) if on_line is not None else None
     if beat is not None:
@@ -214,14 +202,7 @@ def capture_output(argv: list[str]) -> str:
     - 调用方按输出内容判定，退出码不单独表达结论
     """
     try:
-        done = subprocess.run(
-            argv,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            creationflags=_CREATE_NO_WINDOW,
-        )
+        done = run_hidden(argv)
     except OSError:
         return ""
     return done.stdout if done.returncode == 0 else ""

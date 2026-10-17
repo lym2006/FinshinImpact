@@ -5,7 +5,6 @@
 - 提供打开实例人设文件入口
 """
 
-import os
 from typing import TypeAlias
 
 from PySide6.QtCore import Qt
@@ -22,6 +21,7 @@ from PySide6.QtWidgets import (
 )
 
 from skin.theme import SETTINGS_DIALOG
+from system.shell import open_path
 from utils.paths import PERSONALITY_FILE
 from utils.persona import PersonaSource, build_persona, persona_source
 from widgets import BaseDialog, NoticeDialog
@@ -179,7 +179,7 @@ class PersonaPreviewRow(QWidget):
             self._notify(f"{PERSONALITY_FILE}\n{SETTINGS_DIALOG.persona_file_miss}")
             return
         try:
-            os.startfile(PERSONALITY_FILE)
+            open_path(PERSONALITY_FILE)
         except OSError as e:
             self._notify(str(e))
 
