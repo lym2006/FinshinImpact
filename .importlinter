@@ -46,3 +46,20 @@ layers =
     core.contracts
     core.dto
     core.domain
+
+[importlinter:contract:top-level-layers]
+name = top-level package dependency layers
+type = layers
+layers =
+    bootstrap
+    plugins
+    bot
+    adapters
+    gui
+    theme
+    utils
+    exceptions
+    services
+    core
+    messages
+    data
