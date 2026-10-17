@@ -1,4 +1,4 @@
-# src/gui/dialogs/_notice.py
+# src/widgets/_notice.py
 """通用提示弹窗
 
 - 单消息 + 确认按钮的家族化小窗
@@ -7,10 +7,10 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget
 
-from widgets import BaseDialog
+from skin.theme import NOTICE_DIALOG
 
-from .._qss import build_notice_dialog_qss
-from ..theme import NOTICE_DIALOG
+from ._base import BaseDialog
+from ._dialog_qss import build_notice_dialog_qss
 
 # Qt 布局四边
 _MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值

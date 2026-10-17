@@ -8,7 +8,7 @@
 import time
 from dataclasses import dataclass
 
-from messages import EngineMessage
+from skin.messages import EngineMessage
 
 from ..logger import get_logger
 

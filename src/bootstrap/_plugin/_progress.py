@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
 )
 
 from app_icon import ensure_app
-from messages import PluginMessage
+from skin.messages import PluginMessage
 
 from .._qss import build_bootstrap_qss
 from ._support import log_ops

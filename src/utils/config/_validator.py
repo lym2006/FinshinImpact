@@ -5,7 +5,7 @@
 - 按字段必填标记判定缺键与空值
 """
 
-from messages import ConfigMessage
+from skin.messages import ConfigMessage
 
 from .models import AppConfigData, AppSchema, FieldErrors, is_blank
 

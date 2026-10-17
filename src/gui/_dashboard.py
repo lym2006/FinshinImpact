@@ -12,9 +12,8 @@ from PySide6.QtGui import QTextCursor
 from PySide6.QtWidgets import QTextEdit, QWidget
 
 from exceptions import DashboardWriteError
+from skin.theme import FontTheme
 from widgets.font import load_font
-
-from .theme import FontConfig
 
 
 class _LogSignal(QObject):
@@ -63,7 +62,7 @@ class TextHandler(logging.Handler):
 class DashboardWidget(QTextEdit):
     """仪表盘日志展示组件"""
 
-    def __init__(self, fonts: FontConfig, parent: QWidget | None = None) -> None:
+    def __init__(self, fonts: FontTheme, parent: QWidget | None = None) -> None:
         super().__init__(parent)
 
         self.setReadOnly(True)  # 基础属性设置

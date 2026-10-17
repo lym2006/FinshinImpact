@@ -9,7 +9,7 @@ import os
 import sys
 from ctypes import wintypes
 
-from messages import MiscMessage
+from skin.messages import MiscMessage
 from utils.paths import LOGS_DIR
 
 from ._base import BaseController

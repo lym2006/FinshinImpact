@@ -9,7 +9,7 @@
 import os
 from pathlib import Path
 
-from messages import PluginMessage
+from skin.messages import PluginMessage
 
 from ._env import PLAYWRIGHT_CDN, dev_mode, py_cmd, python_target
 from ._support import ProgressFn, capture_output, degraded, emit, run_process

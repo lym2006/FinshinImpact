@@ -18,11 +18,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from skin.theme import BodyTheme, FontTheme, ToolbarTheme, WindowTheme
 from utils.logger import get_logger
+from widgets import NoticeDialog
 
 from ._dashboard import DashboardWidget, TextHandler
-from .dialogs import NoticeDialog
-from .theme import BodyConfig, FontConfig, ToolbarConfig, WindowConfig
 
 # 通知重试
 _NOTICE_RETRY_DELAY_MS = 800  # 模态占用时 0.8 秒后重弹
@@ -38,7 +38,7 @@ class BotGUI(QMainWindow):
         self,
         qss: str,
         buttons: list[tuple[str, str]],
-        configs: tuple[FontConfig, WindowConfig, BodyConfig, ToolbarConfig],
+        configs: tuple[FontTheme, WindowTheme, BodyTheme, ToolbarTheme],
         formatter: logging.Formatter,
     ) -> None:
 

@@ -1,4 +1,4 @@
-# src/gui/theme/_dialogs.py
+# src/skin/theme/_dialogs.py
 """弹窗令牌
 
 - 定义通知类弹窗的尺寸、文案与配色
@@ -8,7 +8,7 @@
 
 from dataclasses import dataclass
 
-from messages import CheckMessage, DialogMessage, VersionMessage
+from skin.messages import CheckMessage, DialogMessage, VersionMessage
 
 # 五态渲染色：诊断窗与校验窗同款（一处一源）
 _PENDING_COLOR = "#808080"  # 等待检测
@@ -19,7 +19,7 @@ _FAIL_COLOR = "#F44E4E"  # 异常
 
 
 @dataclass(frozen=True)
-class ShutdownDialogConfig:
+class ShutdownDialogTheme:
     """退出拦截弹窗专属配置"""
 
     # 尺寸配置
@@ -50,7 +50,7 @@ class ShutdownDialogConfig:
 
 
 @dataclass(frozen=True)
-class FiveStateDialogConfig:
+class FiveStateDialogTheme:
     """五态行表格弹窗共用配置
 
     - 诊断窗与校验窗同款表格、同款符号与颜色，渲染令牌收在基类一处
@@ -80,7 +80,7 @@ class FiveStateDialogConfig:
 
 
 @dataclass(frozen=True)
-class CheckDialogConfig(FiveStateDialogConfig):
+class CheckDialogTheme(FiveStateDialogTheme):
     """检查进度窗专属配置
 
     - 校验轮与诊断轮共用同一实例
@@ -108,7 +108,7 @@ class CheckDialogConfig(FiveStateDialogConfig):
 
 
 @dataclass(frozen=True)
-class WaitDialogConfig:
+class WaitDialogTheme:
     """忙碌等待弹窗专属配置"""
 
     # 尺寸配置
@@ -137,7 +137,7 @@ class WaitDialogConfig:
 
 
 @dataclass(frozen=True)
-class NoticeDialogConfig:
+class NoticeDialogTheme:
     """通知弹窗专属配置
 
     - 提示/致命共用，critical 区分
@@ -159,7 +159,7 @@ class NoticeDialogConfig:
 
 
 @dataclass(frozen=True)
-class LinkDialogConfig:
+class LinkDialogTheme:
     """断连计时弹窗专属配置"""
 
     # 尺寸配置
@@ -192,7 +192,7 @@ class LinkDialogConfig:
 
 
 @dataclass(frozen=True)
-class ChangeDialogConfig:
+class ChangeDialogTheme:
     """配置变更二次确认弹窗专属配置"""
 
     # 尺寸配置

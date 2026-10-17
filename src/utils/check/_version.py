@@ -18,8 +18,8 @@ from exceptions import (
     NewVersionError,
     RemoteVersionError,
 )
-from messages import VersionMessage
 from profile_env import ROOT_DIR
+from skin.messages import VersionMessage
 
 from ..network import BaseClient
 

@@ -4,7 +4,7 @@
 - 按弹窗组合共用片段与专属表格样式
 """
 
-from ..theme import (
+from skin.theme import (
     BODY,
     CHANGE_DIALOG,
     GLOBAL,
@@ -12,14 +12,9 @@ from ..theme import (
     SETTINGS_DIALOG,
     TOOLBAR,
 )
-from ._parts import (
-    DIALOG_BASE_QSS,
-    DIALOG_BUTTON_QSS,
-    DIALOG_LABEL_QSS,
-    DIALOG_QSS,
-    LIST_QSS,
-    WAIT_QSS,
-)
+from widgets import DIALOG_BASE_QSS, DIALOG_BUTTON_QSS, DIALOG_LABEL_QSS, WAIT_QSS
+
+from ._parts import DIALOG_QSS, LIST_QSS
 
 # 变更确认表格
 _CHANGE_TABLE_QSS = f"""\
@@ -75,17 +70,6 @@ def build_settings_list_qss() -> str:
     return LIST_QSS
 
 
-def build_notice_dialog_qss() -> str:
-    """构建通知弹窗 QSS"""
-    return "\n".join(
-        [
-            DIALOG_BASE_QSS,
-            DIALOG_LABEL_QSS,
-            DIALOG_BUTTON_QSS,
-        ]
-    )
-
-
 def build_change_dialog_qss() -> str:
     """构建变更确认弹窗 QSS"""
     return "\n".join(
@@ -94,18 +78,6 @@ def build_change_dialog_qss() -> str:
             DIALOG_LABEL_QSS,
             DIALOG_BUTTON_QSS,
             _CHANGE_TABLE_QSS,
-        ]
-    )
-
-
-def build_wait_dialog_qss() -> str:
-    """构建忙碌等待弹窗 QSS"""
-    return "\n".join(
-        [
-            DIALOG_BASE_QSS,
-            DIALOG_LABEL_QSS,
-            DIALOG_BUTTON_QSS,
-            WAIT_QSS,
         ]
     )
 

@@ -10,8 +10,7 @@ root_packages =
     bot
     exceptions
     gui
-    messages
-    theme
+    skin
     widgets
 include_external_packages = True
 
@@ -58,10 +57,9 @@ layers =
     adapters
     gui
     widgets
-    theme
     utils
     exceptions
     services
     core
-    messages
+    skin
     data

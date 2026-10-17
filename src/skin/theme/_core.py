@@ -1,4 +1,4 @@
-# src/gui/theme/_core.py
+# src/skin/theme/_core.py
 """全局视觉令牌
 
 - 定义窗口、字体、配色与通用控件令牌
@@ -7,13 +7,14 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from messages import MiscMessage
 from profile_env import ASSET_EMOJI_FONT_NAME, ASSET_FONT_NAME, ASSETS_DIR
-from theme import PALETTE
+from skin.messages import MiscMessage
+
+from ._palette import PALETTE
 
 
 @dataclass(frozen=True)
-class WindowConfig:
+class WindowTheme:
     """窗口基础属性配置"""
 
     title: str = "Bot Manager"  # 窗口标题
@@ -24,7 +25,7 @@ class WindowConfig:
 
 
 @dataclass(frozen=True)
-class GlobalConfig:
+class GlobalTheme:
     """全局基础配置
 
     - 存放整个 App 共享的视觉参数与全局文案
@@ -35,7 +36,7 @@ class GlobalConfig:
 
 
 @dataclass(frozen=True)
-class FontConfig:
+class FontTheme:
     """字体配置"""
 
     font_path: Path = ASSETS_DIR / ASSET_FONT_NAME  # 主字体路径
@@ -44,7 +45,7 @@ class FontConfig:
 
 
 @dataclass(frozen=True)
-class BodyConfig:
+class BodyTheme:
     """主窗口与中央容器配置"""
 
     bg: str = PALETTE.bg  # 背景色
@@ -58,7 +59,7 @@ class BodyConfig:
 
 
 @dataclass(frozen=True)
-class ToolbarConfig:
+class ToolbarTheme:
     """工具栏配置"""
 
     bg: str = PALETTE.input_bg  # 背景色
@@ -68,7 +69,7 @@ class ToolbarConfig:
 
 
 @dataclass(frozen=True)
-class ButtonConfig:
+class ButtonTheme:
     """按钮配置"""
 
     bg: str = PALETTE.list_bg  # 默认背景色
@@ -81,7 +82,7 @@ class ButtonConfig:
 
 
 @dataclass(frozen=True)
-class ButtonDangerConfig:
+class ButtonDangerTheme:
     """危险操作按钮配置"""
 
     bg: str = PALETTE.danger_bg  # 背景色
@@ -90,7 +91,7 @@ class ButtonDangerConfig:
 
 
 @dataclass(frozen=True)
-class ScrollbarConfig:
+class ScrollbarTheme:
     """滚动条配置"""
 
     bg: str = PALETTE.bg  # 轨道背景色

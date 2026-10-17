@@ -11,7 +11,7 @@ from typing import cast
 
 from core.domain import ConfigKey, ConfigNamespace, ProxyMode
 from gui.mediator import gui_bridge
-from messages import CheckMessage
+from skin.messages import CheckMessage
 from utils import config_manager
 from utils.check import (
     ChannelOutcome,

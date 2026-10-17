@@ -18,8 +18,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from skin.theme import SETTINGS_DIALOG
+
 from ..._qss import build_settings_list_qss
-from ...theme import SETTINGS_DIALOG
 
 # Qt 布局四边
 _MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
