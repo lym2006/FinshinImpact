@@ -13,7 +13,7 @@ from aiogram.types import FSInputFile, Message
 
 from core.contracts import InteractionPort
 from core.domain import ContentKind
-from core.domain.ids import Container
+from core.domain.ids import ContainerKey
 from core.dto import MsgReferenceDTO, OutboundPayloadDTO, PrincipalDTO
 
 from ._errors import is_vanished, translate
@@ -31,7 +31,7 @@ _GROUP_PREFIX = "g"
 _PROBE_TEXT = "dummy"  # 探测占位文本，仅用于触发服务端错误串
 
 
-def _chat_id_of(container: Container) -> int:
+def _chat_id_of(container: ContainerKey) -> int:
     """容器段反推会话 id
 
     - 容器段格式由 core.domain.make_container 定义

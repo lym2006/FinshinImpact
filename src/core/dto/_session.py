@@ -7,7 +7,7 @@
 from dataclasses import dataclass
 
 from ..domain import ChatRole, Platform
-from ..domain.ids import Container, SessionKey
+from ..domain.ids import ContainerKey, SessionKey
 
 
 @dataclass(frozen=True, slots=True)
@@ -29,7 +29,7 @@ class SessionDTO:
     """
 
     platform: Platform
-    container: Container
+    container: ContainerKey
     messages: tuple[MessageDTO, ...] = ()
     summary: str = ""  # 压缩摘要，覆盖旧的
     container_name: str = ""

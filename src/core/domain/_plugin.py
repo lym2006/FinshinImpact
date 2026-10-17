@@ -26,7 +26,7 @@ class CommandPriority(IntEnum):
     LAST = 50  # AI 独占
 
 
-class PluginFile(StrEnum):
+class PluginFileName(StrEnum):
     """插件相关文件名
 
     - 文件名单源，禁止在别处重复定义
@@ -77,7 +77,7 @@ class StateKey(StrEnum):
 
 
 @dataclass(frozen=True, slots=True)
-class ManifestField:
+class ManifestFieldSpec:
     """插件清单标量字段规格
 
     - deps/assets 值类型为 list，成员一律 str
@@ -90,14 +90,14 @@ class ManifestField:
     required: bool = False
 
 
-MANIFEST_FIELDS: tuple[ManifestField, ...] = (
-    ManifestField(ManifestKey.NAME, str, "", required=True),
-    ManifestField(ManifestKey.TITLE, str, "", required=True),
-    ManifestField(ManifestKey.SUMMARY, str, "", required=True),
-    ManifestField(ManifestKey.CORE, bool, False),
-    ManifestField(ManifestKey.ORDER, int, CommandPriority.NORMAL),
-    ManifestField(ManifestKey.DEPS, list, ()),
-    ManifestField(ManifestKey.ASSETS, list, ()),
+MANIFEST_FIELDS: tuple[ManifestFieldSpec, ...] = (
+    ManifestFieldSpec(ManifestKey.NAME, str, "", required=True),
+    ManifestFieldSpec(ManifestKey.TITLE, str, "", required=True),
+    ManifestFieldSpec(ManifestKey.SUMMARY, str, "", required=True),
+    ManifestFieldSpec(ManifestKey.CORE, bool, False),
+    ManifestFieldSpec(ManifestKey.ORDER, int, CommandPriority.NORMAL),
+    ManifestFieldSpec(ManifestKey.DEPS, list, ()),
+    ManifestFieldSpec(ManifestKey.ASSETS, list, ()),
 )
 
 # order 合法取值域，越界拒收

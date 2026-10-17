@@ -23,7 +23,7 @@ from ._env import (
 from ._manifest import top_package_name
 
 # 进度回调签名，逐行接收子进程输出
-ProgressFn = Callable[[str], None]
+ProgressCallback = Callable[[str], None]
 
 # 子进程原始输出留痕，用户可见面收敛后的完整事实源
 _INSTALL_LOG = RUNTIME_DIR / "plugin-ops.log"
@@ -38,7 +38,7 @@ _HEARTBEAT_INTERVAL = 1
 _HEARTBEAT_JOIN_TIMEOUT = 2
 
 
-def emit(on_line: ProgressFn | None, text: str) -> None:
+def emit(on_line: ProgressCallback | None, text: str) -> None:
     """向进度回调输出一行，无回调即静默丢弃"""
     if on_line is not None:
         on_line(text)
@@ -53,12 +53,12 @@ def is_pin_installed(pin: str) -> bool:
     return True
 
 
-def degraded(commands: list[str], on_line: ProgressFn | None) -> None:
+def degraded(commands: list[str], on_line: ProgressCallback | None) -> None:
     """开发模式打印等效手动命令"""
     emit(on_line, PluginMessage.DEV_MANUAL.format(commands="\n".join(commands)))
 
 
-def clean_cache(on_line: ProgressFn | None = None) -> None:
+def clean_cache(on_line: ProgressCallback | None = None) -> None:
     """清除 uv 包缓存
 
     - 缓存放包内是为断点续装命中，装齐后留着只占磁盘
@@ -71,7 +71,7 @@ def clean_cache(on_line: ProgressFn | None = None) -> None:
     _run_uv(["cache", "clean", "--cache-dir", str(UV_CACHE_DIR)], None, on_line)
 
 
-def with_index_retry(args: list[str], on_line: ProgressFn | None) -> int:
+def with_index_retry(args: list[str], on_line: ProgressCallback | None) -> int:
     """按换源序列执行 pip 命令直至成功
 
     - 返回最后一次的退出码，全源落空即非零
@@ -88,7 +88,9 @@ def with_index_retry(args: list[str], on_line: ProgressFn | None) -> int:
 
 
 def _run_uv(
-    args: list[str], index_url: str | None = None, on_line: ProgressFn | None = None
+    args: list[str],
+    index_url: str | None = None,
+    on_line: ProgressCallback | None = None,
 ) -> int:
     """执行一次 uv 子进程并返回退出码
 
@@ -112,7 +114,7 @@ class _Heartbeat(threading.Thread):
     - 原位刷新由进度窗渲染层负责，主侧收到任何输出即重置计时
     """
 
-    def __init__(self, on_line: ProgressFn | None) -> None:
+    def __init__(self, on_line: ProgressCallback | None) -> None:
         super().__init__(daemon=True, name="InstallHeartbeat")
         self._on_line = on_line
         self._halted = threading.Event()
@@ -160,7 +162,7 @@ def log_ops(lines: list[str]) -> None:
 
 def run_process(
     argv: list[str],
-    on_line: ProgressFn | None = None,
+    on_line: ProgressCallback | None = None,
     *,
     env: dict[str, str] | None = None,
 ) -> int:

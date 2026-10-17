@@ -16,7 +16,7 @@ from core.domain import (
     MANIFEST_FIELDS,
     PLUGINS_PKG,
     ManifestKey,
-    PluginFile,
+    PluginFileName,
     StateKey,
 )
 from system.profile_env import INSTANCES_DIR, ROOT_DIR, profile_dir
@@ -66,7 +66,7 @@ def load_manifests(plugins_path: Path) -> list[dict[str, Any]]:
         return manifests
 
     for path in sorted(plugins_path.iterdir()):
-        data = _read_toml(path / PluginFile.MANIFEST)
+        data = _read_toml(path / PluginFileName.MANIFEST)
         if not data or not isinstance(data.get(ManifestKey.NAME), str):
             continue
         manifests.append({key: data.get(key, _DEFAULTS[key]) for key in _MINIMAL_KEYS})
@@ -92,7 +92,7 @@ def catalog_digest(manifests: list[dict[str, Any]]) -> str:
 
 def _state_path_of(code: str) -> Path:
     """按身份码定位实例状态文件"""
-    return profile_dir(code) / PluginFile.STATE
+    return profile_dir(code) / PluginFileName.STATE
 
 
 def load_state(code: str) -> dict[str, Any]:
