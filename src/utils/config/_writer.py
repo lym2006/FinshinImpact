@@ -6,7 +6,7 @@
 
 import tomlkit
 
-from core.domain import TABS_BY_PLATFORM, Platform
+from core.domain import SECTIONS_BY_PLATFORM, Platform
 
 
 def render_config(platform: Platform) -> str:
@@ -15,9 +15,9 @@ def render_config(platform: Platform) -> str:
     - 段顺序即表顺序，QQ 表无 proxy 段
     """
     doc = tomlkit.document()
-    for tab in TABS_BY_PLATFORM[platform]:
+    for tab in SECTIONS_BY_PLATFORM[platform]:
         table = tomlkit.table()
         for spec in tab.fields:
             table[spec.key.value] = spec.default
-        doc.add(tab.namespace.value, table)
+        doc.add(tab.section.value, table)
     return tomlkit.dumps(doc)

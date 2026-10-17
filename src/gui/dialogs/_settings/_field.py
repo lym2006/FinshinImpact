@@ -69,7 +69,7 @@ class FieldBuilder:
     def build(
         self,
         field: FieldSchema,
-        namespace: str,
+        section: str,
         errors: dict[str, str],
         label_width: int = 0,
     ) -> QWidget:
@@ -85,7 +85,7 @@ class FieldBuilder:
             *[SETTINGS_DIALOG.margin] * (_MARGIN_EDGES - 1)
             + [SETTINGS_DIALOG.tab_spacing]
         )
-        current_value, restore_target, required = self._resolve_value(field, namespace)
+        current_value, restore_target, required = self._resolve_value(field, section)
         label_widget = self._build_label(field, errors, label_width)
 
         # 列表型字段：恢复按钮挂进列表底栏
@@ -152,7 +152,7 @@ class FieldBuilder:
             tab_data: TabData = {}
             for field in tab.fields:
                 tab_data[field.key] = self.value_of(field.key, field)
-            modified[tab.namespace] = tab_data
+            modified[tab.section] = tab_data
         return modified
 
     def refresh_resets(self) -> None:
@@ -160,7 +160,7 @@ class FieldBuilder:
         self._resets.refresh()
 
     def _resolve_value(
-        self, field: FieldSchema, namespace: str
+        self, field: FieldSchema, section: str
     ) -> tuple[ConfigValue, ConfigValue, bool]:
         """取上屏值与恢复目标
 
@@ -168,9 +168,11 @@ class FieldBuilder:
         - 非必填项恢复目标是默认值
         """
         # 禁默认值假值冒充用户配置，用户不改即沿用默认值
-        ns_config = self._current.get(namespace) or {}
-        present = field.key in ns_config
-        current_value: ConfigValue = ns_config[field.key] if present else field.default
+        section_data = self._current.get(section) or {}
+        present = field.key in section_data
+        current_value: ConfigValue = (
+            section_data[field.key] if present else field.default
+        )
         if not field.required:
             restore_target: ConfigValue = (
                 deepcopy(field.default)

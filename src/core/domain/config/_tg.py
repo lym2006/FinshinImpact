@@ -4,13 +4,13 @@
 - 定义 proxy 段字段表
 """
 
-from ._models import ConfigKey, ConfigNamespace, FieldSpec, ProxyMode, TabSpec
+from ._models import ConfigKey, ConfigSection, FieldSpec, ProxyMode, SectionSpec
 
-PROXY_TAB = TabSpec(
-    namespace=ConfigNamespace.PROXY,
+PROXY_SECTION = SectionSpec(
+    section=ConfigSection.PROXY,
     fields=(
         FieldSpec(
-            namespace=ConfigNamespace.PROXY,
+            section=ConfigSection.PROXY,
             key=ConfigKey.PROXY_MODE,
             value_type=str,
             default=ProxyMode.AUTO,
@@ -22,7 +22,7 @@ PROXY_TAB = TabSpec(
             ),
         ),
         FieldSpec(
-            namespace=ConfigNamespace.PROXY,
+            section=ConfigSection.PROXY,
             key=ConfigKey.PROXY,
             value_type=str,
             default="",

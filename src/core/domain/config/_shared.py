@@ -4,7 +4,7 @@
 - 定义 global、ai、chore、data 四个共享段字段表
 """
 
-from ._models import ConfigKey, ConfigNamespace, FieldSpec, TabSpec
+from ._models import ConfigKey, ConfigSection, FieldSpec, SectionSpec
 
 # 人格设定默认正文，四行短正文与 assets/persona.example.md 完整人设不是同一段
 _PERSONALITY_DEFAULT = (
@@ -14,11 +14,11 @@ _PERSONALITY_DEFAULT = (
     "再次强调：不要随意编造你的身份和能力。"
 )
 
-_GLOBAL_TAB = TabSpec(
-    namespace=ConfigNamespace.GLOBAL,
+_GLOBAL_SECTION = SectionSpec(
+    section=ConfigSection.GLOBAL,
     fields=(
         FieldSpec(
-            namespace=ConfigNamespace.GLOBAL,
+            section=ConfigSection.GLOBAL,
             key=ConfigKey.NETWORK_TIMEOUT,
             value_type=float,
             default=90.0,
@@ -27,18 +27,18 @@ _GLOBAL_TAB = TabSpec(
     ),
 )
 
-_AI_TAB = TabSpec(
-    namespace=ConfigNamespace.AI,
+_AI_SECTION = SectionSpec(
+    section=ConfigSection.AI,
     fields=(
         FieldSpec(
-            namespace=ConfigNamespace.AI,
+            section=ConfigSection.AI,
             key=ConfigKey.API_KEY,
             value_type=str,
             default="",
             required=True,
         ),
         FieldSpec(
-            namespace=ConfigNamespace.AI,
+            section=ConfigSection.AI,
             key=ConfigKey.TEMPERATURE,
             value_type=float,
             default=0.7,
@@ -47,31 +47,31 @@ _AI_TAB = TabSpec(
     ),
 )
 
-_CHORE_TAB = TabSpec(
-    namespace=ConfigNamespace.CHORE,
+_CHORE_SECTION = SectionSpec(
+    section=ConfigSection.CHORE,
     fields=(
         FieldSpec(
-            namespace=ConfigNamespace.CHORE,
+            section=ConfigSection.CHORE,
             key=ConfigKey.OWNER,
             value_type=str,
             default="",
             required=True,
         ),
         FieldSpec(
-            namespace=ConfigNamespace.CHORE,
+            section=ConfigSection.CHORE,
             key=ConfigKey.TRIGGERS,
             value_type=list,
             default=[],
             required=True,
         ),
         FieldSpec(
-            namespace=ConfigNamespace.CHORE,
+            section=ConfigSection.CHORE,
             key=ConfigKey.USE_FILE,
             value_type=bool,
             default=True,
         ),
         FieldSpec(
-            namespace=ConfigNamespace.CHORE,
+            section=ConfigSection.CHORE,
             key=ConfigKey.PERSONALITY,
             value_type=str,
             default=_PERSONALITY_DEFAULT,
@@ -79,18 +79,18 @@ _CHORE_TAB = TabSpec(
     ),
 )
 
-_DATA_TAB = TabSpec(
-    namespace=ConfigNamespace.DATA,
+_DATA_SECTION = SectionSpec(
+    section=ConfigSection.DATA,
     fields=(
         FieldSpec(
-            namespace=ConfigNamespace.DATA,
+            section=ConfigSection.DATA,
             key=ConfigKey.CLEARUP,
             value_type=float,
             default=6.0,
             bounds=(0.1, 720.0),
         ),
         FieldSpec(
-            namespace=ConfigNamespace.DATA,
+            section=ConfigSection.DATA,
             key=ConfigKey.WAITING,
             value_type=float,
             default=0.5,
@@ -99,4 +99,4 @@ _DATA_TAB = TabSpec(
     ),
 )
 
-SHARED_TABS = (_GLOBAL_TAB, _AI_TAB, _CHORE_TAB, _DATA_TAB)
+SHARED_SECTIONS = (_GLOBAL_SECTION, _AI_SECTION, _CHORE_SECTION, _DATA_SECTION)

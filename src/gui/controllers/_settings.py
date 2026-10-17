@@ -6,7 +6,7 @@
 - 校验轮驱动进程级唯一 CheckDialog，交 VerifyCoordinator 协调
 """
 
-from core.domain import ConfigKey, ConfigNamespace
+from core.domain import ConfigKey, ConfigSection
 from exceptions import ConfigOutputError
 from skin.messages import CheckMessage
 from skin.theme import NOTICE_DIALOG, SETTINGS_DIALOG
@@ -208,8 +208,7 @@ class SettingsController(BaseController):
         risky = (
             self._current_mode == ConfigMode.SETUP
             or not str(
-                config_manager.get(ConfigKey.PROXY.path(ConfigNamespace.PROXY), str)
-                or ""
+                config_manager.get(ConfigKey.PROXY.path(ConfigSection.PROXY), str) or ""
             ).strip()
         )
         if not changes and not risky:

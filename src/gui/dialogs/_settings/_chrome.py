@@ -21,7 +21,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from core.domain import ConfigKey, ConfigNamespace, ProxyMode
+from core.domain import ConfigKey, ConfigSection, ProxyMode
 from skin.theme import GLOBAL, SETTINGS_DIALOG
 from utils.config.models import AppSchema, TabSchema
 
@@ -83,7 +83,7 @@ class ChromeBuilder:
         self.proxy_row: QWidget | None = None
 
     def build(
-        self, schema: AppSchema, is_setup: bool, error_namespaces: set[str]
+        self, schema: AppSchema, is_setup: bool, error_sections: set[str]
     ) -> None:
         """构建界面"""
         root_layout = QVBoxLayout(self._host)
@@ -103,9 +103,9 @@ class ChromeBuilder:
         for index, tab_schema in enumerate(schema):
             tabs.addTab(
                 self._create_tab(tab_schema),
-                self._tab_title(tab_schema, error_namespaces),
+                self._tab_title(tab_schema, error_sections),
             )
-            self.tab_titles[tab_schema.namespace] = (index, tab_schema.title)
+            self.tab_titles[tab_schema.section] = (index, tab_schema.title)
         self.tabs = tabs
         root_layout.addWidget(tabs)
         self.bottom_layout = self._build_bottom_buttons(is_setup)
@@ -130,12 +130,12 @@ class ChromeBuilder:
         self.root_layout.addLayout(self.bottom_layout)
 
     @staticmethod
-    def _tab_title(tab_schema: TabSchema, error_namespaces: set[str]) -> str:
+    def _tab_title(tab_schema: TabSchema, error_sections: set[str]) -> str:
         """页签标题
 
         - 出错页前缀 ⚠
         """
-        mark = "⚠ " if tab_schema.namespace in error_namespaces else ""
+        mark = "⚠ " if tab_schema.section in error_sections else ""
         return f"{mark}{tab_schema.title}"
 
     def _make_tips(self) -> list[QLabel]:
@@ -161,26 +161,24 @@ class ChromeBuilder:
         rows: dict[str, QWidget] = {}
         for field in tab_schema.fields:
             row = self._fields.build(
-                field, tab_schema.namespace, self._errors, label_width
+                field, tab_schema.section, self._errors, label_width
             )
             rows[field.key] = row
             main_layout.addWidget(row)
-        self._mount_persona_preview(
-            tab_schema.namespace, main_layout, label_width, rows
-        )
-        self._mount_proxy_mode_lock(tab_schema.namespace, rows)
+        self._mount_persona_preview(tab_schema.section, main_layout, label_width, rows)
+        self._mount_proxy_mode_lock(tab_schema.section, rows)
         main_layout.addStretch()
         scroll.setWidget(container)
         return scroll
 
-    def _mount_proxy_mode_lock(self, namespace: str, rows: dict[str, QWidget]) -> None:
+    def _mount_proxy_mode_lock(self, section: str, rows: dict[str, QWidget]) -> None:
         """代理项随模式显隐
 
         - 仅系统代理与仅直连两档用不到代理项，整行隐藏
         - 标题、输入框与恢复钮同消，值保留在控件里切回即现
         - 两个控件缺一即不接线，缺件说明字段表已改键
         """
-        if namespace != ConfigNamespace.PROXY:
+        if section != ConfigSection.PROXY:
             return
         inputs = self._fields.inputs
         mode_combo = inputs.get(ConfigKey.PROXY_MODE)
@@ -200,7 +198,7 @@ class ChromeBuilder:
 
     def _mount_persona_preview(
         self,
-        namespace: str,
+        section: str,
         layout: QVBoxLayout,
         label_width: int,
         rows: dict[str, QWidget],
@@ -210,7 +208,7 @@ class ChromeBuilder:
         - 三个联动控件缺一即不挂载，缺件说明字段表已改键
         - 输入行与预览按钮行共用堆叠槽，切换时整页等高不跳动
         """
-        if namespace != ConfigNamespace.CHORE:
+        if section != ConfigSection.CHORE:
             return
         inputs = self._fields.inputs
         use_file = inputs.get(ConfigKey.USE_FILE)

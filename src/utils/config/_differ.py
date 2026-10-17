@@ -21,15 +21,15 @@ def compare_configs(
     changes: AppConfigData = {}
     logs: _LType = []
     for tab in schema:
-        ns = tab.namespace
-        ns_changes = {}
+        section = tab.section
+        section_changes = {}
         for field in tab.fields:
-            ori = original.get(ns, {}).get(field.key)
-            mod = modified.get(ns, {}).get(field.key)
+            ori = original.get(section, {}).get(field.key)
+            mod = modified.get(section, {}).get(field.key)
             if ori != mod:
-                ns_changes[field.key] = mod
+                section_changes[field.key] = mod
                 logs.append((field.label, ori, mod))
-        if ns_changes:
-            changes[ns] = ns_changes
+        if section_changes:
+            changes[section] = section_changes
 
     return changes, logs

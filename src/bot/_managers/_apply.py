@@ -7,7 +7,7 @@
 
 from typing import TYPE_CHECKING
 
-from core.domain import ConfigKey, ConfigNamespace
+from core.domain import ConfigKey, ConfigSection
 from gui.mediator import gui_bridge
 from skin.messages import CheckMessage
 from system.profile_env import get_profile, read_token
@@ -80,7 +80,7 @@ class ConfigApplier:
                 token,
                 proxy,
                 config_manager.get(
-                    ConfigKey.NETWORK_TIMEOUT.path(ConfigNamespace.GLOBAL), float
+                    ConfigKey.NETWORK_TIMEOUT.path(ConfigSection.GLOBAL), float
                 ),
             )
         except Exception:  # 参数不可得：不做跳过优化，照常重启
@@ -125,5 +125,5 @@ class ConfigApplier:
         - token 只从实例自描述文件读
         """
         return read_token(get_profile()), config_manager.get(
-            ConfigKey.PROXY.path(ConfigNamespace.PROXY), str
+            ConfigKey.PROXY.path(ConfigSection.PROXY), str
         ).strip()
