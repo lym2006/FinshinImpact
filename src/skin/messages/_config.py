@@ -53,3 +53,7 @@ class ConfigMessage:
 
     # 用：utils/check/_connectivity.py 与设置面板前置项失败占位
     PENDING_MARK = "暂未检测"
+
+    # 用：gui/dialogs/_settings/_list_widget.py 列表增删按钮文本
+    LIST_ADD_TEXT = "添加新项"
+    LIST_DEL_TEXT = "删除选中"

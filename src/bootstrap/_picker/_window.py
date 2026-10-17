@@ -8,7 +8,6 @@ from PySide6.QtWidgets import (
     QDialog,
     QHBoxLayout,
     QLabel,
-    QListWidget,
     QListWidgetItem,
     QMessageBox,
     QPushButton,
@@ -17,7 +16,7 @@ from PySide6.QtWidgets import (
 
 from skin.messages import PickerMessage
 from skin.theme import PICKER
-from widgets import ensure_app
+from widgets import ButtonStyle, ThemedList, ensure_app, make_button
 
 from .._qss import build_bootstrap_qss
 from ._form import EditProfileDialog, NewProfileDialog
@@ -34,12 +33,6 @@ def _label_of(code: str, remark: str) -> str:
     - 列表行与删除确认共用同一套拼法
     """
     return f"{remark}（{code}）" if remark else code
-
-
-def _sync_entries(*buttons: QPushButton, item: object) -> None:
-    """按选中态联动实例级入口可用性"""
-    for button in buttons:
-        button.setEnabled(item is not None)
 
 
 def _run_sync(button: QPushButton, dialog: "_ProfilePickerDialog") -> None:
@@ -76,7 +69,7 @@ class _ProfilePickerDialog(QDialog):
         layout = QVBoxLayout(self)
         layout.addWidget(QLabel(PickerMessage.HINT))
 
-        self._list = QListWidget()
+        self._list = ThemedList()
         self._reload()
         self._list.itemDoubleClicked.connect(lambda _: self._on_start())
         layout.addWidget(self._list)
@@ -86,29 +79,19 @@ class _ProfilePickerDialog(QDialog):
         new_btn.clicked.connect(self._on_new)
         edit_btn = QPushButton(PickerMessage.BTN_EDIT)
         edit_btn.clicked.connect(self._on_edit)
-        delete_btn = QPushButton(PickerMessage.BTN_DELETE)
-        delete_btn.setObjectName("btn_danger")
+        delete_btn = make_button(PickerMessage.BTN_DELETE, ButtonStyle.DANGER)
         delete_btn.clicked.connect(self._on_delete)
 
         # 面板操作必须针对具体实例，空选入口置灰
-        plugin_btn = QPushButton(PickerMessage.BTN_PLUGINS)
-        plugin_btn.setObjectName("btn_secondary")
+        plugin_btn = make_button(PickerMessage.BTN_PLUGINS, ButtonStyle.SECONDARY)
         plugin_btn.clicked.connect(self._on_plugins)
 
-        sync_btn = QPushButton(PickerMessage.BTN_SYNC)
-        sync_btn.setObjectName("btn_secondary")
+        sync_btn = make_button(PickerMessage.BTN_SYNC, ButtonStyle.SECONDARY)
         sync_btn.clicked.connect(lambda: _run_sync(sync_btn, self))
 
-        # currentItemChanged 只在选中态变化时发，建钮时先按当前项定初值
-        entries = (plugin_btn, sync_btn)
-        self._list.currentItemChanged.connect(
-            lambda cur, *_: _sync_entries(*entries, item=cur)
-        )
-        for entry in entries:
-            entry.setEnabled(self._list.currentItem() is not None)
+        self._list.enable_on_selection((plugin_btn, sync_btn))
 
-        start_btn = QPushButton(PickerMessage.BTN_START)
-        start_btn.setObjectName("btn_start")
+        start_btn = make_button(PickerMessage.BTN_START, ButtonStyle.START)
         start_btn.clicked.connect(self._on_start)
 
         # 首个入布局的按钮默认成自动默认钮，Enter会被新建抢答，显式定归启动

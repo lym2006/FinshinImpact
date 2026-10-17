@@ -11,14 +11,15 @@ from PySide6.QtCore import QModelIndex, Qt
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
-    QListWidget,
     QListWidgetItem,
     QPushButton,
     QVBoxLayout,
     QWidget,
 )
 
+from skin.messages import ConfigMessage
 from skin.theme import SETTINGS_DIALOG
+from widgets import ButtonStyle, ThemedList, make_button
 
 from ..._qss import build_settings_list_qss
 
@@ -43,7 +44,7 @@ class ConfigListWidget(QWidget):
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(*[SETTINGS_DIALOG.margin] * _MARGIN_EDGES)
         main_layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
-        self.list_widget = QListWidget()  # 列表区域
+        self.list_widget = ThemedList()  # 列表区域
         self.list_widget.setObjectName("list_widget")
         self._populate_items()
 
@@ -78,12 +79,8 @@ class ConfigListWidget(QWidget):
             label = self._create_desc_label(self._desc_text)
             layout.addWidget(label, stretch=1)
 
-        btn_add = QPushButton("添加新项")  # 按钮
-        btn_del = QPushButton("删除选中")
-
-        # 绑定样式名
-        btn_add.setObjectName("btn_list_add")
-        btn_del.setObjectName("btn_list_del")
+        btn_add = make_button(ConfigMessage.LIST_ADD_TEXT, ButtonStyle.LIST_ADD)
+        btn_del = make_button(ConfigMessage.LIST_DEL_TEXT, ButtonStyle.LIST_DEL)
 
         # 绑定逻辑
         btn_add.clicked.connect(self.add_item)
@@ -115,9 +112,7 @@ class ConfigListWidget(QWidget):
 
     def remove_selected(self) -> None:
         """删除选中项"""
-        row = self.list_widget.currentRow()
-        if row >= 0:
-            self.list_widget.takeItem(row)
+        self.list_widget.remove_current()
 
     def get_values(self) -> list[str]:
         """获取非空文本值
@@ -146,8 +141,7 @@ class ConfigListWidget(QWidget):
 
         - 图标态，悬停出提示
         """
-        btn = QPushButton(icon)
-        btn.setObjectName("btn_reset")
+        btn = make_button(icon, ButtonStyle.RESET)
         btn.setToolTip(tooltip)
         btn.clicked.connect(on_click)
         self._bar_layout.addWidget(btn)

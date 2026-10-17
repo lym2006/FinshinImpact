@@ -8,12 +8,13 @@
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QCloseEvent
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from skin.theme import GLOBAL, WAIT_DIALOG
 
 from ._base import BaseDialog
 from ._dialog_qss import build_wait_dialog_qss
+from ._factory import ButtonStyle, make_button
 from ._ticker import Ticker
 
 # Qt 布局四边
@@ -49,10 +50,10 @@ class WaitDialog(BaseDialog):
         row.addStretch()
         layout.addLayout(row)
         layout.addStretch()
-        self._btn = QPushButton(
-            WAIT_DIALOG.cancel_text if cancelable else WAIT_DIALOG.ok_text
+        self._btn = make_button(
+            WAIT_DIALOG.cancel_text if cancelable else WAIT_DIALOG.ok_text,
+            ButtonStyle.PRIMARY,
         )
-        self._btn.setObjectName("btn_primary")
 
         # 可取消版进行中即亮按钮，一键语义随结果翻转
         if cancelable:

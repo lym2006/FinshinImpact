@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
 
 from skin.theme import CHANGE_DIALOG, SETTINGS_DIALOG
 from utils.config.models import ConfigValue
-from widgets import BaseDialog
+from widgets import BaseDialog, ButtonStyle, make_button
 
 from ..._qss import build_change_dialog_qss
 from ._diff import make_diff_cell, split_diff, to_lines
@@ -99,8 +99,7 @@ class ChangeConfirmDialog(BaseDialog):
         btn_layout.addStretch()
         btn_cancel = QPushButton(CHANGE_DIALOG.cancel_text)
         btn_cancel.clicked.connect(self.reject)
-        btn_ok = QPushButton(CHANGE_DIALOG.confirm_text)
-        btn_ok.setObjectName("btn_primary")
+        btn_ok = make_button(CHANGE_DIALOG.confirm_text, ButtonStyle.PRIMARY)
         btn_ok.clicked.connect(self.accept)
         btn_layout.addWidget(btn_cancel)
         btn_layout.addWidget(btn_ok)

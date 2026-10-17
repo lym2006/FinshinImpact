@@ -14,9 +14,7 @@ from PySide6.QtWidgets import (
     QDialog,
     QHBoxLayout,
     QLabel,
-    QListWidget,
     QListWidgetItem,
-    QPushButton,
     QVBoxLayout,
     QWidget,
 )
@@ -24,7 +22,7 @@ from PySide6.QtWidgets import (
 from core.domain import ManifestKey, StateKey
 from skin.messages import PluginMessage
 from skin.theme import PANEL
-from widgets import TickedCheckBox, ensure_app
+from widgets import ButtonStyle, ThemedList, TickedCheckBox, ensure_app, make_button
 
 from .._qss import build_bootstrap_qss
 from ._env import dev_mode
@@ -64,17 +62,17 @@ class _PluginPanelDialog(QDialog):
 
         layout = QVBoxLayout(self)
 
-        self._list = QListWidget()
+        self._list = ThemedList()
         self._build_rows()
         layout.addWidget(self._list)
 
         buttons = QHBoxLayout()
-        save_btn = QPushButton(
+        save_btn = make_button(
             PluginMessage.BTN_SAVE_START
             if self._mode == MODE_AUTO
-            else PluginMessage.BTN_SAVE
+            else PluginMessage.BTN_SAVE,
+            ButtonStyle.PRIMARY,
         )
-        save_btn.setObjectName("btn_primary")
         save_btn.setDefault(True)
         save_btn.clicked.connect(self._on_save)
 
