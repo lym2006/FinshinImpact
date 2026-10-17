@@ -12,7 +12,7 @@ import time
 from pathlib import Path
 
 from core.domain import Platform, make_profile_code
-from profile_env import (
+from system.profile_env import (
     ASSET_PERSONA_EXAMPLE_NAME,
     ASSETS_DIR,
     INSTANCE_PERSONA_NAME,

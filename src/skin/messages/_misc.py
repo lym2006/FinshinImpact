@@ -1,4 +1,4 @@
-# src/messages/_misc.py
+# src/skin/messages/_misc.py
 """全局杂项文案"""
 
 

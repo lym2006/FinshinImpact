@@ -1,4 +1,4 @@
-# src/instance_lock.py
+# src/system/instance_lock.py
 """单实例守卫
 
 - 命名互斥体锁定同账号唯一实例，避免双开争抢配置与 Telegram 长轮询
@@ -7,7 +7,7 @@
 import ctypes
 from ctypes import wintypes
 
-from profile_env import get_profile
+from .profile_env import get_profile
 
 # kernel32 互斥体 API
 _ERROR_ALREADY_EXISTS = 183  # Windows 对象已存在错误码

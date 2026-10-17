@@ -19,7 +19,7 @@ from core.domain import (
     PluginFile,
     StateKey,
 )
-from profile_env import INSTANCES_DIR, ROOT_DIR, profile_dir
+from system.profile_env import INSTANCES_DIR, ROOT_DIR, profile_dir
 
 # 依赖 pin 串顶层包名截断符，"playwright>=1.40" 切出 "playwright"
 _PIN_SPLIT = re.compile(r"[<>=!~\[;\s]+")

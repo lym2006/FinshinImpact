@@ -11,7 +11,7 @@ import tomllib
 from pathlib import Path
 from typing import Any
 
-from profile_env import ROOT_DIR
+from system.profile_env import ROOT_DIR
 
 PYPROJECT = ROOT_DIR / "pyproject.toml"
 

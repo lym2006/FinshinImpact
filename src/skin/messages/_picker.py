@@ -1,4 +1,4 @@
-# src/messages/_picker.py
+# src/skin/messages/_picker.py
 """选 bot 窗口文案"""
 
 

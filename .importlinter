@@ -12,6 +12,7 @@ root_packages =
     gui
     skin
     widgets
+    system
 include_external_packages = True
 
 [importlinter:contract:core-zero-deps]
@@ -63,3 +64,4 @@ layers =
     core
     skin
     data
+    system

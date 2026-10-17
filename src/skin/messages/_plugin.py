@@ -1,4 +1,4 @@
-# src/messages/_plugin.py
+# src/skin/messages/_plugin.py
 """插件设置面板文案"""
 
 

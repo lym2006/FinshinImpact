@@ -14,7 +14,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 from core.domain import CommandFlag, PluginFile
 from core.dto import HelpCommandDTO
-from profile_env import ASSET_FONT_NAME, ASSETS_DIR
+from system.profile_env import ASSET_FONT_NAME, ASSETS_DIR
 from utils import get_logger
 from utils.paths import HELP_IMAGE, PROFILE_DIR
 from utils.plugin import enabled_manifests

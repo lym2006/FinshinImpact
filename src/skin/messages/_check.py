@@ -1,4 +1,4 @@
-# src/messages/_check.py
+# src/skin/messages/_check.py
 """检查进度窗文案"""
 
 

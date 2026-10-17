@@ -14,8 +14,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from app_icon import ensure_app
 from skin.messages import PluginMessage
+from system.app_icon import ensure_app
 
 from ._installer import sync_env
 from ._manifest import core_dependencies, enabled_deps_union
