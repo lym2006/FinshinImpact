@@ -12,7 +12,8 @@ from skin.messages import EngineMessage
 
 from ..logger import get_logger
 
-# 断连上报节流
+# 断连判定与上报节流
+_DOWN_THRESHOLD = 2  # 连续失败次数，达到才翻断连，滤掉单条请求抖动
 _FAIL_LOG_EVERY = 3  # 次，重连进度补报间隔
 
 # 时长换算档位
@@ -70,7 +71,7 @@ class LinkStatus:
 class _LinkReport:
     """断连周期状态机
 
-    - 断连首行、重连进度与恢复收尾各一句，链路正常时零输出
+    - 连续失败达阈值才起表记断连，恢复收尾随之，单条抖动零输出
     """
 
     def __init__(self) -> None:
@@ -78,20 +79,23 @@ class _LinkReport:
         self._since = 0.0
 
     def failed(self, api: str, error: BaseException) -> None:
-        """记录一次网络层失败"""
-        if self._fails == 0:
-            self._since = time.monotonic()
-            _logger.error(EngineMessage.DOWN)
+        """记录一次网络层失败
+
+        - 连续失败攒够阈值才起表判断连，单条抖动不打扰
+        """
         self._fails += 1
         _logger.debug(f"链路失败：{api} {type(error).__name__}: {error}")
-        if self._fails % _FAIL_LOG_EVERY == 0:
+        if self._fails == _DOWN_THRESHOLD:
+            self._since = time.monotonic()
+            _logger.error(EngineMessage.DOWN)
+        elif self._fails > _DOWN_THRESHOLD and self._fails % _FAIL_LOG_EVERY == 0:
             _logger.debug(
                 EngineMessage.RETRYING.format(span=self._span(), n=self._fails)
             )
 
     def recovered(self) -> None:
         """记录一次成功，收尾断连周期"""
-        if self._fails:
+        if self._fails >= _DOWN_THRESHOLD:
             _logger.info(
                 EngineMessage.RECOVERED.format(span=self._span(), n=self._fails)
             )
@@ -104,9 +108,9 @@ class _LinkReport:
     def snapshot(self) -> LinkStatus:
         """当前断连周期快照
 
-        - 链路正常或周期已作废时归零，避免读到陈旧起始点
+        - 未达断连阈值或周期已作废时归零，避免读到陈旧起始点
         """
-        if self._fails == 0:
+        if self._fails < _DOWN_THRESHOLD:
             return LinkStatus(down=False, elapsed=0, retries=0)
         return LinkStatus(
             down=True,

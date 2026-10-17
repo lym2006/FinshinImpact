@@ -30,6 +30,9 @@ _LINK_ERRORS: tuple[type[BaseException], ...] = (
     asyncio.TimeoutError,
 )
 
+# 秒，会话级请求超时；请求挂死到此刻才判失败，即断连检测延迟上限
+_REQUEST_TIMEOUT = 30.0
+
 if TYPE_CHECKING:
     from aiogram.client.bot import Bot
 
@@ -53,7 +56,7 @@ class SSLUnverifiedSession(AiohttpSession):
         self, proxy: str | None = None, verify: bool = False, **kwargs
     ) -> None:
         # 空串归一为 None：TUN/直连场景 proxy 留空时必须真·不走代理
-        super().__init__(proxy=proxy or None, **kwargs)
+        super().__init__(proxy=proxy or None, timeout=_REQUEST_TIMEOUT, **kwargs)
         self._connector_init["ssl"] = verify
 
     async def make_request(
