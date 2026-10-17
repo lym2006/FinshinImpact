@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
 
 from skin.messages import PickerMessage
 from skin.theme import PICKER
-from system.app_icon import ensure_app
+from widgets import ensure_app
 
 from .._qss import build_bootstrap_qss
 from ._form import EditProfileDialog, NewProfileDialog
