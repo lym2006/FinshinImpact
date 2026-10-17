@@ -7,7 +7,7 @@
 from dataclasses import dataclass
 from typing import Literal
 
-from profile_env import ASSET_EMOJI_FONT_NAME, ASSET_FONT_NAME, ASSETS_DIR
+from system.profile_env import ASSET_EMOJI_FONT_NAME, ASSET_FONT_NAME, ASSETS_DIR
 
 # 产物落在实例数据目录，相对路径的层数绑死该深度，改绝对地址免疫目录搬迁
 _FONT_URI = (ASSETS_DIR / ASSET_FONT_NAME).as_uri()

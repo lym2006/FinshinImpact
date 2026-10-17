@@ -1,4 +1,4 @@
-# src/messages/_config.py
+# src/skin/messages/_config.py
 """配置面板文案"""
 
 

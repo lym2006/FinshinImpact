@@ -12,12 +12,12 @@ import threading
 import time
 from enum import IntEnum
 
-from instance_lock import (
+from system.instance_lock import (
     acquire_bootstrap_lock,
     acquire_instance_lock,
     release_bootstrap_lock,
 )
-from profile_env import get_profile, set_profile
+from system.profile_env import get_profile, set_profile
 
 # 主程序 GUI 装配链，分步导入时逐模块各泵一轮
 _GUI_MODULES = ("gui", "gui.controllers", "gui.mediator")
@@ -93,7 +93,7 @@ def _popup(title_text: str, body: str, *, icon_warning: bool = True) -> None:
     """
     from PySide6.QtWidgets import QMessageBox
 
-    from app_icon import ensure_app
+    from system.app_icon import ensure_app
 
     from ._qss import build_bootstrap_qss
 

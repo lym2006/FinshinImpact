@@ -15,9 +15,9 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from app_icon import ensure_app
 from skin.messages import PickerMessage
 from skin.theme import PICKER
+from system.app_icon import ensure_app
 
 from .._qss import build_bootstrap_qss
 from ._form import EditProfileDialog, NewProfileDialog

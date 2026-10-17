@@ -1,4 +1,4 @@
-# src/profile_env.py
+# src/system/profile_env.py
 """引导期基础设施
 
 - 定义实例身份码的环境变量名与净化规则

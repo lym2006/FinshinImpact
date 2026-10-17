@@ -11,9 +11,9 @@
 
 from PySide6.QtWidgets import QMessageBox
 
-from app_icon import ensure_app
 from core.domain import ManifestKey, StateKey
 from skin.messages import PluginMessage
+from system.app_icon import ensure_app
 
 from ._assets import install_assets, is_asset_installed
 from ._env import dev_mode
