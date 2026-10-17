@@ -10,6 +10,7 @@ from typing import Any
 
 from bot.error_guard import error_guard
 from core.domain import ConfigKey, ConfigNamespace
+from core.domain.ids import ConfigPath
 from utils import config_manager
 from utils.paths import RECORDS_DIR
 from utils.persona import build_persona
@@ -62,13 +63,13 @@ class _DynamicAIConfig:
         self._static = _StaticAIConfig()
 
         # 定义动态属性的获取规则：属性名 -> (配置中心路径, 类型)
-        self._dynamic_attr_map = {
-            "timeout": ("global.network_timeout", float),
-            "api_key": ("ai.api_key", str),
-            "temperature": ("ai.temperature", float),
-            "group_triggers": ("chore.triggers", list),
-            "cleanup_time": ("data.clearup", float),
-            "waiting_time": ("data.waiting", float),
+        self._dynamic_attr_map: dict[str, tuple[ConfigPath, type]] = {
+            "timeout": (ConfigKey.NETWORK_TIMEOUT.path(ConfigNamespace.GLOBAL), float),
+            "api_key": (ConfigKey.API_KEY.path(ConfigNamespace.AI), str),
+            "temperature": (ConfigKey.TEMPERATURE.path(ConfigNamespace.AI), float),
+            "group_triggers": (ConfigKey.TRIGGERS.path(ConfigNamespace.CHORE), list),
+            "cleanup_time": (ConfigKey.CLEARUP.path(ConfigNamespace.DATA), float),
+            "waiting_time": (ConfigKey.WAITING.path(ConfigNamespace.DATA), float),
             "init": (ConfigKey.PERSONALITY.path(ConfigNamespace.CHORE), str),
         }
 

@@ -8,6 +8,7 @@
 from copy import deepcopy
 from typing import Any, TypeVar, cast, get_origin
 
+from core.domain.ids import ConfigPath
 from exceptions import ConfigAttrError, ConfigPathMissingError
 
 from .config import AppConfigData, AppSchema, get_schema
@@ -31,10 +32,10 @@ class _ConfigManager:
         return self._schema
 
     @property
-    def _required_paths(self) -> frozenset[str]:
+    def _required_paths(self) -> frozenset[ConfigPath]:
         """必填键点分路径集合"""
         return frozenset(
-            f"{tab.namespace}.{fld.key}"
+            ConfigPath(f"{tab.namespace}.{fld.key}")
             for tab in self.schema
             for fld in tab.fields
             if fld.required
@@ -48,7 +49,7 @@ class _ConfigManager:
         """获取全部配置"""
         return self._config
 
-    def get(self, path: str, expected_type: type[T]) -> T:
+    def get(self, path: ConfigPath, expected_type: type[T]) -> T:
         """点路径读取并校验
 
         - 非必填键缺失取 schema 默认值
@@ -92,7 +93,7 @@ class _ConfigManager:
 
         return cast(T, value)
 
-    def _schema_default(self, path: str) -> ConfigValue:
+    def _schema_default(self, path: ConfigPath) -> ConfigValue:
         """按点路径取 schema 默认值"""
         ns, _, key = path.partition(".")
         for tab in self.schema:

@@ -11,6 +11,7 @@
 - **配置结构迁入 domain**：配置段的键名、类型、必填与默认值改由 `core/domain/config` 定义，三份配置模板删除，`config.toml` 初值按平台段表生成，界面标题与说明移入文案中心。
 - **插件清单字段规格迁入 domain**：清单标量字段的类型、必填与默认收进 `core/domain`，引导期与运行期两份读取器共用同一份规格。
 - **`[basic]` 段改名 `[proxy]`**：代理模式与代理地址归 Telegram 专属段，老实例填过的代理需在面板重填一次。
+- **配置键与校验错误强类型**：点分路径改 `ConfigPath` 封装，段名与字段键以 `ConfigNamespace`、`ConfigKey` 枚举贯通，校验错误收成 `FieldErrors`，UI 字段 `value_type` 转必填、不再靠默认值反推类型。
 
 ### 📝 Planned
 
