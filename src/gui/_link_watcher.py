@@ -10,7 +10,7 @@ from PySide6.QtCore import QObject, QTimer
 
 from utils.network import LinkStatus, link_report
 
-from .dialogs import LinkDialog
+from .dialogs import LinkDialog, SettingsDialog
 
 # 计时弹窗节奏
 _POLL_MS = 1000  # 1 秒查一次链路快照
@@ -24,6 +24,7 @@ class LinkWatcher(QObject):
 
     - 断连即弹，恢复即收
     - 叉号只压本轮断连，静默压本次运行
+    - 配置面板开着时只记日志不弹窗，面板关掉若仍断连再补弹
     """
 
     def __init__(self, parent: "QWidget") -> None:
@@ -52,9 +53,15 @@ class LinkWatcher(QObject):
         if self._dialog is not None:
             self._dialog.refresh(status)
             return
-        if self._muted or self._dismissed:
+        if self._muted or self._dismissed or self._is_config_open():
             return
         self._show(status)
+
+    def _is_config_open(self) -> bool:
+        """配置面板当前是否开着"""
+        return any(
+            dialog.isVisible() for dialog in self._host.findChildren(SettingsDialog)
+        )
 
     def _show(self, status: LinkStatus) -> None:
         """弹出计时窗并写入首帧"""
