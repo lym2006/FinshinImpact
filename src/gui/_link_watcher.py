@@ -6,9 +6,10 @@
 
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QObject, QTimer
+from PySide6.QtCore import QObject
 
 from utils.network import LinkStatus, link_report
+from widgets import Ticker
 
 from .dialogs import LinkDialog, SettingsDialog
 
@@ -30,17 +31,15 @@ class LinkWatcher(QObject):
     def __init__(self, parent: "QWidget") -> None:
         super().__init__(parent)
         self._host = parent
-        self._timer: QTimer | None = None
+        self._ticker: Ticker | None = None
         self._dialog: LinkDialog | None = None
         self._dismissed = False
         self._muted = False
 
     def start(self) -> None:
         """启动逐秒轮询"""
-        self._timer = timer = QTimer(self)
-        timer.setInterval(_POLL_MS)
-        timer.timeout.connect(self.poll)
-        timer.start()
+        self._ticker = Ticker(self, _POLL_MS, self.poll)
+        self._ticker.start()
 
     def poll(self) -> None:
         """按链路快照弹收计时弹窗"""

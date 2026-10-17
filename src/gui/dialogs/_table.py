@@ -8,12 +8,12 @@
 import html
 from typing import Any
 
-from PySide6.QtCore import QTimer
 from PySide6.QtGui import QResizeEvent
 from PySide6.QtWidgets import QTextEdit, QWidget
 
 from skin.theme import FiveStateDialogTheme
 from utils.network import FrameKey, RowStatus
+from widgets import Ticker
 
 _CLOCK_MS = 1000  # 倒计时步进：一秒一跳，与探测预算的秒刻度对齐
 
@@ -54,9 +54,7 @@ class RowTable(QTextEdit):
         self.setObjectName("row_view")
         self.setReadOnly(True)
 
-        self._clock = QTimer(self)
-        self._clock.setInterval(_CLOCK_MS)
-        self._clock.timeout.connect(self._advance_clock)
+        self._clock = Ticker(self, _CLOCK_MS, self._advance_clock)
 
     def reset(self, rows: list[dict[str, Any]]) -> None:
         """按占位表整表重建
@@ -96,9 +94,9 @@ class RowTable(QTextEdit):
 
     def _sync_clock(self) -> None:
         """有进行中的行则启动计时"""
-        if self._elapsed and not self._clock.isActive():
+        if self._elapsed:
             self._clock.start()
-        elif not self._elapsed:
+        else:
             # 数完自动停
             self._clock.stop()
 
