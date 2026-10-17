@@ -9,7 +9,7 @@ class DialogMessage:
     - 成员以所属弹窗子域为前缀，表格状态符号归 MARK_ 段
     """
 
-    # 用：theme SettingsDialogConfig 文案字段
+    # 用：theme SettingsDialogTheme 文案字段
     SETUP_TITLE = "修改配置"
     SETUP_TIP = "检测到配置有误，请修正后继续"
     SETUP_HINT = "留意带 ⚠ 的标签页，标题标红的即为出错字段"
@@ -42,11 +42,11 @@ class DialogMessage:
     BTN_CONFIRM = "确认"
     BTN_VALIDATING = "校验中..."
 
-    # 用：theme ShutdownDialogConfig 文案字段
+    # 用：theme ShutdownDialogTheme 文案字段
     SHUTDOWN_TITLE = "确认退出"
     SHUTDOWN_MSG = "确定要关闭机器人并退出程序吗？"
 
-    # 用：theme NoticeDialogConfig 文案字段
+    # 用：theme NoticeDialogTheme 文案字段
     NOTICE_TITLE = "提示"
     NOTICE_OK = "知道了"
     NOTICE_FATAL_TITLE = "致命错误"
@@ -54,17 +54,17 @@ class DialogMessage:
     NOTICE_FATAL_OK = "确认并退出"
     NOTICE_NOT_CHANGED = "您未修改任何配置"
 
-    # 用：theme WaitDialogConfig 文案字段
+    # 用：theme WaitDialogTheme 文案字段
     WAIT_TITLE = "请稍候"
     WAIT_CHECK = "正在检查版本更新..."
 
-    # 用：theme CheckDialogConfig 校验轮字段
+    # 用：theme CheckDialogTheme 校验轮字段
     CHECK_VERIFY_TITLE = "连通性校验"
     CHECK_VERIFY_HEAD = "正在校验连通性..."
     CHECK_VERIFY_HEAD_PASS = "连通性校验通过"
     CHECK_VERIFY_HEAD_FAIL = "连通性校验未通过"
 
-    # 用：theme CheckDialogConfig 诊断轮字段
+    # 用：theme CheckDialogTheme 诊断轮字段
     CHECK_DIAG_TITLE = "网络诊断"
     CHECK_DIAG_HEAD = "正在网络诊断..."
     CHECK_DIAG_HEAD_PASS = "网络诊断完成"
@@ -77,7 +77,7 @@ class DialogMessage:
     MARK_SKIP = "✓"  # 跳过行同样绿勾，详情文字区分
     MARK_FAIL = "✗"
 
-    # 用：theme ChangeDialogConfig 文案字段
+    # 用：theme ChangeDialogTheme 文案字段
     CHANGE_TITLE = "确认变更"
     CHANGE_TIP = "以下配置将被修改，确认保存？"
     CHANGE_COL_KEY = "配置项"
@@ -86,7 +86,7 @@ class DialogMessage:
     CHANGE_RETURN = "返回修改"
     CHANGE_CONFIRM = "确认保存"
 
-    # 用：theme LinkDialogConfig 文案字段
+    # 用：theme LinkDialogTheme 文案字段
     LINK_TITLE = "网络重连中"
     LINK_HEAD = "链路已断开，正在等待恢复"
     LINK_ELAPSED = "已断线 {timer}"
