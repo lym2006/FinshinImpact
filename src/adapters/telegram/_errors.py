@@ -18,7 +18,7 @@ _VANISHED_MARKS = (
 
 
 def is_vanished(exc: TelegramAPIError) -> bool:
-    """判定是否为消息已删除错误"""
+    """消息已删除错误判定"""
     text = str(exc).lower()
     return any(mark in text for mark in _VANISHED_MARKS)
 
@@ -26,7 +26,7 @@ def is_vanished(exc: TelegramAPIError) -> bool:
 def translate(exc: TelegramAPIError, ref: MsgReferenceDTO) -> Exception:
     """翻译平台异常
 
-    - 命中已删除标记返回消息不存在
+    - 命中删除态标记返回消息不存在
     - 其余原样返回交调用方上抛
     """
     if is_vanished(exc):

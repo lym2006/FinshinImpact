@@ -79,7 +79,7 @@ def register_routers(dispatcher: "Dispatcher") -> _PluginReport:
 
 
 def _resolve_plugins() -> list[PluginManifestDTO]:
-    """计算本轮注册序列
+    """计算本次注册序列
 
     - 与帮助聚合共用 enabled_manifests 取序列
     - 序列为空时走全失败分支抛 PluginsMissingError

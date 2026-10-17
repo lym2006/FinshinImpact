@@ -75,7 +75,7 @@ class ShutdownController(BaseController):
         if reply == dialog.DialogCode.Accepted:
             self.logger.info("用户确认退出，开始清理资源...")
 
-            # 来源是向导时一并关闭：退出已确认，向导无需再驻留
+            # 来源是向导时一并关闭：退出已确认
             if isinstance(source, QDialog):
                 source.accept()
             self._start_shutdown()

@@ -65,7 +65,7 @@ class CheckMessage:
     # 用：仅靠端口扫描发现可用通道
     DIAG_ADVICE_ALT = "当前配置不通：把 {url} 填入代理配置项即可"
 
-    # 用：诊断结论行——复测命中的正是本轮刚判失败的那条通道
+    # 用：诊断结论行——复测命中的正是本次刚判失败的那条通道
     DIAG_ADVICE_FLAP = "代理刚才不通、复测已通，属瞬时抖动，稍后重试即可"
 
     # 用：全链不通
@@ -80,7 +80,7 @@ class CheckMessage:
     # 用：端口行——存活候选全部实测不可用
     VERIFY_PORT_NONE = "存活端口均无法出网"
 
-    # 用：通道行——仅换 token 复查时复用上轮结论
+    # 用：通道行——仅换 token 复查时标出未重测的已验证通道
     VERIFY_REUSE = "复用已验证通道"
 
     # 用：本地配置行——类型校验全过
@@ -129,16 +129,16 @@ class CheckMessage:
     REASON_SAVE = "保存"
     REASON_RECHECK = "复验"
 
-    # 用：bot/_managers/_settings.py 首轮全挂自动重检的面板反馈
+    # 用：bot/_managers/_settings.py 首轮全不通后自动重检的面板反馈
     RETRY_HEAD = "首轮全部不通，热连接自动重检一轮"
 
-    # 用：单通道耗时（debug 级，面板不展示）
+    # 用：单通道探测用时（debug 级，面板不展示）
     COST = "通道 {via} 探测耗时 {cost:.1f}s"
 
-    # 用：bot/_main.py 主窗就绪时的启动耗时反馈（面板可见，等待有回音）
+    # 用：bot/_main.py 主窗就绪时的启动用时反馈（面板可见，等待有回音）
     READY_COST = "主程序就绪耗时 {cost:.1f}s"
 
-    # 用：bot/_managers/_settings.py 校验轮收尾的整轮耗时反馈（面板可见）
+    # 用：bot/_managers/_settings.py 校验轮收尾的整轮用时反馈（面板可见）
     ROUND_COST = "连通校验耗时 {cost:.1f}s"
 
     # 用：校验通过的日志句

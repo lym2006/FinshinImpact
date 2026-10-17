@@ -167,7 +167,7 @@ class FieldBuilder:
         - 必填项空态上屏且不挂恢复按钮
         - 非必填项恢复目标是默认值
         """
-        # 禁默认值假值冒充用户配置，用户不改即沿用默认值
+        # 禁默认值假值冒充用户配置，用户不改即用默认值
         section_data = self._current.get(section) or {}
         present = field.key in section_data
         current_value: ConfigValue = (

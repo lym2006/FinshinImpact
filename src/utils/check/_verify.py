@@ -129,7 +129,7 @@ async def run_channels(
                 emit(_settle_frame(ch, verdict, via_label))
                 break
 
-    # 清场：在途陪跑取消，按住未发的成功者与未完成者统一补绿色带过。
+    # 清场：在途陪跑取消，按住未发的成功者与未完成者统一补绿色带过
     stragglers = {t for t in tasks if not t.done()}
     for task in stragglers:
         task.cancel()

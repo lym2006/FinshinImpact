@@ -33,7 +33,7 @@ from ._connectivity import attempt_channel, preload_engine
 from ._fields import TelegramFieldKey
 from ._verify import run_channels
 
-# 诊断跑在后台线程的私有 loop，耗时句走此器落 debug
+# 诊断跑在后台线程的私有 loop，计时句走此器落 debug
 _logger = get_logger("Mgr.Diagnose")
 
 # 仅当配置项与系统注册表都拿不到端口时，才回退扫描这组常见默认值
@@ -159,7 +159,7 @@ async def _alive_ports(
 def _advice_frame(channels: Sequence[Channel], alt: str | None) -> dict:
     """组装诊断结论帧
 
-    - 复测命中本轮已探测的端点即按抖动通过，不发断链标记
+    - 复测命中本次已探测的端点即按抖动通过，不发断链标记
     - 通道红行保持首探结论，转绿的只有结论行
     """
     if alt is not None and is_flap_hit(channels, alt):
