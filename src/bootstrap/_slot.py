@@ -93,7 +93,7 @@ def _popup(title_text: str, body: str, *, icon_warning: bool = True) -> None:
     """
     from PySide6.QtWidgets import QMessageBox
 
-    from system.app_icon import ensure_app
+    from widgets import ensure_app
 
     from ._qss import build_bootstrap_qss
 
