@@ -10,6 +10,8 @@
 from dataclasses import dataclass
 from enum import StrEnum
 
+from ..ids import ConfigPath
+
 # 单个 TOML 配置值
 ConfigValue = str | bool | float | list[str] | None
 
@@ -45,9 +47,9 @@ class ConfigKey(StrEnum):
     CLEARUP = "clearup"
     WAITING = "waiting"
 
-    def path(self, namespace: ConfigNamespace) -> str:
+    def path(self, namespace: ConfigNamespace) -> ConfigPath:
         """拼点分路径"""
-        return f"{namespace}.{self}"
+        return ConfigPath(f"{namespace}.{self}")
 
 
 class ProxyMode(StrEnum):
@@ -79,9 +81,9 @@ class FieldSpec:
     bounds: tuple[float, float] | None = None
 
     @property
-    def path(self) -> str:
+    def path(self) -> ConfigPath:
         """拼点分路径"""
-        return f"{self.namespace}.{self.key}"
+        return ConfigPath(f"{self.namespace}.{self.key}")
 
 
 @dataclass(frozen=True, slots=True)

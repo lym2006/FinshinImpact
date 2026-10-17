@@ -7,7 +7,7 @@
 
 from messages import ConfigMessage
 
-from .models import AppConfigData, AppSchema, is_blank
+from .models import AppConfigData, AppSchema, FieldErrors, is_blank
 
 # 值类型 → 校验规则说明
 _TYPE_NAMES = {
@@ -18,13 +18,13 @@ _TYPE_NAMES = {
 }
 
 
-def validate_types(schema: AppSchema, data: AppConfigData) -> dict[str, str]:
+def validate_types(schema: AppSchema, data: AppConfigData) -> FieldErrors:
     """按 schema 校验各字段类型与数值区间
 
     - 必填键缺键或留空报必填文案
     - 非必填键缺失静默放行，由运行期回退默认值
     """
-    errors: dict[str, str] = {}
+    errors: FieldErrors = {}
 
     for tab in schema:
         ns_data = data.get(tab.namespace, {})
@@ -39,7 +39,7 @@ def validate_types(schema: AppSchema, data: AppConfigData) -> dict[str, str]:
                 errors[fld.key] = ConfigMessage.REQUIRED_MARK
                 continue
 
-            expected = type(fld.default) if fld.value_type is None else fld.value_type
+            expected = fld.value_type
             if expected not in _TYPE_NAMES:
                 continue
 

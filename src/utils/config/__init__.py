@@ -10,7 +10,7 @@ from ._io import ConfigIO
 from ._schema import build_schema
 from ._validator import validate_types
 from ._writer import render_config
-from .models import AppConfigData, AppSchema
+from .models import AppConfigData, AppSchema, FieldErrors
 
 __all__ = [
     # 核心生命周期控制
@@ -26,6 +26,7 @@ __all__ = [
     # 数据结构
     "AppConfigData",
     "AppSchema",
+    "FieldErrors",
 ]
 
 
