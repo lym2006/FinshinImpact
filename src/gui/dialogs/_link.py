@@ -11,9 +11,9 @@ from PySide6.QtGui import QCloseEvent, QFont
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
 from utils.network import LinkStatus
+from widgets import BaseDialog
 
 from ..theme import GLOBAL, LINK_DIALOG
-from ._base import BaseDialog
 
 # Qt 布局四边
 _MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
