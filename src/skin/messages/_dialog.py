@@ -1,4 +1,4 @@
-# src/messages/_dialog.py
+# src/skin/messages/_dialog.py
 """弹窗装配文案"""
 
 

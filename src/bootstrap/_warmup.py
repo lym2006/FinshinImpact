@@ -10,7 +10,7 @@ import sysconfig
 import threading
 from pathlib import Path
 
-from profile_env import ROOT_DIR
+from system.profile_env import ROOT_DIR
 
 # compileall 静默级别，只报错不打进度
 _QUIET = 1

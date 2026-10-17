@@ -12,8 +12,8 @@ import tempfile
 import tomllib
 from pathlib import Path
 
-from profile_env import ROOT_DIR
 from skin.messages import PluginMessage
+from system.profile_env import ROOT_DIR
 
 from ._env import PIP_FLAGS, PYPROJECT, dev_mode, uv_cmd
 from ._manifest import dev_dependencies, top_package_name

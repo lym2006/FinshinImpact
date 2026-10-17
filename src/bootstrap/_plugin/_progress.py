@@ -19,8 +19,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from app_icon import ensure_app
 from skin.messages import PluginMessage
+from system.app_icon import ensure_app
 
 from .._qss import build_bootstrap_qss
 from ._support import log_ops

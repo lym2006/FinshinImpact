@@ -1,4 +1,4 @@
-# src/messages/__init__.py
+# src/skin/messages/__init__.py
 """文案中心
 
 - 用户可见文案按域拆小文件，每条标注使用位置
