@@ -14,7 +14,6 @@ from skin.messages import CheckMessage
 from ..logger import get_logger
 from ..network import (
     Channel,
-    FieldKey,
     FrameKey,
     RowId,
     RowStatus,
@@ -31,6 +30,7 @@ from ..network.probe import (
 )
 from ..network.proxy import registry_proxy
 from ._connectivity import attempt_channel, preload_engine
+from ._fields import TelegramFieldKey
 from ._verify import run_channels
 
 # 诊断跑在后台线程的私有 loop，耗时句走此器落 debug
@@ -99,7 +99,7 @@ async def _port_hit(token: str, url: str) -> bool:
     - 探测结果无 proxy 键错误即该端口可出网
     """
     _, errors = await attempt_channel(token, url)
-    return FieldKey.PROXY not in errors
+    return TelegramFieldKey.PROXY not in errors
 
 
 def _diagnose_probe(

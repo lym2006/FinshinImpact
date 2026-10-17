@@ -9,8 +9,8 @@ import asyncio
 
 from gui.mediator import gui_bridge
 from skin.messages import CheckMessage
-from utils.check import ChannelOutcome, attempt_channel
-from utils.network import FieldKey, RowId, RowStatus, scan_proxy_ports
+from utils.check import ChannelOutcome, TelegramFieldKey, attempt_channel
+from utils.network import RowId, RowStatus, scan_proxy_ports
 
 
 async def verify_port_row(outcome: ChannelOutcome, token: str, token_only: bool) -> str:
@@ -30,7 +30,7 @@ async def verify_port_row(outcome: ChannelOutcome, token: str, token_only: bool)
         )
         return ""
 
-    if FieldKey.PROXY not in outcome.errors or token_only:
+    if TelegramFieldKey.PROXY not in outcome.errors or token_only:
         return ""
 
     gui_bridge.verify_progress.emit(

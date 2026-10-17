@@ -14,14 +14,8 @@ from core.domain import ConfigKey, ConfigSection
 from skin.messages import CheckMessage
 from system.profile_env import get_profile, read_token
 from utils import config_manager
-from utils.check import diagnose_flow
-from utils.network import (
-    FieldKey,
-    FrameKey,
-    RowId,
-    RowStatus,
-    verify_skeleton,
-)
+from utils.check import TelegramFieldKey, diagnose_flow
+from utils.network import FrameKey, RowId, RowStatus, verify_skeleton
 
 from ..dialogs import (
     Round,
@@ -156,7 +150,9 @@ class DiagnoseController(BaseController):
             and frame.get("status") != RowStatus.CHECKING
             and frame.get(FrameKey.BROKEN)
         ):
-            gui_bridge.request_force_setup.emit({FieldKey.PROXY: frame["detail"]})
+            gui_bridge.request_force_setup.emit(
+                {TelegramFieldKey.PROXY: frame["detail"]}
+            )
 
     def _on_round_closed(self, result: int) -> None:
         """窗口关闭回调

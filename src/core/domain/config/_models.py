@@ -22,7 +22,9 @@ class ConfigSection(StrEnum):
     - 与 config.toml 顶层表名一一对应
     """
 
+    # Telegram 专属段
     PROXY = "proxy"
+
     GLOBAL = "global"
     AI = "ai"
     CHORE = "chore"
@@ -35,8 +37,10 @@ class ConfigKey(StrEnum):
     - 与段内 TOML 键一一对应
     """
 
+    # Telegram 专属键
     PROXY_MODE = "proxy_mode"
     PROXY = "proxy"
+
     NETWORK_TIMEOUT = "network_timeout"
     API_KEY = "api_key"
     TEMPERATURE = "temperature"
@@ -56,6 +60,7 @@ class ProxyMode(StrEnum):
     """代理模式协议串
 
     - 配置字段 proxy.proxy_mode 与校验编排共用
+    - Telegram 专属取值域
     """
 
     AUTO = "auto"
