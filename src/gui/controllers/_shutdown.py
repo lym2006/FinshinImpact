@@ -7,10 +7,9 @@
 
 import os
 
-from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QDialog, QWidget
 
-from widgets import ShutdownDialog
+from widgets import ShutdownDialog, Ticker
 
 from ..mediator import gui_bridge
 from ._base import BaseController
@@ -18,6 +17,8 @@ from ._decorator import gui_guard
 
 # 关闭进度轮询
 _SHUTDOWN_POLL_MS = 100  # 0.1 秒查一次关闭阶段状态
+_SHUTDOWN_TIMEOUT_MS = 5000  # 5 秒未清理完则强制退出
+_EXIT_DELAY_MS = 1000  # 清理完毕后留 1 秒缓冲再退出
 
 
 class ShutdownController(BaseController):
@@ -29,8 +30,8 @@ class ShutdownController(BaseController):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self._check_shutdown_timer: QTimer = None  # type: ignore
-        self._force_exit_timer: QTimer = None  # type: ignore
+        self._check_shutdown_timer: Ticker | None = None
+        self._force_exit_timer: Ticker | None = None
         self._is_shutting_down = False
 
     def _execute(self) -> None:
@@ -93,16 +94,17 @@ class ShutdownController(BaseController):
 
         # 检查定时器：每 0.1 秒轮询底层清理状态
         self.logger.info("正在等待 Bot 线程清理资源...")
-        self._check_shutdown_timer = QTimer(self.gui)
-        self._check_shutdown_timer.timeout.connect(self._check_shutdown_status)
-        self._check_shutdown_timer.start(_SHUTDOWN_POLL_MS)
+        self._check_shutdown_timer = Ticker(
+            self.gui, _SHUTDOWN_POLL_MS, self._check_shutdown_status
+        )
+        self._check_shutdown_timer.start()
         self.logger.debug("检查定时器已启动，轮询间隔 0.1 秒")
 
         # 超时定时器：如果 5 秒后还没清理完，强行退出
-        self._force_exit_timer = QTimer(self.gui)
-        self._force_exit_timer.setSingleShot(True)
-        self._force_exit_timer.timeout.connect(self._force_exit)
-        self._force_exit_timer.start(5000)
+        self._force_exit_timer = Ticker(
+            self.gui, _SHUTDOWN_TIMEOUT_MS, self._force_exit, repeats=False
+        )
+        self._force_exit_timer.start()
         self.logger.debug("超时定时器已启动，5 秒后未清理完则强制退出")
 
     def _check_shutdown_status(self) -> None:
@@ -115,7 +117,7 @@ class ShutdownController(BaseController):
             # 停掉定时器与超时定时器（如果有）
             self._stop_timers()
             self.logger.info("资源已清理，1 秒后退出...")
-            QTimer.singleShot(1000, lambda: os._exit(0))
+            Ticker.after(_EXIT_DELAY_MS, lambda: os._exit(0))
 
     def _force_exit(self) -> None:
         """超时强制退出"""

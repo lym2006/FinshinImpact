@@ -7,7 +7,6 @@
 import logging
 from collections.abc import Callable
 
-from PySide6.QtCore import QTimer
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import (
     QApplication,
@@ -20,7 +19,7 @@ from PySide6.QtWidgets import (
 
 from skin.theme import BodyTheme, FontTheme, ToolbarTheme, WindowTheme
 from utils.logger import get_logger
-from widgets import NoticeDialog
+from widgets import NoticeDialog, Ticker
 
 from ._dashboard import DashboardWidget, TextHandler
 
@@ -153,7 +152,7 @@ class BotGUI(QMainWindow):
         - 多行长文只进弹窗
         """
         if QApplication.activeModalWidget() is not None:
-            QTimer.singleShot(
+            Ticker.after(
                 _NOTICE_RETRY_DELAY_MS,
                 lambda: self.show_notice(message, critical),
             )

@@ -6,7 +6,7 @@
 - cancelable 模式：进行中允许取消，结果到达自动关闭窗口
 """
 
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
@@ -14,6 +14,7 @@ from skin.theme import GLOBAL, WAIT_DIALOG
 
 from ._base import BaseDialog
 from ._dialog_qss import build_wait_dialog_qss
+from ._ticker import Ticker
 
 # Qt 布局四边
 _MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
@@ -62,9 +63,7 @@ class WaitDialog(BaseDialog):
         layout.addWidget(self._btn, alignment=Qt.AlignmentFlag.AlignCenter)
         self.set_closable(cancelable)
 
-        self._tick = QTimer(self)
-        self._tick.setInterval(WAIT_DIALOG.tick_ms)
-        self._tick.timeout.connect(self._advance)
+        self._tick = Ticker(self, WAIT_DIALOG.tick_ms, self._advance)
         self._tick.start()
 
     def set_text(self, text: str) -> None:
