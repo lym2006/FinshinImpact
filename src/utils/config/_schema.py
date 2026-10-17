@@ -37,7 +37,7 @@ def _build_tab(tab: TabSpec) -> TabSchema:
     """组装单个页签"""
     return TabSchema(
         title=ConfigMessage.TAB_TITLES[tab.namespace],
-        namespace=tab.namespace.value,
+        namespace=tab.namespace,
         fields=[_build_field(spec) for spec in tab.fields],
     )
 
@@ -45,12 +45,12 @@ def _build_tab(tab: TabSpec) -> TabSchema:
 def _build_field(spec: FieldSpec) -> FieldSchema:
     """组装单个字段"""
     return FieldSchema(
-        key=spec.key.value,
+        key=spec.key,
         label=ConfigMessage.LABELS[spec.key],
         desc=ConfigMessage.DESCS[spec.key],
         default=spec.default,
-        options=_build_options(spec),
         value_type=spec.value_type,
+        options=_build_options(spec),
         required=spec.required,
         bounds=spec.bounds,
     )

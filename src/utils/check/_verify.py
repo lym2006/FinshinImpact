@@ -9,6 +9,7 @@ import asyncio
 from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass, field
 
+from core.domain import ConfigKey
 from messages import CheckMessage
 
 from ..config import AppConfigData, AppSchema, validate_types
@@ -157,7 +158,9 @@ async def run_channels(
     return outcome
 
 
-def local_row(schema: AppSchema, config: AppConfigData) -> tuple[dict, dict[str, str]]:
+def local_row(
+    schema: AppSchema, config: AppConfigData
+) -> tuple[dict, dict[ConfigKey, str]]:
     """本地配置校验
 
     - 返回 local 行终态帧与类型错误字典

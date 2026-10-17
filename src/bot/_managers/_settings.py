@@ -21,6 +21,7 @@ from utils.check import (
 )
 from utils.config import (
     AppSchema,
+    FieldErrors,
     ensure_config,
     get_schema,
     load_config,
@@ -109,7 +110,7 @@ class SettingsManager(BaseManager):
             # 单路选路缺地址：代理行被联动隐藏，缺席句标红落在可见的模式行上
             type_errors = {**type_errors, ConfigKey.PROXY_MODE: single[2]}
             self.resolved_proxy = None
-            self.last_errors = type_errors
+            self.last_errors = cast("dict[str, str]", type_errors)
             self.logger.info(CheckMessage.ROUND_COST.format(cost=time.monotonic() - t0))
             return self._emit_advice(schema)
 
@@ -180,7 +181,7 @@ class SettingsManager(BaseManager):
         sys_dedup: bool,
         single: tuple[str, str, str] | None,
         schema: AppSchema,
-    ) -> dict[str, str]:
+    ) -> FieldErrors:
         """发送首帧进度整表
 
         - 本地校验结果随首帧先行显示，不等网络探测
