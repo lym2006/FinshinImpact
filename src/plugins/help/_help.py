@@ -3,7 +3,7 @@
 
 - /help：查询帮助（图片渲染）
 - /命令 -h：单命令帮助查询
-- 未知命令与非法形态：私聊回执，群聊与频道静默吞掉
+- 未知命令与非法形态：私聊回执，群聊与频道静默无视
 """
 
 import asyncio
@@ -37,7 +37,7 @@ def _is_stray(command: CommandDTO) -> bool:
 
     - 不带 -h 时只认一个 flag，带 -h 时可再带一个
     - 同一 flag 重复算多余
-    - 位置参数一律算多余，命令要的内容走事件字段
+    - 命令行只认开关，多打的文字一律算多余
     """
     spec = command_specs.get(command.head)
     declared = spec.flags if spec is not None else ()
@@ -55,7 +55,7 @@ class _CommandReject(Filter):
     """筛选需要拦截的非法命令
 
     - 私聊里形态非法、菜单外命令名与清单没认的输入都回执
-    - 群聊与频道只吞掉菜单内命令的多余输入，命令侧不再参与
+    - 群聊与频道只吞掉菜单内命令的多余输入，命令侧拿不到
     """
 
     async def __call__(
@@ -124,7 +124,7 @@ def _reject_text(command: CommandDTO) -> str:
 async def command_check(message: Message, ctx: HandlerContext) -> None:
     """拦截命令形态问题
 
-    - 私聊回执，群聊与频道静默吞掉
+    - 私聊回执，群聊与频道静默无视
     - 首位形参由 aiogram 按位置绑定，名字不可改
     """
     if ctx.event.scope is not ChatScope.PRIVATE:

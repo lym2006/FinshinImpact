@@ -1,10 +1,13 @@
 # 插件清单模板 — 复制到 src/plugins/<目录名>/plugin.toml 后按需改值
 
 # 与插件目录名一致
-name = "AI_render"
+name = "name"
 
 # 面板显示名
-title = "Markdown 渲染"
+title = "title"
+
+# 面板一行说明
+summary = "summary"
 
 # true 为必装，面板不可取消（核心插件用）
 core = false
@@ -18,16 +21,13 @@ deps = ["markdown==3.10.2"]
 # 非 pip 资源，两段式「模块名 资源名」，启用时面板装、取消无主即卸，无则留空
 assets = ["playwright chromium-headless-shell"]
 
-# 面板一行说明
-summary = "以图片形式输出 markdown 回复"   
-
 # 帮助菜单贡献，可多段
 [[help]]
-section = "AI 部分"
-note = "独立会话和思考过程"  # 备注，无则省略
+section = "section"
+note = "note"  # 备注，无则省略
 
 # 必须与插件实际注册的路由一致，多列误放行、少列误拦截
 [[help.commands]]
-cmd = "md"
-desc = "以markdown格式输出上一次回复内容（图片）"
+cmd = "cmd"
+desc = "desc"
 flags = []  # 额外开关，每项写成 ["-i", "说明"]，-h 不写，全命令默认可用
