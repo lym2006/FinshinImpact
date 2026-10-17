@@ -7,7 +7,7 @@
 from dataclasses import dataclass
 
 from ..domain import Platform
-from ..domain.ids import Container, MessageId, MessageKey, PrincipalKey, UserId
+from ..domain.ids import ContainerKey, MessageId, MessageKey, PrincipalKey, UserId
 
 
 @dataclass(frozen=True, slots=True)
@@ -15,7 +15,7 @@ class PrincipalDTO:
     """会话主体标识"""
 
     platform: Platform
-    container: Container
+    container: ContainerKey
     user: UserId
 
     @property
@@ -35,7 +35,7 @@ class MsgReferenceDTO:
     """
 
     platform: Platform
-    container: Container
+    container: ContainerKey
     message_id: MessageId
 
     @property

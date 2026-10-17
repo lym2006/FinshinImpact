@@ -5,10 +5,10 @@
 """
 
 from ._platform import ChatScope
-from .ids import Container
+from .ids import ContainerKey
 
 
-def make_container(scope: ChatScope, chat_id: str, user_id: str) -> Container:
+def make_container(scope: ChatScope, chat_id: str, user_id: str) -> ContainerKey:
     """归一容器段
 
     - 群聊 g 前缀加 chat_id 绝对值
@@ -16,8 +16,8 @@ def make_container(scope: ChatScope, chat_id: str, user_id: str) -> Container:
     """
     match scope:
         case ChatScope.GROUP:
-            return Container(f"g{abs(int(chat_id))}")  # 非法格式不能静默通过
+            return ContainerKey(f"g{abs(int(chat_id))}")  # 非法格式不能静默通过
         case ChatScope.PRIVATE:
-            return Container(f"u{user_id}")
+            return ContainerKey(f"u{user_id}")
         case _:
-            return Container("")
+            return ContainerKey("")

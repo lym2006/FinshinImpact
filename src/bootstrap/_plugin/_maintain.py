@@ -20,7 +20,7 @@ from widgets import ensure_app
 from ._installer import sync_env
 from ._manifest import core_dependencies, enabled_deps_union
 from ._progress import run_with_progress
-from ._support import ProgressFn, clean_cache
+from ._support import ProgressCallback, clean_cache
 
 
 def _keep_union() -> list[str]:
@@ -55,7 +55,7 @@ def _sync_flow(parent: QWidget | None) -> list[str]:
     )
 
 
-def _cache_task(on_line: ProgressFn | None = None) -> list[str]:
+def _cache_task(on_line: ProgressCallback | None = None) -> list[str]:
     """清空下载缓存，本操作无失败项概念恒回空表"""
     clean_cache(on_line)
     return []

@@ -18,7 +18,7 @@ from core.domain import (
     CommandPriority,
     HelpKey,
     ManifestKey,
-    PluginFile,
+    PluginFileName,
     StateKey,
 )
 from core.dto import HelpCommandDTO, HelpSectionDTO, PluginManifestDTO
@@ -63,7 +63,7 @@ def _load_manifests(plugins_path: Path) -> dict[str, PluginManifestDTO]:
         return manifests
 
     for path in sorted(plugins_path.iterdir()):
-        manifest = _read_manifest(path / PluginFile.MANIFEST, path.name)
+        manifest = _read_manifest(path / PluginFileName.MANIFEST, path.name)
         if manifest is not None:
             manifests[manifest.name] = manifest
 

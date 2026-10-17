@@ -27,7 +27,7 @@ from ._manifest import (
     top_package_name,
 )
 from ._progress import run_with_progress
-from ._support import ProgressFn, emit, is_pin_installed
+from ._support import ProgressCallback, emit, is_pin_installed
 
 # 补装计划条目：(插件名, 缺的 pip 包, 缺的资源)
 _Pending = tuple[str, list[str], list[str]]
@@ -70,7 +70,9 @@ def _collect_missing(code: str) -> list[_Pending]:
     return plan
 
 
-def _install_missing(plan: list[_Pending], on_line: ProgressFn | None) -> list[str]:
+def _install_missing(
+    plan: list[_Pending], on_line: ProgressCallback | None
+) -> list[str]:
     """按计划补装缺失依赖与资源
 
     - 重复安装同一包会快速跳过，被删的内核借同一命令重新下载

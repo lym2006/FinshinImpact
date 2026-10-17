@@ -16,9 +16,9 @@ from ..config import AppConfigData, AppSchema, validate_types
 from ..network import Channel, FieldKey, RowId, RowStatus
 
 # 探针展示句留空时由核心按"称谓：可达/不可用"拼装，缺席句等特例显式覆盖
-_Probe = Callable[[Channel], Awaitable[tuple[str | None, dict[str, str], str]]]
-_Emit = Callable[[dict], None]
-_StopCheck = Callable[[], bool]
+_ProbeCallback = Callable[[Channel], Awaitable[tuple[str | None, dict[str, str], str]]]
+_EmitCallback = Callable[[dict], None]
+_StopCheckCallback = Callable[[], bool]
 _ViaLabel = Callable[[Channel], str]
 
 # 探针裁决：(通道可走, 生效地址, 字段错误, 表格展示句)
@@ -40,7 +40,7 @@ def _never_stop() -> bool:
     return False
 
 
-async def _probe_safe(ch: Channel, probe: _Probe) -> _Verdict:
+async def _probe_safe(ch: Channel, probe: _ProbeCallback) -> _Verdict:
     """执行单通道探针
 
     - 探针异常记为该通道失败，不上抛
@@ -74,10 +74,10 @@ def _settle_frame(ch: Channel, verdict: _Verdict, via_label: _ViaLabel) -> dict:
 
 async def run_channels(
     channels: Sequence[Channel],
-    probe: _Probe,
-    emit: _Emit,
+    probe: _ProbeCallback,
+    emit: _EmitCallback,
     via_label: _ViaLabel,
-    stop_check: _StopCheck | None = None,
+    stop_check: _StopCheckCallback | None = None,
 ) -> ChannelOutcome:
     """并发探测全部通道
 
