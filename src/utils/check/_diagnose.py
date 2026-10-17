@@ -23,6 +23,7 @@ from ..network import (
 )
 from ..network.probe import (
     extract_port,
+    is_flap_hit,
     plan_channels,
     port_alive,
     probe_budget,
@@ -155,6 +156,28 @@ async def _alive_ports(
     return alive
 
 
+def _advice_frame(channels: Sequence[Channel], alt: str | None) -> dict:
+    """组装诊断结论帧
+
+    - 复测命中本轮已探测的端点即按抖动通过，不发断链标记
+    - 通道红行保持首探结论，转绿的只有结论行
+    """
+    if alt is not None and is_flap_hit(channels, alt):
+        return {
+            "id": RowId.ADVICE,
+            "status": RowStatus.OK,
+            "detail": CheckMessage.DIAG_ADVICE_FLAP,
+        }
+    return {
+        "id": RowId.ADVICE,
+        "status": RowStatus.FAIL,
+        "detail": CheckMessage.DIAG_ADVICE_ALT.format(url=alt)
+        if alt
+        else CheckMessage.DIAG_ADVICE_NONE,
+        FrameKey.BROKEN: True,
+    }
+
+
 async def _retest_ports(
     alive: list[int], token: str, stop: Callable[[], bool]
 ) -> str | None:
@@ -235,13 +258,4 @@ async def diagnose_flow(
     alt = await _retest_ports(alive, token, stop)
     if stop():
         return
-    frame(
-        {
-            "id": RowId.ADVICE,
-            "status": RowStatus.FAIL,
-            "detail": CheckMessage.DIAG_ADVICE_ALT.format(url=alt)
-            if alt
-            else CheckMessage.DIAG_ADVICE_NONE,
-            FrameKey.BROKEN: True,
-        }
-    )
+    frame(_advice_frame(channels, alt))
