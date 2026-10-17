@@ -13,7 +13,13 @@ from skin.theme import (
     SETTINGS_DIALOG,
     TOOLBAR,
 )
-from widgets import DIALOG_BASE_QSS, DIALOG_BUTTON_QSS, DIALOG_LABEL_QSS
+from widgets import (
+    DIALOG_BASE_QSS,
+    DIALOG_BUTTON_QSS,
+    DIALOG_LABEL_QSS,
+    ButtonStyle,
+    build_combo_qss,
+)
 
 # 标签页
 _DIALOG_TAB_QSS = f"""\
@@ -80,28 +86,18 @@ QTextEdit:focus {{
 }}"""
 
 # 下拉选择
-_DIALOG_COMBO_QSS = f"""\
-QComboBox {{
-    background-color: {TOOLBAR.bg};
-    color: {BODY.color};
-    border: {SETTINGS_DIALOG.border_width}px solid {SETTINGS_DIALOG.border_color};
-    border-radius: {GLOBAL.radius}px;
-    padding: {SETTINGS_DIALOG.input_padding_v}px {SETTINGS_DIALOG.input_padding_h}px;
-}}
-
-QComboBox:hover,
-QComboBox:focus {{
-    border: {SETTINGS_DIALOG.border_width}px solid {BODY.selection_bg};
-}}
-
-QComboBox QAbstractItemView {{
-    background-color: {TOOLBAR.bg};
-    color: {BODY.color};
-    selection-background-color: {BODY.selection_bg};
-    selection-color: {BODY.selection_color};
-    border: {SETTINGS_DIALOG.border_width}px solid {SETTINGS_DIALOG.border_color};
-    outline: none;
-}}"""
+_DIALOG_COMBO_QSS = build_combo_qss(
+    bg=TOOLBAR.bg,
+    fg=BODY.color,
+    border_color=SETTINGS_DIALOG.border_color,
+    border_width=SETTINGS_DIALOG.border_width,
+    radius=GLOBAL.radius,
+    pad_v=SETTINGS_DIALOG.input_padding_v,
+    pad_h=SETTINGS_DIALOG.input_padding_h,
+    accent_border=BODY.selection_bg,
+    sel_bg=BODY.selection_bg,
+    sel_color=BODY.selection_color,
+)
 
 # 弹窗滚动条
 _DIALOG_SCROLL_QSS = f"""
@@ -133,7 +129,7 @@ QScrollArea > QScrollBar::sub-line:vertical {{
 
 # 列表字段底部工具栏按钮
 _LIST_BTN_QSS = f"""\
-QPushButton#btn_list_add {{
+QPushButton#{ButtonStyle.LIST_ADD} {{
     background-color: {LIST_DIALOG.primary_bg};
     color: {LIST_DIALOG.primary_color};
     border: none;
@@ -142,11 +138,11 @@ QPushButton#btn_list_add {{
     min-width: {LIST_DIALOG.btn_min_width}px;
 }}
 
-QPushButton#btn_list_add:hover {{
+QPushButton#{ButtonStyle.LIST_ADD}:hover {{
     background-color: {LIST_DIALOG.primary_hover_bg};
 }}
 
-QPushButton#btn_list_del {{
+QPushButton#{ButtonStyle.LIST_DEL} {{
     background-color: transparent;
     color: {LIST_DIALOG.secondary_color};
     border: {LIST_DIALOG.item_border_width}px solid {LIST_DIALOG.secondary_border_color};
@@ -155,7 +151,7 @@ QPushButton#btn_list_del {{
     min-width: {LIST_DIALOG.btn_min_width}px;
 }}
 
-QPushButton#btn_list_del:hover {{
+QPushButton#{ButtonStyle.LIST_DEL}:hover {{
     border-color: {LIST_DIALOG.secondary_hover_border_color};
     color: {LIST_DIALOG.secondary_hover_color};
     background-color: {LIST_DIALOG.secondary_hover_bg};

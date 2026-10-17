@@ -13,7 +13,6 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
-    QPushButton,
     QStackedWidget,
     QTextEdit,
     QVBoxLayout,
@@ -24,7 +23,7 @@ from skin.theme import SETTINGS_DIALOG
 from system.shell import open_path
 from utils.paths import PERSONALITY_FILE
 from utils.persona import PersonaSource, build_persona, persona_source
-from widgets import BaseDialog, NoticeDialog
+from widgets import BaseDialog, ButtonStyle, NoticeDialog, make_button
 
 from ..._qss import build_settings_dialog_qss
 
@@ -81,8 +80,7 @@ class _PersonaPreviewDialog(BaseDialog):
         tip.setWordWrap(True)
         layout.addWidget(tip)
 
-        btn = QPushButton(SETTINGS_DIALOG.persona_close_text)
-        btn.setObjectName("btn_primary")
+        btn = make_button(SETTINGS_DIALOG.persona_close_text, ButtonStyle.PRIMARY)
         btn.clicked.connect(self.accept)
         btn.setDefault(True)
         layout.addWidget(btn, alignment=Qt.AlignmentFlag.AlignCenter)
@@ -110,12 +108,14 @@ class PersonaPreviewRow(QWidget):
         spacer = QLabel()
         spacer.setMinimumWidth(label_width)
 
-        btn_preview = QPushButton(SETTINGS_DIALOG.persona_preview_text)
-        btn_preview.setObjectName("btn_persona_preview")
+        btn_preview = make_button(
+            SETTINGS_DIALOG.persona_preview_text, ButtonStyle.PERSONA_PREVIEW
+        )
         btn_preview.clicked.connect(self._on_preview_clicked)
 
-        btn_open = QPushButton(SETTINGS_DIALOG.persona_open_text)
-        btn_open.setObjectName("btn_persona_open")
+        btn_open = make_button(
+            SETTINGS_DIALOG.persona_open_text, ButtonStyle.PERSONA_OPEN
+        )
         btn_open.clicked.connect(self._on_open_clicked)
 
         # 槽位按输入行取高，本行内容顶部对齐不悬空

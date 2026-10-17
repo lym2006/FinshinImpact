@@ -5,12 +5,13 @@
 """
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 from skin.theme import NOTICE_DIALOG
 
 from ._base import BaseDialog
 from ._dialog_qss import build_notice_dialog_qss
+from ._factory import ButtonStyle, make_button
 
 # Qt 布局四边
 _MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
@@ -44,8 +45,10 @@ class NoticeDialog(BaseDialog):
         label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(label)
         layout.addStretch()
-        btn = QPushButton(NOTICE_DIALOG.fatal_ok if critical else NOTICE_DIALOG.ok_text)
-        btn.setObjectName("btn_primary")
+        btn = make_button(
+            NOTICE_DIALOG.fatal_ok if critical else NOTICE_DIALOG.ok_text,
+            ButtonStyle.PRIMARY,
+        )
         btn.clicked.connect(self.accept)
         btn.setDefault(True)
         layout.addWidget(btn, alignment=Qt.AlignmentFlag.AlignCenter)
