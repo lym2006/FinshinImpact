@@ -101,6 +101,19 @@ def _endpoint_key(url: str) -> tuple[str, str]:
     return host, port
 
 
+def _same_endpoint(left: str, right: str) -> bool:
+    """两个代理地址是否同一主机与端口"""
+    return _endpoint_key(left) == _endpoint_key(right)
+
+
+def is_flap_hit(channels: Sequence[Channel], url: str) -> bool:
+    """复测命中地址是否本轮已探测过的代理通道
+
+    - 同一端点两轮结论相反即代理抖动，不构成配置不通
+    """
+    return any(ch.url and _same_endpoint(ch.url, url) for ch in channels)
+
+
 def sys_deduped(configured: str, sys_proxy: str | None) -> bool:
     """配置与系统代理是否同端点
 
@@ -109,7 +122,7 @@ def sys_deduped(configured: str, sys_proxy: str | None) -> bool:
     cfg = configured.strip()
     if not cfg or not sys_proxy:
         return False
-    return _endpoint_key(cfg) == _endpoint_key(sys_proxy)
+    return _same_endpoint(cfg, sys_proxy)
 
 
 def plan_channels(
