@@ -1,4 +1,4 @@
-# src/theme/_check.py
+# src/widgets/_check.py
 """对勾勾选框
 
 - 无填充形态，勾选态在描边方框内绘制对勾
@@ -16,7 +16,7 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import QCheckBox
 
-from ._palette import PALETTE
+from theme import PALETTE
 
 # 对勾三顶点在框内的比例坐标，(起笔, 拐点, 收笔)
 _CHECK_POINTS = ((0.22, 0.55), (0.42, 0.74), (0.78, 0.28))

@@ -24,7 +24,7 @@ from PySide6.QtWidgets import (
 from app_icon import ensure_app
 from core.domain import ManifestKey, StateKey
 from messages import PluginMessage
-from theme import TickedCheckBox
+from widgets import TickedCheckBox
 
 from .._qss import build_bootstrap_qss
 from .._theme import PANEL

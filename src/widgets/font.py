@@ -1,4 +1,4 @@
-# src/theme/_font.py
+# src/widgets/font.py
 """输出字体加载
 
 - 注册并加载项目自带字体，供日志面板等输出内容显式使用

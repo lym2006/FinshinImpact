@@ -1,8 +1,7 @@
-# src/gui/dialogs/_base.py
+# src/widgets/_base.py
 """弹窗基类
 
-- 定义弹窗共有样式与逻辑
-- 实现全局主题统一应用
+- 统一应用模态与置顶的共有窗口行为
 """
 
 from PySide6.QtCore import Qt

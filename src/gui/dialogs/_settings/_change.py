@@ -17,10 +17,10 @@ from PySide6.QtWidgets import (
 )
 
 from utils.config.models import ConfigValue
+from widgets import BaseDialog
 
 from ..._qss import build_change_dialog_qss
 from ...theme import CHANGE_DIALOG, SETTINGS_DIALOG
-from .._base import BaseDialog
 from ._diff import make_diff_cell, split_diff, to_lines
 
 

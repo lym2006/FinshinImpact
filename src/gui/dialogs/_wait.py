@@ -10,9 +10,10 @@ from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
+from widgets import BaseDialog
+
 from .._qss import build_wait_dialog_qss
 from ..theme import GLOBAL, WAIT_DIALOG
-from ._base import BaseDialog
 
 # Qt 布局四边
 _MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
