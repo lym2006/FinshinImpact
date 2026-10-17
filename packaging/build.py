@@ -226,7 +226,7 @@ def main() -> None:
     version = local_version(ROOT)
     if version.endswith("-dev") and not args.force:
         print(f"当前版本号 {version} 含 -dev 后缀，拒绝构建")
-        print("确认要构建请加 --force；发布前请先定稿正式版本号并打 tag")
+        print("确认要构建请加 --force。发布前请先定稿正式版本号并打 tag")
         return
 
     if args.no_launcher:
