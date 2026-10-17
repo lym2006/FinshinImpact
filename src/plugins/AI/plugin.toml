@@ -2,7 +2,7 @@ name = "AI"
 title = "AI 对话"
 summary = "基础对话与记忆命令"
 core = true
-order = 50 # 最后档：AI 独占
+order = 50  # 最后档：AI 独占
 deps = []
 assets = []
 

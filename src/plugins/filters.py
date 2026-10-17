@@ -22,7 +22,7 @@ class CommandFilter(Filter):
 
     - 只比命令头，命令额外认哪些开关看插件清单
     - 带 -h 一律让行给帮助插件
-    - raw 形参由 aiogram 按位置传入原始消息，本过滤器不使用
+    - 首位形参由 aiogram 按位置绑定，名字不可改
     """
 
     def __init__(self, name: str) -> None:

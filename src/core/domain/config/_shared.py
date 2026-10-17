@@ -42,7 +42,7 @@ _AI_TAB = TabSpec(
             key=ConfigKey.TEMPERATURE,
             value_type=float,
             default=0.7,
-            bounds=(0.0, 2.0),  # 上限 2 为 OpenAI 兼容规范
+            bounds=(0.0, 2.0),  # OpenAI 兼容规范
         ),
     ),
 )

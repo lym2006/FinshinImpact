@@ -121,8 +121,8 @@ def _parse_command(text: str) -> CommandDTO:
 
     - 首个空格前的片段算命令头，须写成 /命令名
     - 命令名按 Telegram 字符集校验，带 @ 段判非法
-    - 空格之后 `-` 开头的片段算 flag，其余算参数
-    - flag 只校验形状，支持哪些由命令自己判
+    - 空格之后 `-` 开头的片段算 flag，其余落 args
+    - flag 只校验形状，支持哪些开关由插件清单声明
     - 命令名保留原大小写
     """
     if not text.startswith(_COMMAND_PREFIX):

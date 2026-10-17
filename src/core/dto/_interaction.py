@@ -29,7 +29,7 @@ class CommandDTO:
     """命令片段
 
     - matched 为真时 head 与 flags、args 才有效
-    - flags 只报形状，命令支持哪些由命令自己判
+    - flags 只报形状，支持哪些开关由插件清单声明
     - format_error 标记以命令前缀开头但形态非法的消息
     """
 

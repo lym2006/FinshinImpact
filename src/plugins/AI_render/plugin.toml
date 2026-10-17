@@ -15,5 +15,5 @@ assets = ["playwright chromium-headless-shell"]
 
 [[help.commands]]
 cmd = "md"
-desc = "以markdown格式输出上一次回复内容（图片）"
+desc = "以 markdown 格式输出上一次回复内容（图片）"
 flags = []
