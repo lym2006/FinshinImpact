@@ -5,8 +5,7 @@
 - 导出 md 命令路由
 """
 
-from plugins.AI.services.worker import set_render_provider
-
+from ..AI.services.worker import set_render_provider
 from ._handler import md_router as router
 from ._services import render_html, screenshot
 

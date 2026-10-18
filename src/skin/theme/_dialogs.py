@@ -8,7 +8,7 @@
 
 from dataclasses import dataclass
 
-from skin.messages import CheckMessage, DialogMessage, VersionMessage
+from ..messages import CheckMessage, DialogMessage, VersionMessage
 
 # 五态渲染色：诊断窗与校验窗同款（一处一源）
 _PENDING_COLOR = "#808080"  # 等待检测
