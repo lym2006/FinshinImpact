@@ -1,7 +1,7 @@
 # devtools/check_coding_style.py
 r"""编码规范扫描器
 
-- 按 docs/coding-style.md 九个分节静态检查代码
+- 按 docs/coding-style.md 十个分节静态检查代码
 - 输出违规清单供人工核实，不自动修改任何文件
 - 硬性=[H] 规则明确可判
 - 待核=[?] 启发式提示需人工确认

@@ -8,10 +8,10 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import FSInputFile, Message
 
-from plugins.AI.config import ai_config
-from plugins.AI.core import session_guard, user_sessions
-from plugins.AI.utils import get_name
-from plugins.messages import BotMessage
+from ..AI.config import ai_config
+from ..AI.core import session_guard, user_sessions
+from ..AI.utils import get_name
+from ..messages import BotMessage
 
 md_router = Router()
 

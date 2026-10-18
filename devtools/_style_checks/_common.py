@@ -27,6 +27,7 @@ SECTIONS: tuple[str, ...] = (
     "日志与文案",
     "文案类",
     "类型注解",
+    "导入",
 )
 
 _EXCLUDE_DIRS: frozenset[str] = frozenset(
