@@ -7,7 +7,7 @@
 
 from dataclasses import dataclass
 
-from skin.messages import DialogMessage
+from ..messages import DialogMessage
 
 
 @dataclass(frozen=True)

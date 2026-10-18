@@ -7,9 +7,9 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from skin.messages import MiscMessage
 from system.profile_env import ASSET_EMOJI_FONT_NAME, ASSET_FONT_NAME, ASSETS_DIR
 
+from ..messages import MiscMessage
 from ._palette import PALETTE
 
 

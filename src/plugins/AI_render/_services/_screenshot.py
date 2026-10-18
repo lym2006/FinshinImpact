@@ -12,9 +12,9 @@ import numpy as np
 from PIL import Image
 from playwright.async_api import Error as PlaywrightError
 
-from plugins.AI.config import ai_config
 from utils import get_logger
 
+from ...AI.config import ai_config
 from ..browser import browser_manager
 from ._config import render_config
 
