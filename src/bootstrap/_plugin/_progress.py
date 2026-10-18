@@ -20,9 +20,9 @@ from PySide6.QtWidgets import (
 )
 
 from skin.messages import PluginMessage
+from skin.qss import build_bootstrap_qss
 from widgets import ensure_app
 
-from .._qss import build_bootstrap_qss
 from ._support import log_ops
 
 # 日志字体族与字号
