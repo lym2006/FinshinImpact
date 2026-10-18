@@ -6,10 +6,12 @@
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
-from skin.theme import GLOBAL, SHUTDOWN_DIALOG
+from skin.qss import build_shutdown_dialog_qss
+from skin.theme import SHUTDOWN_DIALOG, ButtonStyle
 
+from .._primitives import make_button
 from ._base import BaseDialog
 
 # Qt 布局四边
@@ -23,12 +25,10 @@ class ShutdownDialog(BaseDialog):
         super().__init__(parent=parent, title=SHUTDOWN_DIALOG.title)
         self.set_always_on_top()
 
-        # 固定大小
+        # 固定大小（顶层窗尺寸 QSS 压不过布局，只能在这钉）
         self.setFixedSize(SHUTDOWN_DIALOG.width, SHUTDOWN_DIALOG.height)
 
-        self.setStyleSheet(  # 设置背景色
-            f"QDialog {{ background-color: {SHUTDOWN_DIALOG.bg_color}; }}",
-        )
+        self.setStyleSheet(build_shutdown_dialog_qss())
 
         layout = QVBoxLayout(self)  # 布局与间距
         layout.setContentsMargins(*([SHUTDOWN_DIALOG.padding] * _MARGIN_EDGES))
@@ -37,31 +37,20 @@ class ShutdownDialog(BaseDialog):
         # 提示文字
         self._label = QLabel(SHUTDOWN_DIALOG.message)
         self._label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._label.setStyleSheet(f"color: {SHUTDOWN_DIALOG.text_color};")
         self._label.setFont(QFont(SHUTDOWN_DIALOG.font_name, SHUTDOWN_DIALOG.font_size))
         layout.addWidget(self._label)
         btn_layout = QHBoxLayout()  # 按钮区
         btn_layout.addStretch()
 
         # 取消按钮
-        self._cancel_btn = QPushButton(SHUTDOWN_DIALOG.cancel_text)
-        self._cancel_btn.setFixedSize(
-            SHUTDOWN_DIALOG.btn_width, SHUTDOWN_DIALOG.btn_height
-        )
-        self._cancel_btn.setStyleSheet(
-            f"QPushButton {{ background-color: {SHUTDOWN_DIALOG.cancel_bg}; "
-            f"color: {SHUTDOWN_DIALOG.cancel_color}; border-radius: {GLOBAL.radius}px; }}"
+        self._cancel_btn = make_button(
+            SHUTDOWN_DIALOG.cancel_text, ButtonStyle.SECONDARY
         )
         self._cancel_btn.clicked.connect(self.reject)
 
         # 确认按钮
-        self._confirm_btn = QPushButton(SHUTDOWN_DIALOG.confirm_text)
-        self._confirm_btn.setFixedSize(
-            SHUTDOWN_DIALOG.btn_width, SHUTDOWN_DIALOG.btn_height
-        )
-        self._confirm_btn.setStyleSheet(
-            f"QPushButton {{ background-color: {SHUTDOWN_DIALOG.confirm_bg}; "
-            f"color: {SHUTDOWN_DIALOG.confirm_color}; border-radius: {GLOBAL.radius}px; }}"
+        self._confirm_btn = make_button(
+            SHUTDOWN_DIALOG.confirm_text, ButtonStyle.DANGER
         )
         self._confirm_btn.clicked.connect(self.accept)
         btn_layout.addWidget(self._cancel_btn)

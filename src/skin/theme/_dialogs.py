@@ -27,8 +27,6 @@ class ShutdownDialogTheme:
     height: int = 160  # 高度
     padding: int = 30  # 内边距
     spacing: int = 20  # 元素间距
-    btn_width: int = 100  # 按钮宽度
-    btn_height: int = 35  # 按钮高度
 
     # 字体配置
     font_name: str = "Microsoft YaHei"  # 字体家族名

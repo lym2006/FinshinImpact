@@ -11,7 +11,11 @@ from ._business import (
     build_settings_dialog_qss,
     build_settings_list_qss,
 )
-from ._dialog import build_notice_dialog_qss, build_wait_dialog_qss
+from ._dialog import (
+    build_notice_dialog_qss,
+    build_shutdown_dialog_qss,
+    build_wait_dialog_qss,
+)
 from ._global import build_global_qss
 from ._guide import build_bootstrap_qss
 
@@ -21,6 +25,7 @@ __all__ = [
     # 通用弹窗装配
     "build_notice_dialog_qss",
     "build_wait_dialog_qss",
+    "build_shutdown_dialog_qss",
     # 业务弹窗
     "build_settings_dialog_qss",
     "build_settings_list_qss",
