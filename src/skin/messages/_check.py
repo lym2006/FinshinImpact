@@ -33,13 +33,13 @@ class CheckMessage:
     # 用：结论行成功句——两轮同款
     ADVICE_OK = "已找到可用通道"
 
-    # 用：gui/dialogs/_check.py 验证回调原地转绿的短句
+    # 用：ui/_dialogs/_check.py 验证回调原地转绿的短句
     VERIFIED_OK = "配置验证通过"
 
     # 用：检查自身异常兜底句
     SELF_CRASH = "检查异常: {err}"
 
-    # 用：gui/dialogs/_table.py 进行中行独立计时后缀（已测秒/预算秒）
+    # 用：ui/_dialogs/_table.py 进行中行独立计时后缀（已测秒/预算秒）
     COUNTDOWN = "检测中 {n}/{budget}s"
 
     # 用：配置代理行——代理项留空
