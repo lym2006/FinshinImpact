@@ -1,7 +1,7 @@
 # devtools/_style_checks/_s7_text.py
 """日志与文案分节检查
 
-- GUI 可见文案收敛进 src/messages/，gui 下 f-string 裸写业务话术提示
+- GUI 可见文案收敛进 skin/messages/，ui 下 f-string 裸写业务话术提示
 - Bot 对话话术收敛进 plugins/messages.py，插件内长中文提示裸写提示
 - 运行日志不收敛：logger/print 调用内中文不报
 - 日志器禁用长级别名，面板列宽只容五字符
@@ -47,7 +47,7 @@ def check(files: list[FileData]) -> list[Finding]:
         if file.parse_error:
             continue
         findings.extend(_check_log_levels(file))
-        if file.module.startswith("gui"):
+        if file.module.startswith("ui"):
             findings.extend(_check_gui_text(file))
         if file.module.startswith("plugins") and file.rel not in (
             "src/plugins/messages.py",
@@ -123,7 +123,7 @@ def _check_gui_text(file: FileData) -> list[Finding]:
                 _f(
                     file,
                     node.lineno,
-                    f"GUI 内 f-string 裸写业务话术：`{text[:30]}…`，应收敛进 src/messages/",
+                    f"GUI 内 f-string 裸写业务话术：`{text[:30]}…`，应收敛进 skin/messages/",
                     hard=False,
                 ),
             )
@@ -132,7 +132,7 @@ def _check_gui_text(file: FileData) -> list[Finding]:
                 _f(
                     file,
                     node.lineno,
-                    f"GUI 内裸写业务话术：`{text[:30]}…`，应收敛进 src/messages/",
+                    f"GUI 内裸写业务话术：`{text[:30]}…`，应收敛进 skin/messages/",
                     hard=False,
                 ),
             )
