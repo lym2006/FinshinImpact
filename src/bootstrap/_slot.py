@@ -20,7 +20,7 @@ from system.instance_lock import (
 from system.profile_env import get_profile, set_profile
 
 # 主程序 GUI 装配链，分步导入时逐模块各泵一轮
-_GUI_MODULES = ("gui", "gui.controllers", "ui._bridge")
+_GUI_MODULES = ("ui._windows", "ui._bridge")
 
 # utils 后台导入落位后放行主线程续导 GUI 链
 _UTILS_READY = threading.Event()

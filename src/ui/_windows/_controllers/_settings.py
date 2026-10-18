@@ -1,4 +1,4 @@
-# src/gui/controllers/_settings.py
+# src/ui/_windows/_controllers/_settings.py
 """配置控制器
 
 - 实现向导调度、二次确认与热重载
@@ -10,21 +10,21 @@ from core.domain import ConfigKey, ConfigSection
 from exceptions import ConfigOutputError
 from skin.messages import CheckMessage
 from skin.theme import NOTICE_DIALOG, SETTINGS_DIALOG
-from ui import (
-    ChangeConfirmDialog,
-    ConfigMode,
-    NoticeDialog,
-    SettingsDialog,
-    Ticker,
-    current_check_window,
-    gui_bridge,
-)
 from utils import config_manager
 from utils.config import (
     compare_configs,
     save_config,
 )
 
+from ..._bridge import gui_bridge
+from ..._dialogs import (
+    ChangeConfirmDialog,
+    ConfigMode,
+    NoticeDialog,
+    SettingsDialog,
+    current_check_window,
+)
+from ..._lifecycle import Ticker
 from ._base import BaseController
 from ._verify import VerifyCoordinator
 

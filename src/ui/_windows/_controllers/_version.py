@@ -1,4 +1,4 @@
-# src/gui/controllers/_version.py
+# src/ui/_windows/_controllers/_version.py
 """版本控制器
 
 - 提供检查更新入口与结果透出
@@ -11,9 +11,9 @@ from PySide6.QtCore import QThread, Signal
 
 from exceptions import MAP_KEY_VERSION, MAPS, NewVersionError, VersionError
 from skin.theme import WAIT_DIALOG
-from ui import NoticeDialog, WaitDialog
 from utils.check import check_updates
 
+from ..._dialogs import NoticeDialog, WaitDialog
 from ._base import BaseController
 
 _ERR_MAP_VERSION = MAPS[MAP_KEY_VERSION]

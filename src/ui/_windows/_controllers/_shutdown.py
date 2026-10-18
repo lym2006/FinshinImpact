@@ -1,4 +1,4 @@
-# src/gui/controllers/_shutdown.py
+# src/ui/_windows/_controllers/_shutdown.py
 """关闭控制器
 
 - 实现退出流程调度
@@ -9,8 +9,9 @@ import os
 
 from PySide6.QtWidgets import QDialog, QWidget
 
-from ui import ShutdownDialog, Ticker, gui_bridge
-
+from ..._bridge import gui_bridge
+from ..._dialogs import ShutdownDialog
+from ..._lifecycle import Ticker
 from ._base import BaseController
 from ._decorator import gui_guard
 

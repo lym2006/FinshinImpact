@@ -1,4 +1,4 @@
-# src/gui/_link_watcher.py
+# src/ui/_windows/_link_watcher.py
 """链路断连计时观察
 
 - 逐秒轮询链路快照，弹收断连计时弹窗
@@ -8,8 +8,10 @@ from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QObject
 
-from ui import LinkDialog, SettingsDialog, Ticker
 from utils.network import LinkStatus, link_report
+
+from .._dialogs import LinkDialog, SettingsDialog
+from .._lifecycle import Ticker
 
 # 计时弹窗节奏
 _POLL_MS = 1000  # 1 秒查一次链路快照

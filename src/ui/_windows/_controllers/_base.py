@@ -1,4 +1,4 @@
-# src/gui/controllers/_base.py
+# src/ui/_windows/_controllers/_base.py
 """控制器基类
 
 - 定义按钮绑定契约与执行入口
@@ -12,7 +12,7 @@ from utils.logger import get_logger
 from ._decorator import gui_guard
 
 if TYPE_CHECKING:
-    from gui import BotGUI
+    from .._main_window import BotGUI
 
 
 class BaseController(ABC):

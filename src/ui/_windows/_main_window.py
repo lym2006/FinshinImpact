@@ -1,4 +1,4 @@
-# src/gui/_main_window.py
+# src/ui/_windows/_main_window.py
 """主窗口
 
 - 定义 BotGUI 纯渲染与指令执行层
@@ -17,10 +17,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from skin.theme import BodyTheme, FontTheme, ToolbarTheme, WindowTheme
-from ui import NoticeDialog, Ticker
+from skin.theme import BodyTheme, FontTheme, ObjectName, ToolbarTheme, WindowTheme
 from utils.logger import get_logger
 
+from .._dialogs import NoticeDialog
+from .._lifecycle import Ticker
 from ._dashboard import DashboardWidget, TextHandler
 
 # 通知重试
@@ -70,7 +71,7 @@ class BotGUI(QMainWindow):
     def _build_ui(self) -> None:
         """组装窗口的整体布局结构"""
         central = QWidget()  # 中央容器
-        central.setObjectName("centralWidget")
+        central.setObjectName(ObjectName.CENTRAL)
         self.setCentralWidget(central)
 
         # 主布局（垂直排列，工具栏在上，仪表盘在下）
@@ -87,7 +88,7 @@ class BotGUI(QMainWindow):
     def _build_toolbar(self, parent_layout: QVBoxLayout) -> None:
         """渲染顶部工具栏及按钮控件"""
         toolbar = QWidget()
-        toolbar.setObjectName("toolbar")
+        toolbar.setObjectName(ObjectName.TOOLBAR)
         toolbar.setFixedHeight(self._toolbar.height)
         toolbar_layout = QHBoxLayout(toolbar)
         toolbar_layout.setSpacing(self._body.padding)
