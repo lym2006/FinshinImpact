@@ -1,13 +1,11 @@
-# src/bootstrap/_plugin/_installer.py
+# src/services/env_setup/deps_install.py
 """插件装库器
 
-- 子进程驱动 uv 装卸插件依赖，环境定位在 _env，执行管线在 _support
-- 资源装卸拆至 _assets，启动结算编排拆至 _startup
+- 子进程驱动 uv 装卸插件依赖
 - 同步依赖先 compile 闭包再 sync，已装 dev 工具与解释器基建并入保留清单
 - 装完即编字节码，下次启动导入直接命中缓存
 """
 
-import importlib.metadata
 import tempfile
 import tomllib
 from pathlib import Path
@@ -15,9 +13,15 @@ from pathlib import Path
 from skin.messages import PluginMessage
 from system.profile_env import ROOT_DIR
 
-from ._env import PIP_FLAGS, PYPROJECT, dev_mode, uv_cmd
-from ._manifest import dev_dependencies, top_package_name
-from ._support import ProgressCallback, degraded, emit, with_index_retry
+from .deps_manifest import dev_dependencies
+from .subprocess_ops import (
+    ProgressCallback,
+    degraded,
+    emit,
+    is_pin_installed,
+    with_index_retry,
+)
+from .toolchain import PIP_FLAGS, PYPROJECT, dev_mode, uv_cmd
 
 
 def install_deps(pins: list[str], on_line: ProgressCallback | None = None) -> list[str]:
@@ -55,14 +59,7 @@ def _installed_dev_pins() -> list[str]:
     - 同步属环境运维，装了的开发工具不许被删
     - 未安装者不追加，避免 sync 顺带强装
     """
-    pins: list[str] = []
-    for pin in dev_dependencies():
-        try:
-            importlib.metadata.distribution(top_package_name(pin))
-        except importlib.metadata.PackageNotFoundError:
-            continue
-        pins.append(pin)
-    return pins
+    return [pin for pin in dev_dependencies() if is_pin_installed(pin)]
 
 
 def _interpreter_pins() -> list[str]:
@@ -72,6 +69,9 @@ def _interpreter_pins() -> list[str]:
     - 发布包的嵌入式 Python 可能没有这些包，缺失即不注入
     - sync 会删除清单外的包，不保留连解释器管理件也会被删
     """
+    # 冷盘元数据导入上百毫秒，首次同步才付
+    import importlib.metadata
+
     pins: list[str] = []
     for name in ("pip", "setuptools"):
         try:
@@ -92,9 +92,7 @@ def _editable_project_pin() -> list[str]:
             name = str(tomllib.load(handle)["project"]["name"])
     except (OSError, tomllib.TOMLDecodeError, KeyError):
         return []
-    try:
-        importlib.metadata.distribution(name)
-    except importlib.metadata.PackageNotFoundError:
+    if not is_pin_installed(name):
         return []
     return [f"-e {ROOT_DIR}"]
 

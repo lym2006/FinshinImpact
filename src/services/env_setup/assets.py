@@ -1,4 +1,4 @@
-# src/bootstrap/_plugin/_assets.py
+# src/services/env_setup/assets.py
 """非 pip 资源安装
 
 - playwright 内核等资源通过模块子命令安装，声明按模块名与资源名两段拼 argv
@@ -11,8 +11,14 @@ from pathlib import Path
 
 from skin.messages import PluginMessage
 
-from ._env import PLAYWRIGHT_CDN, dev_mode, py_cmd, python_target
-from ._support import ProgressCallback, capture_output, degraded, emit, run_process
+from .subprocess_ops import (
+    ProgressCallback,
+    capture_output,
+    degraded,
+    emit,
+    run_process,
+)
+from .toolchain import PLAYWRIGHT_CDN, dev_mode, py_cmd, python_target
 
 # 浏览器内核根目录随平台而异，Windows 在 LOCALAPPDATA，类 Unix 在 ~/.cache
 _BROWSER_DIR_NAME = "ms-playwright"

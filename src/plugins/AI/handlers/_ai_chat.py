@@ -10,7 +10,7 @@ from aiogram.enums import ChatType, ContentType
 from aiogram.filters import Filter
 from aiogram.types import Message
 
-from services import HandlerContext
+from services.context import HandlerContext
 
 from ..config import ai_config
 from ..core import session_guard

@@ -17,12 +17,11 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from services.profile_store import remark_of
 from skin.messages import PickerMessage
 from skin.qss import build_bootstrap_qss
 from skin.theme import LAUNCH
 from ui import Ticker, ensure_app
-
-from ._store import remark_of
 
 # 正计时刷新间隔，1 秒一格
 _TICK_MS = 1000

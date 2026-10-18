@@ -14,13 +14,13 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from services.env_setup.deps_install import sync_env
+from services.env_setup.deps_manifest import core_dependencies, enabled_deps_union
+from services.env_setup.subprocess_ops import ProgressCallback, clean_cache
 from skin.messages import PluginMessage
 from ui import ensure_app
 
-from ._installer import sync_env
-from ._manifest import core_dependencies, enabled_deps_union
 from ._progress import run_with_progress
-from ._support import ProgressCallback, clean_cache
 
 
 def _keep_union() -> list[str]:

@@ -12,13 +12,9 @@
 from PySide6.QtWidgets import QMessageBox
 
 from core.domain import ManifestKey, StateKey
-from skin.messages import PluginMessage
-from ui import ensure_app
-
-from ._assets import install_assets, is_asset_installed
-from ._env import dev_mode
-from ._installer import install_deps
-from ._manifest import (
+from services.env_setup.assets import install_assets, is_asset_installed
+from services.env_setup.deps_install import install_deps
+from services.env_setup.deps_manifest import (
     catalog_digest,
     load_manifests,
     load_state,
@@ -26,8 +22,12 @@ from ._manifest import (
     save_state,
     top_package_name,
 )
+from services.env_setup.subprocess_ops import ProgressCallback, emit, is_pin_installed
+from services.env_setup.toolchain import dev_mode
+from skin.messages import PluginMessage
+from ui import ensure_app
+
 from ._progress import run_with_progress
-from ._support import ProgressCallback, emit, is_pin_installed
 
 # 补装计划条目：(插件名, 缺的 pip 包, 缺的资源)
 _Pending = tuple[str, list[str], list[str]]

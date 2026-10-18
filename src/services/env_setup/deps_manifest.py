@@ -1,8 +1,7 @@
-# src/bootstrap/_plugin/_manifest.py
-"""引导期插件清单
+# src/services/env_setup/deps_manifest.py
+"""插件依赖清单
 
 - 面板与启动判定读清单、算指纹、读写实例状态
-- 引导期不得 import utils
 """
 
 import hashlib
