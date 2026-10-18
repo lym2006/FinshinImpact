@@ -11,18 +11,19 @@ from ..theme import (
     GLOBAL,
     SCROLLBAR,
     TOOLBAR,
+    ObjectName,
 )
 from ._base import Qss
 
 # 主窗口与中央容器
 _BODY_QSS = f"""\
-QMainWindow, QWidget#centralWidget {{
+QMainWindow, QWidget#{ObjectName.CENTRAL} {{
     background-color: {BODY.bg};
 }}"""
 
 # 工具栏
 _TOOLBAR_QSS = f"""\
-QWidget#toolbar {{
+QWidget#{ObjectName.TOOLBAR} {{
     background-color: {TOOLBAR.bg};
     border-bottom: {TOOLBAR.border_width}px solid {TOOLBAR.border_color};
 }}"""
@@ -65,7 +66,7 @@ QPushButton#btn_clear:pressed, QPushButton#btn_shutdown:pressed {{
 
 # 仪表盘文本区域
 _DASHBOARD_QSS = f"""\
-QTextEdit#dashboard {{
+QTextEdit#{ObjectName.DASHBOARD} {{
     background-color: {BODY.bg};
     color: {BODY.color};
     border: none;

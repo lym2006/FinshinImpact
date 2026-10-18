@@ -8,7 +8,7 @@ class MiscMessage:
     - 跨窗口的零散话术与工具栏装配数据聚合入口
     """
 
-    # 用：gui/__init__.py 装配期崩溃弹窗
+    # 用：ui/_windows/_assembly.py 装配期崩溃弹窗
     CTRL_BIND_FAIL = "控制器绑定失败: 发现未在 UI 层定义的按钮标识 -> {keys}"
     CTRL_MISSING = "控制器缺失: UI 层定义了按钮，但缺少对应的 Controller -> {keys}"
 
@@ -22,7 +22,7 @@ class MiscMessage:
         "机器人已在运行，请勿重复启动\n请先关闭已开的窗口，或使用「网络诊断」查看状态"
     )
 
-    # 用：gui/__init__.py 主窗口工具栏（文案, 按钮键）
+    # 用：ui/_windows/_assembly.py 主窗口工具栏（文案, 按钮键）
     TOOLBAR_BUTTONS: list[tuple[str, str]] = [
         ("修改配置", "settings"),
         ("网络诊断", "diagnose"),

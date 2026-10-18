@@ -1,30 +1,18 @@
-# src/gui/__init__.py
-"""GUI 门面包
+# src/ui/_windows/_assembly.py
+"""主窗装配
 
-- 提供 BotGUI 类型与装配入口
+- 建主窗口并挂载日志面板与断连计时观察器
+- 按按钮契约装配控制器，校验工具栏标识与控制器互为补集
 """
 
 from skin.messages import MiscMessage
 from skin.qss import build_global_qss
-from skin.theme import BODY, FONT, GLOBAL, TOOLBAR, WINDOW
-from utils.logger import GUI_FORMATTER, get_logger
+from skin.theme import BODY, FONT, TOOLBAR, WINDOW
+from utils.logger import GUI_FORMATTER
 
+from ._controllers import BaseController, build_controllers
 from ._link_watcher import LinkWatcher
 from ._main_window import BotGUI
-from .controllers import BaseController, build_controllers
-
-_logger = get_logger("GUI")
-
-
-__all__ = [
-    # 类型
-    "BotGUI",
-    # 主题令牌，跨包使用方走门面导入
-    "GLOBAL",
-    "WINDOW",
-    # 唯一创建和初始化 GUI 方法
-    "create_gui",
-]
 
 
 def create_gui() -> tuple[BotGUI, dict[str, BaseController]]:

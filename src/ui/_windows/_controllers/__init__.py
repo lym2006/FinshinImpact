@@ -1,4 +1,4 @@
-# src/gui/controllers/__init__.py
+# src/ui/_windows/_controllers/__init__.py
 """控制器门面
 
 - 提供自动实例化与契约打包
@@ -16,7 +16,7 @@ from ._system import LogsController
 from ._version import VersionController
 
 if TYPE_CHECKING:
-    from gui import BotGUI
+    from .._main_window import BotGUI
 
 
 __all__ = [

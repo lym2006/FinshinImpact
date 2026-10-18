@@ -1,4 +1,4 @@
-# src/gui/controllers/_dashboard.py
+# src/ui/_windows/_controllers/_dashboard.py
 """仪表盘控制器
 
 - 实现日志清空与退出按钮逻辑
