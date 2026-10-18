@@ -11,7 +11,7 @@ root_packages =
     exceptions
     gui
     skin
-    widgets
+    ui
     system
 include_external_packages = True
 
@@ -64,8 +64,7 @@ layers =
     plugins
     bot
     adapters
-    gui
-    widgets
+    ui
     utils
     exceptions
     services

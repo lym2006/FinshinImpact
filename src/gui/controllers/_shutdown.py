@@ -9,7 +9,7 @@ import os
 
 from PySide6.QtWidgets import QDialog, QWidget
 
-from widgets import ShutdownDialog, Ticker
+from ui import ShutdownDialog, Ticker
 
 from ..mediator import gui_bridge
 from ._base import BaseController

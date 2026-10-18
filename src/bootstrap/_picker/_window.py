@@ -16,8 +16,8 @@ from PySide6.QtWidgets import (
 
 from skin.messages import PickerMessage
 from skin.qss import build_bootstrap_qss
-from skin.theme import PICKER
-from widgets import ButtonStyle, ThemedList, ensure_app, make_button
+from skin.theme import PICKER, ButtonStyle
+from ui import ThemedList, ensure_app, make_button
 
 from ._form import EditProfileDialog, NewProfileDialog
 from ._store import delete_profile, list_profiles, touch_profile

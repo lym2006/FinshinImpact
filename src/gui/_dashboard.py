@@ -13,7 +13,7 @@ from PySide6.QtWidgets import QTextEdit, QWidget
 
 from exceptions import DashboardWriteError
 from skin.theme import FontTheme
-from widgets.font import load_font
+from ui.font import load_font
 
 
 class _LogSignal(QObject):

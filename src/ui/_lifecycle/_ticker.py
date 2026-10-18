@@ -1,4 +1,4 @@
-# src/widgets/_ticker.py
+# src/ui/_lifecycle/_ticker.py
 """定间隔计时泵
 
 - QTimer 只在泵内持有，对外只走封装接口，回调逻辑留在各调用点

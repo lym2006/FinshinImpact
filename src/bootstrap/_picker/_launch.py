@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
 from skin.messages import PickerMessage
 from skin.qss import build_bootstrap_qss
 from skin.theme import LAUNCH
-from widgets import Ticker, ensure_app
+from ui import Ticker, ensure_app
 
 from ._store import remark_of
 

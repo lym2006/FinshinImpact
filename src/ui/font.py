@@ -1,4 +1,4 @@
-# src/widgets/font.py
+# src/ui/font.py
 """输出字体加载
 
 - 注册并加载项目自带字体，返回可用 QFont 供输出内容显式使用

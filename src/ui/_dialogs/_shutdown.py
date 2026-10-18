@@ -1,4 +1,4 @@
-# src/widgets/_shutdown.py
+# src/ui/_dialogs/_shutdown.py
 """关闭确认弹窗
 
 - 提供退出进度反馈，防强杀泄漏
