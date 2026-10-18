@@ -1,4 +1,4 @@
-# src/gui/dialogs/_settings/_persona.py
+# src/ui/_dialogs/_settings/_persona.py
 """人设预览
 
 - 组装配置页当前填写的人设正文，点按钮弹窗只读展示
@@ -20,11 +20,14 @@ from PySide6.QtWidgets import (
 )
 
 from skin.qss import build_settings_dialog_qss
-from skin.theme import SETTINGS_DIALOG, ButtonStyle
+from skin.theme import SETTINGS_DIALOG, ButtonStyle, ObjectName
 from system.shell import open_path
-from ui import BaseDialog, NoticeDialog, make_button
 from utils.paths import PERSONALITY_FILE
 from utils.persona import PersonaSource, build_persona, persona_source
+
+from ..._primitives import make_button
+from .._base import BaseDialog
+from .._notice import NoticeDialog
 
 # 人设字符串被用户改成单行时渲染控件会回落 QLineEdit
 _TextWidget: TypeAlias = QTextEdit | QLineEdit
@@ -64,7 +67,7 @@ class _PersonaPreviewDialog(BaseDialog):
         layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
 
         body = QTextEdit()
-        body.setObjectName("persona_preview")
+        body.setObjectName(ObjectName.PERSONA_PREVIEW)
         body.setReadOnly(True)
         body.setPlainText(text)
 

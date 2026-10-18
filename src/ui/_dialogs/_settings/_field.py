@@ -1,4 +1,4 @@
-# src/gui/dialogs/_settings/_field.py
+# src/ui/_dialogs/_settings/_field.py
 """字段渲染
 
 - 按 schema 渲染表单控件与标签
@@ -22,7 +22,6 @@ from PySide6.QtWidgets import (
 
 from skin.messages import ConfigMessage
 from skin.theme import GLOBAL, SETTINGS_DIALOG
-from ui import TickedCheckBox, make_combo
 from utils.config.models import (
     AppConfigData,
     AppSchema,
@@ -32,6 +31,7 @@ from utils.config.models import (
     is_blank,
 )
 
+from ..._primitives import TickedCheckBox, make_combo
 from ._list_widget import ConfigListWidget
 from ._reset import Inputs, ResetRegistry
 

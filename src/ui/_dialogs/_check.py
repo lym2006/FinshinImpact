@@ -1,4 +1,4 @@
-# src/gui/dialogs/_check.py
+# src/ui/_dialogs/_check.py
 """检查进度窗
 
 - 校验轮与诊断轮共用的唯一表格窗，换轮原地重置
@@ -19,10 +19,12 @@ from PySide6.QtWidgets import (
 )
 
 from skin.qss import build_check_dialog_qss
-from skin.theme import CHECK_DIALOG, ButtonStyle
-from ui import BaseDialog, Ticker, make_button
+from skin.theme import CHECK_DIALOG, ButtonStyle, ObjectName
 from utils.network import RowId, RowStatus
 
+from .._lifecycle import Ticker
+from .._primitives import make_button
+from ._base import BaseDialog
 from ._table import RowTable
 
 # Qt 布局四边
@@ -94,7 +96,7 @@ class CheckDialog(BaseDialog):
         row = QHBoxLayout()
         row.setSpacing(CHECK_DIALOG.pad)
         self._spinner = QLabel(self._frames[0])
-        self._spinner.setObjectName("wait_spinner")
+        self._spinner.setObjectName(ObjectName.WAIT_SPINNER)
         self._head = QLabel("")
         row.addWidget(self._spinner)
         row.addWidget(self._head)

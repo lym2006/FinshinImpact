@@ -32,6 +32,7 @@ from ._guide import (
     PanelTheme,
     PickerTheme,
 )
+from ._names import ObjectName
 from ._palette import PALETTE
 from ._settings import SettingsDialogTheme, SettingsListTheme
 
@@ -40,6 +41,8 @@ __all__ = [
     "PALETTE",
     # 按钮样式名
     "ButtonStyle",
+    # 控件对象名
+    "ObjectName",
     # 核心令牌类型
     "WindowTheme",
     "FontTheme",

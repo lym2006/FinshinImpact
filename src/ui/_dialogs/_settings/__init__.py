@@ -1,4 +1,4 @@
-# src/gui/dialogs/_settings/__init__.py
+# src/ui/_dialogs/_settings/__init__.py
 """配置向导
 
 - 实现多标签页表单与错误标红
@@ -14,9 +14,10 @@ from PySide6.QtWidgets import QWidget
 from skin.messages import ConfigMessage
 from skin.qss import build_settings_dialog_qss
 from skin.theme import SETTINGS_DIALOG
-from ui import BaseDialog, gui_bridge
 from utils.config.models import AppConfigData, AppSchema
 
+from ..._bridge import gui_bridge
+from .._base import BaseDialog
 from ._change import ChangeConfirmDialog
 from ._chrome import ChromeBuilder
 from ._field import FieldBuilder

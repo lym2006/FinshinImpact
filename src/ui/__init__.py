@@ -2,7 +2,7 @@
 """视图层门面
 
 - 按属性惰性解析，取用哪个符号才 import 哪个子包
-- 代发控件构造、生命周期件、信号桥与通用弹窗
+- 代发控件构造、生命周期件、信号桥与各类弹窗
 """
 
 import importlib
@@ -13,6 +13,14 @@ _SYMBOL_MODULES = {
     "BaseDialog": "._dialogs",
     "NoticeDialog": "._dialogs",
     "ShutdownDialog": "._dialogs",
+    "CheckDialog": "._dialogs",
+    "Round": "._dialogs",
+    "current_check_window": "._dialogs",
+    "open_check_window": "._dialogs",
+    "LinkDialog": "._dialogs",
+    "ChangeConfirmDialog": "._dialogs",
+    "ConfigMode": "._dialogs",
+    "SettingsDialog": "._dialogs",
     "WaitDialog": "._dialogs",
     "ensure_app": "._lifecycle",
     "Ticker": "._lifecycle",
@@ -39,13 +47,35 @@ __all__ = [
     "NoticeDialog",
     "WaitDialog",
     "ShutdownDialog",
+    # 业务弹窗
+    "CheckDialog",
+    "Round",
+    "current_check_window",
+    "open_check_window",
+    "LinkDialog",
+    "SettingsDialog",
+    "ConfigMode",
+    "ChangeConfirmDialog",
     # 计时泵
     "Ticker",
 ]
 
 if TYPE_CHECKING:
     from ._bridge import gui_bridge
-    from ._dialogs import BaseDialog, NoticeDialog, ShutdownDialog, WaitDialog
+    from ._dialogs import (
+        BaseDialog,
+        ChangeConfirmDialog,
+        CheckDialog,
+        ConfigMode,
+        LinkDialog,
+        NoticeDialog,
+        Round,
+        SettingsDialog,
+        ShutdownDialog,
+        WaitDialog,
+        current_check_window,
+        open_check_window,
+    )
     from ._lifecycle import Ticker, ensure_app
     from ._primitives import (
         ThemedList,

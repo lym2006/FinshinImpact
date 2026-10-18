@@ -11,7 +11,7 @@ from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from skin.qss import build_wait_dialog_qss
-from skin.theme import GLOBAL, WAIT_DIALOG, ButtonStyle
+from skin.theme import GLOBAL, WAIT_DIALOG, ButtonStyle, ObjectName
 
 from .._lifecycle import Ticker
 from .._primitives import make_button
@@ -41,7 +41,7 @@ class WaitDialog(BaseDialog):
         row = QHBoxLayout()
         row.setSpacing(GLOBAL.radius)
         self._spinner = QLabel(self._frames[0])
-        self._spinner.setObjectName("wait_spinner")
+        self._spinner.setObjectName(ObjectName.WAIT_SPINNER)
         self._label = QLabel(text)
         self._label.setWordWrap(True)
         row.addStretch()
