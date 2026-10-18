@@ -20,3 +20,6 @@ class ObjectName(StrEnum):
     LINK_HEAD = "link_head"
     LINK_TIMER = "link_timer"
     LINK_RETRIES = "link_retries"
+    CENTRAL = "centralWidget"
+    TOOLBAR = "toolbar"
+    DASHBOARD = "dashboard"

@@ -1,4 +1,4 @@
-# src/gui/_dashboard.py
+# src/ui/_windows/_dashboard.py
 """仪表盘
 
 - 定义日志面板渲染组件
@@ -12,8 +12,9 @@ from PySide6.QtGui import QTextCursor
 from PySide6.QtWidgets import QTextEdit, QWidget
 
 from exceptions import DashboardWriteError
-from skin.theme import FontTheme
-from ui.font import load_font
+from skin.theme import FontTheme, ObjectName
+
+from ..font import load_font
 
 
 class _LogSignal(QObject):
@@ -66,7 +67,7 @@ class DashboardWidget(QTextEdit):
         super().__init__(parent)
 
         self.setReadOnly(True)  # 基础属性设置
-        self.setObjectName("dashboard")
+        self.setObjectName(ObjectName.DASHBOARD)
 
         # 加载字体
         font = load_font(fonts.font_path, fonts.font_size)

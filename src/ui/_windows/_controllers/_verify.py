@@ -1,4 +1,4 @@
-# src/gui/controllers/_verify.py
+# src/ui/_windows/_controllers/_verify.py
 """校验轮协调
 
 - 驱动进程级唯一校验进度窗，校验轮之间互斥
@@ -8,15 +8,16 @@
 from typing import TYPE_CHECKING
 
 from skin.messages import CheckMessage
-from ui import (
+from utils.config import AppConfigData
+from utils.network import RowId, RowStatus, verify_skeleton
+
+from ..._bridge import gui_bridge
+from ..._dialogs import (
     CheckDialog,
     Round,
     current_check_window,
-    gui_bridge,
     open_check_window,
 )
-from utils.config import AppConfigData
-from utils.network import RowId, RowStatus, verify_skeleton
 
 if TYPE_CHECKING:
     from ._settings import SettingsController

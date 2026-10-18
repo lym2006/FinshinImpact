@@ -1,4 +1,4 @@
-# src/gui/controllers/_system.py
+# src/ui/_windows/_controllers/_system.py
 """日志控制器
 
 - 提供打开日志目录入口

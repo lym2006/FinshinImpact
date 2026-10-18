@@ -2,7 +2,7 @@
 """视图层门面
 
 - 按属性惰性解析，取用哪个符号才 import 哪个子包
-- 代发控件构造、生命周期件、信号桥与各类弹窗
+- 代发控件构造、生命周期件、信号桥、各类弹窗与主窗装配
 """
 
 import importlib
@@ -28,6 +28,13 @@ _SYMBOL_MODULES = {
     "make_button": "._primitives",
     "make_combo": "._primitives",
     "ThemedList": "._primitives",
+    "create_gui": "._windows",
+    "BotGUI": "._windows",
+    "LinkWatcher": "._windows",
+    "build_controllers": "._windows",
+    "BaseController": "._windows",
+    "SettingsController": "._windows",
+    "ShutdownController": "._windows",
 }
 
 __all__ = [
@@ -58,6 +65,17 @@ __all__ = [
     "ChangeConfirmDialog",
     # 计时泵
     "Ticker",
+    # 主窗装配入口
+    "create_gui",
+    # 主窗与观察器
+    "BotGUI",
+    "LinkWatcher",
+    # 控制器装配入口
+    "build_controllers",
+    # 控制器类型
+    "BaseController",
+    "SettingsController",
+    "ShutdownController",
 ]
 
 if TYPE_CHECKING:
@@ -82,6 +100,15 @@ if TYPE_CHECKING:
         TickedCheckBox,
         make_button,
         make_combo,
+    )
+    from ._windows import (
+        BaseController,
+        BotGUI,
+        LinkWatcher,
+        SettingsController,
+        ShutdownController,
+        build_controllers,
+        create_gui,
     )
 
 
