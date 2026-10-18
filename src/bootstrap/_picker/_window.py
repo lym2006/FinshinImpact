@@ -14,13 +14,13 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from services.profile_store import delete_profile, list_profiles, touch_profile
 from skin.messages import PickerMessage
 from skin.qss import build_bootstrap_qss
 from skin.theme import PICKER, ButtonStyle
 from ui import ThemedList, ensure_app, make_button
 
 from ._form import EditProfileDialog, NewProfileDialog
-from ._store import delete_profile, list_profiles, touch_profile
 
 # Qt 自定义数据角色，列表项各挂各的数据
 _ROLE_CODE = 0x0100  # Qt.UserRole，列表项挂身份码

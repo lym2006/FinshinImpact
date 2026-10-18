@@ -101,7 +101,7 @@ def removed_deps(root: Path) -> list[str]:
 def _tool_settings(root: Path) -> dict:
     """读取 [tool.finshin-impact] 表
 
-    - 换源序列与缓存目录的单源，bootstrap 装库器读同一张表
+    - 换源序列与缓存目录的单源，引导期装库器读同一张表
     """
     data = _pyproject_data(root)
     return data.get("tool", {}).get(data["project"]["name"], {})

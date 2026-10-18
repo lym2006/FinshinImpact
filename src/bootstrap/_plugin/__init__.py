@@ -4,8 +4,9 @@
 - 代发插件面板入口与自动弹面板判定
 """
 
+from services.env_setup.deps_manifest import panel_needed
+
 from ._maintain import open_maintain_menu
-from ._manifest import panel_needed
 from ._panel import MODE_AUTO, MODE_EDIT, open_panel
 from ._startup import settle_runtime
 

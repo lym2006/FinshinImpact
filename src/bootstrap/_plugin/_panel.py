@@ -20,20 +20,19 @@ from PySide6.QtWidgets import (
 )
 
 from core.domain import ManifestKey, StateKey
-from skin.messages import PluginMessage
-from skin.qss import build_bootstrap_qss
-from skin.theme import PANEL, ButtonStyle
-from ui import ThemedList, TickedCheckBox, ensure_app, make_button
-
-from ._env import dev_mode
-from ._manifest import (
+from services.env_setup.deps_manifest import (
     catalog_digest,
     load_manifests,
     load_state,
     plugins_root,
     save_state,
 )
-from ._support import is_pin_installed
+from services.env_setup.subprocess_ops import is_pin_installed
+from services.env_setup.toolchain import dev_mode
+from skin.messages import PluginMessage
+from skin.qss import build_bootstrap_qss
+from skin.theme import PANEL, ButtonStyle
+from ui import ThemedList, TickedCheckBox, ensure_app, make_button
 
 MODE_AUTO = "auto"  # 自动弹出：保存并启动
 MODE_EDIT = "edit"  # 选窗按钮进入：保存回列表

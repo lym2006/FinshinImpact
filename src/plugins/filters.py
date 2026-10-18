@@ -9,7 +9,7 @@ from aiogram.types import Message
 
 from core.domain import CommandFlag
 from core.dto import CommandDTO
-from services import HandlerContext
+from services.context import HandlerContext
 
 
 def has_help_flag(command: CommandDTO) -> bool:
