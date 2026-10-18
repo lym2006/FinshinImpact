@@ -1,4 +1,4 @@
-# src/gui/dialogs/_link.py
+# src/ui/_dialogs/_link.py
 """断连计时弹窗
 
 - 非模态置顶展示断线时长与重连次数
@@ -11,8 +11,9 @@ from PySide6.QtGui import QCloseEvent, QFont
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
 from skin.theme import GLOBAL, LINK_DIALOG
-from ui import BaseDialog
 from utils.network import LinkStatus
+
+from ._base import BaseDialog
 
 # Qt 布局四边
 _MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值

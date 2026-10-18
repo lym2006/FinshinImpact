@@ -8,10 +8,8 @@ from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QObject
 
-from ui import Ticker
+from ui import LinkDialog, SettingsDialog, Ticker
 from utils.network import LinkStatus, link_report
-
-from .dialogs import LinkDialog, SettingsDialog
 
 # 计时弹窗节奏
 _POLL_MS = 1000  # 1 秒查一次链路快照

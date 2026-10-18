@@ -1,4 +1,4 @@
-# src/gui/dialogs/_settings/_list_widget.py
+# src/ui/_dialogs/_settings/_list_widget.py
 """配置列表组件
 
 - 定义标签页内的字段列表布局
@@ -19,8 +19,9 @@ from PySide6.QtWidgets import (
 
 from skin.messages import ConfigMessage
 from skin.qss import build_settings_list_qss
-from skin.theme import SETTINGS_DIALOG, ButtonStyle
-from ui import ThemedList, make_button
+from skin.theme import SETTINGS_DIALOG, ButtonStyle, ObjectName
+
+from ..._primitives import ThemedList, make_button
 
 # Qt 布局四边
 _MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
@@ -44,7 +45,7 @@ class ConfigListWidget(QWidget):
         main_layout.setContentsMargins(*[SETTINGS_DIALOG.margin] * _MARGIN_EDGES)
         main_layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
         self.list_widget = ThemedList()  # 列表区域
-        self.list_widget.setObjectName("list_widget")
+        self.list_widget.setObjectName(ObjectName.LIST_WIDGET)
         self._populate_items()
 
         # 连接双击编辑信号

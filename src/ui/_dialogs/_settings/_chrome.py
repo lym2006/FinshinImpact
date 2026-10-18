@@ -1,4 +1,4 @@
-# src/gui/dialogs/_settings/_chrome.py
+# src/ui/_dialogs/_settings/_chrome.py
 """骨架装配
 
 - 构建根布局、标签页与底部按钮条
@@ -23,9 +23,9 @@ from PySide6.QtWidgets import (
 
 from core.domain import ConfigKey, ConfigSection, ProxyMode
 from skin.theme import GLOBAL, SETTINGS_DIALOG, ButtonStyle
-from ui import make_button
 from utils.config.models import AppSchema, TabSchema
 
+from ..._primitives import make_button
 from ._field import FieldBuilder
 from ._persona import PersonaPreviewRow
 
