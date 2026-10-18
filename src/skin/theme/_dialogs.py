@@ -165,8 +165,6 @@ class LinkDialogTheme:
     height: int = 170
     pad: int = 24
     spacing: int = 12
-    btn_width: int = 110
-    btn_height: int = 32
 
     # 字体配置
     font_name: str = "Microsoft YaHei"  # 字体家族名

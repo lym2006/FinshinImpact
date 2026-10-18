@@ -2,10 +2,10 @@
 """通用弹窗 QSS 装配
 
 - 用基础件拼出通知与等待两类成品串
-- 退出确认窗配色自成一套，不套基础件
+- 退出确认与断连计时两窗配色自成一套，不套基础件
 """
 
-from ..theme import BTN, GLOBAL, SHUTDOWN_DIALOG, ButtonStyle
+from ..theme import BTN, GLOBAL, LINK_DIALOG, SHUTDOWN_DIALOG, ButtonStyle, ObjectName
 from ._base import WAIT_QSS, Qss, with_dialog_base
 
 # 退出确认窗窗口与文字
@@ -39,6 +39,33 @@ QPushButton#{ButtonStyle.DANGER} {{
     min-height: {BTN.height}px;
 }}"""
 
+# 断连计时窗窗口与三行文字
+_LINK_WINDOW_QSS = f"""\
+QDialog {{
+    background-color: {LINK_DIALOG.bg_color};
+}}
+
+QLabel#{ObjectName.LINK_HEAD},
+QLabel#{ObjectName.LINK_RETRIES} {{
+    color: {LINK_DIALOG.text_color};
+}}
+
+QLabel#{ObjectName.LINK_TIMER} {{
+    color: {LINK_DIALOG.timer_color};
+}}"""
+
+# 断连计时窗按钮
+# 尺寸显式取全局按钮令牌，否则无父窗时没人给尺寸（祖先样式表下渗不可依赖）
+_LINK_BUTTON_QSS = f"""\
+QPushButton#{ButtonStyle.SECONDARY} {{
+    background-color: {LINK_DIALOG.mute_bg};
+    color: {LINK_DIALOG.btn_color};
+    border-radius: {GLOBAL.radius}px;
+    padding: {BTN.padding_v}px {BTN.padding_h}px;
+    min-width: {BTN.min_width}px;
+    min-height: {BTN.height}px;
+}}"""
+
 
 def build_notice_dialog_qss() -> Qss:
     """构建通知弹窗 QSS"""
@@ -53,3 +80,8 @@ def build_wait_dialog_qss() -> Qss:
 def build_shutdown_dialog_qss() -> Qss:
     """构建退出确认弹窗 QSS"""
     return Qss("\n\n".join([_SHUTDOWN_WINDOW_QSS, _SHUTDOWN_BUTTON_QSS]))
+
+
+def build_link_dialog_qss() -> Qss:
+    """构建断连计时弹窗 QSS"""
+    return Qss("\n\n".join([_LINK_WINDOW_QSS, _LINK_BUTTON_QSS]))

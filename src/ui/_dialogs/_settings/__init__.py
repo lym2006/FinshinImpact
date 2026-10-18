@@ -12,7 +12,11 @@ from PySide6.QtGui import QCloseEvent, QFont, QKeyEvent, QShowEvent
 from PySide6.QtWidgets import QWidget
 
 from skin.messages import ConfigMessage
-from skin.qss import build_settings_dialog_qss
+from skin.qss import (
+    build_error_label_qss,
+    build_pending_label_qss,
+    build_settings_dialog_qss,
+)
 from skin.theme import SETTINGS_DIALOG
 from utils.config.models import AppConfigData, AppSchema
 
@@ -30,8 +34,6 @@ __all__ = [
     "ChangeConfirmDialog",
 ]
 
-_ERROR_QSS = f"color: {SETTINGS_DIALOG.error_color};"
-_PENDING_QSS = f"color: {SETTINGS_DIALOG.pending_color};"
 _ERROR_FONT = QFont(SETTINGS_DIALOG.error_font_family, SETTINGS_DIALOG.error_font_size)
 
 
@@ -75,7 +77,7 @@ class SettingsDialog(BaseDialog):
             host=self,
             fields=self._fields,
             errors=self._field_errors,
-            error_qss=_ERROR_QSS,
+            error_qss=build_error_label_qss(),
             error_font=_ERROR_FONT,
             on_exit=self._on_exit_clicked,
             on_cancel=self.reject,
@@ -147,10 +149,10 @@ class SettingsDialog(BaseDialog):
             err = self._field_errors.get(key)
             if err and err.startswith(ConfigMessage.PENDING_MARK):
                 label.setText(f"❔ {title}")
-                label.setStyleSheet(_PENDING_QSS)
+                label.setStyleSheet(build_pending_label_qss())
             elif err:
                 label.setText(title)
-                label.setStyleSheet(_ERROR_QSS)
+                label.setStyleSheet(build_error_label_qss())
             else:
                 label.setText(title)
                 label.setStyleSheet("")

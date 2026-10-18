@@ -8,11 +8,13 @@ from collections.abc import Callable
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QCloseEvent, QFont
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
-from skin.theme import GLOBAL, LINK_DIALOG
+from skin.qss import build_link_dialog_qss
+from skin.theme import LINK_DIALOG, ButtonStyle, ObjectName
 from utils.network import LinkStatus
 
+from .._primitives import make_button
 from ._base import BaseDialog
 
 # Qt 布局四边
@@ -35,9 +37,7 @@ class LinkDialog(BaseDialog):
         super().__init__(parent=parent, title=LINK_DIALOG.title)
         self.setWindowModality(Qt.WindowModality.NonModal)
         self.set_always_on_top()
-        self.setStyleSheet(
-            f"QDialog {{ background-color: {LINK_DIALOG.bg_color}; }}",
-        )
+        self.setStyleSheet(build_link_dialog_qss())
 
         self._on_close = on_close
 
@@ -47,17 +47,17 @@ class LinkDialog(BaseDialog):
 
         layout.addWidget(
             self._make_label(
-                LINK_DIALOG.head, LINK_DIALOG.text_color, LINK_DIALOG.head_font_size
+                LINK_DIALOG.head, ObjectName.LINK_HEAD, LINK_DIALOG.head_font_size
             )
         )
 
         self._timer = self._make_label(
-            "", LINK_DIALOG.timer_color, LINK_DIALOG.timer_font_size
+            "", ObjectName.LINK_TIMER, LINK_DIALOG.timer_font_size
         )
         layout.addWidget(self._timer)
 
         self._retries = self._make_label(
-            "", LINK_DIALOG.text_color, LINK_DIALOG.retries_font_size
+            "", ObjectName.LINK_RETRIES, LINK_DIALOG.retries_font_size
         )
         layout.addWidget(self._retries)
 
@@ -65,7 +65,7 @@ class LinkDialog(BaseDialog):
 
         # 本次不提示按钮
         btn_layout = QHBoxLayout()
-        mute_btn = self._make_button(LINK_DIALOG.mute_text, LINK_DIALOG.mute_bg)
+        mute_btn = make_button(LINK_DIALOG.mute_text, ButtonStyle.SECONDARY)
         mute_btn.clicked.connect(lambda: self._dismiss(on_mute))
         btn_layout.addStretch()
         btn_layout.addWidget(mute_btn)
@@ -91,22 +91,11 @@ class LinkDialog(BaseDialog):
         self.hide()
         callback()
 
-    def _make_button(self, text: str, bg: str) -> QPushButton:
-        """构造底部按钮"""
-        btn = QPushButton(text)
-        btn.setFixedSize(LINK_DIALOG.btn_width, LINK_DIALOG.btn_height)
-        btn.setStyleSheet(
-            f"QPushButton {{ background-color: {bg}; "
-            f"color: {LINK_DIALOG.btn_color}; "
-            f"border-radius: {GLOBAL.radius}px; }}"
-        )
-        return btn
-
     @staticmethod
-    def _make_label(text: str, color: str, font_size: int) -> QLabel:
+    def _make_label(text: str, name: ObjectName, font_size: int) -> QLabel:
         """构造居中文字行"""
         label = QLabel(text)
         label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        label.setStyleSheet(f"color: {color};")
+        label.setObjectName(name)
         label.setFont(QFont(LINK_DIALOG.font_name, font_size))
         return label

@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
 )
 
 from skin.messages import ConfigMessage
+from skin.qss import build_error_label_qss, build_pending_label_qss
 from skin.theme import GLOBAL, SETTINGS_DIALOG
 from utils.config.models import (
     AppConfigData,
@@ -38,9 +39,6 @@ from ._reset import Inputs, ResetRegistry
 # Qt 布局四边
 _MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
 _LABEL_WIDTH_MAX_EM = 8  # 标签列宽上限为 8 倍「M」字宽
-
-_ERROR_QSS = f"color: {SETTINGS_DIALOG.error_color};"
-_PENDING_QSS = f"color: {SETTINGS_DIALOG.pending_color};"
 
 # 必填项空态渲染值：按默认值类型呈现"未填写"的样子
 _BLANK_BY_TYPE: dict[type, ConfigValue] = {
@@ -202,9 +200,9 @@ class FieldBuilder:
             if err.startswith(ConfigMessage.PENDING_MARK):
                 # 前置项失败导致的"暂未检测"：黄字 ❔，不算本项错误
                 label_widget.setText(f"❔ {field.label}")
-                label_widget.setStyleSheet(_PENDING_QSS)
+                label_widget.setStyleSheet(build_pending_label_qss())
             else:
-                label_widget.setStyleSheet(_ERROR_QSS)
+                label_widget.setStyleSheet(build_error_label_qss())
             label_widget.setToolTip(err)
         self.labels[field.key] = (label_widget, field.label)
         return label_widget
