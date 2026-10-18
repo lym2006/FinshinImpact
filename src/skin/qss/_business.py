@@ -3,6 +3,7 @@
 
 - 收纳配置弹窗的标签页、输入、列表与专属表格片段
 - 按弹窗拼出配置、变更、检查与列表四类成品串
+- 校验态文字串供字段标签逐控件贴色
 """
 
 from ..theme import (
@@ -26,6 +27,10 @@ from ._base import (
     with_dialog_base,
 )
 from ._combo import build_combo_qss
+
+# 字段校验态文字
+_ERROR_LABEL_QSS = f"color: {SETTINGS_DIALOG.error_color};"
+_PENDING_LABEL_QSS = f"color: {SETTINGS_DIALOG.pending_color};"
 
 # 标签页
 _TAB_QSS = f"""\
@@ -273,3 +278,13 @@ def build_check_dialog_qss() -> Qss:
     - 校验轮与诊断轮共用同一皮肤
     """
     return with_dialog_base(WAIT_QSS, _CHECK_TABLE_QSS)
+
+
+def build_error_label_qss() -> Qss:
+    """构建字段标红串"""
+    return Qss(_ERROR_LABEL_QSS)
+
+
+def build_pending_label_qss() -> Qss:
+    """构建字段待检串"""
+    return Qss(_PENDING_LABEL_QSS)
