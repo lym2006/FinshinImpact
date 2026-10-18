@@ -1,4 +1,4 @@
-# src/bootstrap/_picker/_store.py
+# src/services/profile_store.py
 """实例仓储
 
 - 扫描身份文件夹枚举已有实例
@@ -27,7 +27,7 @@ from system.profile_env import (
 # Telegram token 结构 bot_id:secret，bot_id 即机器人数字 ID，重生成 token 不变
 _TG_TOKEN_PATTERN = re.compile(r"(\d+):[A-Za-z0-9_-]+")
 
-# 引导期不许 import utils（paths 导入即冻结路径），人设模板路径与 paths 共用同一文件名常量
+# 引导期身份码未定，路径常量所在的通用包一导入即按空身份码冻结，故模板路径就地拼
 _PERSONALITY_EXAMPLE = ASSETS_DIR / ASSET_PERSONA_EXAMPLE_NAME
 
 # 实例判定只认自描述文件，引导期必写，新建实例此刻还没有 config.toml

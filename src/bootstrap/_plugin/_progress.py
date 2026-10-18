@@ -19,11 +19,10 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from services.env_setup.subprocess_ops import log_ops
 from skin.messages import PluginMessage
 from skin.qss import build_bootstrap_qss
 from ui import ensure_app
-
-from ._support import log_ops
 
 # 日志字体族与字号
 _LOG_FONT_FAMILY = "Consolas"

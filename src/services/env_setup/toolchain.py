@@ -1,4 +1,4 @@
-# src/bootstrap/_plugin/_env.py
+# src/services/env_setup/toolchain.py
 """装库环境定位
 
 - 定位嵌入式解释器与 uv 可执行文件

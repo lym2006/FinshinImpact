@@ -22,7 +22,7 @@ class PluginMessage:
     # 用：bootstrap._plugin 启动结算进度窗标题
     PROGRESS_RUNTIME = "正在结算插件依赖"
 
-    # 用：bootstrap._plugin._installer 同步两阶段提示行
+    # 用：services.env_setup.deps_install 同步两阶段提示行
     STAGE_COMPILE = "正在解析依赖闭包…"
     STAGE_SYNC = "正在重建环境…"
 
@@ -37,30 +37,30 @@ class PluginMessage:
     BTN_SAVE = "保存"
     BTN_SAVE_START = "保存并启动"
 
-    # 用：bootstrap._plugin._support 换源重试行
+    # 用：services.env_setup.subprocess_ops 换源重试行
     INDEX_RETRY = "换源重试（第 {try_count} 次）：{url}"
     INDEX_RETRY_NOTE = "上方报错无需处理，程序正在自动切换镜像源"
 
-    # 用：bootstrap._plugin._support 与 _progress 心跳行协议标记（行首符，后跟空格）
+    # 用：services.env_setup.subprocess_ops 与 _progress 心跳行协议标记（行首符，后跟空格）
     HEARTBEAT_MARK = "⏳"
 
-    # 用：bootstrap._plugin._support 无输出静默期心跳行（进度窗原位刷新）
+    # 用：services.env_setup.subprocess_ops 无输出静默期心跳行（进度窗原位刷新）
     HEARTBEAT = HEARTBEAT_MARK + " 已等待 {seconds} 秒…"
 
-    # 用：bootstrap._plugin._support 子进程失败摘要行
+    # 用：services.env_setup.subprocess_ops 子进程失败摘要行
     PROC_FAIL = "执行未成功：{reason}"
     PROC_FAIL_FALLBACK = "原因详见运行日志插件装卸记录"
 
     # 用：bootstrap._plugin._progress 任务异常中止行
     TASK_FAIL = "任务异常中止，详情见运行日志"
 
-    # 用：bootstrap._plugin._assets 内核镜像回退行
+    # 用：services.env_setup.assets 内核镜像回退行
     CDN_FALLBACK = "npmmirror 不可用，已回退官方源重试，上方报错无需处理"
 
-    # 用：bootstrap._plugin._assets 资源声明非法行
+    # 用：services.env_setup.assets 资源声明非法行
     ASSET_BAD = "资源声明非法，应为「模块名 资源名」两段：{asset}"
 
-    # 用：bootstrap._plugin._support 开发模式降级手动命令
+    # 用：services.env_setup.subprocess_ops 开发模式降级手动命令
     DEV_MANUAL = "开发模式请在虚拟环境下手动执行：\n{commands}"
     DEV_SYNC = "开发模式不支持同步依赖，请在虚拟环境手动操作"
 

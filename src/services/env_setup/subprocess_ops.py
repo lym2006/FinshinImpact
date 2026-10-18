@@ -1,18 +1,17 @@
-# src/bootstrap/_plugin/_support.py
+# src/services/env_setup/subprocess_ops.py
 """装库执行支撑
 
 - 子进程执行管线：换源重试、噪音过滤、心跳补行、原始输出落运行日志
-- 环境定位与工具配置读取在 _env
 """
 
-import importlib.metadata
 import threading
 from collections.abc import Callable
 
 from skin.messages import PluginMessage
 from system.proc import popen_hidden, run_hidden
 
-from ._env import (
+from .deps_manifest import top_package_name
+from .toolchain import (
     RUNTIME_DIR,
     UV_CACHE_DIR,
     UV_INDEX_URLS,
@@ -20,7 +19,6 @@ from ._env import (
     find_uv,
     uv_cmd,
 )
-from ._manifest import top_package_name
 
 # 进度回调签名，逐行接收子进程输出
 ProgressCallback = Callable[[str], None]
@@ -46,6 +44,9 @@ def emit(on_line: ProgressCallback | None, text: str) -> None:
 
 def is_pin_installed(pin: str) -> bool:
     """判断单条依赖的顶层包是否已装"""
+    # 冷盘导入约 200ms，引导期建窗路径不付这笔，首次查盘才付
+    import importlib.metadata
+
     try:
         importlib.metadata.distribution(top_package_name(pin))
     except importlib.metadata.PackageNotFoundError:

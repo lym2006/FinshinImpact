@@ -26,7 +26,7 @@ from core.dto import (
     MsgReferenceDTO,
     PrincipalDTO,
 )
-from services import HandlerContext
+from services.context import HandlerContext
 from utils import get_logger
 
 # 协议串

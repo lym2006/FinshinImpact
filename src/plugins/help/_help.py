@@ -14,7 +14,7 @@ from aiogram.types import FSInputFile, Message
 
 from core.domain import ChatScope, CommandFlag
 from core.dto import CommandDTO
-from services import HandlerContext
+from services.context import HandlerContext
 
 from ..messages import BotMessage
 from ._services import (
