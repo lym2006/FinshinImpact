@@ -20,8 +20,8 @@ from exceptions import (
     ConfigPathMissingError,
     ProxyError,
 )
-from gui.mediator import gui_bridge
 from skin.messages import ConfigMessage
+from ui import gui_bridge
 from utils.logger import get_logger
 
 P = ParamSpec("P")

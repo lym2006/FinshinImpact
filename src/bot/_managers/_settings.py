@@ -10,8 +10,8 @@ from collections.abc import Awaitable, Callable
 from typing import cast
 
 from core.domain import ConfigKey, ConfigSection, ProxyMode
-from gui.mediator import gui_bridge
 from skin.messages import CheckMessage
+from ui import gui_bridge
 from utils import config_manager
 from utils.check import (
     ChannelOutcome,

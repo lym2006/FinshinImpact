@@ -7,8 +7,8 @@
 
 import asyncio
 
-from gui.mediator import gui_bridge
 from skin.messages import CheckMessage
+from ui import gui_bridge
 from utils.check import ChannelOutcome, TelegramFieldKey, attempt_channel
 from utils.network import RowId, RowStatus, scan_proxy_ports
 

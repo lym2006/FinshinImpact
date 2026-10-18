@@ -8,9 +8,9 @@
 from typing import TYPE_CHECKING
 
 from core.domain import ConfigKey, ConfigSection
-from gui.mediator import gui_bridge
 from skin.messages import CheckMessage
 from system.profile_env import get_profile, read_token
+from ui import gui_bridge
 from utils import config_manager
 from utils.check import TelegramFieldKey
 

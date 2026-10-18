@@ -8,11 +8,11 @@
 from typing import TYPE_CHECKING
 
 from skin.messages import CheckMessage
+from ui import gui_bridge
 from utils.config import AppConfigData
 from utils.network import RowId, RowStatus, verify_skeleton
 
 from ..dialogs import CheckDialog, Round, current_check_window, open_check_window
-from ..mediator import gui_bridge
 
 if TYPE_CHECKING:
     from ._settings import SettingsController

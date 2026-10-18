@@ -14,10 +14,9 @@ from PySide6.QtWidgets import QWidget
 from skin.messages import ConfigMessage
 from skin.qss import build_settings_dialog_qss
 from skin.theme import SETTINGS_DIALOG
-from ui import BaseDialog
+from ui import BaseDialog, gui_bridge
 from utils.config.models import AppConfigData, AppSchema
 
-from ...mediator import gui_bridge
 from ._change import ChangeConfirmDialog
 from ._chrome import ChromeBuilder
 from ._field import FieldBuilder
