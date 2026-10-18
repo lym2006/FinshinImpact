@@ -12,8 +12,8 @@ from PySide6.QtGui import QResizeEvent
 from PySide6.QtWidgets import QTextEdit, QWidget
 
 from skin.theme import FiveStateDialogTheme
+from ui import Ticker
 from utils.network import FrameKey, RowStatus
-from widgets import Ticker
 
 _CLOCK_MS = 1000  # 倒计时步进：一秒一跳，与探测预算的秒刻度对齐
 

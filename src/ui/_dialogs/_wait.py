@@ -1,4 +1,4 @@
-# src/widgets/_wait.py
+# src/ui/_dialogs/_wait.py
 """忙碌等待弹窗
 
 - 模态转圈：动画由弹窗嵌套事件循环驱动，界面不僵死
@@ -11,11 +11,11 @@ from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from skin.qss import build_wait_dialog_qss
-from skin.theme import GLOBAL, WAIT_DIALOG
+from skin.theme import GLOBAL, WAIT_DIALOG, ButtonStyle
 
+from .._lifecycle import Ticker
+from .._primitives import make_button
 from ._base import BaseDialog
-from ._factory import ButtonStyle, make_button
-from ._ticker import Ticker
 
 # Qt 布局四边
 _MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值

@@ -1,4 +1,4 @@
-# src/widgets/_list.py
+# src/ui/_primitives/_list.py
 """通用列表行为件
 
 - 在 QListWidget 之上加选中联动与删除当前行的公共操作

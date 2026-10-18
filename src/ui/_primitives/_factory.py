@@ -1,4 +1,4 @@
-# src/widgets/_factory.py
+# src/ui/_primitives/_factory.py
 """控件构造工厂
 
 - make_button 按样式名建按钮

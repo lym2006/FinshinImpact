@@ -1,4 +1,4 @@
-# src/widgets/_app.py
+# src/ui/_lifecycle/_app.py
 """应用实例工厂
 
 - 全进程 QApplication 唯一出生口，建实例即挂图标

@@ -18,10 +18,10 @@ from gui.mediator import gui_bridge
 from skin.messages import CheckMessage
 from skin.theme import WINDOW
 from system.profile_env import get_profile
+from ui import ensure_app
 from utils import get_logger
 from utils.check import preload_engine
 from utils.lifecycle import shutdown_all
-from widgets import ensure_app
 
 from ._managers import BotManager
 

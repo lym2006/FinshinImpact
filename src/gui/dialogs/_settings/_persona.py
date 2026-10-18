@@ -20,11 +20,11 @@ from PySide6.QtWidgets import (
 )
 
 from skin.qss import build_settings_dialog_qss
-from skin.theme import SETTINGS_DIALOG
+from skin.theme import SETTINGS_DIALOG, ButtonStyle
 from system.shell import open_path
+from ui import BaseDialog, NoticeDialog, make_button
 from utils.paths import PERSONALITY_FILE
 from utils.persona import PersonaSource, build_persona, persona_source
-from widgets import BaseDialog, ButtonStyle, NoticeDialog, make_button
 
 # 人设字符串被用户改成单行时渲染控件会回落 QLineEdit
 _TextWidget: TypeAlias = QTextEdit | QLineEdit

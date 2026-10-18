@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QObject
 
+from ui import Ticker
 from utils.network import LinkStatus, link_report
-from widgets import Ticker
 
 from .dialogs import LinkDialog, SettingsDialog
 

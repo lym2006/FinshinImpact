@@ -1,4 +1,4 @@
-# src/widgets/_base.py
+# src/ui/_dialogs/_base.py
 """弹窗基类
 
 - 统一应用模态与置顶的共有窗口行为
