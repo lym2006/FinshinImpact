@@ -14,8 +14,8 @@ from PySide6.QtWidgets import QWidget
 from skin.messages import ConfigMessage
 from skin.qss import build_settings_dialog_qss
 from skin.theme import SETTINGS_DIALOG
+from ui import BaseDialog
 from utils.config.models import AppConfigData, AppSchema
-from widgets import BaseDialog
 
 from ...mediator import gui_bridge
 from ._change import ChangeConfirmDialog

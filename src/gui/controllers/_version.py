@@ -11,8 +11,8 @@ from PySide6.QtCore import QThread, Signal
 
 from exceptions import MAP_KEY_VERSION, MAPS, NewVersionError, VersionError
 from skin.theme import WAIT_DIALOG
+from ui import NoticeDialog, WaitDialog
 from utils.check import check_updates
-from widgets import NoticeDialog, WaitDialog
 
 from ._base import BaseController
 

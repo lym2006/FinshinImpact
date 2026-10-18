@@ -21,7 +21,7 @@ from PySide6.QtWidgets import (
 
 from skin.messages import PluginMessage
 from skin.qss import build_bootstrap_qss
-from widgets import ensure_app
+from ui import ensure_app
 
 from ._support import log_ops
 

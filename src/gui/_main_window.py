@@ -18,8 +18,8 @@ from PySide6.QtWidgets import (
 )
 
 from skin.theme import BodyTheme, FontTheme, ToolbarTheme, WindowTheme
+from ui import NoticeDialog, Ticker
 from utils.logger import get_logger
-from widgets import NoticeDialog, Ticker
 
 from ._dashboard import DashboardWidget, TextHandler
 

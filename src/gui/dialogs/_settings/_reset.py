@@ -19,9 +19,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from skin.theme import SETTINGS_DIALOG
+from skin.theme import SETTINGS_DIALOG, ButtonStyle
+from ui import make_button
 from utils.config.models import ConfigValue, FieldSchema
-from widgets import ButtonStyle, make_button
 
 from ._list_widget import ConfigListWidget
 

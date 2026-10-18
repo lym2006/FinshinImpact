@@ -13,7 +13,7 @@ from PySide6.QtWidgets import QMessageBox
 
 from core.domain import ManifestKey, StateKey
 from skin.messages import PluginMessage
-from widgets import ensure_app
+from ui import ensure_app
 
 from ._assets import install_assets, is_asset_installed
 from ._env import dev_mode

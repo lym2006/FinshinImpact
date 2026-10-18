@@ -19,9 +19,9 @@ from PySide6.QtWidgets import (
 )
 
 from skin.qss import build_check_dialog_qss
-from skin.theme import CHECK_DIALOG
+from skin.theme import CHECK_DIALOG, ButtonStyle
+from ui import BaseDialog, Ticker, make_button
 from utils.network import RowId, RowStatus
-from widgets import BaseDialog, ButtonStyle, Ticker, make_button
 
 from ._table import RowTable
 

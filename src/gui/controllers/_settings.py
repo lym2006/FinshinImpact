@@ -10,12 +10,12 @@ from core.domain import ConfigKey, ConfigSection
 from exceptions import ConfigOutputError
 from skin.messages import CheckMessage
 from skin.theme import NOTICE_DIALOG, SETTINGS_DIALOG
+from ui import NoticeDialog, Ticker
 from utils import config_manager
 from utils.config import (
     compare_configs,
     save_config,
 )
-from widgets import NoticeDialog, Ticker
 
 from ..dialogs import (
     ChangeConfirmDialog,
