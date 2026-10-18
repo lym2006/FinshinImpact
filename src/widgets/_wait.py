@@ -10,10 +10,10 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
+from skin.qss import build_wait_dialog_qss
 from skin.theme import GLOBAL, WAIT_DIALOG
 
 from ._base import BaseDialog
-from ._dialog_qss import build_wait_dialog_qss
 from ._factory import ButtonStyle, make_button
 from ._ticker import Ticker
 

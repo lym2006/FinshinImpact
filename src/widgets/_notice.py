@@ -7,10 +7,10 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
+from skin.qss import build_notice_dialog_qss
 from skin.theme import NOTICE_DIALOG
 
 from ._base import BaseDialog
-from ._dialog_qss import build_notice_dialog_qss
 from ._factory import ButtonStyle, make_button
 
 # Qt 布局四边

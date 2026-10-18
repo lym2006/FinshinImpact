@@ -1,10 +1,10 @@
-# src/gui/_qss/_global.py
+# src/skin/qss/_global.py
 """主窗口样式
 
 - 拼装主窗口与中央容器的全局 QSS
 """
 
-from skin.theme import (
+from ..theme import (
     BODY,
     BTN,
     BTN_DANGER,
@@ -12,6 +12,7 @@ from skin.theme import (
     SCROLLBAR,
     TOOLBAR,
 )
+from ._base import Qss
 
 # 主窗口与中央容器
 _BODY_QSS = f"""\
@@ -112,6 +113,6 @@ _GLOBAL_QSS = "\n".join(  # 全局 QSS 拼接
 )
 
 
-def build_global_qss() -> str:
+def build_global_qss() -> Qss:
     """构建主窗口 QSS"""
-    return _GLOBAL_QSS
+    return Qss(_GLOBAL_QSS)

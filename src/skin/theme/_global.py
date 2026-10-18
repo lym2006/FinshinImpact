@@ -1,4 +1,4 @@
-# src/skin/theme/_core.py
+# src/skin/theme/_global.py
 """全局视觉令牌
 
 - 定义窗口、字体、配色与通用控件令牌

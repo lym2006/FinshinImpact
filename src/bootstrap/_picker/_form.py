@@ -19,11 +19,11 @@ from PySide6.QtWidgets import (
 
 from core.domain import Platform, platform_of_profile
 from skin.messages import PickerMessage
+from skin.qss import build_bootstrap_qss
 from skin.theme import FORM
 from system.profile_env import read_token
 from widgets import ButtonStyle, make_button, make_combo
 
-from .._qss import build_bootstrap_qss
 from ._store import code_for_token, create_profile, update_profile
 
 # 平台下拉项，显示文案归 messages 单源

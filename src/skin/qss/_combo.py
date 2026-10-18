@@ -1,6 +1,8 @@
 # src/skin/qss/_combo.py
 """下拉选择框 QSS"""
 
+from ._base import Qss
+
 
 def build_combo_qss(
     *,
@@ -14,13 +16,13 @@ def build_combo_qss(
     accent_border: str,
     sel_bg: str,
     sel_color: str,
-) -> str:
+) -> Qss:
     """拼下拉选择框 QSS
 
     - 弹层与框体共用底色和文字色
     - 悬停与聚焦共用一条强调描边
     """
-    return f"""\
+    return Qss(f"""\
 QComboBox {{
     background-color: {bg};
     color: {fg};
@@ -41,4 +43,4 @@ QComboBox QAbstractItemView {{
     selection-color: {sel_color};
     border: {border_width}px solid {border_color};
     outline: none;
-}}"""
+}}""")

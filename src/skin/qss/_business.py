@@ -1,28 +1,33 @@
-# src/gui/_qss/_parts.py
-"""弹窗样式片段
+# src/skin/qss/_business.py
+"""业务弹窗 QSS 拼装
 
-- 定义各弹窗共用的 QSS 片段常量
+- 收纳配置弹窗的标签页、输入、列表与专属表格片段
+- 按弹窗拼出配置、变更、检查与列表四类成品串
 """
 
-from skin.theme import (
+from ..theme import (
     BODY,
     BTN,
+    CHANGE_DIALOG,
     GLOBAL,
     LIST_DIALOG,
     SCROLLBAR,
     SETTINGS_DIALOG,
     TOOLBAR,
+    ButtonStyle,
 )
-from widgets import (
+from ._base import (
     DIALOG_BASE_QSS,
     DIALOG_BUTTON_QSS,
     DIALOG_LABEL_QSS,
-    ButtonStyle,
-    build_combo_qss,
+    WAIT_QSS,
+    Qss,
+    with_dialog_base,
 )
+from ._combo import build_combo_qss
 
 # 标签页
-_DIALOG_TAB_QSS = f"""\
+_TAB_QSS = f"""\
 QWidget#{SETTINGS_DIALOG.tab_container_name} {{
     background-color: {SETTINGS_DIALOG.tab_bg};
 }}
@@ -56,7 +61,7 @@ QTabBar::tab:selected {{
 }}"""
 
 # 单行输入
-_DIALOG_LINEEDIT_QSS = f"""\
+_LINEEDIT_QSS = f"""\
 QLineEdit {{
     background-color: {TOOLBAR.bg};
     color: {BODY.color};
@@ -70,7 +75,7 @@ QLineEdit:focus {{
 }}"""
 
 # 文字编辑
-_DIALOG_TEXTEDIT_QSS = f"""\
+_TEXTEDIT_QSS = f"""\
 QTextEdit {{
     background-color: {TOOLBAR.bg};
     color: {BODY.color};
@@ -86,7 +91,7 @@ QTextEdit:focus {{
 }}"""
 
 # 下拉选择
-_DIALOG_COMBO_QSS = build_combo_qss(
+_COMBO_QSS = build_combo_qss(
     bg=TOOLBAR.bg,
     fg=BODY.color,
     border_color=SETTINGS_DIALOG.border_color,
@@ -100,7 +105,7 @@ _DIALOG_COMBO_QSS = build_combo_qss(
 )
 
 # 弹窗滚动条
-_DIALOG_SCROLL_QSS = f"""
+_SCROLL_QSS = f"""
 QScrollArea > QWidget > QWidget {{
     background-color: {BODY.bg};
 }}
@@ -185,18 +190,85 @@ QListWidget#list_widget::item:hover {{
     background-color: {BODY.hover_bg};
 }}"""
 
-DIALOG_QSS = "\n".join(  # 弹窗 QSS 拼接
+# 变更确认表格
+_CHANGE_TABLE_QSS = f"""\
+QTableWidget#change_table {{
+    background-color: {BODY.bg};
+    alternate-background-color: {CHANGE_DIALOG.alt_bg};
+    color: {BODY.color};
+    border: {SETTINGS_DIALOG.border_width}px solid {SETTINGS_DIALOG.border_color};
+    border-radius: {GLOBAL.radius}px;
+    gridline-color: {CHANGE_DIALOG.grid_color};
+}}
+
+QTableWidget#change_table::item {{
+    padding: {LIST_DIALOG.item_padding_v}px {LIST_DIALOG.item_padding_h}px;
+}}
+
+QTextEdit#change_cell {{
+    background-color: {CHANGE_DIALOG.alt_bg};
+    color: {BODY.color};
+    border: none;
+    padding: {CHANGE_DIALOG.cell_padding_v}px {CHANGE_DIALOG.cell_padding_h}px;
+}}
+
+QHeaderView::section {{
+    background-color: {SETTINGS_DIALOG.tab_bg};
+    color: {BODY.hover_color};
+    border: none;
+    padding: {LIST_DIALOG.item_padding_v}px {LIST_DIALOG.item_padding_h}px;
+}}"""
+
+# 检查进度窗表格区
+_CHECK_TABLE_QSS = f"""\
+QDialog {{
+    background-color: {BODY.bg};
+}}
+
+QTextEdit#row_view {{
+    background-color: {TOOLBAR.bg};
+    color: {BODY.color};
+    border: {SETTINGS_DIALOG.border_width}px solid {SETTINGS_DIALOG.border_color};
+    border-radius: {GLOBAL.radius}px;
+    padding: {SETTINGS_DIALOG.input_padding_v}px {SETTINGS_DIALOG.input_padding_h}px;
+}}"""
+
+# 弹窗 QSS 拼接
+_SETTINGS_DIALOG_QSS = "\n".join(
     [
         DIALOG_BASE_QSS,
-        _DIALOG_TAB_QSS,
+        _TAB_QSS,
         DIALOG_LABEL_QSS,
-        _DIALOG_LINEEDIT_QSS,
-        _DIALOG_TEXTEDIT_QSS,
-        _DIALOG_COMBO_QSS,
+        _LINEEDIT_QSS,
+        _TEXTEDIT_QSS,
+        _COMBO_QSS,
         DIALOG_BUTTON_QSS,
-        _DIALOG_SCROLL_QSS,
+        _SCROLL_QSS,
     ]
 )
 
 # 列表项 QSS 拼接
-LIST_QSS = f"{_LIST_BTN_QSS}\n{_LIST_ITEM_QSS}"
+_SETTINGS_LIST_QSS = f"{_LIST_BTN_QSS}\n{_LIST_ITEM_QSS}"
+
+
+def build_settings_dialog_qss() -> Qss:
+    """构建弹窗 QSS"""
+    return Qss(_SETTINGS_DIALOG_QSS)
+
+
+def build_settings_list_qss() -> Qss:
+    """构建配置列表项 QSS"""
+    return Qss(_SETTINGS_LIST_QSS)
+
+
+def build_change_dialog_qss() -> Qss:
+    """构建变更确认弹窗 QSS"""
+    return with_dialog_base(_CHANGE_TABLE_QSS)
+
+
+def build_check_dialog_qss() -> Qss:
+    """构建检查进度窗 QSS
+
+    - 校验轮与诊断轮共用同一皮肤
+    """
+    return with_dialog_base(WAIT_QSS, _CHECK_TABLE_QSS)

@@ -16,11 +16,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from skin.qss import build_change_dialog_qss
 from skin.theme import CHANGE_DIALOG, SETTINGS_DIALOG
 from utils.config.models import ConfigValue
 from widgets import BaseDialog, ButtonStyle, make_button
 
-from ..._qss import build_change_dialog_qss
 from ._diff import make_diff_cell, split_diff, to_lines
 
 
