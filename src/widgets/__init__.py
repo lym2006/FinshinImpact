@@ -5,6 +5,8 @@
 - 转发业务弹窗装配所需的共用样式片段
 """
 
+from skin.qss import build_combo_qss
+
 from ._app import ensure_app
 from ._base import BaseDialog
 from ._check import TickedCheckBox
@@ -13,7 +15,6 @@ from ._dialog_qss import (
     DIALOG_BUTTON_QSS,
     DIALOG_LABEL_QSS,
     WAIT_QSS,
-    build_combo_qss,
 )
 from ._factory import ButtonStyle, make_button, make_combo
 from ._list import ThemedList

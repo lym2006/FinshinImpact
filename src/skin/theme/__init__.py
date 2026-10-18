@@ -5,6 +5,7 @@
 - 导出全局单例
 """
 
+from ._buttons import ButtonStyle
 from ._core import (
     BodyTheme,
     ButtonDangerTheme,
@@ -37,6 +38,8 @@ from ._settings import SettingsDialogTheme, SettingsListTheme
 __all__ = [
     # 调色板
     "PALETTE",
+    # 按钮样式名
+    "ButtonStyle",
     # 核心令牌类型
     "WindowTheme",
     "FontTheme",
