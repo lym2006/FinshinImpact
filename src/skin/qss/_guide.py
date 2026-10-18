@@ -1,17 +1,19 @@
-# src/bootstrap/_qss.py
-"""引导期样式装配
+# src/skin/qss/_guide.py
+"""引导窗 QSS 拼装
 
-- 拼出选窗、表单窗、插件面板、进度窗共用的 QSS
+- 拼出引导各窗共用的 QSS
 """
 
-from skin.theme import (
+from ..theme import (
     GUIDE_BTN,
     PANEL,
+    ButtonStyle,
 )
-from skin.theme import (
+from ..theme import (
     PALETTE as SURFACE,
 )
-from widgets import ButtonStyle, build_combo_qss
+from ._base import Qss
+from ._combo import build_combo_qss
 
 # 引导期控件统一描边宽度（像素）
 _BORDER_PX = 1
@@ -272,6 +274,6 @@ _BOOTSTRAP_QSS = "\n".join(  # 引导期各窗共用皮肤
 )
 
 
-def build_bootstrap_qss() -> str:
+def build_bootstrap_qss() -> Qss:
     """构建引导期窗口 QSS"""
-    return _BOOTSTRAP_QSS
+    return Qss(_BOOTSTRAP_QSS)

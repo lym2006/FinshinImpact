@@ -6,16 +6,6 @@
 """
 
 from ._buttons import ButtonStyle
-from ._core import (
-    BodyTheme,
-    ButtonDangerTheme,
-    ButtonTheme,
-    FontTheme,
-    GlobalTheme,
-    ScrollbarTheme,
-    ToolbarTheme,
-    WindowTheme,
-)
 from ._dialogs import (
     ChangeDialogTheme,
     CheckDialogTheme,
@@ -24,6 +14,16 @@ from ._dialogs import (
     NoticeDialogTheme,
     ShutdownDialogTheme,
     WaitDialogTheme,
+)
+from ._global import (
+    BodyTheme,
+    ButtonDangerTheme,
+    ButtonTheme,
+    FontTheme,
+    GlobalTheme,
+    ScrollbarTheme,
+    ToolbarTheme,
+    WindowTheme,
 )
 from ._guide import (
     FormTheme,

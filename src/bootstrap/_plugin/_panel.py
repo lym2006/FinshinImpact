@@ -21,10 +21,10 @@ from PySide6.QtWidgets import (
 
 from core.domain import ManifestKey, StateKey
 from skin.messages import PluginMessage
+from skin.qss import build_bootstrap_qss
 from skin.theme import PANEL
 from widgets import ButtonStyle, ThemedList, TickedCheckBox, ensure_app, make_button
 
-from .._qss import build_bootstrap_qss
 from ._env import dev_mode
 from ._manifest import (
     catalog_digest,

@@ -1,20 +1,24 @@
-# src/widgets/_dialog_qss.py
-"""通用弹窗样式
+# src/skin/qss/_base.py
+"""QSS 基础件
 
-- 收纳通知窗与等待窗共用的 QSS 片段
-- 片段同时供配置类弹窗装配
+- 定义 Qss 串类型与各弹窗共用的通用片段
+- 装配公共弹窗三件并追加各面专属尾巴
 """
 
-from skin.theme import (
+from typing import NewType
+
+from ..theme import (
     BODY,
     BTN,
     GLOBAL,
     LIST_DIALOG,
     SETTINGS_DIALOG,
     WAIT_DIALOG,
+    ButtonStyle,
 )
 
-from ._factory import ButtonStyle
+# 装配完成的 QSS 串，各 build_*_qss 的出口类型
+Qss = NewType("Qss", str)
 
 # 弹窗基本样式
 DIALOG_BASE_QSS = f"""\
@@ -102,24 +106,6 @@ QLabel#wait_spinner {{
 }}"""
 
 
-def build_notice_dialog_qss() -> str:
-    """构建通知弹窗 QSS"""
-    return "\n".join(
-        [
-            DIALOG_BASE_QSS,
-            DIALOG_LABEL_QSS,
-            DIALOG_BUTTON_QSS,
-        ]
-    )
-
-
-def build_wait_dialog_qss() -> str:
-    """构建忙碌等待弹窗 QSS"""
-    return "\n".join(
-        [
-            DIALOG_BASE_QSS,
-            DIALOG_LABEL_QSS,
-            DIALOG_BUTTON_QSS,
-            WAIT_QSS,
-        ]
-    )
+def with_dialog_base(*tail: str) -> Qss:
+    """以基本、标题、主按钮三件打头拼装弹窗 QSS"""
+    return Qss("\n".join([DIALOG_BASE_QSS, DIALOG_LABEL_QSS, DIALOG_BUTTON_QSS, *tail]))
