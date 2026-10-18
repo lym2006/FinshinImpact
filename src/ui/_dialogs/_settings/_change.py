@@ -1,4 +1,4 @@
-# src/gui/dialogs/_settings/_change.py
+# src/ui/_dialogs/_settings/_change.py
 """变更确认弹窗
 
 - 提供配置变更表格 diff 的二次确认
@@ -17,10 +17,11 @@ from PySide6.QtWidgets import (
 )
 
 from skin.qss import build_change_dialog_qss
-from skin.theme import CHANGE_DIALOG, SETTINGS_DIALOG, ButtonStyle
-from ui import BaseDialog, make_button
+from skin.theme import CHANGE_DIALOG, SETTINGS_DIALOG, ButtonStyle, ObjectName
 from utils.config.models import ConfigValue
 
+from ..._primitives import make_button
+from .._base import BaseDialog
 from ._diff import make_diff_cell, split_diff, to_lines
 
 
@@ -64,7 +65,7 @@ class ChangeConfirmDialog(BaseDialog):
     ) -> QTableWidget:
         """变更 diff 表格"""
         table = QTableWidget(len(logs), CHANGE_DIALOG.diff_columns)
-        table.setObjectName("change_table")
+        table.setObjectName(ObjectName.CHANGE_TABLE)
         table.setHorizontalHeaderLabels(
             [CHANGE_DIALOG.col_key, CHANGE_DIALOG.col_ori, CHANGE_DIALOG.col_mod]
         )

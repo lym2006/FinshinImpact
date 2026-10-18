@@ -15,6 +15,7 @@ from ..theme import (
     SETTINGS_DIALOG,
     WAIT_DIALOG,
     ButtonStyle,
+    ObjectName,
 )
 
 # 装配完成的 QSS 串，各 build_*_qss 的出口类型
@@ -94,13 +95,13 @@ QPushButton#{ButtonStyle.PERSONA_PREVIEW}:pressed {{
     background-color: {SETTINGS_DIALOG.btn_pressed_bg};
 }}
 
-QTextEdit#persona_preview {{
+QTextEdit#{ObjectName.PERSONA_PREVIEW} {{
     background-color: {SETTINGS_DIALOG.tab_bg};
 }}"""
 
 # 忙碌等待弹窗
 WAIT_QSS = f"""\
-QLabel#wait_spinner {{
+QLabel#{ObjectName.WAIT_SPINNER} {{
     font-size: {WAIT_DIALOG.spinner_font_size}px;
     color: {WAIT_DIALOG.spinner_color};
 }}"""

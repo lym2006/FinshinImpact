@@ -1,4 +1,4 @@
-# src/gui/dialogs/_table.py
+# src/ui/_dialogs/_table.py
 """五态行表格
 
 - 网络诊断窗与连通校验窗共用的行渲染组件
@@ -11,9 +11,10 @@ from typing import Any
 from PySide6.QtGui import QResizeEvent
 from PySide6.QtWidgets import QTextEdit, QWidget
 
-from skin.theme import FiveStateDialogTheme
-from ui import Ticker
+from skin.theme import FiveStateDialogTheme, ObjectName
 from utils.network import FrameKey, RowStatus
+
+from .._lifecycle import Ticker
 
 _CLOCK_MS = 1000  # 倒计时步进：一秒一跳，与探测预算的秒刻度对齐
 
@@ -51,7 +52,7 @@ class RowTable(QTextEdit):
 
         # {行id: 已测秒}：在场行进 checking 起跳，定案即摘
         self._elapsed: dict[str, int] = {}
-        self.setObjectName("row_view")
+        self.setObjectName(ObjectName.ROW_VIEW)
         self.setReadOnly(True)
 
         self._clock = Ticker(self, _CLOCK_MS, self._advance_clock)

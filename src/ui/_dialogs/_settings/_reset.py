@@ -1,4 +1,4 @@
-# src/gui/dialogs/_settings/_reset.py
+# src/ui/_dialogs/_settings/_reset.py
 """恢复默认登记
 
 - 按控件当前值重估恢复按钮显隐
@@ -20,9 +20,9 @@ from PySide6.QtWidgets import (
 )
 
 from skin.theme import SETTINGS_DIALOG, ButtonStyle
-from ui import make_button
 from utils.config.models import ConfigValue, FieldSchema
 
+from ..._primitives import make_button
 from ._list_widget import ConfigListWidget
 
 InputWidget: TypeAlias = (

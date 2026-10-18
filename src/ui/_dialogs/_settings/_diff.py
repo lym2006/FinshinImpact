@@ -1,4 +1,4 @@
-# src/gui/dialogs/_settings/_diff.py
+# src/ui/_dialogs/_settings/_diff.py
 """变更 diff 渲染
 
 - 实现配置值的行级与字符级比对
@@ -10,7 +10,7 @@ import html
 
 from PySide6.QtWidgets import QTextEdit
 
-from skin.theme import CHANGE_DIALOG
+from skin.theme import CHANGE_DIALOG, ObjectName
 
 _DIFF_STYLE = {
     "same": "",
@@ -105,7 +105,7 @@ def make_diff_cell(lines: list[_Line], mono: str) -> QTextEdit:
         or "&nbsp;"
     )
     view = QTextEdit()
-    view.setObjectName("change_cell")
+    view.setObjectName(ObjectName.CHANGE_CELL)
     view.setReadOnly(True)
     view.setLineWrapMode(QTextEdit.LineWrapMode.NoWrap)
     view.setHtml(f"<div style=\"font-family: '{mono}';\">{body}</div>")

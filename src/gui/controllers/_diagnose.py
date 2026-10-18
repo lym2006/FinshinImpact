@@ -13,16 +13,16 @@ from PySide6.QtWidgets import QDialog, QWidget
 from core.domain import ConfigKey, ConfigSection
 from skin.messages import CheckMessage
 from system.profile_env import get_profile, read_token
-from ui import gui_bridge
+from ui import (
+    Round,
+    current_check_window,
+    gui_bridge,
+    open_check_window,
+)
 from utils import config_manager
 from utils.check import TelegramFieldKey, diagnose_flow
 from utils.network import FrameKey, RowId, RowStatus, verify_skeleton
 
-from ..dialogs import (
-    Round,
-    current_check_window,
-    open_check_window,
-)
 from ._base import BaseController
 
 _orphans: set["_DiagnoseWorker"] = set()  # 关窗放行的线程暂养于此，finished 后自弃

@@ -15,6 +15,7 @@ from ..theme import (
     SETTINGS_DIALOG,
     TOOLBAR,
     ButtonStyle,
+    ObjectName,
 )
 from ._base import (
     DIALOG_BASE_QSS,
@@ -165,7 +166,7 @@ QPushButton#{ButtonStyle.LIST_DEL}:hover {{
 
 # 列表项
 _LIST_ITEM_QSS = f"""\
-QListWidget#list_widget {{
+QListWidget#{ObjectName.LIST_WIDGET} {{
     background-color: {LIST_DIALOG.item_border_color};
     color: {BODY.color};
     border: {SETTINGS_DIALOG.border_width}px solid {SETTINGS_DIALOG.border_color};
@@ -174,25 +175,25 @@ QListWidget#list_widget {{
     margin: {LIST_DIALOG.container_inner_margin}px;
 }}
 
-QListWidget#list_widget::item {{
+QListWidget#{ObjectName.LIST_WIDGET}::item {{
     background-color: {TOOLBAR.bg}; 
     color: {BODY.color};
     margin-bottom: {LIST_DIALOG.item_border_width}px; 
     padding: {LIST_DIALOG.item_padding_v}px {LIST_DIALOG.item_padding_h}px;
 }}
 
-QListWidget#list_widget::item:selected {{
+QListWidget#{ObjectName.LIST_WIDGET}::item:selected {{
     background-color: {BODY.selection_bg};
     color: {BODY.selection_color};
 }}
 
-QListWidget#list_widget::item:hover {{
+QListWidget#{ObjectName.LIST_WIDGET}::item:hover {{
     background-color: {BODY.hover_bg};
 }}"""
 
 # 变更确认表格
 _CHANGE_TABLE_QSS = f"""\
-QTableWidget#change_table {{
+QTableWidget#{ObjectName.CHANGE_TABLE} {{
     background-color: {BODY.bg};
     alternate-background-color: {CHANGE_DIALOG.alt_bg};
     color: {BODY.color};
@@ -201,11 +202,11 @@ QTableWidget#change_table {{
     gridline-color: {CHANGE_DIALOG.grid_color};
 }}
 
-QTableWidget#change_table::item {{
+QTableWidget#{ObjectName.CHANGE_TABLE}::item {{
     padding: {LIST_DIALOG.item_padding_v}px {LIST_DIALOG.item_padding_h}px;
 }}
 
-QTextEdit#change_cell {{
+QTextEdit#{ObjectName.CHANGE_CELL} {{
     background-color: {CHANGE_DIALOG.alt_bg};
     color: {BODY.color};
     border: none;
@@ -225,7 +226,7 @@ QDialog {{
     background-color: {BODY.bg};
 }}
 
-QTextEdit#row_view {{
+QTextEdit#{ObjectName.ROW_VIEW} {{
     background-color: {TOOLBAR.bg};
     color: {BODY.color};
     border: {SETTINGS_DIALOG.border_width}px solid {SETTINGS_DIALOG.border_color};
