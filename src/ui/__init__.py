@@ -2,13 +2,14 @@
 """视图层门面
 
 - 按属性惰性解析，取用哪个符号才 import 哪个子包
-- 代发控件构造、生命周期件与通用弹窗
+- 代发控件构造、生命周期件、信号桥与通用弹窗
 """
 
 import importlib
 from typing import TYPE_CHECKING
 
 _SYMBOL_MODULES = {
+    "gui_bridge": "._bridge",
     "BaseDialog": "._dialogs",
     "NoticeDialog": "._dialogs",
     "ShutdownDialog": "._dialogs",
@@ -22,6 +23,8 @@ _SYMBOL_MODULES = {
 }
 
 __all__ = [
+    # 信号桥
+    "gui_bridge",
     # 应用实例
     "ensure_app",
     # 弹窗基类
@@ -41,6 +44,7 @@ __all__ = [
 ]
 
 if TYPE_CHECKING:
+    from ._bridge import gui_bridge
     from ._dialogs import BaseDialog, NoticeDialog, ShutdownDialog, WaitDialog
     from ._lifecycle import Ticker, ensure_app
     from ._primitives import (

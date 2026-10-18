@@ -1,4 +1,4 @@
-# src/gui/mediator.py
+# src/ui/_bridge/_mediator.py
 """GUI 中介者
 
 - 定义 GUI 与 Bot 的通信协议，信号按流向分组声明
@@ -9,7 +9,7 @@ import threading
 
 from PySide6.QtCore import QObject
 
-from .signal import SafeSignal
+from ._signal import SafeSignal
 
 
 class GUIBridge(QObject):

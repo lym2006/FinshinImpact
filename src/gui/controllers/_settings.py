@@ -10,7 +10,7 @@ from core.domain import ConfigKey, ConfigSection
 from exceptions import ConfigOutputError
 from skin.messages import CheckMessage
 from skin.theme import NOTICE_DIALOG, SETTINGS_DIALOG
-from ui import NoticeDialog, Ticker
+from ui import NoticeDialog, Ticker, gui_bridge
 from utils import config_manager
 from utils.config import (
     compare_configs,
@@ -23,7 +23,6 @@ from ..dialogs import (
     SettingsDialog,
     current_check_window,
 )
-from ..mediator import gui_bridge
 from ._base import BaseController
 from ._verify import VerifyCoordinator
 

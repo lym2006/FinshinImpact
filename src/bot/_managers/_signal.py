@@ -8,7 +8,7 @@
 import asyncio
 from typing import TYPE_CHECKING
 
-from gui.mediator import gui_bridge
+from ui import gui_bridge
 from utils import config_manager
 from utils.config import load_config
 
