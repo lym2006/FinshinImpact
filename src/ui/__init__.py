@@ -2,7 +2,7 @@
 """视图层门面
 
 - 按属性惰性解析，取用哪个符号才 import 哪个子包
-- 代发控件构造、生命周期件、信号桥、各类弹窗与主窗装配
+- 代发控件构造、生命周期件、信号桥、各类弹窗、引导期窗体与主窗装配
 """
 
 import importlib
@@ -22,7 +22,14 @@ _SYMBOL_MODULES = {
     "ConfigMode": "._dialogs",
     "SettingsDialog": "._dialogs",
     "WaitDialog": "._dialogs",
+    "pick_profile": "._guide",
+    "show_launch_wait": "._guide",
+    "show_popup": "._guide",
+    "open_panel": "._guide",
+    "MODE_AUTO": "._guide",
+    "settle_runtime": "._guide",
     "ensure_app": "._lifecycle",
+    "pump_events": "._lifecycle",
     "Ticker": "._lifecycle",
     "TickedCheckBox": "._primitives",
     "make_button": "._primitives",
@@ -40,8 +47,9 @@ _SYMBOL_MODULES = {
 __all__ = [
     # 信号桥
     "gui_bridge",
-    # 应用实例
+    # 应用实例与事件泵
     "ensure_app",
+    "pump_events",
     # 弹窗基类
     "BaseDialog",
     # 控件
@@ -65,6 +73,13 @@ __all__ = [
     "ChangeConfirmDialog",
     # 计时泵
     "Ticker",
+    # 引导期窗体
+    "pick_profile",
+    "show_launch_wait",
+    "show_popup",
+    "open_panel",
+    "MODE_AUTO",
+    "settle_runtime",
     # 主窗装配入口
     "create_gui",
     # 主窗与观察器
@@ -94,7 +109,15 @@ if TYPE_CHECKING:
         current_check_window,
         open_check_window,
     )
-    from ._lifecycle import Ticker, ensure_app
+    from ._guide import (
+        MODE_AUTO,
+        open_panel,
+        pick_profile,
+        settle_runtime,
+        show_launch_wait,
+        show_popup,
+    )
+    from ._lifecycle import Ticker, ensure_app, pump_events
     from ._primitives import (
         ThemedList,
         TickedCheckBox,

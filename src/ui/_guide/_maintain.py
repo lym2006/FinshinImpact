@@ -1,4 +1,4 @@
-# src/bootstrap/_plugin/_maintain.py
+# src/ui/_guide/_maintain.py
 """环境维护入口
 
 - 依赖管理弹下拉菜单，同步重建与清理缓存两条操作并列
@@ -18,8 +18,8 @@ from services.env_setup.deps_install import sync_env
 from services.env_setup.deps_manifest import core_dependencies, enabled_deps_union
 from services.env_setup.subprocess_ops import ProgressCallback, clean_cache
 from skin.messages import PluginMessage
-from ui import ensure_app
 
+from .._lifecycle import ensure_app
 from ._progress import run_with_progress
 
 

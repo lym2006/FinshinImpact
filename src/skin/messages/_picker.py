@@ -9,7 +9,7 @@ class PickerMessage:
     - 成员前缀即子窗归属，跨窗共用的表单归 FORM_、按钮归 BTN_
     """
 
-    # 用：bootstrap._picker 选择窗
+    # 用：ui._guide 选择窗、启动提示卡与引导期弹窗标题
     TITLE = "选择机器人"
     HINT = "选择要启动的机器人，或新建一个"
     DELETE_CONFIRM = (
@@ -20,13 +20,13 @@ class PickerMessage:
     # 用：bootstrap._slot 引导锁被占弹窗
     BUSY = "已有一个选择窗口在打开，请在该窗口操作"
 
-    # 用：bootstrap._picker._launch 启动提示卡正文
+    # 用：ui._guide._launch 启动提示卡正文
     LAUNCHING = "正在启动 {label}…"
 
-    # 用：bootstrap._picker._launch 提示卡正计时行
+    # 用：ui._guide._launch 提示卡正计时行
     LAUNCHING_ELAPSED = "已装载 {sec} 秒，就绪后自动进入主窗口"
 
-    # 用：bootstrap._picker 各窗底部按钮
+    # 用：ui._guide._picker 窗底部按钮行
     BTN_NEW = "新建"
     BTN_EDIT = "编辑"
     BTN_DELETE = "删除"
@@ -35,19 +35,19 @@ class PickerMessage:
     BTN_SYNC = "依赖管理 ▾"
     BTN_OK = "确定"
 
-    # 用：bootstrap._picker 新建与编辑共用的表单
+    # 用：ui._guide._form 新建与编辑共用的表单
     FORM_TOKEN_LABEL = "Bot Token"
     FORM_TOKEN_HINT = "从 @BotFather 获取，形如 123456:ABCDEF"
     FORM_TOKEN_INVALID = "Token 格式不正确\n应形如 123456:ABCDEF"
     FORM_REMARK_LABEL = "备注名（可选）"
 
-    # 用：bootstrap._picker 新建窗
+    # 用：ui._guide._form 新建窗
     NEW_TITLE = "新建机器人"
     NEW_PLATFORM_LABEL = "平台"
     NEW_PLATFORM_TELEGRAM = "Telegram"
     NEW_PLATFORM_QQ = "QQ（暂未支持）"
 
-    # 用：bootstrap._picker 编辑窗
+    # 用：ui._guide._form 编辑窗
     EDIT_TITLE = "编辑机器人"
     EDIT_PLATFORM_UNKNOWN = "该实例的平台无法识别\n可能不是本程序创建的实例"
     EDIT_TOKEN_CHANGED = (

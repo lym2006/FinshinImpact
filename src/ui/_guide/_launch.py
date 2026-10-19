@@ -1,4 +1,4 @@
-# src/bootstrap/_picker/_launch.py
+# src/ui/_guide/_launch.py
 """启动提示卡
 
 - 选窗收场到主窗就绪之间给出可见的等待界面
@@ -20,8 +20,9 @@ from PySide6.QtWidgets import (
 from services.profile_store import remark_of
 from skin.messages import PickerMessage
 from skin.qss import build_bootstrap_qss
-from skin.theme import LAUNCH
-from ui import Ticker, ensure_app
+from skin.theme import LAUNCH, ObjectName
+
+from .._lifecycle import Ticker, ensure_app
 
 # 正计时刷新间隔，1 秒一格
 _TICK_MS = 1000
@@ -61,10 +62,10 @@ class _LaunchWaitDialog(QDialog):
         column = QVBoxLayout()
         column.setSpacing(LAUNCH.text_gap)
         text = QLabel(PickerMessage.LAUNCHING.format(label=label))
-        text.setObjectName("launch_text")
+        text.setObjectName(ObjectName.LAUNCH_TEXT)
         self._start = time.monotonic()
         self._note = QLabel()
-        self._note.setObjectName("launch_note")
+        self._note.setObjectName(ObjectName.LAUNCH_NOTE)
         self._tick()
         column.addWidget(text)
         column.addWidget(self._note)

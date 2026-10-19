@@ -1,4 +1,4 @@
-# src/bootstrap/_picker/_form.py
+# src/ui/_guide/_form.py
 """实例表单窗
 
 - 收 token 与备注名，新建与编辑共用同一表单
@@ -23,7 +23,8 @@ from skin.messages import PickerMessage
 from skin.qss import build_bootstrap_qss
 from skin.theme import FORM, ButtonStyle
 from system.profile_env import read_token
-from ui import make_button, make_combo
+
+from .._primitives import make_button, make_combo
 
 # 平台下拉项，显示文案归 messages 单源
 _PLATFORM_ITEMS = (
