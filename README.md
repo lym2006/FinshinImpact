@@ -20,7 +20,7 @@
 - [🖥️ 环境准备（`Windows` 用户必读）](#️-环境准备windows-用户必读)
 - [🚀 快速开始](#-快速开始)
 - [🔄 更新版本](#-更新版本)
-- [💡 Script Prompt Translation](#-script-prompt-translation)
+- [💡 脚本提示信息翻译](#-脚本提示信息翻译)
     - [install.bat](#installbat)
     - [update.bat](#updatebat)
 - [🚨 温馨提示](#-温馨提示)
@@ -33,8 +33,8 @@
 - **异步架构**: 基于 `asyncio` 和 `aiogram`，提供高并发处理能力。
 - **插件化设计**: 功能模块位于 `src/plugins` 目录下，支持动态加载，易于扩展和维护。
 - **完善日志**: 集成 `logging` 模块，支持控制台输出与文件 `Rotating` ，默认开启详细报错。
-- **`TOML` 配置**: 使用 `config.toml` 进行集中式配置管理，类型安全且易读。
 - **浏览器自动化**: 使用 `Playwright` 实现异步处理。
+- **`TOML` 配置**: 使用 `config.toml` 进行集中式配置管理，类型安全且易读。
 - **配置自动检测**: 每次启动机器人会自动检测是否更新了新配置项并提醒用户在 `config.toml` 中填写。
 - **一键安装与更新**: 提供 `install.bat` 和 `update.bat` 自动化脚本，请在项目的 [Releases 发布页面](../../releases) 下载最新版本。
   > **重要提示**：
@@ -42,7 +42,14 @@
   > - **日常更新**：请将 `update.bat` 放在与 `TelegramBot` 文件夹**同级的目录**下双击运行。
   > - **路径要求**：整个路径中**请勿包含中文或特殊字符**，以免引发环境报错。
   > - **环境要求**：请参照 **[️ 环境准备（Windows 用户必读）](#️-环境准备windows-用户必读)** 安装环境，若旧版本 CMD 出现问题，请尝试在 Windows Terminal 中执行脚本。
-  > - **序号提示**：脚本所有提示信息均已添加序号，方便定位和排查问题。详见下方 [ Script Prompt Translation（可折叠）](#-script-prompt-translation) 区域。
+  > - **序号提示**：脚本所有提示信息均已添加序号，方便定位和排查问题。详见下方 **[ 💡 脚本提示信息翻译 ](#-脚本提示信息翻译)** 区域。
+- **一键启动机器人**: 配置完成后，请双击运行 `start.bat` 启动机器人。
+  > **启动脚本说明**：
+  > - **自动环境激活**：脚本会自动检测并激活项目目录下的 `.venv` 虚拟环境，无需手动输入命令。
+  > - **智能路径检查**：启动前会自动校验环境完整性。如果未找到虚拟环境或依赖缺失，窗口会显示红色警告并暂停，防止直接报错闪退。
+  > - **自动使用 `Windows Terminal`**：脚本会自动调用 `Windows Terminal` 打开新标签页启动机器人。
+  > - **停止机器人**：直接在弹出的终端窗口中按 `Ctrl + C` 即可安全停止服务。
+  > - **路径警告**：同样请确保 `start.bat` 位于 `TelegramBot` 文件夹内，且**全路径无中文**。
 
 [⤴️ 返回目录](#-目录)
 
@@ -185,7 +192,7 @@ python -m bot
 
 ---
 
-## 💡 Script Prompt Translation
+## 💡 脚本提示信息翻译
 
 <details>
 <summary>点击展开查看脚本提示信息中文翻译</summary>
@@ -216,7 +223,6 @@ python -m bot
 | [20] | Downloading Chromium browser component... | 正在下载 Chromium 浏览器组件... |
 | [21] | Installation Completed! | 安装完成！ |
 | [22] | [IMPORTANT] Please edit config.toml to fill in your Token and API keys! | [重要] 请编辑 config.toml 填入你的 Token 和 API 配置！ |
-| [23] | Start command: python -m bot | 启动命令: python -m bot |
 
 #### update.bat
 
@@ -239,7 +245,6 @@ python -m bot
 | [15] | Syncing project dependencies... | 正在同步项目依赖... |
 | [16] | [WARNING] Since code pull failed, dependencies may be incomplete. Please check manually. | [警告] 由于代码拉取失败，依赖可能不完整，建议手动检查。 |
 | [17] | Update Completed! | 更新完成！ |
-| [18] | Start command: python -m bot | 启动命令: python -m bot |
 
 </details>
 
