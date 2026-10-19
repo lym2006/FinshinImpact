@@ -10,11 +10,10 @@
 >
 > **本项目仅限 `Windows` 用户使用。**
 >
-> ❗️ **v0.3.1 升级须知（破坏性变更）**：
-> - **GUI 桌面化**：程序入口从纯控制台变为 `PySide6` 桌面窗口，日志、配置修改、关闭确认全部在窗口内完成。
-> - **停止方式变更**：关闭窗口并在弹窗确认即可安全退出，不再使用 `Ctrl + C`。
-> - **配置可视化**：无需手动编辑 `config.toml`，窗口内「修改配置」即可，类型与连通性当场校验。
-> - **启动方式变更**：程序打包，功能集成。
+> ❗️ **v0.4.0 升级须知（破坏性变更）**：
+> - **必须手动整包更新**：旧版启动器不支持换壳，v0.4.0 无法经自动升级到达。请删除旧目录，重新下载解压新包；想保留的 `config.toml`、`data\`、`logs\` 先备份再放回。
+> - **此后启动器随升级自动更换**：从 v0.4.0 起，启动器本体的修复跟着自动升级走，不再需要手动整包。
+> - **GUI 桌面化（v0.3.1 沿革）**：程序入口为 `PySide6` 桌面窗口，日志、配置修改、关闭确认全部在窗口内完成；关窗并在弹窗确认即安全退出，不再使用 `Ctrl + C`。
 
 ---
 
@@ -38,8 +37,7 @@
 - [✨ 功能特点](#-功能特点)
 - [💬 关于 AI 对话](#-关于-ai-对话)
 - [🛠️ 技术栈](#️-技术栈)
-- [📦 开发版](#-开发版)
-- [🔄 更新版本](#-更新版本)
+- [📖 开发与维护](#-开发与维护)
 - [❗️ 温馨提示](#️-温馨提示)
 - [📄 许可证 (`LICENSE`)](#-许可证-license)
 
@@ -106,35 +104,13 @@
 
 ---
 
-## 📦 开发版
+## 📖 开发与维护
 
-1. 安装 `Python 3.11+`（勾选 Add to PATH）
-2. 下载本仓库源码并解压，在项目根目录创建虚拟环境：`python -m venv .venv`
-3. 激活虚拟环境：`.venv\Scripts\activate`
-4. 安装依赖与开发工具：`pip install -e ".[dev]"`（可自行配置镜像源）
-5. 安装 Playwright 浏览器内核：`playwright install chromium`
-6. 启动：`python -m bot`，管理面板窗口即出现
-7. 首次运行自动生成 `config.toml` 并弹出配置向导，填入配置即完成初始化（无需手编文件）
-
-<details>
-<summary><b>发布流程（维护者）</b></summary>
-
-1. `pyproject.toml` 递增版本号，`CHANGELOG` 定稿，打 `git tag vX.Y.Z` 并推送；
-2. GitHub Release 上传发布物 `TelegramBot-vX.Y.Z.zip`（源码 + 启动器，不含 `.venv`）；
-3. 手动把 `pyproject.toml` 覆盖到版本页仓库（`lym2006.github.io/TelegramBot`）并 `push`，其 Pages workflow 自动部署，在线版本号即生效；
-4. 用户下次启动时，GUI 版本检查命中新版本，启动器自动完成升级。
-
-</details>
-
-[⤴️ 返回目录](#-目录)
-
----
-
-## 🔄 更新版本
-
-- **「检查更新」按钮**：两种版本行为一致，仅比对在线版本号并弹窗提示是否有新版，**不会** 替你更新。
-- **开发版更新方式**：手动拉取新代码（`git pull` 或下载源码覆盖），若依赖有变动，重跑[📦 开发版](#-开发版)的 `pip` 安装命令同步。
-- **打包版更新方式**：启动器每次拉起主程序前自动比对版本，弹窗确认后完成下载升级，用户配置、数据与日志一律保留。
+- 🧭 **开发手册**（环境搭建、发布流程、更新方式）：[`docs/development.md`](docs/development.md)
+- 📐 **代码规范**（注释、docstring、命名约定）：[`docs/coding-style.md`](docs/coding-style.md)，模板 [`docs/example.py`](docs/example.py)
+- 📦 **打包教程**（发布原理与操作）：[`docs/packaging.md`](docs/packaging.md)
+- 📝 **提交规范**（commit 格式模板）：[`.gitmessage`](.gitmessage)
+- ⚙️ **配置模板**（全部可改项与注释）：[`config.example.toml`](config.example.toml)
 
 [⤴️ 返回目录](#-目录)
 
@@ -149,11 +125,6 @@
 如需进行插件开发、查阅 API 或查看源码，请参考以下资源：
 - 📖 **官方文档**：[`aiogram.dev`](https://docs.aiogram.dev/en/latest/)
 - 💻 **`GitHub` 仓库**：[`aiogram`](https://github.com/aiogram/aiogram)
-
-维护者资源：
-- 📦 **打包教程**（发布原理与操作）：[`packaging/packaging.md`](packaging/packaging.md)
-- 📝 **提交规范**（commit 格式模板）：[`.gitmessage`](.gitmessage)
-- ⚙️ **配置模板**（全部可改项与注释）：[`config.example.toml`](config.example.toml)
 
 [⤴️ 返回目录](#-目录)
 
