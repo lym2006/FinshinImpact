@@ -1,0 +1,53 @@
+# 工具与闸门的假绿
+
+**什么时候会撞上**：闸门全绿但你心里没底。改了包结构、改了检查器、批量改了代码。报告「0 违规」。
+
+工具报绿有相当一部分是真的什么都没检查。下面每一条都实际骗过人。
+
+## 缓存与配置
+
+`.importlinter` 改完或包结构动完，必须先删 `.grimp_cache` 与 `.import_linter_cache` 再跑契约。留着旧缓存，`lint-imports` 拿陈旧依赖图报绿，一整轮改动都白验。
+
+契约名一律用英文。中文契约名配合 `PYTHONUTF8` 缺失会在 Windows 上乱码报错，省事的办法是别给它乱的机会。INI 文件必须无 BOM，PowerShell 5.1 的 `Set-Content` 默认写 BOM，configparser 会报「no section headers」，看着像配置文件坏了，其实是编码。forbidden 契约要禁第三方包，必须写 `include_external_packages`，否则它根本不看那批包。
+
+`forbidden` 契约默认跟随**间接链**。想让「Qt 只出现在 `ui`」生效，源包填 `ui` 之外的所有层而不写 `allow_indirect_imports = True`，那么 `bot._main -> ui -> ui._windows -> PySide6` 这种完全正常的取窗链会被判 broken。想守的是「别直接 import」，就得显式放过间接。
+
+## 检查器的参数与退出码
+
+`check_text.py --commit` 收的是 git ref（sha），不是提交信息文本。把整段文本传进去，脚本内部 `git log` 找不到那个 ref、stdout 为空，于是报「H 0 条」。核提交文案一律传 sha。
+
+管道的退出码是最后一个命令的。`pyright | tail` 拿到 exit 0 是 `tail` 给的。判据要看到汇总行写着「0 errors」，或者取 `${PIPESTATUS[0]}`。
+
+pyright 必须用 Qoder 自带的 node 直接跑 `pyright/dist/index.js` 并带上 `--pythonpath`。用 `dist/dist/pyright.js` 会让 builtins 全不解析，不带 `--pythonpath` 会报上万条 `reportMissingImports` 的假错——**假错海会埋掉真错**，看着和「检查过了」一模一样。`.venv/Scripts/pyright.exe` 会去联网拉 nodeenv 而失败。
+
+## 覆盖面与探针
+
+**0 命中不等于检查生效。** 新写的或改了前缀的规则，先造一个故意违规的探针文件确认它真能报，探针用完即删。把话术检查的前缀从 `gui` 搬到 `ui` 之前，先跑探针确认新前缀对全量代码零新增违规，才敢断定覆盖面平移没缩水。
+
+扫描器只查机械规则。docstring 检查查得出标点、括号、分号、折行、`-` 起头、空行，查不出「太长」和「黑话」。注释检查不判语义。这类质量必须导出全文人工审。跨私有性改动后 ruff 的 F821 能兜住悬空名，扫描器不查名字消费面——曾经定义了公开名 `preload_engine`、调用处写 `_preload_engine()`，运行时才 NameError。
+
+门面漏导出只有 pyright 查得出，ruff 和单测都放过。反向探针的另一种打法：桩掉 `register_routers`，喂一条假 Update 走 `propagate_event`，可以在离线状态下验到路由与注入链路。断连与代理这类网络行为要用死端口实测取证，别只读代码。
+
+## 改动落地与状态同步
+
+**批量脚本的回执不能信。** 有一轮脚本报告改了 114 处，实际漏了一批：单行文本在 CRLF 与 LF 下计数相同，被当成「不需要改」跳过。同文件里按行号排序做多种改动会偏移，优先全文锚定。改完必须 grep 复核。
+
+先落 import，再做使用它的编辑。新增符号的 import 如果晚于引用它的编辑，ruff 会把「导入了还没用」当死导入清掉，表现像改完自己回滚。删一个方法要连同它专用的顶部 import 一起删，否则同样被 ruff 判未使用。
+
+临时脚本不要放项目根目录。根目录下有个 `libssl-3.dll` 之类的运行库，Windows 的 DLL 搜索顺序会让 python 先撞上它，表现为 `_ssl` 导入失败，和一个你正在跑的脚本毫无关系。
+
+`tests/` 和 `docs/design/` 在 `.gitignore` 里，Grep 工具搜这两个目录永远 0 命中，不等于没有引用。改路径时这两处要用命令行 `grep` 单独扫，`git add tests/...` 会被拒绝。
+
+## 别信文档与记忆里的「已完成」
+
+**「已实装」要用 grep 附文件行号坐实，零匹配就判未实装。** 设计文档、CHANGELOG 的 Planned 段、乃至项目记忆，都可能写着「某层已完成」而代码里只有空包。实际抓到的例子：数据层设计文档记着仓储已落地，`src/data/_sqlite`、`src/services/tasks`、`src/services/ai` 里除了占位 docstring 什么都没有，`core/contracts` 声明了五个仓储 ABC、全库零实现，会话仍然活在 `plugins/AI/core/_chat_context.py` 的进程内字典里。据此写发布文案或规划后续排期都会出错。
+
+同一类坑是设计文档滞后于代码：文档列的字段与目录名和实际实现不一致（`ports/` 实际叫 `contracts/`，DTO 字段数已改），照文档施工会造出两套东西。动手前以代码为准，改完回写文档。
+
+比较条件符号要逐条核对。权限判定写成「数值越小越特权」、比较用 `<=`，早期设计原文写的是 `>=`，照原文落码等于权限反转，且不报错、静默越权。这类反号只能靠实跑三档用户各发一条命令来验。
+
+异常处理会吞掉取证。SSE 最后一个 chunk 的 `choices` 是空数组，代码取 `data["choices"][0]["delta"]` 抛 IndexError，被紧邻的 except 静默吞掉，表现是 usage 永远统计不到，日志里一条错都没有。取前先判空。
+
+## 闸门红不一定等于代码坏
+
+pyright 突然报某插件目录下几行 `reportMissingImports`，先看那个插件的依赖还在不在开发环境的 `.venv` 里，别去改代码。**「同步依赖」按启用清单重建依赖闭包，禁用插件的依赖会被真卸掉**（开发模式下装库器找得到 venv 里的 uv，走的是真装卸，日志 `runtime/plugin-ops.log` 记着 `Uninstalled 10 packages`）。判据是实例的启用清单成了空集，而报错只落在声明这些依赖的那个插件包内。重新启用插件会走补装，或按需要单独装回那几项。

@@ -36,6 +36,7 @@ _MIN_BUSINESS_LEN = 6
 
 # 长级别名禁用：格式器列宽 %(levelname)-5s 按五字符定死，顶宽就歪一整列
 _BANNED_LEVELS: frozenset[str] = frozenset({"warning", "warn", "critical", "fatal"})
+
 # 日志器对象名尾缀，避开 QMessageBox.warning 这类同名控件方法
 _LOGGER_SUFFIXES: tuple[str, ...] = ("logger", "log")
 
