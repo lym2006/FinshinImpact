@@ -1,4 +1,4 @@
-# src/example.py
+# docs/example.py
 """代码格式规范模板
 
 - 定义注释与 docstring 排版标准
