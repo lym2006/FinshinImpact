@@ -9,7 +9,7 @@ from typing import NamedTuple
 
 _PROXY_KEY = r"Software\Microsoft\Windows\CurrentVersion\Internet Settings"
 
-# 注册表代理值名，与 packaging/launcher.py 独立副本同值（exe 不导入 src）
+# 注册表代理值名，与 packaging/launch/proxy.py 独立副本同值（exe 不导入 src）
 _PROXY_ENABLE_VALUE = "ProxyEnable"
 _PROXY_SERVER_VALUE = "ProxyServer"
 _PROXY_PRI_VALUE = "PriProxy"

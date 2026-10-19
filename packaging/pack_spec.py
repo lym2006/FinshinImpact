@@ -6,9 +6,10 @@
 """
 
 import tomllib
-import urllib.request
 from pathlib import Path
 from typing import Any
+
+import netio
 
 # 仓库根与产物目录（_cache 存放重复构建可复用的原料）
 ROOT = Path(__file__).resolve().parent.parent
@@ -74,16 +75,24 @@ def local_version(root: Path) -> str:
     return str(_pyproject_data(root)["project"]["version"])
 
 
-def remote_version() -> str | None:
-    """读取版本页在线版本号，失败返回 None"""
-    try:
-        with urllib.request.urlopen(
-            _PAGES_PYPROJECT_URL, timeout=_TIMEOUT_VERSION_PAGE
-        ) as resp:
-            data = tomllib.loads(resp.read().decode("utf-8"))
-        return str(data["project"]["version"])
-    except Exception:
-        return None
+def remote_version(proxy_url: str | None = None) -> str | None:
+    """读取版本页在线版本号，失败返回 None
+
+    - 干净直连优先，给了代理地址再补试一轮
+    """
+    openers = [netio.clean_opener()]
+    if proxy_url:
+        openers.append(netio.proxied_opener(proxy_url))
+    for opener in openers:
+        try:
+            with opener.open(
+                _PAGES_PYPROJECT_URL, timeout=_TIMEOUT_VERSION_PAGE
+            ) as resp:
+                data = tomllib.loads(resp.read().decode("utf-8"))
+            return str(data["project"]["version"])
+        except Exception:
+            continue
+    return None
 
 
 def dependencies(root: Path) -> list[str]:
