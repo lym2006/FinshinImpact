@@ -1,0 +1,19 @@
+# 统一行尾：仓库内一律 LF，检出/工作区由 autocrlf 或显式规则决定
+* text=auto
+
+# Windows 脚本保持 CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# 二进制不转换
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.icns binary
+*.ttf binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
+*.zip binary

@@ -17,17 +17,17 @@
 
 
 # ==========================================
-# 📌 常用 Type 类型参考（提交时请删除本参考块）：
+# 常用 Type 类型参考（提交时请删除本参考块）：
 # 
-# feat:     ✨ 新增功能 (Feature)
-# fix:      🐛 修复 Bug (Bug Fix)
-# docs:     📚 仅文档更改 (Documentation)
-# style:    💄 代码格式调整（不影响代码运行，如空格、缩进）
-# refactor: 🔨 代码重构（既不是新增功能，也不是修复 Bug）
-# perf:     ⚡ 性能优化 (Performance)
-# test:     ✅ 增加或修改测试 (Tests)
-# build:    📦 构建系统或外部依赖的更改 (如 pip, npm)
-# ci:       🤖 持续集成配置或脚本的更改
-# chore:    🔧 其他杂项（如修改 .gitignore、更新依赖）
-# revert:   ⏪ 回滚到上一个版本
+# feat:     新增功能 (Feature)
+# fix:      修复 Bug (Bug Fix)
+# docs:     仅文档更改 (Documentation)
+# style:    代码格式调整（不影响代码运行，如空格、缩进）
+# refactor: 代码重构（既不是新增功能，也不是修复 Bug）
+# perf:     性能优化 (Performance)
+# test:     增加或修改测试 (Tests)
+# build:    构建系统或外部依赖的更改 (如 pip, npm)
+# ci:       持续集成配置或脚本的更改
+# chore:    其他杂项（如修改 .gitignore、更新依赖）
+# revert:   回滚到上一个版本
 # ==========================================
