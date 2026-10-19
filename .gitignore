@@ -19,6 +19,7 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+.ruff_cache/
 
 # --- 虚拟环境 
 .venv/
@@ -44,8 +45,9 @@ secrets.json
 
 # --- 项目特定忽略项 
 record/
-run.ps1
-start.bat
+assests/
+install.bat
+update.bat
 
 # --- 操作系统文件 ---
 .DS_Store

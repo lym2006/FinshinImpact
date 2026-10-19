@@ -7,20 +7,17 @@
 [![Changelog](https://img.shields.io/badge/changelog-CHANGELOG.md-blue.svg)](CHANGELOG.md)
 
 > 一个基于 `Python` 和 `aiogram 3.x` 构建的异步 Telegram 机器人，采用模块化插件设计。
+>
+> **本项目仅限 `Windows` 用户使用。**
 
 ## 📑 目录
 
 - [✨ 功能特点](#-功能特点)
 - [💬 关于 AI 对话](#-关于-ai-对话)
 - [🛠️ 技术栈](#️-技术栈)
+- [🖥️ 环境准备（`Windows` 用户必读）](#️-环境准备windows-用户必读)
 - [🚀 快速开始](#-快速开始)
-  - [1. 克隆项目](#1-克隆项目)
-  - [2. 创建虚拟环境并启动（推荐）](#2-创建虚拟环境并启动推荐)
-  - [3. 安装依赖](#3-安装依赖)
-  - [4. 配置项目](#4-配置项目)
-  - [5. 准备 Chrome 环境](#5-准备-chrome-环境)
-  - [6. 运行机器人](#6-运行机器人)
-- [📂 项目结构](#-项目结构)
+- [🔄 更新版本](#-更新版本)
 - [🚨 温馨提示](#-温馨提示)
 - [📄 许可证 (`LICENSE`)](#-许可证-license)
 
@@ -28,11 +25,16 @@
 
 ## ✨ 功能特点
 
-- 🚀 **异步架构**: 基于 `asyncio` 和 `aiogram`，提供高并发处理能力。
-- 🔌 **插件化设计**: 功能模块位于 `src/plugins` 目录下，支持动态加载，易于扩展和维护。
-- 📝 **完善日志**: 集成 `logging` 模块，支持控制台输出与文件 `Rotating` ，默认开启详细报错。
-- ⚙️ **`TOML` 配置**: 使用 `config.toml` 进行集中式配置管理，类型安全且易读。
-- 🌐 **浏览器自动化**: 使用 `Playwright` 实现异步处理。
+- **异步架构**: 基于 `asyncio` 和 `aiogram`，提供高并发处理能力。
+- **插件化设计**: 功能模块位于 `src/plugins` 目录下，支持动态加载，易于扩展和维护。
+- **完善日志**: 集成 `logging` 模块，支持控制台输出与文件 `Rotating` ，默认开启详细报错。
+- **`TOML` 配置**: 使用 `config.toml` 进行集中式配置管理，类型安全且易读。
+- **浏览器自动化**: 使用 `Playwright` 实现异步处理。
+- **一键安装与更新**: 提供 `install.bat` 和 `update.bat` 自动化脚本，请在项目的 [Releases 发布页面](../../releases) 下载最新版本。
+  > ️ **重要提示**：
+  > - **首次安装**：请将 `install.bat` 放在一个**新建的空文件夹**中双击运行（脚本会自动创建 `TelegramBot` 项目文件夹）。
+  > - **日常更新**：请将 `update.bat` 放在与 `TelegramBot` 文件夹**同级的目录**下双击运行。
+  > - **路径要求**：整个路径中**请勿包含中文或特殊字符**，以免引发环境报错。
 
 [⤴️ 返回目录](#-目录)
 
@@ -41,7 +43,7 @@
 ## 💬 关于 AI 对话
 目前仅支持 **私聊** 使用
 
-- **独立会话**：不同用户 **或** 不同群组同用户
+- **独立会话**：不同用户 **或** 不同群组中的同一用户，会话相互隔离
   > 群组中需触发关键词或 @机器人（**暂不可用**）
 - **消息排队**：原子级别任务锁避免多任务并发出错
 - **状态更新**：自动更新状态信息（排队中、思考中、思考完成内容），**计划** 加入取消排队按钮
@@ -77,159 +79,101 @@
 
 ---
 
-## 🚀 快速开始
+## 🖥️ 环境准备（`Windows` 用户必读）
 
-### 1. 克隆项目
-```bash
-git clone https://github.com/lym2006/TelegramBot.git
-cd TelegramBot
-```
+本项目在控制台输出中大量使用了 Emoji 表情。传统的 CMD 或旧版 PowerShell 可能会导致 Emoji 显示为乱码或空白方块。
+为了获得最佳的运行体验，**强烈建议安装并使用微软官方的 [`Windows Terminal`] + [`Git Bash`]**。
 
-### 2. 创建虚拟环境并启动（推荐）
-```bash
-python -m venv .venv
+1. **安装 `Windows Terminal`**：请在 Microsoft Store 中搜索 `Windows Terminal` 并安装，或使用命令行安装：
+   ```powershell
+   winget install --id Microsoft.WindowsTerminal -e
+   ```
 
-# Windows
-.venv\Scripts\activate
+2. **安装 `Git for Windows`**：前往 [`Git` 官网](https://git-scm.com) 下载并安装，安装时保持默认选项即可。
 
-# Linux/Mac
-source .venv/bin/activate
-```
-
-> **注意：** 如果使用虚拟环境，请确保后续步骤 **3**、**5** 都在虚拟环境启动状态下执行
-
-### 3. 安装依赖
-
-本项目使用 `pyproject.toml` 管理依赖，推荐使用以下命令安装：
-
-```bash
-pip install -e .
-# 如果你在中国大陆，网络较慢，可以使用国内镜像源：
-# pip install -e . -i https://pypi.tuna.tsinghua.edu.cn/simple
-```
-
-### 4. 配置项目
-
-编辑 `src/config.toml` 文件，填入你的配置：
-
-```toml
-# config.toml 示例配置
-[network]
-proxy="http://127.0.0.1:port" # 代理地址和端口
-
-[api_keys]
-telegram_token="123456:abcedfgh" # telegram bot token
-```
-
-编辑 `src/plugins/AI/config.toml` 文件，填入你的配置：
-
-```toml
-# config.toml 示例配置
-[api]
-model_name="Pro/deepseek-ai/DeepSeek-R1" # 模型名称
-api_key="sk-xxxxxxxxxxxxxxx" # siliconflow的api
-temperature=0.7 # 模型温度
-
-[personality]
-default="""
-默认人设不建议修改
-"""
-
-[triggers]
-group_keywords=["1","2"] # 群组中机器人触发词，建议改成机器人名称，可以直接@
-
-[data] # 单位均为小时
-clearup=6 # 超过时间未活跃清除记录
-waiting=0.5 # 判断间隔时间
-```
-
-Token、机器人名称：在 [`BotFather`](https://t.me/BotFather) 对话获取、设置。
-
-API、模型名称：在 [硅基流动模型广场](https://cloud.siliconflow.cn/me/models) 获取。
-
-### 5. 准备 Chrome 环境
-
-本项目使用 `Playwright` 实现浏览器自动化操作，可自动下载依赖文件。
-
-```bash
-# 1.如果在国内网络环境下，建议先配置镜像源
-# Windows PowerShell:
-$env:PLAYWRIGHT_DOWNLOAD_HOST="https://npmmirror.com/mirrors/playwright"
-
-# Windows CMD:
-set PLAYWRIGHT_DOWNLOAD_HOST=https://npmmirror.com/mirrors/playwright
-
-# Mac/Linux:
-export PLAYWRIGHT_DOWNLOAD_HOST="https://npmmirror.com/mirrors/playwright"
-
-
-# 2.安装 Chromium
-playwright install chromium
-```
-
-### 6. 运行机器人
-
-```bash
-python -m src.bot
-```
+3. **设置默认终端**：打开 `Windows Terminal`，点击标签页旁边的下拉箭头，选择 **设置** -> **启动** -> 将"默认配置文件"设置为 **Windows PowerShell**，然后点击保存。后续所有命令均在此环境中执行。
 
 [⤴️ 返回目录](#-目录)
 
 ---
 
-## 📂 项目结构
+## 🚀 快速开始
 
-```text
-TelegramBot/
-├── 📄 README.md                           # 📘 项目说明文档
-├── 📄 CHANGELOG.md                        # 📝 版本更新日志
-├── 📄 .gitignore                          # 🙈 Git 忽略文件配置
-├── 📄 .gitmessage                         # 📋 Git Commit 提交规范模板
-├── 📄 LICENSE                             # ⚖️ 开源许可证 (MIT)
-├── 📄 pyproject.toml                      # 🏗️ 项目构建配置
-├── 📁 src/                                # 🐍 源代码目录
-│   ├── 📄 bot.py                          # 🚀 机器人主程序
-│   ├── 📄 config.toml                     # 🌍 全局配置文件
-│   ├── 📁 utils/                          # 🛠️ 通用工具模块
-│   │   ├── 📄 config_loader.py            # 📖 配置加载器
-│   │   ├── 📄 logger_setup.py             # 📝 日志初始化
-│   │   ├── 📄 middleware.py               # 🔄 中间件（场景日志）
-│   │   └── 📄 plugins_register.py         # 🔌 插件自动注册
-│   ├── 📁 plugins/                        # 🧩 功能插件
-│   │   ├── 📁 help/                       # ❓ 帮助模块
-│   │   │   ├── 📄 help.py                 # 💡 帮助指令实现
-│   │   │   └── 📄 font.ttf                # 🔤 字体文件
-│   │   └── 📁 AI/                         # 🤖 AI 核心功能
-│   │       ├── 📄 config.toml             # ⚙️ AI 模块配置
-│   │       ├── 📄 config.py               # 📥 AI 配置加载
-│   │       ├── 📁 core/                   # 🧠 AI 核心逻辑
-│   │       │   ├── 📄 session.py          # 👤 用户会话
-│   │       │   ├── 📄 task.py             # 📦 任务队列
-│   │       │   └── 📄 utils.py            # 🧰 其它工具
-│   │       ├── 📁 handlers/               # 📩 消息处理器
-│   │       │   ├── 📄 AIchat.py           # 💬 聊天逻辑
-│   │       │   ├── 📄 auth.py             # 🔐 用户鉴权
-│   │       │   ├── 📄 balance.py          # 💰 余额查询
-│   │       │   ├── 📄 history.py          # 📜 历史记录
-│   │       │   └── 📄 identity.py         # 🎭 人设更改
-│   │       ├── 📁 services/               # ⚙️ 业务服务层
-│   │       │   ├── 📄 blacklist.py        # 🚫 读写黑名单
-│   │       │   ├── 📄 monitor.py          # 📡 监控排队
-│   │       │   ├── 📄 worker.py           # ⚡ 执行操作
-│   │       │   ├── 📄 client.py           # 🔗 API 客户端
-│   │       │   └── 📁 render/             # 🎨 渲染服务
-│   │       │       ├── 📄 css.py          # 🖌️ 样式处理
-│   │       │       ├── 📄 renderer.py     # 🖥️ 内容渲染
-│   │       │       └── 📄 screenshot.py   # 📸 截图工具
-│   │       └── 📁 record/                 # 🗂️ 静态资源/数据记录
-│   │           ├── 📄 black.txt           # 📝 黑名单
-│   │           ├── 📄 personality.txt     # 🧠 人设提示词
-│   │           └── 📄 *.ttf               # 🔣 字体文件
-│   └── 📄 __init__.py                     # 📦 包初始化
-└── 📁 assets/                             # 📂 外部静态资源
+> **极速体验（推荐）**
+> 我们为你准备了自动化脚本！只需双击运行 `install.bat`，即可自动完成以下所有步骤（克隆代码、创建环境、安装依赖、下载浏览器等）。
+> 
+> ️ **重要提示**：脚本运行完成后，**仍需手动编辑 `config.toml` 填入你的 Token 和 API 配置**，否则机器人无法启动！
+
+<details>
+<summary>️ 备选方案：手动安装指南（点击展开）</summary>
+
+如果你遇到了脚本报错，或者想深入了解项目的配置过程，请参考以下手动步骤：
+
+**1. 克隆项目**
+```powershell
+git clone https://github.com/lym2006/TelegramBot.git
+cd TelegramBot
 ```
 
+**2. 创建虚拟环境**
+```powershell
+python -m venv .venv
+.venv\Scripts\activate
+```
+
+**3. 安装依赖**
+本项目使用 `pyproject.toml` 管理依赖，推荐使用以下命令安装：
+```powershell
+python -m pip install --upgrade pip
+python -m pip install -e .
+# 如果你在中国大陆，网络较慢，可以使用国内镜像源：
+# pip install -e . -i https://pypi.tuna.tsinghua.edu.cn/simple
+```
+
+**4. 配置项目**
+编辑 `config.toml` 文件，根据注释填入你的配置：
+- **Token、机器人名称**：在 [`BotFather`](https://t.me/BotFather) 对话获取、设置。
+- **API、模型名称**：在 [硅基流动模型广场](https://cloud.siliconflow.cn/me/models) 获取。
+
+**5. 准备 Chrome 环境**
+本项目使用 `Playwright` 实现浏览器自动化操作，可自动下载依赖文件。
+```powershell
+# 1. 如果在国内网络环境下，建议先配置镜像源
+$env:PLAYWRIGHT_DOWNLOAD_HOST="https://npmmirror.com/mirrors/playwright"
+
+# 2. 安装 Chromium
+python -m playwright install chromium
+```
+
+**6. 运行机器人**
+```powershell
+python -m bot
+```
+
+</details>
+
 [⤴️ 返回目录](#-目录)
+
+---
+
+## 🔄 更新版本
+
+当项目发布新版本时，你可以通过以下方式同步最新代码和依赖：
+
+| 方式 | 适用场景 | 操作说明 |
+| :--- | :--- | :--- |
+| **方式一：一键脚本（推荐）** | 日常更新 | 直接双击运行 `update.bat` |
+| **方式二：手动更新** | 少量改动 | 在 `TelegramBot` 目录下执行 `git pull origin main`，然后执行 `pip install -e .` 同步依赖 |
+| **方式三：彻底重建** | 重大架构更新 | 执行 **重建环境的 `bash` 命令**|
+
+> **重建环境的 `bash` 命令参考**：
+> ```powershell
+> Remove-Item -Recurse -Force .venv
+> python -m venv .venv
+> .venv\Scripts\activate
+> ```
+
+[⤴️返回目录](#-目录)
 
 ---
 
@@ -239,7 +183,7 @@ TelegramBot/
 
 如需进行插件开发、查阅 API 或查看源码，请参考以下资源：
 - 📖 **官方文档**：[`aiogram.dev`](https://docs.aiogram.dev/en/latest/)
-- 💻 **GitHub 仓库**：[`aiogram`](https://github.com/aiogram/aiogram)
+- 💻 **`GitHub` 仓库**：[`aiogram`](https://github.com/aiogram/aiogram)
 
 [⤴️ 返回目录](#-目录)
 
