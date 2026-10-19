@@ -15,15 +15,16 @@
 ## 📑 目录
 
 - [✨ 功能特点](#-功能特点)
+- [⚡ 自动化脚本](#-自动化脚本)
 - [💬 关于 AI 对话](#-关于-ai-对话)
 - [🛠️ 技术栈](#️-技术栈)
 - [🖥️ 环境准备（`Windows` 用户必读）](#️-环境准备windows-用户必读)
 - [🚀 快速开始](#-快速开始)
 - [🔄 更新版本](#-更新版本)
 - [💡 脚本提示信息翻译](#-脚本提示信息翻译)
-    - [install.bat](#installbat)
-    - [update.bat](#updatebat)
-    - [start.bat](#startbat)
+  - [install.bat](#installbat)
+  - [update.bat](#updatebat)
+  - [start.bat](#startbat)
 - [🚨 温馨提示](#-温馨提示)
 - [📄 许可证 (`LICENSE`)](#-许可证-license)
 
@@ -37,20 +38,32 @@
 - **浏览器自动化**: 使用 `Playwright` 实现异步处理。
 - **`TOML` 配置**: 使用 `config.toml` 进行集中式配置管理，类型安全且易读。
 - **配置自动检测**: 每次启动机器人会自动检测是否更新了新配置项并提醒用户在 `config.toml` 中填写。
-- **一键安装与更新**: 提供 `install.bat` 和 `update.bat` 自动化脚本，请在项目的 [Releases 发布页面](../../releases) 下载最新版本。
-  > **重要提示**：
-  > - **首次安装**：请将 `install.bat` 放在一个 **新建的空文件夹** 中双击运行，请确保路径下 **没有** 名为 `TelegramBot` 文件夹，脚本会自动创建 `TelegramBot` 项目文件夹。
-  > - **日常更新**：请将 `update.bat` 放在与 `TelegramBot` 文件夹 **同级的目录** 下双击运行。
-  > - **路径要求**：整个路径中 **请勿包含中文或特殊字符**，以免引发环境报错。
-  > - **环境要求**：请参照 **[️ 环境准备（Windows 用户必读）](#️-环境准备windows-用户必读)** 安装环境，若旧版本 CMD 出现问题，请尝试在 Windows Terminal 中执行脚本。
-  > - **序号提示**：脚本所有提示信息均已添加序号，方便定位和排查问题。详见下方 **[ 💡 脚本提示信息翻译 ](#-脚本提示信息翻译)** 区域。
-- **一键启动机器人**: 配置完成后，请双击运行 `start.bat` 启动机器人。
-  > **启动脚本说明**：
-  > - **自动环境激活**：脚本会自动检测并激活项目目录下的 `.venv` 虚拟环境，无需手动输入命令。
-  > - **智能路径检查**：启动前会自动校验环境完整性。如果未找到虚拟环境或依赖缺失，窗口会显示红色警告并暂停，防止直接报错闪退。
-  > - **自动使用 `Windows Terminal`**：脚本会自动调用 `Windows Terminal` 打开新标签页启动机器人。
-  > - **停止机器人**：直接在弹出的终端窗口中按 `Ctrl + C` 即可安全停止服务。
-  > - **路径要求**：请将 `start.bat` 放在与 `TelegramBot` 文件夹 **同级的目录** 下双击运行。
+- **版本自动检测**: 每次启动机器人会自动检测是否有新版本。
+
+---
+
+## ⚡ 自动化脚本
+
+提供 `install.bat`、`update.bat` 和 `start.bat` 三个一键式脚本，请在项目的 [Releases 发布页面](../../releases) 下载最新版本。
+
+- **脚本功能说明**
+  - **`install.bat`（一键安装）**：自动克隆代码仓库、创建虚拟环境并安装项目所需的所有依赖。
+  - **`update.bat`（一键更新）**：自动拉取仓库代码并同步依赖。
+  - **`start.bat`（一键启动）**：自动激活虚拟环境，并通过 `Windows Terminal` 安全启动机器人。
+
+  > **注意**：一键更新脚本 **不会** 自动检测是否已是最新版本，请仅在机器人给出有新版本提示时运行。
+
+- **通用注意事项**
+  - **路径要求**：整个路径中 **请勿包含中文或特殊字符**，以免引发环境报错。
+  - **环境要求**：请参照 **[环境准备（Windows 用户必读）](#️-环境准备windows-用户必读)** 安装基础环境。若旧版本 `CMD` 出现问题，请尝试在 `Windows Terminal` 中执行脚本。
+  - **停止机器人**：在弹出的终端窗口中按 `Ctrl + C` 即可安全停止服务，也可直接关闭控制台。
+
+- **目录规范**
+  - **首次安装**：请将 `install.bat` 放在一个 **新建的空文件夹** 中双击运行，请确保路径下 **没有** 名为 `TelegramBot` 文件夹，脚本会自动创建 `TelegramBot` 项目文件夹。
+  - **日常更新/启动**：请将 `update.bat` 或 `start.bat` 放在与 `TelegramBot` 文件夹 **同级的目录** 下双击运行。
+
+- **脚本提示信息翻译**
+  - 脚本所有提示信息均已添加序号，方便定位和排查问题。详见下方 **[ 💡 脚本提示信息翻译 ](#-脚本提示信息翻译)** 区域。
 
 ![ 参考图 ](assets/example.png)
 
@@ -61,16 +74,21 @@
 ---
 
 ## 💬 关于 AI 对话
+
 目前仅支持 **私聊** 使用
 
 - **独立会话**：不同用户 **或** 不同群组中的同一用户，会话相互隔离
-  > 群组中需触发关键词或 @机器人（**暂不可用**）
+
+  > **注意**：群组中需触发关键词或 **@** 机器人 **（暂不可用）**
+
 - **消息排队**：原子级别任务锁避免多任务并发出错
 - **状态更新**：自动更新状态信息（排队中、思考中、思考完成内容），**计划** 加入取消排队按钮
 - **自动引用**：状态信息引用原消息，回复内容引用思考过程
 - **思考过程**：仅私聊输出，群组中请使用 `/history` 命令
 - **取消会话**：若思考过程中用户删除原消息，停止处理该任务，消息不计入历史，**计划** 加入取消任务按钮
-  > **注意：** 该功能经测试，目前只在 Nekogram 生效，原版 Telegram 不生效，其他版本未测试
+
+  > **注意**：该功能经测试，**目前** 只在 Nekogram 生效，原版 Telegram **不生效**，其他版本未测试
+
 - **删除判断**：若用户删除机器人发出的状态信息，机器人会在必要时重新发送
 - **超时处理**：配置超时时间和判断间隔，自动清除用户记录
 - **其他功能**：
@@ -104,19 +122,23 @@
 本项目在控制台输出中大量使用了 Emoji 表情。传统的 `CMD` 或旧版 `PowerShell` 可能会导致 Emoji 显示为乱码或空白方块。
 为了获得最佳的运行体验，**强烈建议安装并使用微软官方的 [`Windows Terminal`] + [`Git Bash`]**。
 
-1. **安装 `Windows Terminal`**：请在 Microsoft Store 中搜索 `Windows Terminal` 并安装，或使用 `PowerShell` 安装：
+- **安装 `Windows Terminal`**
+
+  请在 `Microsoft Store` 中搜索 `Windows Terminal` 并安装，或使用 `PowerShell` 安装：
    ```powershell
    winget install --id Microsoft.WindowsTerminal -e
    ```
 
-2. **安装 `Git for Windows`**：前往 [`Git` 官网](https://git-scm.com) 下载并安装，安装时保持默认选项即可。
-   > **重要提示**：如果安装后仍提示没有 `Git` 环境，请尝试重启，如果仍未解决，自行询问 **AI 工具**如何将 `git` 加入 **环境变量**
+- **安装 `Git for Windows`**
 
-3. **设置默认终端**：
-   1. 打开 Windows Terminal（可在开始菜单搜索 **终端**，或按 `Win + R` 输入 `wt` 并回车）。
-   2. 点击标签栏右侧的 **下拉箭头**，选择 **设置**。
-   3. 在左侧选择 **启动**，将“默认配置文件”设置为 **Windows PowerShell**。
-   4. 点击右下角的 **保存**，后续所有命令均在此环境中执行。
+  前往 [`Git` 官网](https://git-scm.com) 下载并安装，安装时保持默认选项即可。
+   > **重要提示**：如果安装后仍提示没有 `Git` 环境，请尝试重启，如果仍未解决，自行询问 **AI 工具** 如何将 `git` 加入 **环境变量**
+
+- **设置默认终端**：
+  - 打开 `Windows Terminal`（可在开始菜单搜索 **终端**，或按 `Win + R` 输入 `wt` 并回车）。
+  - 点击标签栏右侧的 **下拉箭头**，选择 **设置**。
+  - 在左侧选择 **启动**，将“默认配置文件”设置为 `Windows PowerShell`。
+  - 点击右下角的 **保存**，后续所有命令均在此环境中执行。
 
 [⤴️ 返回目录](#-目录)
 
@@ -124,58 +146,62 @@
 
 ## 🚀 快速开始
 
-> **极速体验（推荐）**
-> 我们为你准备了自动化脚本！只需双击运行 `install.bat`，即可自动完成以下所有步骤（克隆代码、创建环境、安装依赖、下载浏览器等）。
->
-> **重要提示**：脚本运行完成后，**仍需手动编辑 `config.toml` 填入你的 Token 和 API 配置**，否则机器人无法正常运行！
+- **极速体验（推荐）**
+  - 阅读 **[⚡ 自动化脚本](#-自动化脚本)** 章节说明
+  - 双击运行 `install.bat`，自动完成安装。
+  - 双击运行 `start.bat`，生成 `config.toml` 文件。
+  - 手动编辑 `config.toml` 填入你的 `Token` 和 `API` 配置。
+  - **（可选）** 根据注释按需编辑 `config.toml` 其他配置。
+  - 再次双击运行 `start.bat`，启动机器人，即可开始体验。
 
-<details>
-<summary>️ 备选方案：手动安装指南（点击展开）</summary>
+- **备选方案**
+  <details>
+  <summary>️手动安装指南（点击展开）</summary>
 
-如果你遇到了脚本报错，或者想深入了解项目的配置过程，请参考以下手动步骤：
+  如果你遇到了脚本报错，或者想深入了解项目的配置过程，请参考以下手动步骤：
 
-**1. 克隆项目**
-```powershell
-git clone https://github.com/lym2006/TelegramBot.git
-cd TelegramBot
-```
+  **1. 克隆项目**
+  ```powershell
+  git clone https://github.com/lym2006/TelegramBot.git
+  cd TelegramBot
+  ```
 
-**2. 创建虚拟环境**
-```powershell
-python -m venv .venv
-.venv\Scripts\activate
-```
+  **2. 创建虚拟环境**
+  ```powershell
+  python -m venv .venv
+  .\.venv\Scripts\Activate.ps1
+  ```
 
-**3. 安装依赖**
-本项目使用 `pyproject.toml` 管理依赖，推荐使用以下命令安装：
-```powershell
-python -m pip install --upgrade pip
-python -m pip install -e .
-# 如果你在中国大陆，网络较慢，可以使用国内镜像源：
-# pip install -e . -i https://pypi.tuna.tsinghua.edu.cn/simple
-```
+  **3. 安装依赖**
+  本项目使用 `pyproject.toml` 管理依赖，推荐使用以下命令安装：
+  ```powershell
+  python -m pip install --upgrade pip
+  python -m pip install -e .
+  # 如果你在中国大陆，网络较慢，可以使用国内镜像源：
+  # pip install -e . -i https://pypi.tuna.tsinghua.edu.cn/simple
+  ```
 
-**4. 配置项目**
-编辑 `config.toml` 文件，根据注释填入你的配置：
-- **Token、机器人名称**：在 [`BotFather`](https://t.me/BotFather) 对话获取、设置。
-- **API、模型名称**：在 [硅基流动模型广场](https://cloud.siliconflow.cn/me/models) 获取。
+  **4. 配置项目**
+  编辑 `config.toml` 文件，根据注释填入你的配置：
+  - **`Token`、机器人名称**：在 [`BotFather`](https://t.me/BotFather) 对话获取、设置。
+  - **`API`、模型名称**：在 [硅基流动模型广场](https://cloud.siliconflow.cn/me/models) 获取。
 
-**5. 准备 Chrome 环境**
-本项目使用 `Playwright` 实现浏览器自动化操作，可自动下载依赖文件。
-```powershell
-# 1. 如果在国内网络环境下，建议先配置镜像源
-$env:PLAYWRIGHT_DOWNLOAD_HOST="https://npmmirror.com/mirrors/playwright"
+  **5. 准备 Chrome 环境**
+  本项目使用 `Playwright` 实现浏览器自动化操作，可自动下载依赖文件。
+  ```powershell
+  # 1. 如果在国内网络环境下，建议先配置镜像源
+  $env:PLAYWRIGHT_DOWNLOAD_HOST="https://npmmirror.com/mirrors/playwright"
 
-# 2. 安装 Chromium
-python -m playwright install chromium
-```
+  # 2. 安装 Chromium
+  python -m playwright install chromium
+  ```
 
-**6. 运行机器人**
-```powershell
-python -m bot
-```
+  **6. 运行机器人**
+  ```powershell
+  python -m bot
+  ```
 
-</details>
+  </details>
 
 [⤴️ 返回目录](#-目录)
 
@@ -204,10 +230,7 @@ python -m bot
 
 ## 💡 脚本提示信息翻译
 
-<details>
-<summary>点击展开查看脚本提示信息中文翻译</summary>
-
-#### install.bat
+### install.bat
 
 | # | English Prompt | 中文翻译 |
 |---|---------------|---------|
@@ -234,7 +257,7 @@ python -m bot
 | [21] | Installation Completed! | 安装完成！ |
 | [22] | [IMPORTANT] Please edit config.toml to fill in your Token and API keys! | [重要] 请编辑 config.toml 填入你的 Token 和 API 配置！ |
 
-#### update.bat
+### update.bat
 
 | # | English Prompt | 中文翻译 |
 |---|---------------|---------|
@@ -249,14 +272,14 @@ python -m bot
 | [09] | Please make sure you installed via install.bat, or manually ran git clone. | 请确保通过 install.bat 安装过，或手动执行过 git clone。 |
 | [10] | Activating virtual environment... | 正在激活虚拟环境... |
 | [11] | [ERROR] Virtual environment not found! Please run install.bat first. | [错误] 未找到虚拟环境！请先运行 install.bat。 |
-| [12] | Pulling latest code from GitHub... | 正在从 GitHub 拉取最新代码... |
-| [13] | [WARNING] Code pull failed! Please check your network connection or if there are conflicts. | [警告] 代码拉取失败！请检查网络连接或是否存在冲突。 |
+| [12] | Pulling latest code from GitHub... | 正在从 Github 拉取最新代码... |
+| [13] | [WARNING] Code pull failed! Please check your network connection or if there are conflicts. | [警告] 代码拉取失败！请检查你的网络连接或是否存在冲突 |
 | [14] | [TIP] If there are conflicts, please resolve them manually and run this script again. | [提示] 如果存在冲突，请手动解决后重新运行本脚本。 |
 | [15] | Syncing project dependencies... | 正在同步项目依赖... |
 | [16] | [WARNING] Since code pull failed, dependencies may be incomplete. Please check manually. | [警告] 由于代码拉取失败，依赖可能不完整，建议手动检查。 |
 | [17] | Update Completed! | 更新完成！ |
 
-#### start.bat
+### start.bat
 
 | # | English Prompt | 中文翻译 |
 |---|---------------|---------|
@@ -264,8 +287,6 @@ python -m bot
 | [02] | Please ensure start.bat and the TelegramBot folder are in the same directory. | 请确保 start.bat 和 TelegramBot 文件夹在同一级目录。 |
 | [03] | [INFO] Windows Terminal detected. Launching gracefully... | [信息] 检测到 Windows Terminal，正在优雅启动... |
 | [04] | [INFO] Windows Terminal not found. Falling back to CMD compatibility mode... | [信息] 未检测到 Windows Terminal，正在降级为 CMD 兼容模式启动... |
-
-</details>
 
 [⤴️返回目录](#-目录)
 
