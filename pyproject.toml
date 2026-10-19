@@ -2,9 +2,15 @@
 requires = ["setuptools>=64.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
 [project]
 name = "finshin-impact"
-version = "0.1.4"
+version = "0.1.5"
 description = "一个基于 aiogram 的机器人"
 requires-python = ">=3.11,<4.0"
 dependencies = [
@@ -22,5 +28,43 @@ dependencies = [
     "tenacity==9.1.4"
 ]
 
-[tool.setuptools]
-package-dir = {"" = "src"}
+[project.optional-dependencies]
+dev = [
+    "ruff==0.16.3"
+]
+
+# ================= Ruff 代码规范配置 =================
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+exclude = [
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+    ".git",
+    "src/plugins/AI/record"
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle 错误 (PEP 8 规范)
+    "F",   # pyflakes (未使用的变量、无效导入等逻辑错误)
+    "I",   # isort (自动整理 import 语句顺序)
+    "UP",  # pyupgrade (自动升级旧语法)
+    "B",   # flake8-bugbear (常见的 Bug 检测)
+    "N",   # pep8-naming (命名规范检查)
+]
+ignore = [
+    "E501", # 忽略行长警告（行太长的问题交给 Formatter 处理）
+]
+fixable = ["ALL"]
+
+[tool.ruff.format]
+quote-style = "double"        # 普通字符串强制使用双引号 ""
+indent-style = "space"        # 使用空格缩进
+skip-magic-trailing-comma = false # 保留尾随逗号（有助于 Git 减少 diff 冲突）
+line-ending = "auto"          # 自动处理换行符 (CRLF/LF)
+
+[tool.ruff.lint.isort]
+known-first-party = ["plugins", "utils"]
