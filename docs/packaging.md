@@ -12,7 +12,7 @@ TelegramBot\
 ├── _internal\        启动器运行库
 ├── main.py           主程序入口（调试可单跑：runtime\python.exe main.py）
 ├── runtime\          嵌入式 Python 原料，首启自装于此
-├── src\  pyproject.toml 等
+├── src\              pyproject.toml 等
 ```
 
 启动器首启：解压嵌入式 Python → 放开 site-packages → 装 pip → 装依赖 → 拉浏览器内核 → 拉起主程序。此后每次启动比对在线版本页，弹窗确认后整包升级。
