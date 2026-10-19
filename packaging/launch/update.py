@@ -10,10 +10,10 @@ import filecmp
 import shutil
 import sys
 import time
-import urllib.request
 import zipfile
 from pathlib import Path
 
+import netio
 from pack_spec import (
     APP_NAME,
     HDR_CONTENT_LENGTH,
@@ -27,7 +27,7 @@ from pack_spec import (
 )
 from packaging.version import Version
 
-from . import console, dialogs, runtime, shell
+from . import console, dialogs, proxy, runtime, shell
 
 # 分块粒度 64 KB（刷进度）
 _DOWNLOAD_CHUNK = 64 * 1024
@@ -44,7 +44,7 @@ def check_update(root: Path) -> None:
     - GUI 内可手动检查
     """
     local = local_version(root)
-    remote = remote_version()
+    remote = remote_version(proxy.system_proxy_url())
     if remote is None or Version(remote) <= Version(local):
         return
     new_msg = f"新版本可用 v{local} -> v{remote}"
@@ -144,9 +144,9 @@ def _report_progress(done: int, total: int, start: float) -> None:
     print(line, end="", flush=True)
 
 
-def _download_one(url: str, target: Path) -> None:
+def _download_one(url: str, target: Path, opener: netio.Opener) -> None:
     """单源下载并实时打印进度"""
-    with urllib.request.urlopen(url, timeout=_DOWNLOAD_TIMEOUT) as resp:
+    with opener.open(url, timeout=_DOWNLOAD_TIMEOUT) as resp:
         total = int(resp.headers.get(HDR_CONTENT_LENGTH) or 0)
         done = 0
         start = time.monotonic()
@@ -158,20 +158,37 @@ def _download_one(url: str, target: Path) -> None:
     print()
 
 
-def _fetch_zip(urls: list[str], target: Path) -> None:
-    """多源下载发布物
-
-    - 每源完成后校验 zip，坏包自动换源
-    """
+def _download_pass(
+    urls: list[str], target: Path, opener: netio.Opener
+) -> Exception | None:
+    """一轮多源下载，全成返回 None，否则返回末次失败原因"""
     last_error: Exception | None = None
     for url in urls:
         try:
             print(f"下载 {url}")
-            _download_one(url, target)
+            _download_one(url, target, opener)
             if zipfile.is_zipfile(target):
-                return
+                return None
             raise zipfile.BadZipFile("下载内容不是有效 zip")
         except Exception as e:
             last_error = e
             print(f"该源失败（{e}），已自动切换下一个源，上方报错无需处理。\n\n")
+    return last_error
+
+
+def _fetch_zip(urls: list[str], target: Path) -> None:
+    """多源下载发布物
+
+    - 每源完成后校验 zip，坏包自动换源
+    - 干净直连全源失败后，带注册表系统代理再走一轮
+    """
+    openers = [netio.clean_opener()]
+    proxy_url = proxy.system_proxy_url()
+    if proxy_url:
+        openers.append(netio.proxied_opener(proxy_url))
+    last_error: Exception | None = None
+    for opener in openers:
+        last_error = _download_pass(urls, target, opener)
+        if last_error is None:
+            return
     raise RuntimeError(f"全部下载源失败：{last_error}")

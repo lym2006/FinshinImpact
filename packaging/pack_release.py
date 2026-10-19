@@ -8,6 +8,7 @@ import hashlib
 import subprocess
 import urllib.request
 
+import netio
 from pack_spec import (
     APP_NAME,
     DIST,
@@ -70,7 +71,7 @@ def _asset_probe(url: str, local_size: int) -> str:
         return "本地无包，跳过"
     request = urllib.request.Request(url, method="HEAD")
     try:
-        with urllib.request.urlopen(request, timeout=_PROBE_TIMEOUT) as resp:
+        with netio.clean_opener().open(request, timeout=_PROBE_TIMEOUT) as resp:
             remote = int(resp.headers.get(HDR_CONTENT_LENGTH) or 0)
     except Exception as e:
         return f"不可达（{type(e).__name__}），确认已上传 release"
