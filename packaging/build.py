@@ -74,9 +74,10 @@ def _download_verified(urls: list[str], target: Path) -> None:
 
 
 def build_launcher() -> Path:
-    """编译启动器源码为无控制台单目录 exe
+    """创建启动器
 
-    onedir 不自我解压、默认不压缩，显著降低杀软启发式误报
+    编译启动器源码为无控制台单目录 exe。
+    onedir 不自我解压、默认不压缩，显著降低杀软启发式误报。
     """
     subprocess.run(
         [
@@ -118,8 +119,9 @@ sys.exit(Main().main())
 
 
 def _write_runtime_seed(launcher_dir: Path) -> None:
-    """组装运行原料：嵌入式 Python 与 pip 引导脚本进 runtime
+    """组装运行原料
 
+    组装嵌入式 Python 与 pip 引导脚本进 runtime。
     启动器 exe 与其依赖目录 _internal 放包根，用户双击即见。
     """
     runtime = STAGE / "runtime"
@@ -130,9 +132,15 @@ def _write_runtime_seed(launcher_dir: Path) -> None:
         STAGE / "_internal",
         dirs_exist_ok=True,
     )
+
+    # 四源实测可达：官方 → npmmirror → 华为云 → 淘宝
     embed_candidates = [
         EMBED_URL,
         "https://registry.npmmirror.com/-/binary/python/"
+        + f"{EMBED_VERSION}/python-{EMBED_VERSION}-embed-amd64.zip",
+        "https://mirrors.huaweicloud.com/python/"
+        + f"{EMBED_VERSION}/python-{EMBED_VERSION}-embed-amd64.zip",
+        "https://npmmirror.com/mirrors/python/"
         + f"{EMBED_VERSION}/python-{EMBED_VERSION}-embed-amd64.zip",
     ]
     _download_verified(embed_candidates, runtime / "python-embed.zip")
@@ -152,7 +160,9 @@ def assemble(launcher_dir: Path) -> Path:
             shutil.copytree(
                 src,
                 STAGE / name,
-                ignore=shutil.ignore_patterns("__pycache__", ".pytest_cache", "*.egg-info"),
+                ignore=shutil.ignore_patterns(
+                    "__pycache__", ".pytest_cache", "*.egg-info"
+                ),
             )
     for name in COPY_FILES:
         src = ROOT / name
@@ -161,7 +171,6 @@ def assemble(launcher_dir: Path) -> Path:
 
     (STAGE / "main.py").write_text(MAIN_PY, encoding="utf-8")
     _write_runtime_seed(launcher_dir)
-
     zip_name = DIST / f"TelegramBot-v{version}.zip"
     if zip_name.exists():
         zip_name.unlink()
