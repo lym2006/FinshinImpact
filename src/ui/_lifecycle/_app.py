@@ -1,12 +1,14 @@
 # src/ui/_lifecycle/_app.py
-"""应用实例工厂
+"""应用实例与事件泵
 
 - 全进程 QApplication 唯一出生口，建实例即挂图标
+- 单轮事件泵供导入期垫住界面重绘
 """
 
 import sys
 from typing import cast
 
+from PySide6.QtCore import QCoreApplication, QEventLoop
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
 
@@ -31,3 +33,11 @@ def ensure_app() -> QApplication:
     app = QApplication(sys.argv)
     _apply_icon(app)
     return app
+
+
+def pump_events() -> None:
+    """泵一轮事件让已建界面应答重绘
+
+    - 排除用户输入，半初始化界面收不到点击
+    """
+    QCoreApplication.processEvents(QEventLoop.ProcessEventsFlag.ExcludeUserInputEvents)

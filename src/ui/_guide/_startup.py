@@ -1,4 +1,4 @@
-# src/bootstrap/_plugin/_startup.py
+# src/ui/_guide/_startup.py
 """启动结算
 
 - 插件依赖与资源的安装只发生在启动实例前，装完才起，不带错误启动
@@ -25,8 +25,8 @@ from services.env_setup.deps_manifest import (
 from services.env_setup.subprocess_ops import ProgressCallback, emit, is_pin_installed
 from services.env_setup.toolchain import dev_mode
 from skin.messages import PluginMessage
-from ui import ensure_app
 
+from .._lifecycle import ensure_app
 from ._progress import run_with_progress
 
 # 补装计划条目：(插件名, 缺的 pip 包, 缺的资源)

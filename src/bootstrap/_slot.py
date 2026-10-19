@@ -51,7 +51,7 @@ def _acquire_slot() -> _SlotResult:
     profile = get_profile()
     if profile:
         # 预设身份：不弹选窗，无需引导锁，结算与抢实例锁前完成
-        from ._plugin import settle_runtime
+        from ui import settle_runtime
 
         settle_runtime(profile)
         return _SlotResult.RUN if acquire_instance_lock() else _SlotResult.CONFLICT
@@ -61,7 +61,7 @@ def _acquire_slot() -> _SlotResult:
 
     try:
         # 延迟导入：选窗依赖 Qt，且必须早于 bot/utils
-        from ._picker import pick_profile
+        from ui import pick_profile
 
         code = pick_profile()
         if not code:
@@ -71,7 +71,8 @@ def _acquire_slot() -> _SlotResult:
         set_profile(code)
 
         # 插件目录与实例状态指纹不符即弹面板，取消视为放弃本次启动
-        from ._plugin import MODE_AUTO, open_panel, panel_needed, settle_runtime
+        from services.env_setup.deps_manifest import panel_needed
+        from ui import MODE_AUTO, open_panel, settle_runtime
 
         if panel_needed(code) and not open_panel(code, MODE_AUTO):
             return _SlotResult.CANCEL
@@ -84,27 +85,6 @@ def _acquire_slot() -> _SlotResult:
         return _SlotResult.RUN
     finally:
         release_bootstrap_lock()
-
-
-def _popup(title_text: str, body: str, *, icon_warning: bool = True) -> None:
-    """提示弹窗
-
-    - 延迟导入，只在真正弹窗时加载选窗模块与图标
-    """
-    from PySide6.QtWidgets import QMessageBox
-
-    from skin.qss import build_bootstrap_qss
-    from ui import ensure_app
-
-    ensure_app()
-    box = QMessageBox()
-    box.setStyleSheet(build_bootstrap_qss())
-    box.setIcon(
-        QMessageBox.Icon.Warning if icon_warning else QMessageBox.Icon.Information
-    )
-    box.setWindowTitle(title_text)
-    box.setText(body)
-    box.exec()
 
 
 def _handle(result: _SlotResult) -> int | None:
@@ -122,25 +102,26 @@ def _handle(result: _SlotResult) -> int | None:
 
     if result is _SlotResult.PICKER_BUSY:
         from skin.messages import PickerMessage
+        from ui import show_popup
 
-        _popup(PickerMessage.TITLE, PickerMessage.BUSY, icon_warning=False)
+        show_popup(PickerMessage.TITLE, PickerMessage.BUSY, icon_warning=False)
         return 0
 
     from skin.theme import GLOBAL, WINDOW
+    from ui import show_popup
 
-    _popup(WINDOW.title, GLOBAL.already_running)
+    show_popup(WINDOW.title, GLOBAL.already_running)
     return 0
 
 
 def _pump() -> None:
     """泵一轮事件让提示卡应答重绘
 
-    - 排除用户输入，半初始化界面收不到点击
     - 秒表与重绘全靠本函数泵出，泵点越密跳秒越顺
     """
-    from PySide6.QtCore import QCoreApplication, QEventLoop
+    from ui import pump_events
 
-    QCoreApplication.processEvents(QEventLoop.ProcessEventsFlag.ExcludeUserInputEvents)
+    pump_events()
 
 
 def _preload_engine_async() -> threading.Thread:
@@ -216,7 +197,8 @@ def main() -> int:
     if code is not None:
         return code
 
-    from ._picker import show_launch_wait
+    from ui import show_launch_wait
+
     from ._warmup import start_warmup
 
     t0 = time.monotonic()

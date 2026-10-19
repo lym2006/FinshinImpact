@@ -8,6 +8,7 @@ from ..theme import (
     GUIDE_BTN,
     PANEL,
     ButtonStyle,
+    ObjectName,
 )
 from ..theme import (
     PALETTE as SURFACE,
@@ -206,7 +207,7 @@ QListWidget::item:hover {{
     color: {SURFACE.hover_color};
 }}
 
-QLabel#row_core_mark {{
+QLabel#{ObjectName.ROW_CORE_MARK} {{
     color: {SURFACE.disabled_color};
     background-color: transparent;
 }}"""
@@ -239,7 +240,7 @@ QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
 
 # 进度日志区
 _PROGRESS_QSS = f"""\
-QPlainTextEdit#progress_log {{
+QPlainTextEdit#{ObjectName.PROGRESS_LOG} {{
     background-color: {SURFACE.list_bg};
     color: {SURFACE.color};
     border: 1px solid {SURFACE.border_color};
@@ -248,13 +249,13 @@ QPlainTextEdit#progress_log {{
 
 # 启动等待窗
 _LAUNCH_QSS = f"""\
-QLabel#launch_text {{
+QLabel#{ObjectName.LAUNCH_TEXT} {{
     color: {SURFACE.color};
     font-weight: bold;
     background-color: transparent;
 }}
 
-QLabel#launch_note {{
+QLabel#{ObjectName.LAUNCH_NOTE} {{
     color: {SURFACE.disabled_color};
     background-color: transparent;
 }}"""
