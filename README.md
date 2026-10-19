@@ -6,7 +6,7 @@
 [![Project Type](https://img.shields.io/badge/project-pyproject.toml-brightgreen.svg)](pyproject.toml)
 [![Changelog](https://img.shields.io/badge/changelog-CHANGELOG.md-blue.svg)](CHANGELOG.md)
 
-> 一个基于 Python 和 aiogram 3.x 构建的异步 Telegram 机器人，采用模块化插件设计，支持 AI 功能与自动化操作。
+> 一个基于 `Python` 和 `aiogram 3.x` 构建的异步 Telegram 机器人，采用模块化插件设计。
 
 ## 📑 目录
 
@@ -21,8 +21,8 @@
   - [5. 准备 Chrome 环境](#5-准备-chrome-环境)
   - [6. 运行机器人](#6-运行机器人)
 - [📂 项目结构](#-项目结构)
-- [⚠️ 温馨提示](#️-温馨提示)
-- [📄 许可证 (LICENSE)](#-许可证-license)
+- [🚨 温馨提示](#-温馨提示)
+- [📄 许可证 (`LICENSE`)](#-许可证-license)
 
 ---
 
@@ -30,9 +30,9 @@
 
 - 🚀 **异步架构**: 基于 `asyncio` 和 `aiogram`，提供高并发处理能力。
 - 🔌 **插件化设计**: 功能模块位于 `src/plugins` 目录下，支持动态加载，易于扩展和维护。
-- 📝 **完善日志**: 集成 `logging` 模块 ，支持控制台输出与文件 Rotating，默认开启详细报错。
+- 📝 **完善日志**: 集成 `logging` 模块，支持控制台输出与文件   `Rotating` ，默认开启详细报错。
 - ⚙️ **TOML 配置**: 使用 `config.toml` 进行集中式配置管理，类型安全且易读。
-- 🌐 **浏览器自动化**: 使用 `Playwright`实现异步处理。
+- 🌐 **浏览器自动化**: 使用 `Playwright` 实现异步处理。
 
 [⤴️ 返回目录](#-目录)
 
@@ -42,7 +42,7 @@
 目前仅支持 **私聊** 使用
 
 - **独立会话**：不同用户 **或** 不同群组同用户
-  > 群组中需触发关键词或 @机器人
+  > 群组中需触发关键词或 @机器人（**暂不可用**）
 - **消息排队**：原子级别任务锁避免多任务并发出错
 - **状态更新**：自动更新状态信息（排队中、思考中、思考完成内容），**计划** 加入取消排队按钮
 - **自动引用**：状态信息引用原消息，回复内容引用思考过程
@@ -52,11 +52,11 @@
 - **删除判断**：若用户删除机器人发出的状态信息，机器人会在必要时重新发送
 - **超时处理**：配置超时时间和判断间隔，自动清除用户记录
 - **其他功能**：
-  - Markdown 文件历史记录
-  - Markdown 格式回复
-  - 个性化定制人设（暂不可用）
+  - `Markdown` 文件历史记录
+  - `Markdown` 格式回复
+  - 个性化定制人设（**暂不可用**）
   - 自主开关对话功能
-  - 余额查询（**注意：** 查询数据与硅基流动网页端显示可能不一致，属正常现象）
+  - 余额查询（**注意：** 查询数据与硅基流动网页端不一致属正常现象）
   - 更多参见 `/help` 命令
 
 [⤴️ 返回目录](#-目录)
@@ -67,8 +67,8 @@
 
 | 组件 | 版本/描述 |
 | :--- | :--- |
-| **语言** | Python 3.11+ |
-| **核心框架** | [aiogram 3.x](https://docs.aiogram.dev/) |
+| **语言** | `Python 3.11+` |
+| **核心框架** | [`aiogram 3.x`](https://docs.aiogram.dev/) |
 | **依赖管理** | [`pyproject.toml`](pyproject.toml) |
 | **浏览器驱动** | `Playwright` / `chromium`（根据步骤下载） |
 | **日志系统** | `logging` |
@@ -110,7 +110,7 @@ pip install -e .
 
 ### 4. 配置项目
 
-编辑 src/config.toml 文件，填入你的配置：
+编辑 `src/config.toml` 文件，填入你的配置：
 
 ```toml
 # config.toml 示例配置
@@ -121,7 +121,7 @@ proxy="http://127.0.0.1:port" # 代理地址和端口
 telegram_token="123456:abcedfgh" # telegram bot token
 ```
 
-编辑 src/plugins/AI/config.toml 文件，填入你的配置：
+编辑 `src/plugins/AI/config.toml` 文件，填入你的配置：
 
 ```toml
 # config.toml 示例配置
@@ -143,13 +143,13 @@ clearup=6 # 超过时间未活跃清除记录
 waiting=0.5 # 判断间隔时间
 ```
 
-Token、机器人名称：在 [BotFather](https://t.me/BotFather) 对话获取、设置。
+Token、机器人名称：在 [`BotFather`](https://t.me/BotFather) 对话获取、设置。
 
 API、模型名称：在 [硅基流动模型广场](https://cloud.siliconflow.cn/me/models) 获取。
 
 ### 5. 准备 Chrome 环境
 
-本项目使用 `Playwright` 实现浏览器自动化操作，可自动下载依赖文件
+本项目使用 `Playwright` 实现浏览器自动化操作，可自动下载依赖文件。
 
 ```bash
 # 1.如果在国内网络环境下，建议先配置镜像源
@@ -182,7 +182,10 @@ python -m src.bot
 ```text
 TelegramBot/
 ├── 📄 README.md                           # 📘 项目说明文档
-├── 📄 LICENSE                             # 📜 开源许可证
+├── 📄 CHANGELOG.md                        # 📝 版本更新日志
+├── 📄 .gitignore                          # 🙈 Git 忽略文件配置
+├── 📄 .gitmessage                         # 📋 Git Commit 提交规范模板
+├── 📄 LICENSE                             # ⚖️ 开源许可证 (MIT)
 ├── 📄 pyproject.toml                      # 🏗️ 项目构建配置
 ├── 📁 src/                                # 🐍 源代码目录
 │   ├── 📄 bot.py                          # 🚀 机器人主程序
@@ -230,21 +233,21 @@ TelegramBot/
 
 ---
 
-## ⚠️ 温馨提示
+## 🚨 温馨提示
 
 本项目目前仍处于 **测试阶段**，如遇报错或异常行为属正常现象，请勿惊慌 😊 
 
 如需进行插件开发、查阅 API 或查看源码，请参考以下资源：
-- 📖 **官方文档**：[aiogram.dev](https://docs.aiogram.dev/en/latest/)
-- 💻 **GitHub 仓库**：[aiogram/aiogram](https://github.com/aiogram/aiogram)
+- 📖 **官方文档**：[`aiogram.dev`](https://docs.aiogram.dev/en/latest/)
+- 💻 **GitHub 仓库**：[`aiogram`](https://github.com/aiogram/aiogram)
 
 [⤴️ 返回目录](#-目录)
 
 ---
 
-## 📄 许可证 (LICENSE)
+## 📄 许可证 (`LICENSE`)
 
-本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
+本项目采用 MIT 许可证 - 查看 [`LICENSE`](LICENSE) 文件了解详情。
 
 ---
 Made by **lym2006**

@@ -56,7 +56,7 @@ async def AIchat(message:Message,bot:Bot):
             sent=await task.safe_reply(preview)
         except Exception as e:
             if str(e):
-                logger.warning("⚠️ 消息任务不存在")
+                logger.warning("🚨 消息任务不存在")
             else:
                 logger.error(f"❌ 任务初始化错误：{e}")
             return

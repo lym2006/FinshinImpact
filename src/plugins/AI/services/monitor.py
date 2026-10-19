@@ -26,14 +26,14 @@ async def monitor_loop(user:str):
                 await task.safe_edit(preview)
                 await worker_loop(task,user)
             except TaskStopped:
-                logger.warning(f"⚠️ {user} 原消息被删除")
+                logger.warning(f"🚨 {user} 原消息被删除")
                 try:
                     await task.safe_delete()
                 except:
-                    logger.warning(f"⚠️ 状态消息删除错误：{Exception}")
+                    logger.warning(f"🚨 状态消息删除错误：{Exception}")
             except Exception as e:
                 if isinstance(e,asyncio.CancelledError):
-                    logger.warning(f"⚠️ {user} 任务被取消")
+                    logger.warning(f"🚨 {user} 任务被取消")
                 else:
                     logger.error(f"❌ {user} 任务出错：{e}")
                 try:
@@ -43,7 +43,7 @@ async def monitor_loop(user:str):
             finally:
                 await queue.pop_front()
     except asyncio.CancelledError:
-        logger.warning(f"⚠️ {user} 监控循环被取消")
+        logger.warning(f"🚨 {user} 监控循环被取消")
         raise
     except:
         logger.error(f"❌ {user} 监控循环崩溃：{Exception}")

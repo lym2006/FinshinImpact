@@ -13,7 +13,7 @@ router=Router()
 async def command_start_handler(message:Message):
     user=message.from_user.id if message.from_user else None
     if not user:
-        logger.warning("⚠️ 无法获取用户 ID")
+        logger.warning("🚨 无法获取用户 ID")
         return
     #get_started(user)
     await message.answer(
