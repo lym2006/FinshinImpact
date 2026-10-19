@@ -24,9 +24,8 @@ from packaging.version import Version
 
 APP_TITLE = "TelegramBot"
 PAGES_PYPROJECT_URL = "https://lym2006.github.io/TelegramBot/pyproject.toml"
-RELEASE_ZIP_URL = (
-    "https://github.com/lym2006/TelegramBot/releases/download/v{ver}/TelegramBot-v{ver}.zip"
-)
+RELEASE_ZIP_URL = "https://github.com/lym2006/TelegramBot/releases/download/v{ver}/TelegramBot-v{ver}.zip"
+
 # 手动下载引导页：蓝奏云备用目录（访问密码随弹窗展示）
 DOWNLOAD_PAGE_URL = "https://wwbgy.lanzoub.com/b0pnwooed"
 DOWNLOAD_PASSWORD = "5rp0"
@@ -35,13 +34,27 @@ DOWNLOAD_CHUNK = 65536
 
 # 国内直连 GitHub 慢：官方源失败自动切换公共加速镜像
 RELEASE_MIRRORS = ("https://gh-proxy.com/", "https://ghproxy.net/")
-# pip 走清华源，官方源兜底；浏览器内核走 npmmirror
-PIP_INDEX_URL = "https://pypi.tuna.tsinghua.edu.cn/simple"
-PIP_FALLBACK_URL = "https://pypi.org/simple"
+
+# pip 索引按序重试：国内多源轮询，最后官方源兜底
+PIP_INDEX_URLS = (
+    "https://pypi.tuna.tsinghua.edu.cn/simple",
+    "https://mirrors.aliyun.com/pypi/simple",
+    "https://mirrors.cloud.tencent.com/pypi/simple",
+    "https://pypi.org/simple",
+)
 PLAYWRIGHT_CDN = "https://cdn.npmmirror.com/binaries/playwright"
 
-# 升级保留：用户资产、运行环境与启动器本体（Windows 锁运行中的 exe）
-PRESERVE_NAMES = ("config.toml", "data", "logs", "runtime", "_update", "TelegramBot.exe", "_internal")
+# 升级保留：用户资产、运行环境与启动器本体
+# 壳不自动换：Windows 锁定运行中的 exe，需要升级壳时手动整包覆盖
+PRESERVE_NAMES = (
+    "config.toml",
+    "data",
+    "logs",
+    "runtime",
+    "_update",
+    "TelegramBot.exe",
+    "_internal",
+)
 
 _MB_ICON_INFO = 0x40
 _MB_ICON_ERROR = 0x10
@@ -75,11 +88,7 @@ _console_open = False
 
 
 def _open_console() -> None:
-    """分配控制台窗口展示安装/升级进度
-
-    exe 以无控制台编译，标准输出为空；AllocConsole 后重开 CONOUT$
-    让 print 流入新窗口，pip 等子进程继承句柄实时回显输出。
-    """
+    """分配控制台窗口展示安装/升级进度"""
     global _console_open
     if _console_open:
         return
@@ -102,11 +111,7 @@ def _close_console() -> None:
 
 
 def _apply_system_proxy() -> None:
-    """注册表系统代理注入环境变量，安装下载随其走代理
-
-    嵌入式安装期 config.toml 尚未生成，OS 层代理是唯一通道；
-    开关未开则维持直连，pip 与 Playwright 子进程继承环境变量。
-    """
+    """注册表系统代理注入环境变量，安装下载随其走代理"""
     try:
         import winreg
 
@@ -119,6 +124,7 @@ def _apply_system_proxy() -> None:
             raw = str(winreg.QueryValueEx(key, "ProxyServer")[0]).strip()
     except OSError:
         return
+
     # 兼容 "127.0.0.1:7890" 与 "http=…;https=…" 两种写法
     proxy = raw
     for part in raw.split(";"):
@@ -194,6 +200,21 @@ def _enable_site(runtime: Path) -> None:
         pth.write_text(text.replace("#import site", "import site"))
 
 
+def _pip_with_index_retry(cmd: list[str]) -> None:
+    """按序尝试多镜像索引，失败换源重试直至耗尽"""
+    for i, index in enumerate(PIP_INDEX_URLS):
+        if i:
+            print(f"换源重试（第 {i + 1} 次）：{index}")
+            print("上方报错无需处理，程序正在自动切换镜像源。\n\n")
+        try:
+            subprocess.run([*cmd, "--index-url", index], check=True)
+            return
+        except subprocess.CalledProcessError:
+            print("\n\n")
+            if i == len(PIP_INDEX_URLS) - 1:
+                raise
+
+
 def _bootstrap_pip(runtime: Path) -> None:
     """引导安装 pip（已存在则跳过）"""
     if (runtime / "Lib" / "site-packages" / "pip").exists():
@@ -203,11 +224,7 @@ def _bootstrap_pip(runtime: Path) -> None:
         runtime / "get-pip.py",
         "--no-warn-script-location",
     ]
-    try:
-        subprocess.run([*cmd, "--index-url", PIP_INDEX_URL], check=True)
-    except subprocess.CalledProcessError:
-        print("清华源不可用，回退 pip 官方源重试")
-        subprocess.run([*cmd, "--index-url", PIP_FALLBACK_URL], check=True)
+    _pip_with_index_retry(cmd)
 
 
 def _install_deps(runtime: Path, deps: list[str]) -> None:
@@ -220,15 +237,7 @@ def _install_deps(runtime: Path, deps: list[str]) -> None:
         "--disable-pip-version-check",
         "--no-warn-script-location",
     ]
-    try:
-        subprocess.run(
-            [*base, "--index-url", PIP_INDEX_URL, *deps], check=True
-        )
-    except subprocess.CalledProcessError:
-        print("清华源不可用，回退 pip 官方源重试")
-        subprocess.run(
-            [*base, "--index-url", PIP_FALLBACK_URL, *deps], check=True
-        )
+    _pip_with_index_retry([*base, *deps])
 
 
 def _install_browser(runtime: Path) -> None:
@@ -242,7 +251,9 @@ def _install_browser(runtime: Path) -> None:
     try:
         subprocess.run(cmd, check=True, env=env)
     except subprocess.CalledProcessError:
+        print("\n\n")
         del env["PLAYWRIGHT_DOWNLOAD_HOST"]
+        print("npmmirror 不可用，已回退官方源重试，上方报错无需处理。\n\n")
         subprocess.run(cmd, check=True, env=env)
 
 
@@ -267,12 +278,14 @@ def _ensure_runtime(root: Path) -> None:
         print("[5/5] 下载浏览器内核…")
         _install_browser(runtime)
         print("环境安装完成，即将启动主程序")
-    except subprocess.CalledProcessError as e:
-        _fail_exit(f"环境安装失败：{e.cmd[-2]} {e.cmd[-1]}\n请检查网络后重新双击启动")
+    except subprocess.CalledProcessError:
+        _fail_exit("依赖安装失败，请查看进度窗口末尾输出\n恢复网络后重新双击即可续装")
     except FileNotFoundError as e:
         _fail_exit(f"安装文件缺失：{e}\n发布包可能损坏，请重新下载")
     except zipfile.BadZipFile:
-        _fail_exit("内嵌运行环境包损坏（发布物不完整）\n请到 Releases 页重新下载最新发布包")
+        _fail_exit(
+            "内嵌运行环境包损坏（发布物不完整）\n请到 Releases 页重新下载最新发布包"
+        )
     (runtime / ".installed").write_text(_deps_digest(deps))
 
 
@@ -320,7 +333,7 @@ def _fetch_zip(urls: list[str], target: Path) -> None:
             raise zipfile.BadZipFile("下载内容不是有效 zip")
         except Exception as e:
             last_error = e
-            print(f"该源失败（{e}），尝试下一个")
+            print(f"该源失败（{e}），已自动切换下一个源，上方报错无需处理。\n\n")
     raise RuntimeError(f"全部下载源失败：{last_error}")
 
 
@@ -328,6 +341,7 @@ def _apply_update(root: Path, version: str) -> bool:
     """下载新版整包并覆盖源码，用户资产与启动器本体保留"""
     stage = root / "_update"
     try:
+        # 下载：官方源+加速镜像逐源尝试，zip 校验通过才继续
         print(f"下载 v{version} 发布物…")
         shutil.rmtree(stage, ignore_errors=True)
         stage.mkdir(parents=True)
@@ -338,9 +352,11 @@ def _apply_update(root: Path, version: str) -> bool:
         )
         with zipfile.ZipFile(stage / "package.zip") as zf:
             zf.extractall(stage)
+        # 解压：暂存目录展开，校验顶层结构
         new_root = stage / "TelegramBot"
         if not new_root.exists():
             raise FileNotFoundError("发布包缺少 TelegramBot 顶层目录")
+        # 覆盖：白名单外目录整树拷、文件逐个拷
         print("应用更新（保留配置、数据与日志）…")
         for item in new_root.iterdir():
             if item.name in PRESERVE_NAMES:

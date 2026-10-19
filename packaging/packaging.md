@@ -17,7 +17,7 @@ TelegramBot\
 
 启动器首启：解压嵌入式 Python → 放开 site-packages → 装 pip → 装依赖 → 拉浏览器内核 → 拉起主程序。此后每次启动比对在线版本页，弹窗确认后整包升级。
 
-- 升级只换源码，`config.toml`、`data`、`logs`、`runtime` 与启动器本体保留（Windows 锁运行中的 exe，壳要升级就手动整包覆盖）。
+- 升级只换源码，用户资产、运行环境与启动器本体保留；要换壳手动整包覆盖。
 - `runtime\python-embed.zip`、`get-pip.py` 是启动器按名字找的文件，**改名会坏**。
 - `runtime\.installed` 记录依赖清单摘要，清单没变下次跳过安装。
 
@@ -34,14 +34,15 @@ python -m PyInstaller --version   # 应打印 6.22.3
 python packaging\build.py
 ```
 
-编译启动器 → 白名单组装（排除 egg-info 等开发残留）→ 下载嵌入式 Python（官方源坏了自动切 npmmirror，校验不过会中止）。成功标志：末行打印 `完成：dist\TelegramBot-vX.Y.Z.zip`。
+编译启动器 → 白名单组装（排除 egg-info 等开发残留）→ 下载嵌入式 Python（官方+3 个国内镜像轮换，逐条目校验，不过会中止）。成功标志：末行打印 `完成：dist\TelegramBot-vX.Y.Z.zip`。
 
 参数：`--no-launcher` 复用已编译启动器只重打内容；`--check` 自检四行：本地版本号、远端 tag、本地 zip、在线版本页（tag 与版本页读远端，是发布真相；推 tag 前"tag 缺失"属正常）。
 
 ## 第三步：本地测试（必做）
 
 1. 把 zip 复制到别处（如桌面）解压——在 dist 里测会污染构建目录；
-2. 双击 `TelegramBot.exe`，进度窗口 [1/5]～[5/5]，pip 走清华源约几分钟，别关窗口；
+2. 双击 `TelegramBot.exe`，进度窗口 [1/5]～[5/5]，pip 按清华→阿里→腾讯→官方四源回退，约几分钟，别关窗口；
+   （中途出现红色报错属正常，源挂了会自动换源继续，窗口会打印"已自动换源重试"）；
 3. 验证：向导填 token 能收发消息；再开一次应几秒直达、不再出现进度窗口；测试目录只多出 config.toml、data、logs、runtime；
 4. 任一环节失败都不许发布。测完删掉测试目录。
 
@@ -58,7 +59,6 @@ git push origin main vX.Y.Z
 # 3. 构建并上传：GitHub → Releases → 选 tag → 拖入 zip → Publish
 python packaging\build.py
 # 蓝奏云同步上传同名文件覆盖：https://wwbgy.lanzoub.com/b0pnwooed（密码 5rp0）
-#   分享链接不变，README 备用下载入口即生效
 
 # 4. 同步版本页：把本地 pyproject.toml 覆盖到 lym2006.github.io 仓库
 python packaging\build.py --check   # 末行「在线版本页」显示新版本号即发布完成
@@ -74,7 +74,8 @@ python packaging\build.py --check   # 末行「在线版本页」显示新版本
 
 | 现象 | 处置 |
 | :--- | :--- |
-| 环境安装失败 | 看进度窗 pip 尾部输出，恢复网络重双击即可续装 |
+| 进度窗红色报错 | 无需处理，程序自动换源/回退重试，有"已自动换源"即正常 |
+| 环境安装失败 | 四源全部失败才会弹；看进度窗尾部输出，恢复网络重双击即可续装 |
 | 内嵌运行环境包损坏 | zip 被截断，重下重传 |
 | 双击无反应 | SmartScreen 拦截：右键属性解除锁定，或"更多信息 → 仍要运行" |
 | 升级后版本没变 | 查 Release 资产是否传对 tag，再 `--check` 版本页读数 |
