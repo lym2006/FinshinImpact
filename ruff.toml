@@ -1,0 +1,52 @@
+# ruff.toml
+
+target-version = "py311"
+line-length = 88
+src = ["src"]
+exclude = [
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+    ".git",
+    "src/plugins/AI/record"
+]
+
+[lint]
+select = [
+    "E",   # pycodestyle 错误 (PEP 8 规范)
+    "F",   # pyflakes (未使用的变量、无效导入等逻辑错误)
+    "I",   # isort (自动整理 import 语句顺序)
+    "UP",  # pyupgrade (自动升级旧语法)
+    "B",   # flake8-bugbear (常见的 Bug 检测)
+    "N",   # pep8-naming (命名规范检查)
+    "D",   # pydocstyle (文档字符串规范)
+]
+ignore = [
+    "E501",  # 忽略行长警告
+    "D203",  # 允许类定义前不空行（避免与 D211 冲突）
+    "D212",  # 允许摘要换行书写（避免与 D213 冲突）
+    "D400",  # 不强制第一行以句号结尾
+    "D415",  # 不强制第一行以标点结尾
+    "D105",  # 忽略魔术方法文档缺失
+    "D107",  # 忽略 __init__ 方法文档缺失
+]
+fixable = ["ALL"]
+
+[lint.pydocstyle]
+convention = "google"  # Google 风格
+
+[lint.pep8-naming]
+extend-ignore-names = [
+    "ORANGE", 
+    # 其他忽略大写检查的常量
+]
+
+[lint.isort]
+known-first-party = ["plugins", "utils"]
+
+[format]
+quote-style = "double"                  # 普通字符串强制使用双引号 ""
+indent-style = "space"                  # 使用空格缩进
+skip-magic-trailing-comma = false       # 保留尾随逗号（有助于 Git 减少 diff 冲突）
+line-ending = "auto"                    # 自动处理换行符 (CRLF/LF)
