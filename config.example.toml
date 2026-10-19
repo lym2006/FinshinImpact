@@ -1,0 +1,43 @@
+# ============================================================
+# Fool's Telegram Bot - 配置模板
+# 使用说明：复制本文件为 config.toml，并填入你的真实配置
+# ============================================================
+
+# ---------- 全局设置 ----------
+
+[network]
+# 代理设置，port 处填端口（如不需要代理可留空）
+proxy = "http://127.0.0.1:port"
+
+[api_keys]
+# Telegram Bot Token（必填，从 @BotFather 获取）
+telegram_token = "123456:abcdefgh"
+
+# ---------- AI 插件设置 ----------
+
+[api]
+# AI 模型名称（从 Siliconflow 的模型广场获取）
+model_name = "Pro/deepseek-ai/DeepSeek-R1"
+# AI API Key（必填，在 Siliconflow 自行创建）
+api_key = "sk-xxxxxxxxxxxx"
+# 温度参数（0~2，越高越有创造性，越低越稳定）
+temperature = 0.7
+
+[personality]
+# 默认人格设定，不建议修改（多行文本，用于定义机器人的性格和行为）
+default = """
+重要：若无必要，只能使用简体中文和英语，优先使用用户的语言。
+使用Markdown格式回复，严禁使用与Markdown语法冲突的字符。
+在表达情绪、强调重点或增加可读性时，请适量使用emoji。
+再次强调：不要随意编造你的身份和能力。
+"""
+
+[triggers]
+# 群聊触发关键词列表（用户消息包含以下关键词时触发 AI 回复）
+group_keywords = ["1", "2"]
+
+[data]
+# 数据清理间隔（小时）
+clearup = 6
+# 检测等待间隔（小时），间隔多久检测一次
+waiting = 0.5

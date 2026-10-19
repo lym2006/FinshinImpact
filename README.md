@@ -10,6 +10,8 @@
 >
 > **本项目仅限 `Windows` 用户使用。**
 
+---
+
 ## 📑 目录
 
 - [✨ 功能特点](#-功能特点)
@@ -18,6 +20,9 @@
 - [🖥️ 环境准备（`Windows` 用户必读）](#️-环境准备windows-用户必读)
 - [🚀 快速开始](#-快速开始)
 - [🔄 更新版本](#-更新版本)
+- [💡 Script Prompt Translation](#-script-prompt-translation)
+    - [install.bat](#installbat)
+    - [update.bat](#updatebat)
 - [🚨 温馨提示](#-温馨提示)
 - [📄 许可证 (`LICENSE`)](#-许可证-license)
 
@@ -30,12 +35,14 @@
 - **完善日志**: 集成 `logging` 模块，支持控制台输出与文件 `Rotating` ，默认开启详细报错。
 - **`TOML` 配置**: 使用 `config.toml` 进行集中式配置管理，类型安全且易读。
 - **浏览器自动化**: 使用 `Playwright` 实现异步处理。
+- **配置自动检测**: 每次启动机器人会自动检测是否更新了新配置项并提醒用户在 `config.toml` 中填写。
 - **一键安装与更新**: 提供 `install.bat` 和 `update.bat` 自动化脚本，请在项目的 [Releases 发布页面](../../releases) 下载最新版本。
-  > ️ **重要提示**：
+  > **重要提示**：
   > - **首次安装**：请将 `install.bat` 放在一个**新建的空文件夹**中双击运行（脚本会自动创建 `TelegramBot` 项目文件夹）。
   > - **日常更新**：请将 `update.bat` 放在与 `TelegramBot` 文件夹**同级的目录**下双击运行。
   > - **路径要求**：整个路径中**请勿包含中文或特殊字符**，以免引发环境报错。
-  > - **环境要求**：请参照 **[🖥️ 环境准备（`Windows` 用户必读）](#️-环境准备windows-用户必读)** 安装环境，若旧版本 `CMD` 出现问题，请尝试在 `Windows Terminal` 中执行脚本。
+  > - **环境要求**：请参照 **[️ 环境准备（Windows 用户必读）](#️-环境准备windows-用户必读)** 安装环境，若旧版本 CMD 出现问题，请尝试在 Windows Terminal 中执行脚本。
+  > - **序号提示**：脚本所有提示信息均已添加序号，方便定位和排查问题。详见下方 [ Script Prompt Translation（可折叠）](#-script-prompt-translation) 区域。
 
 [⤴️ 返回目录](#-目录)
 
@@ -102,8 +109,8 @@
 
 > **极速体验（推荐）**
 > 我们为你准备了自动化脚本！只需双击运行 `install.bat`，即可自动完成以下所有步骤（克隆代码、创建环境、安装依赖、下载浏览器等）。
-> 
-> ️ **重要提示**：脚本运行完成后，**仍需手动编辑 `config.toml` 填入你的 Token 和 API 配置**，否则机器人无法启动！
+>
+> **重要提示**：脚本运行完成后，**仍需手动编辑 `config.toml` 填入你的 Token 和 API 配置**，否则机器人无法正常运行！
 
 <details>
 <summary>️ 备选方案：手动安装指南（点击展开）</summary>
@@ -165,7 +172,7 @@ python -m bot
 | :--- | :--- | :--- |
 | **方式一：一键脚本（推荐）** | 日常更新 | 直接双击运行 `update.bat` |
 | **方式二：手动更新** | 少量改动 | 在 `TelegramBot` 目录下执行 `git pull origin main`，然后执行 `pip install -e .` 同步依赖 |
-| **方式三：彻底重建** | 重大架构更新 | 执行 **重建环境的 `bash` 命令**|
+| **方式三：彻底重建** | 重大架构更新 | 执行 **重建环境的 bash 命令** |
 
 > **重建环境的 `bash` 命令参考**：
 > ```powershell
@@ -173,6 +180,68 @@ python -m bot
 > python -m venv .venv
 > .venv\Scripts\activate
 > ```
+
+[⤴️返回目录](#-目录)
+
+---
+
+## 💡 Script Prompt Translation
+
+<details>
+<summary>点击展开查看脚本提示信息中文翻译</summary>
+
+#### install.bat
+
+| # | English Prompt | 中文翻译 |
+|---|---------------|---------|
+| [01] | Checking Python installation... | 正在检查 Python 安装... |
+| [02] | [ERROR] Python not found! | [错误] 未检测到 Python 环境！ |
+| [03] | Please download and install Python 3.11+ from: | 请从以下地址下载并安装 Python 3.11+： |
+| [04] | https://www.python.org/downloads/ | https://www.python.org/downloads/ |
+| [05] | Checking Git installation... | 正在检查 Git 安装... |
+| [06] | [ERROR] Git not found! | [错误] 未检测到 Git 环境！ |
+| [07] | Please download and install Git for Windows from: | 请从以下地址下载并安装 Git for Windows： |
+| [08] | https://git-scm.com/download/win | https://git-scm.com/download/win |
+| [09] | Checking project directory... | 正在检查项目目录... |
+| [10] | [INFO] TelegramBot directory already exists, skipping clone. | [信息] 已检测到 TelegramBot 目录，跳过克隆步骤。 |
+| [11] | Cloning project from GitHub... | 正在从 GitHub 克隆项目... |
+| [12] | [ERROR] Git clone failed! Please check your network connection. | [错误] Git 克隆失败！请检查网络连接。 |
+| [13] | Checking virtual environment... | 正在检查虚拟环境... |
+| [14] | [INFO] Old virtual environment found, cleaning up... | [信息] 检测到旧的虚拟环境，正在清理... |
+| [15] | Creating virtual environment... | 正在创建虚拟环境... |
+| [16] | [ERROR] Failed to create virtual environment! | [错误] 创建虚拟环境失败！ |
+| [17] | Activating environment and upgrading pip... | 正在激活环境并升级 pip... |
+| [18] | Installing project dependencies... | 正在安装项目依赖... |
+| [19] | [ERROR] Failed to install dependencies! Please check network or disk space. | [错误] 依赖安装失败！请检查网络连接或磁盘空间。 |
+| [20] | Downloading Chromium browser component... | 正在下载 Chromium 浏览器组件... |
+| [21] | Installation Completed! | 安装完成！ |
+| [22] | [IMPORTANT] Please edit config.toml to fill in your Token and API keys! | [重要] 请编辑 config.toml 填入你的 Token 和 API 配置！ |
+| [23] | Start command: python -m bot | 启动命令: python -m bot |
+
+#### update.bat
+
+| # | English Prompt | 中文翻译 |
+|---|---------------|---------|
+| [01] | Locating project directory... | 正在定位项目目录... |
+| [02] | [ERROR] TelegramBot directory not found! | [错误] 未找到 TelegramBot 目录！ |
+| [03] | Please make sure you have cloned the code into the TelegramBot folder, | 请确保已将代码克隆到 TelegramBot 文件夹中， |
+| [04] | and the update script is in the same directory as the TelegramBot folder. | 并且更新脚本与 TelegramBot 文件夹位于同级目录下。 |
+| [05] | Checking Git installation... | 正在检查 Git 安装... |
+| [06] | [ERROR] Git not found! Please install Git for Windows first. | [错误] 未检测到 Git 环境！请先安装 Git for Windows。 |
+| [07] | Checking Git repository... | 正在检查 Git 仓库... |
+| [08] | [ERROR] Current directory is not a Git repository! | [错误] 当前目录不是 Git 仓库！ |
+| [09] | Please make sure you installed via install.bat, or manually ran git clone. | 请确保通过 install.bat 安装过，或手动执行过 git clone。 |
+| [10] | Activating virtual environment... | 正在激活虚拟环境... |
+| [11] | [ERROR] Virtual environment not found! Please run install.bat first. | [错误] 未找到虚拟环境！请先运行 install.bat。 |
+| [12] | Pulling latest code from GitHub... | 正在从 GitHub 拉取最新代码... |
+| [13] | [WARNING] Code pull failed! Please check your network connection or if there are conflicts. | [警告] 代码拉取失败！请检查网络连接或是否存在冲突。 |
+| [14] | [TIP] If there are conflicts, please resolve them manually and run this script again. | [提示] 如果存在冲突，请手动解决后重新运行本脚本。 |
+| [15] | Syncing project dependencies... | 正在同步项目依赖... |
+| [16] | [WARNING] Since code pull failed, dependencies may be incomplete. Please check manually. | [警告] 由于代码拉取失败，依赖可能不完整，建议手动检查。 |
+| [17] | Update Completed! | 更新完成！ |
+| [18] | Start command: python -m bot | 启动命令: python -m bot |
+
+</details>
 
 [⤴️返回目录](#-目录)
 
