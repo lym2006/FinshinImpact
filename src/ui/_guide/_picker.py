@@ -1,4 +1,4 @@
-# src/bootstrap/_picker/_window.py
+# src/ui/_guide/_picker.py
 """选 bot 窗口
 
 - 引导期选择、编辑或新建实例
@@ -18,9 +18,12 @@ from services.profile_store import delete_profile, list_profiles, touch_profile
 from skin.messages import PickerMessage
 from skin.qss import build_bootstrap_qss
 from skin.theme import PICKER, ButtonStyle
-from ui import ThemedList, ensure_app, make_button
 
+from .._lifecycle import ensure_app
+from .._primitives import ThemedList, make_button
 from ._form import EditProfileDialog, NewProfileDialog
+from ._maintain import open_maintain_menu
+from ._panel import MODE_EDIT, open_panel
 
 # Qt 自定义数据角色，列表项各挂各的数据
 _ROLE_CODE = 0x0100  # Qt.UserRole，列表项挂身份码
@@ -42,8 +45,6 @@ def _run_sync(button: QPushButton, dialog: "_ProfilePickerDialog") -> None:
     """
     if not dialog._selected()[0]:
         return
-
-    from .._plugin import open_maintain_menu
 
     open_maintain_menu(button, dialog)
 
@@ -137,9 +138,6 @@ class _ProfilePickerDialog(QDialog):
         code, _ = self._selected()
         if not code:
             return
-
-        # 面板依赖 Qt，点击时才付出加载代价
-        from .._plugin import MODE_EDIT, open_panel
 
         open_panel(code, MODE_EDIT)
 

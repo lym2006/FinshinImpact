@@ -1,4 +1,4 @@
-# src/bootstrap/_plugin/_progress.py
+# src/ui/_guide/_progress.py
 """引导期进度窗
 
 - 后台线程执行装卸任务，子进程输出逐行滚动展示
@@ -22,7 +22,9 @@ from PySide6.QtWidgets import (
 from services.env_setup.subprocess_ops import log_ops
 from skin.messages import PluginMessage
 from skin.qss import build_bootstrap_qss
-from ui import ensure_app
+from skin.theme import ObjectName
+
+from .._lifecycle import ensure_app
 
 # 日志字体族与字号
 _LOG_FONT_FAMILY = "Consolas"
@@ -90,7 +92,7 @@ class _ProgressDialog(QDialog):
         layout = QVBoxLayout(self)
         self._log = QPlainTextEdit()
         self._log.setReadOnly(True)
-        self._log.setObjectName("progress_log")
+        self._log.setObjectName(ObjectName.PROGRESS_LOG)
         self._log.setFont(QFont(_LOG_FONT_FAMILY, _LOG_FONT_SIZE))
         layout.addWidget(self._log)
 

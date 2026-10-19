@@ -31,13 +31,25 @@ forbidden_modules =
     cv2
     numpy
 
-[importlinter:contract:system-no-qt]
-name = system free of Qt
+# 消费方经 ui 门面取窗，链条穿过 ui 属正常，故只禁直接导入
+[importlinter:contract:ui-only-qt]
+name = Qt confined to the view layer
 type = forbidden
 source_modules =
+    bootstrap
+    plugins
+    bot
+    adapters
+    utils
+    exceptions
+    services
+    core
+    skin
+    data
     system
 forbidden_modules =
     PySide6
+allow_indirect_imports = True
 
 [importlinter:contract:data-adapters-isolation]
 name = data and adapters isolation
@@ -71,3 +83,15 @@ layers =
     skin
     data
     system
+
+# 引导窗在身份码写入前加载，utils 的路径常量导入即按身份码冻结，故禁引
+# ui._dialogs 与 ui._windows 同样引 utils，一并禁
+[importlinter:contract:guide-pre-profile-safe]
+name = guide windows importable before profile code is set
+type = forbidden
+source_modules =
+    ui._guide
+forbidden_modules =
+    utils
+    ui._dialogs
+    ui._windows

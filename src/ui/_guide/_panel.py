@@ -1,4 +1,4 @@
-# src/bootstrap/_plugin/_panel.py
+# src/ui/_guide/_panel.py
 """插件设置面板
 
 - 勾选即启用、取消即禁用，保存只写状态与目录指纹
@@ -31,8 +31,10 @@ from services.env_setup.subprocess_ops import is_pin_installed
 from services.env_setup.toolchain import dev_mode
 from skin.messages import PluginMessage
 from skin.qss import build_bootstrap_qss
-from skin.theme import PANEL, ButtonStyle
-from ui import ThemedList, TickedCheckBox, ensure_app, make_button
+from skin.theme import PANEL, ButtonStyle, ObjectName
+
+from .._lifecycle import ensure_app
+from .._primitives import ThemedList, TickedCheckBox, make_button
 
 MODE_AUTO = "auto"  # 自动弹出：保存并启动
 MODE_EDIT = "edit"  # 选窗按钮进入：保存回列表
@@ -126,7 +128,7 @@ class _PluginPanelDialog(QDialog):
         if core:
             # 核心插件无勾选框，勾选位以"必选"文字占宽对齐
             slot: QWidget = QLabel(PluginMessage.ROW_CORE)
-            slot.setObjectName("row_core_mark")
+            slot.setObjectName(ObjectName.ROW_CORE_MARK)
         else:
             slot = check
         slot.setFixedWidth(PANEL.check_width)
@@ -181,7 +183,7 @@ def open_panel(code: str, mode: str = MODE_AUTO) -> bool:
     - 空身份码直接拒绝，不打开面板
     """
     if not code:
-        raise ValueError("open_panel 需要实例身份码")
+        raise ValueError(PluginMessage.PANEL_NEED_CODE)
     ensure_app()
     dialog = _PluginPanelDialog(code, mode)
     return bool(dialog.exec())
