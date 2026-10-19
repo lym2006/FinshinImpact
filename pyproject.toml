@@ -10,7 +10,7 @@ where = ["src"]
 
 [project]
 name = "finshin-impact"
-version = "0.1.5"
+version = "0.1.6"
 description = "一个基于 aiogram 的机器人"
 requires-python = ">=3.11,<4.0"
 dependencies = [
@@ -25,7 +25,8 @@ dependencies = [
     "pillow==12.1.1",
     "playwright==1.62.0",
     "pydub==0.25.1",
-    "tenacity==9.1.4"
+    "tenacity==9.1.4",
+    "tomlkit==0.15.1"
 ]
 
 [project.optional-dependencies]
