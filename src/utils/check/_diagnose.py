@@ -37,7 +37,7 @@ from ._verify import run_channels
 _logger = get_logger("Mgr.Diagnose")
 
 # 仅当配置项与系统注册表都拿不到端口时，才回退扫描这组常见默认值
-_FALLBACK_PORTS = (7890, 7897, 7898)
+_FALLBACK_PORTS = (7890, 7897, 7900, 7898)
 
 # 结论行最多复测几个存活端口，防全挂场景等待过长
 _ALT_RETEST_LIMIT = 3
