@@ -14,9 +14,9 @@ from ._system_proxy import detect_system_proxy
 
 _PROBE_URL = "https://api.telegram.org/bot0:probe/getMe"
 _PROBE_TIMEOUT = 6
+
 # 仅当配置项与系统注册表都拿不到端口时，才回退扫描这组常见默认值
 _FALLBACK_PORTS = (7890, 7897, 7898)
-
 PENDING = "pending"
 CHECKING = "checking"
 OK = "ok"
@@ -102,14 +102,14 @@ def _reach(proxy: str | None) -> bool:
 def iter_diagnose(configured_proxy: str = ""):
     """逐项产出 {id, status, detail}
 
-    每行先 checking 再结果；通道判定与 BotManager 同源，
-    结论只对当前生效通道负责。
+    每行先 checking 再结果，结论只对当前生效通道负责。
     """
     reg = _registry_proxy()
     detected = detect_system_proxy()
     cfg = configured_proxy.strip()
     passed: list[str] = []
 
+    # 系统代理开关
     yield {"id": "sysproxy", "status": CHECKING, "detail": ""}
     yield {
         "id": "sysproxy",
@@ -121,6 +121,7 @@ def iter_diagnose(configured_proxy: str = ""):
         ),
     }
 
+    # 程序代理识别
     yield {"id": "detect", "status": CHECKING, "detail": ""}
     yield {
         "id": "detect",
@@ -130,7 +131,9 @@ def iter_diagnose(configured_proxy: str = ""):
         ),
     }
 
+    # 本地代理端口
     yield {"id": "ports", "status": CHECKING, "detail": ""}
+
     # 端口只探"有出处"的：配置项、系统注册表；两者都拿不到才回退默认组
     sources = dict.fromkeys(
         p for p in (_extract_port(cfg), _extract_port(str(reg["server"]))) if p
@@ -152,6 +155,7 @@ def iter_diagnose(configured_proxy: str = ""):
         "detail": prefix + "  ".join(marks) + suffix,
     }
 
+    # 生效通道判定与 SettingsManager 的三级解析保持一致，两处改动须同步
     effective = cfg or detected
     via = (
         f"配置代理 {effective}"
@@ -160,6 +164,7 @@ def iter_diagnose(configured_proxy: str = ""):
         if effective
         else "直连（代理留空且系统代理未开）"
     )
+    # 当前生效通道
     yield {"id": "current", "status": CHECKING, "detail": ""}
     current_ok = _reach(effective or None)
     yield {
@@ -168,6 +173,7 @@ def iter_diagnose(configured_proxy: str = ""):
         "detail": f"{via}：{'可达' if current_ok else '不可达'}",
     }
 
+    # 其他可通通道
     yield {"id": "channel", "status": CHECKING, "detail": ""}
     if current_ok:
         yield {"id": "channel", "status": OK, "detail": "当前通道已通，无需再试其他"}
@@ -187,6 +193,7 @@ def iter_diagnose(configured_proxy: str = ""):
             "detail": "可改用：" + "、".join(passed) if passed else "没有其他可通通道",
         }
 
+    # 诊断结论
     yield {"id": "advice", "status": CHECKING, "detail": ""}
     if current_ok:
         advice = "当前配置可达 Telegram，无需修改"

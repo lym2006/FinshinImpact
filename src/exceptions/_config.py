@@ -66,7 +66,7 @@ class ConfigAttrError(ConfigError):
         super().__init__()
 
 
-CONFIG_MAP: dict[type[BotError], str] = {
+CONFIG_MAP = {
     ConfigMissingError: "缺少配置文件，自动打开面板填写",
     ConfigTemplateMissingError: "缺少配置模板，阻止启动",
     ConfigInputError: "配置读取错误",

@@ -24,7 +24,6 @@ class BaseController(ABC):
     # ==================== 契约声明区 ====================
 
     # 子类必须声明这两个属性，否则实例化时会报错
-
     LOGGER_NAME: ClassVar[str]  # 日志器名称
     BTN_KEY: ClassVar[str]  # 绑定的按钮标识（如 "func"，底层会自动拼接为 "btn_func"）
 

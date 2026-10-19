@@ -12,7 +12,7 @@ from collections.abc import Callable
 from typing import Any, Literal, cast
 
 LifecycleType = Literal["hook_sync", "hook_async", "thread"]
-TargetType = Callable | threading.Thread
+TargetType = Callable | threading.Thread | None
 
 _registry: dict[
     LifecycleType, list[tuple[TargetType, str, asyncio.AbstractEventLoop | None]]
@@ -81,6 +81,7 @@ def _run_shutdown() -> list[str]:
         except Exception as e:
             failures.append(f"协程异常 [{desc}]: {type(e).__name__}: {e}")
 
+    # 逆序清理：后注册先释放，三类互不阻断
     for hook, desc, _ in reversed(_registry["hook_sync"]):
         try:
             cast(Callable, hook)()
@@ -95,6 +96,7 @@ def _run_shutdown() -> list[str]:
         except Exception as e:
             failures.append(f"异步钩子异常 [{desc}]: {type(e).__name__}: {e}")
 
+    # 线程 join 带超时：卡死的线程不拖死清理
     current = threading.current_thread()
     for thread, desc, _ in reversed(_registry["thread"]):
         thread = cast(threading.Thread, thread)

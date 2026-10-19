@@ -26,6 +26,7 @@ def _retry_if_network_running(state: RetryCallState) -> bool:
     """判定是否需要重连"""
     if state.outcome is None or not state.outcome.failed:
         return False
+
     # outcome 是 Future，用 exception() 取异常
     exc = state.outcome.exception()
     return isinstance(exc, TelegramNetworkError) and not state.args[0].is_stopping
@@ -34,7 +35,6 @@ def _retry_if_network_running(state: RetryCallState) -> bool:
 _RECONNECT_TIMEOUT = 60
 _MIN_RETRY_DELAY = 1
 _MAX_RETRY_DELAY = 10
-
 _logger = get_logger("Service")
 
 
@@ -90,12 +90,11 @@ class BotService:
 
         if self._loop and not self._loop.is_closed():
             try:
-                # stop_polling 是协程，必须投递到 loop 中 await 执行；
-                # call_soon_threadsafe 只能调度同步回调，直接传协程函数
-                # 会产生"从未 await 的协程对象"警告且不会真正停止轮询
+                # stop_polling 是协程：threadsafe 投递才会 await，同步调度传协程不会真停
                 asyncio.run_coroutine_threadsafe(
                     self._dispatcher.stop_polling(), self._loop
                 )
+
                 # polling 停止后收尾关闭 loop（轮询协程退出时自行处理）
             except RuntimeError:
                 pass
@@ -138,8 +137,7 @@ class BotService:
         except asyncio.CancelledError:
             _logger.debug("轮询被取消")
         finally:
-            # 只清自己并按对象注销：全局 shutdown_all 留给进程退出，
-            # 热重载时旧服务不再动注册表（顺序混乱与互踩的根因）
+            # 只清自己并按对象注销：全局清理留给进程退出，防热重载互踩注册表
             try:
                 await self._bot.session.close()
             except Exception as e:

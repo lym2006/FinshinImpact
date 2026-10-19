@@ -22,14 +22,11 @@ class WaitDialog(BaseDialog):
         self._done = False
         self._idx = 0
         self._frames = PD.spinner_frames
-
         self.setStyleSheet(build_wait_dialog_qss())
         self.setFixedSize(PD.width, PD.height)
-
         layout = QVBoxLayout(self)
         layout.setContentsMargins(*[PD.pad] * 4)
         layout.addStretch()
-
         row = QHBoxLayout()
         row.setSpacing(GLOBAL.radius)
         self._spinner = QLabel(self._frames[0])
@@ -42,13 +39,11 @@ class WaitDialog(BaseDialog):
         row.addStretch()
         layout.addLayout(row)
         layout.addStretch()
-
         self._btn = QPushButton(PD.ok_text)
         self._btn.setObjectName("btn_primary")
         self._btn.clicked.connect(self.accept)
         self._btn.hide()
         layout.addWidget(self._btn, alignment=Qt.AlignmentFlag.AlignCenter)
-
         self._tick = QTimer(self)
         self._tick.setInterval(PD.tick_ms)
         self._tick.timeout.connect(self._advance)

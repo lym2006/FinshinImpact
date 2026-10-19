@@ -19,7 +19,6 @@ def create_file_handler(
 ) -> RotatingFileHandler:
     """创建文件输出 Handler"""
     log_path.parent.mkdir(parents=True, exist_ok=True)
-
     handler = RotatingFileHandler(
         log_path,
         maxBytes=_MAX_BYTES,

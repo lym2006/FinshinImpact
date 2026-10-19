@@ -24,7 +24,6 @@ if TYPE_CHECKING:
     from .core.models import UserSession
 
 logger_retry = get_logger("Plg.AI.Retry")
-
 __all__ = [
     "build_message",
     "make_data",
@@ -36,9 +35,7 @@ __all__ = [
 
 P = ParamSpec("P")
 T = TypeVar("T")
-
-# 重试器硬编码配置
-_MAX_RETRIES = 3
+_MAX_RETRIES = 3  # 重试器硬编码配置
 _MIN_RETRY_DELAY = 1
 _MAX_RETRY_DELAY = 10
 

@@ -1,1 +1,77 @@
-# src/plugins/AI/services/_render/_screenshot.py"""截图服务（内部实现）- 实现懒加载浏览器与并发控制- 提供网页截图与边框裁剪"""import asynciofrom pathlib import Pathimport numpy as npfrom PIL import Imagefrom playwright.async_api import Error as PlaywrightErrorfrom utils import get_loggerfrom ...browser import browser_managerfrom ...config import ai_configfrom ._config import render_configlogger = get_logger("Plg.AI.Render")# ==================== 全局状态管理 ====================_semaphore = asyncio.Semaphore(render_config.max_concurrent_screenshots)# ==================== 底层截图逻辑 ====async def _get_screenshot(file_name: str, html_path: Path) -> Path | None:    """执行截图逻辑"""    if not html_path.exists():        logger.error(f"源文件不存在: {html_path}")        return    new_path = ai_config.record_dir / f"temp/{file_name}.png"    page = None    try:        browser = await browser_manager.get_browser()        page = await browser.new_page()        await page.goto(            f"file:///{html_path}",            wait_until="networkidle",            timeout=render_config.page_load_timeout,        )        await page.wait_for_timeout(render_config.wait_after_load)        dimensions = await page.evaluate("""() => {            return {                width:document.body.scrollWidth,                height:document.body.scrollHeight            }        }""")        new_width = max(            int(dimensions["width"]) + render_config.viewport_safe_margin,            render_config.min_viewport_width,        )        new_height = max(            int(dimensions["height"]) + render_config.viewport_safe_margin,            render_config.render_cavas_height,        )        await page.set_viewport_size({"width": new_width, "height": new_height})        await page.wait_for_timeout(render_config.wait_after_resize)        await page.screenshot(path=new_path, full_page=False)        logger.info(f"截图已保存: {new_path}")    except PlaywrightError as e:        logger.send_error("Playwright 引擎错误", e)    except Exception as e:        logger.send_error("截图发生未知错误", e)    finally:        # 关闭 Page，防止内存泄漏        if page:            try:                await page.close()            except Exception:                pass    return new_path# ==================== 智能裁剪逻辑 ====================def _crop_screenshot(file_path: Path) -> None:    """按像素裁剪截图    同步函数，需在线程池中运行。    """    try:        img = Image.open(file_path).convert("""RGB""")        img_array = np.array(img)        if img_array.size == 0:            logger.debug(f"图片内容为空，跳过裁剪: {file_path}")            return        is_orange = np.all(img_array == render_config.orange_target, axis=-1)        rows = np.where(~np.all(is_orange, axis=1))[0]        cols = np.where(~np.all(is_orange, axis=0))[0]        if rows.size == 0 or cols.size == 0:            logger.debug("未检测到有效内容，跳过裁剪")            return        top, bottom = rows[0], rows[-1] + 1        left, right = cols[0], cols[-1] + 1        cropped_array = img_array[top:bottom, left:right]        cropped_img = Image.fromarray(cropped_array)        cropped_img.save(file_path)        logger.info(            f"裁剪成功！\n原尺寸: {img.size}\n新尺寸: {cropped_img.size}\n区域: ({left}, {top}) 到 ({right}, {bottom})"        )    except (OSError, ValueError) as e:        logger.send_error("裁剪出错", e)# ==================== 截图主入口 ====================async def screenshot(file_name: str, html_path: Path) -> None:    """截图主入口，带并发控制与异常兜底"""    async with _semaphore:        try:            new_path = await _get_screenshot(file_name, html_path)            if new_path:                # 将同步的 CPU 密集型裁剪任务放入线程池，避免阻塞事件循环                await asyncio.to_thread(_crop_screenshot, new_path)        except Exception as e:            logger.send_error("截图任务整体失败", e)
+# src/plugins/AI/services/_render/_screenshot.py
+"""截图服务（内部实现）
+
+- 实现懒加载浏览器与并发控制
+- 提供网页截图与边框裁剪"""
+import asyncio
+from pathlib import Path
+
+import numpy as np
+from PIL import Image
+from playwright.async_api import Error as PlaywrightError
+
+from utils import get_logger
+
+from ...browser import browser_manager
+from ...config import ai_config
+from ._config import render_config
+
+logger = get_logger("Plg.AI.Render")
+# ==================== 全局状态管理 ====================
+_semaphore = asyncio.Semaphore(render_config.max_concurrent_screenshots)
+# ==================== 底层截图逻辑 ====
+async def _get_screenshot(file_name: str, html_path: Path) -> Path | None:    """执行截图逻辑"""    if not html_path.exists():        logger.error(f"源文件不存在: {html_path}")
+        return
+    new_path = ai_config.record_dir / f"temp/{file_name}.png"
+    page = None
+    try:        # 1. 懒加载共享浏览器
+        browser = await browser_manager.get_browser()
+        # 2. 新页面加载 HTML
+        page = await browser.new_page()
+        await page.goto(            f"file:///{html_path}",            wait_until="networkidle",            timeout=render_config.page_load_timeout,        )
+        await page.wait_for_timeout(render_config.wait_after_load)
+        # 3. 量取内容实际尺寸
+        dimensions = await page.evaluate("""() => {
+            return {
+                width:document.body.scrollWidth,
+                height:document.body.scrollHeight
+            }
+        }""")
+        new_width = max(            int(dimensions["width"]) + render_config.viewport_safe_margin,            render_config.min_viewport_width,        )
+        new_height = max(            int(dimensions["height"]) + render_config.viewport_safe_margin,            render_config.render_cavas_height,        )
+        # 4. 按内容重设视口，等待渲染稳定
+        await page.set_viewport_size({"width": new_width, "height": new_height})
+        await page.wait_for_timeout(render_config.wait_after_resize)
+        # 5. 截图落盘
+        await page.screenshot(path=new_path, full_page=False)
+        logger.info(f"截图已保存: {new_path}")
+    except PlaywrightError as e:        logger.send_error("Playwright 引擎错误", e)
+    except Exception as e:        logger.send_error("截图发生未知错误", e)
+    finally:        # 关闭 Page，防止内存泄漏
+        if page:            try:                await page.close()
+            except Exception:                pass
+    return new_path
+# ==================== 智能裁剪逻辑 ====================
+def _crop_screenshot(file_path: Path) -> None:    """按像素裁剪截图
+
+    同步函数，需在线程池中运行。    """    try:        img = Image.open(file_path).convert("""RGB""")
+        img_array = np.array(img)
+        if img_array.size == 0:            logger.debug(f"图片内容为空，跳过裁剪: {file_path}")
+            return
+        is_orange = np.all(img_array == render_config.orange_target, axis=-1)
+        rows = np.where(~np.all(is_orange, axis=1))[0]
+        cols = np.where(~np.all(is_orange, axis=0))[0]
+        if rows.size == 0 or cols.size == 0:            logger.debug("未检测到有效内容，跳过裁剪")
+            return
+        top, bottom = rows[0], rows[-1] + 1
+        left, right = cols[0], cols[-1] + 1
+        cropped_array = img_array[top:bottom, left:right]
+        cropped_img = Image.fromarray(cropped_array)
+        cropped_img.save(file_path)
+        logger.info(            f"裁剪成功！\n原尺寸: {img.size}\n新尺寸: {cropped_img.size}\n区域: ({left}, {top}) 到 ({right}, {bottom})"        )
+    except (OSError, ValueError) as e:        logger.send_error("裁剪出错", e)
+# ==================== 截图主入口 ====================
+async def screenshot(file_name: str, html_path: Path) -> None:    """截图主入口，带并发控制与异常兜底"""    async with _semaphore:        try:            new_path = await _get_screenshot(file_name, html_path)
+            if new_path:                # 将同步的 CPU 密集型裁剪任务放入线程池，避免阻塞事件循环
+                await asyncio.to_thread(_crop_screenshot, new_path)
+        except Exception as e:            logger.send_error("截图任务整体失败", e)

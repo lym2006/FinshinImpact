@@ -43,8 +43,7 @@ class ChatFilter(Filter):
                     for keyword in ai_config.group_triggers
                 )
             case _:
-                # 其他类型一律忽略
-                return False
+                return False  # 其他类型一律忽略
 
 
 # ==================== AI 聊天路由处理函数 ====================

@@ -20,7 +20,6 @@ from ..dialogs import WaitDialog
 from ._base import BaseController
 
 _LOGS_DIR = ROOT_DIR / "logs"
-
 _EXPLORER_CLASSES = {"CabinetWClass", "ExploreWClass"}
 _SW_RESTORE = 9
 
@@ -80,8 +79,7 @@ class LogsController(BaseController):
                 self.logger.info("成功打开日志目录")
 
             except OSError as e:
-                # 捕获 Windows 底层 API 可能抛出的系统级错误
-                # 比如路径含空格、权限不足、explorer 崩溃等
+                # 路径空格、权限不足、explorer 崩溃等系统级错误统一兜底
                 self.logger.send_error("打开日志目录失败", e)
 
             except Exception as e:
@@ -117,17 +115,19 @@ class UpdateController(BaseController):
     BTN_KEY = "update"
 
     def _execute(self) -> None:
-        """检查版本更新：模态转圈，结果经用户确认后关闭
+        """检查版本更新
 
-        弹窗模态天然挡住重复点击；网络活在临时线程里。
+        模态转圈（防重复点击），结果经用户确认后关闭；网络活在临时线程。
         """
         dialog = WaitDialog(PD.check_text, parent=self.gui)
         worker = _UpdateWorker()
         worker.done.connect(dialog.finish)
         worker.done.connect(
-            lambda msg, passed: self.logger.info(f"版本检查：{msg}")
-            if passed
-            else self.logger.error(f"版本检查失败：{msg}")
+            lambda msg, passed: (
+                self.logger.info(f"版本检查：{msg}")
+                if passed
+                else self.logger.error(f"版本检查失败：{msg}")
+            )
         )
         worker.start()
         dialog.exec()

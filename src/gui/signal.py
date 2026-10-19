@@ -65,6 +65,7 @@ class SafeSignal:
     def __get__(self, instance: QObject | None, owner: Any = None) -> Any:
         if instance is None:
             return self
+
         # 包装实例按描述符缓存，保证 tag 去重集合稳定存活
         cache: dict = instance.__dict__.setdefault("_safe_signal_cache", {})
         if self not in cache:

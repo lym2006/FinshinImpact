@@ -22,16 +22,13 @@ class _StaticAIConfig:
     存放固定不变的值。
     """
 
-    # 路径配置
-    record_dir: Path = RECORDS_DIR
+    record_dir: Path = RECORDS_DIR  # 路径配置
     black_dir: Path = BLACKLIST_DIR
 
     # API 与模型基础配置
     base_url: str = "https://api.siliconflow.cn/v1"
     request_path: str = "/chat/completions"
-
-    # 消息发送相关
-    msg_chunk_size: int = 4000
+    msg_chunk_size: int = 4000  # 消息发送相关
     flood_threshold: int = 5
     think_throttle_sec: float = 1.2
     trim_preview_len: int = 2000
@@ -48,8 +45,7 @@ class _DynamicAIConfig:
     """
 
     def __init__(self) -> None:
-        # 初始化时加载一次静态配置
-        self._static = _StaticAIConfig()
+        self._static = _StaticAIConfig()  # 初始化时加载一次静态配置
 
         # 定义动态属性的获取规则：属性名 -> (配置中心路径, 类型)
         self._dynamic_attr_map = {
@@ -70,7 +66,6 @@ class _DynamicAIConfig:
         静态优先，动态实时读取
         """
         # ConfigError 由装饰器发信号后上抛；AttributeError 原样透出
-        # 优先从静态配置中查找
         if hasattr(self._static, name):
             return getattr(self._static, name)
 
@@ -94,5 +89,4 @@ class _DynamicAIConfig:
         raise AttributeError(f"AIConfig 对象没有属性 '{name}'")
 
 
-# 全局配置单例
-ai_config = _DynamicAIConfig()
+ai_config = _DynamicAIConfig()  # 全局配置单例

@@ -75,6 +75,8 @@ def detect_system_proxy() -> str | None:
         return None
     address = _pick_from_entries(raw)
     return _to_url(address) if address else None
+
+
 # ==================== 端口扫描 ====================
 
 # 常见本地代理软件默认监听端口（Clash/v2rayN/mihomo 等）
@@ -98,4 +100,6 @@ def scan_proxy_ports() -> list[str]:
     """
     with ThreadPoolExecutor(max_workers=len(_PROXY_PORTS)) as pool:
         alive = list(pool.map(_port_alive, _PROXY_PORTS))
-    return [f"http://127.0.0.1:{p}" for p, ok in zip(_PROXY_PORTS, alive, strict=True) if ok]
+    return [
+        f"http://127.0.0.1:{p}" for p, ok in zip(_PROXY_PORTS, alive, strict=True) if ok
+    ]

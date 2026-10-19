@@ -20,17 +20,14 @@ class HintDialog(BaseDialog):
         super().__init__(parent=parent, title=PD.title)
         self.setStyleSheet(build_hint_dialog_qss())
         self.setFixedSize(PD.width, PD.height)
-
         layout = QVBoxLayout(self)
         layout.setContentsMargins(*[PD.pad] * 4)
         layout.setSpacing(PD.spacing)
-
         label = QLabel(text)
         label.setWordWrap(True)
         label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(label)
         layout.addStretch()
-
         btn = QPushButton(PD.ok_text)
         btn.setObjectName("btn_primary")
         btn.clicked.connect(self.accept)

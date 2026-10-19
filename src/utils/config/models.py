@@ -13,8 +13,7 @@ ConfigValue = str | bool | float | list[str] | None
 
 # ==================== 运行时配置数据结构 ====================
 
-# 一个标签页
-TabData = dict[str, ConfigValue]
+TabData = dict[str, ConfigValue]  # 一个标签页
 
 # 完整 TOML 配置文件结构
 AppConfigData = dict[str, TabData]
@@ -25,8 +24,7 @@ AppConfigData = dict[str, TabData]
 # 前置项失败导致某项无法验证时的文案前缀（proxy 坏则 token 测不了）
 PENDING_MARK = "暂未检测"
 
-# 代理三级解析：配置地址 → 系统代理 → 直连（TUN 由 OS 层透明接管），
-# 谁先连通谁生效；模式不落盘、GUI 不代填，全部交给启动校验与网络诊断
+# 代理三级解析（配置→系统→直连）：模式不落盘、GUI 不代填，交给启动校验与诊断
 PROXY_FIELD = "proxy"
 
 # ==================== UI Schema 结构契约 ====================
@@ -51,5 +49,4 @@ class TabSchema:
     fields: list[FieldSchema] = field(default_factory=list)
 
 
-# 完整 UI 渲染结构树
-AppSchema = list[TabSchema]
+AppSchema = list[TabSchema]  # 完整 UI 渲染结构树

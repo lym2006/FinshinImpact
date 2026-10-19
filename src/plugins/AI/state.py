@@ -7,6 +7,5 @@
 from asyncio import Lock
 from collections import defaultdict
 
-# 用户级异步锁字典
-# 当访问不存在的键（新用户）时，自动创建新的 asyncio.Lock 实例
+# 用户级异步锁：defaultdict 对新用户自动建锁
 user_locks: dict[str, Lock] = defaultdict(Lock)

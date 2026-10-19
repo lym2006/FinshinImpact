@@ -162,5 +162,4 @@ class RenderTheme:
         return " ".join(f"{v:d}px" for v in self.blockquote_radius)
 
 
-# 实例化为全局单例
-render_theme = RenderTheme()
+render_theme = RenderTheme()  # 实例化为全局单例

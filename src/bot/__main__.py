@@ -7,7 +7,7 @@
 import asyncio
 import sys
 import threading
-from asyncio import Future
+from concurrent.futures import Future
 from typing import cast
 
 from PySide6.QtWidgets import QApplication
@@ -28,7 +28,7 @@ class Main:
         self.logger = get_logger("Main")
         self._loop = asyncio.new_event_loop()
         self._manager = BotManager(self._loop)
-        self._bot_task: Future | None = None  # run_coroutine_threadsafe 句柄
+        self._bot_task: Future | None = None  # 跨线程完成句柄，非 asyncio 任务
         self._loop_thread: threading.Thread | None = None
 
     def main(self) -> int:
@@ -45,22 +45,28 @@ class Main:
             settings_controller = cast(SettingsController, instances.get("settings"))
             shutdown_controller = cast(ShutdownController, instances.get("shutdown"))
             window.set_shutdown_handler(shutdown_controller.shutdown_now)
-            # 发射方是 asyncio 线程，Queued 保证对话框在 GUI 线程创建
+
+            # 强制配置信号：投递到 GUI 线程，呼出 SETUP 面板
             gui_bridge.request_force_setup.connect(
                 settings_controller.show_setup_dialog, "强制配置", queued=True
             )
+
             # 配置保存信号：唤醒验证循环或触发热重载
             gui_bridge.config_saved.connect(self._manager.on_config_saved, "配置唤醒")
+
             # 关闭请求信号：Manager 层统一处理服务停止与清理放行
             gui_bridge.request_shutdown.connect(
                 self._manager.on_shutdown_request, "关闭唤醒"
             )
+
             # 取消关闭信号：Manager 复位，恢复响应配置事件
             gui_bridge.request_shutdown_cancel.connect(
                 self._manager.on_shutdown_cancelled, "取消关闭"
             )
-            # 致命错误信号：发射方在 asyncio 线程，必须 Queued 投递到 GUI 线程
+
+            # 致命错误信号：Queued 投递到 GUI 线程
             gui_bridge.request_fatal.connect(window.show_fatal, "致命错误", queued=True)
+
             # 向导内"退出程序"按钮：携带向导窗口，确认框以其为父级
             gui_bridge.request_exit.connect(
                 shutdown_controller.request_exit_from, "弹窗退出"
@@ -75,9 +81,7 @@ class Main:
             loop_thread.start()
             self._loop_thread = loop_thread
 
-            # 4. 启动 Manager
-            # 必须 run_coroutine_threadsafe：跨线程 create_task 不写自管道，
-            # loop 若已进 select 将永远睡死（点 X 才被顺带唤醒的竞态根因）
+            # 4. 启动 Manager：threadsafe 入口会唤醒 selector，裸 create_task 叫不醒
             self._bot_task = asyncio.run_coroutine_threadsafe(
                 self._manager.start(), self._loop
             )
@@ -97,16 +101,15 @@ class Main:
     def _cleanup(self) -> None:
         """统一清理资源
 
-        作为 _polling_task 已执行 shutdown_all 后的兜底保留。
+        停服务、清生命周期注册表、关事件循环。
         """
         self._manager.stop_service()
-        # 首次清空 registry，后续为 no-op，安全调用；失败项由本层记录
+
+        # 清理失败项以列表返回，由本层记录
         for item in shutdown_all():
             self.logger.error(f"清理失败: {item}")
 
-        # 停止并关闭 asyncio loop：stop 经 call_soon_threadsafe 投递后，
-        # 必须 join 等循环线程真正退出再 close，
-        # 否则 close 撞上 running 状态直接 RuntimeError
+        # close 拒绝 running 循环：先投递 stop，join 确认退出后再关
         if self._loop.is_running():
             self._loop.call_soon_threadsafe(self._loop.stop)
         if self._loop_thread and self._loop_thread.is_alive():
