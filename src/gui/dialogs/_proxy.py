@@ -58,22 +58,19 @@ class ProxyDialog(BaseDialog):
         self.setWindowModality(Qt.WindowModality.NonModal)
         self._configured = configured_proxy
         self._worker: _DiagWorker | None = None
+
         # 运行中的探测线程集合：finished 前禁止被 GC
         self._workers: set[_DiagWorker] = set()
         # {行id: [标题, 状态, 详情]}：渲染的唯一数据源
         self._rows: dict[str, list] = {}
-
         self.setStyleSheet(build_proxy_dialog_qss())
         self.resize(PD.width, PD.height)
-
         layout = QVBoxLayout(self)
         layout.setContentsMargins(*[PD.pad] * 4)
-
         self._view = QTextEdit()
         self._view.setObjectName("proxy_view")
         self._view.setReadOnly(True)
         layout.addWidget(self._view)
-
         self._btn = QPushButton(PD.btn_text)
         self._btn.setObjectName("btn_primary")
         self._btn.clicked.connect(self.start_diagnose)
@@ -96,7 +93,7 @@ class ProxyDialog(BaseDialog):
         cur = self._rows.get("current")
         if cur and cur[1] != "ok":
             cur[1] = "ok"
-            cur[2] = "可达（配置验证刚刚通过）"
+            cur[2] = "配置验证通过"
             changed = True
         adv = self._rows.get("advice")
         if adv and adv[1] != "ok":
@@ -107,10 +104,7 @@ class ProxyDialog(BaseDialog):
             self._render()
 
     def start_diagnose(self) -> None:
-        """重跑一遍
-
-        先复位骨架，再启动后台线程
-        """
+        """运行诊断"""
         if any(w.isRunning() for w in self._workers):
             return
         self._btn.setEnabled(False)
@@ -119,7 +113,6 @@ class ProxyDialog(BaseDialog):
             r["id"]: [r["title"], r["status"], r["detail"]] for r in diagnose_plan()
         }
         self._render()
-
         self._worker = _DiagWorker(self._configured, parent=self)
         self._worker.row_update.connect(self._on_row)
         self._worker.finished.connect(lambda w=self._worker: self._workers.discard(w))
@@ -127,27 +120,27 @@ class ProxyDialog(BaseDialog):
         self._worker.start()
 
     def _on_row(self, row: dict) -> None:
-        """单帧刷新
-
-        只改变化的那一行
-        """
+        """单行刷新"""
         entry = self._rows.get(row["id"])
         if entry is not None:
             entry[1] = row["status"]
             entry[2] = row["detail"]
         self._render()
+
         # advice 有两帧（checking+结果），复位与拉向导只认结果帧
         if row["id"] == "advice" and row["status"] != "checking":
             self._btn.setEnabled(True)
             self._btn.setText(PD.retry_text)
+
             # 线程对象由 finished 统一出集合；此处仅解除当前代引用
             self._worker = None
+
             # 当前生效通道不通：拉起强制向导并标红代理项
             if row.get("broken"):
                 gui_bridge.request_force_setup.emit({"proxy": row["detail"]})
 
     def _render(self) -> None:
-        """按当前状态全量重绘 HTML（行少，成本可忽略）"""
+        """按当前状态全量重绘 HTML"""
         lines = []
         for title, status, detail in self._rows.values():
             mark, color = _STATE[status]
@@ -165,13 +158,14 @@ class ProxyDialog(BaseDialog):
 
     # ==================== 关闭收尾 ====================
 
-    def reject(self):
+    def reject(self) -> None:
         """关窗前等待检测线程收尾"""
         gui_bridge.config_verified.disconnect("诊断刷新")
         self._join_workers()
         return super().reject()
 
     def closeEvent(self, event) -> None:  # noqa: N802
+
         # 中断全部在跑线程并逐个等待：finished 前集合持有，防析构崩溃
         for worker in self._workers:
             worker.requestInterruption()

@@ -22,13 +22,11 @@ class ShutdownDialog(BaseDialog):
         # 固定大小
         self.setFixedSize(DIALOG.width, DIALOG.height)
 
-        # 设置背景色
-        self.setStyleSheet(
+        self.setStyleSheet(  # 设置背景色
             f"QDialog {{ background-color: {DIALOG.bg_color}; }}",
         )
 
-        # 布局与间距
-        layout = QVBoxLayout(self)
+        layout = QVBoxLayout(self)  # 布局与间距
         layout.setContentsMargins(*([DIALOG.padding] * 4))
         layout.setSpacing(DIALOG.spacing)
 
@@ -38,9 +36,7 @@ class ShutdownDialog(BaseDialog):
         self._label.setStyleSheet(f"color: {DIALOG.text_color};")
         self._label.setFont(QFont(DIALOG.font_name, DIALOG.font_size))
         layout.addWidget(self._label)
-
-        # 按钮区
-        btn_layout = QHBoxLayout()
+        btn_layout = QHBoxLayout()  # 按钮区
         btn_layout.addStretch()
 
         # 取消按钮
@@ -60,7 +56,6 @@ class ShutdownDialog(BaseDialog):
             f"color: {DIALOG.confirm_color}; border-radius: {GLOBAL.radius}px; }}"
         )
         self._confirm_btn.clicked.connect(self.accept)
-
         btn_layout.addWidget(self._cancel_btn)
         btn_layout.addWidget(self._confirm_btn)
         layout.addLayout(btn_layout)

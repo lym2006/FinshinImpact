@@ -11,9 +11,7 @@ from typing import ParamSpec, TypeVar, cast
 from utils.logger import get_logger
 
 logger = get_logger("GUI.Guard")
-
-# 泛型定义
-P = ParamSpec("P")
+P = ParamSpec("P")  # 泛型定义
 T = TypeVar("T")
 
 

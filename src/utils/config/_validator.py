@@ -14,8 +14,7 @@ _TYPE_NAMES = {
     bool: "bool",
 }
 
-# 数值字段合法区间（闭区间）：仅约束 float 字段，缺省不校验范围
-# temperature 上限 2 为 OpenAI 兼容规范；超时 0 会让请求秒断故设下界
+# 数值区间（闭区间，仅 float）：temperature 上限 2 为 OpenAI 兼容规范
 _BOUNDS: dict[str, tuple[float, float]] = {
     "temperature": (0.0, 2.0),
     "network_timeout": (1.0, 600.0),

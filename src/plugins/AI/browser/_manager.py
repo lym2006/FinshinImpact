@@ -25,8 +25,7 @@ class BrowserManager:
 
     async def get_browser(self) -> Browser:
         """获取全局浏览器实例"""
-        # 未启动或已断开则自动初始化（懒加载 + 双重检查锁）
-        # 无锁，高性能
+        # 已连接走无锁快路径，否则加锁懒加载
         if self._browser and self._browser.is_connected():
             return self._browser
 
@@ -37,10 +36,11 @@ class BrowserManager:
 
             # 注册关闭钩子
             register_lifecycle(self._shutdown, "Playwright 浏览器", "hook_async")
-
             logger.info("正在初始化全局 Playwright 浏览器...")
+
             # 启动 Playwright 引擎
             self._playwright = await async_playwright().start()
+
             # 启动 Chromium 浏览器
             self._browser = await self._playwright.chromium.launch(
                 headless=True,

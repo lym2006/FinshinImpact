@@ -12,8 +12,7 @@ from aiogram import Dispatcher
 
 from exceptions import PluginsMissingError
 
-# 插件加载白名单（严格按此顺序注册）
-# 注意：欢迎与帮助类插件应置于前端，核心 AI 插件必须置于最后
+# 加载白名单：顺序即优先级，欢迎帮助在前、核心 AI 必须最后
 _PLUGIN_ORDER = [
     "welcome",  # 系统级命令
     "help",  # 帮助命令
@@ -60,8 +59,7 @@ def register_routers(dispatcher: Dispatcher) -> PluginReport:
 
         except ModuleNotFoundError as e:
             if f"plugins.{plugin_name}" in str(e):
-                # 插件本身不存在
-                reason = "未找到（检查目录结构）"
+                reason = "未找到（检查目录结构）"  # 插件本身不存在
             else:
                 # 插件内部缺少依赖
                 reason = f"内部依赖缺失: {e}"

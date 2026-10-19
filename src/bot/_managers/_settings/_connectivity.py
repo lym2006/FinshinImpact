@@ -27,10 +27,10 @@ from exceptions import (
 from utils.config import PENDING_MARK
 from utils.ssl import SSLUnverifiedSession
 
-# 本地超时：防不可达代理挂满系统级 TCP 超时（~21s）
+# 本地超时：防不可达代理挂满系统级 TCP 超时
 _CONNECT_TIMEOUT = 5.0
 
-# yarl 构造期异常消息 → 配置键的解析规则
+# 构造期异常消息 → 配置键的解析规则
 _SCHEME_RE = re.compile(r"Invalid scheme component:\s*(.*)", re.IGNORECASE)
 
 
@@ -125,7 +125,7 @@ async def check_config(
 ) -> dict[str, str]:
     """双探测聚合
 
-    proxy 先测，通过后再测 token；proxy 坏时 token 标记"暂未检测"而非"无效"
+    proxy 先测，通过后再测 token；proxy 坏时 token 标记"暂未检测"而非"无效"。
     """
     errors: dict[str, str] = {}
     proxy_text = ""
@@ -137,6 +137,7 @@ async def check_config(
 
     if proxy_text:
         errors["proxy"] = proxy_text
+
         # 代理坏时请求出不了本机，getMe 结果无意义：标暂未检测而非无效
         errors["telegram_token"] = f"{PENDING_MARK}：代理修复后复查"
         return errors

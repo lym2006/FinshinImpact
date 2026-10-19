@@ -48,7 +48,7 @@ class ServiceManager(BaseManager):
         bot = Bot(token=token, session=SSLUnverifiedSession(proxy=proxy))
         dispatcher = Dispatcher()
 
-        # 注册中间件和路由（守卫注册在外层日志之后，兜底所有下游异常）
+        # 注册中间件和路由
         dispatcher.update.outer_middleware(LoggingMiddleware())
         report = register_routers(dispatcher)
         total = len(report)

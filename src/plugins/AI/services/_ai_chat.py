@@ -51,7 +51,6 @@ async def handle_ai_chat(message: Message, bot: Bot) -> None:
     session = user_sessions[user]
     queue = task_queues[user]
     task = TelegramTaskItem(message, bot)
-
     lock = user_locks[user]
     async with lock:
         await queue.add_task(task)

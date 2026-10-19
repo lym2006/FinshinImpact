@@ -33,6 +33,7 @@ async def monitor_loop(user: str) -> None:
 
     try:
         while True:
+            # 消费循环：peek 队首，空则置非活跃退出
             task = await queue.peek_front()
             if task is None:
                 logger.debug(f"{user} 队列为空")
@@ -40,6 +41,7 @@ async def monitor_loop(user: str) -> None:
                 break
 
             try:
+                # 状态先上屏；群组不推思考过程只给指引
                 preview = "🧠 正在思考中"
                 if task.type_ in [ChatType.GROUP, ChatType.SUPERGROUP]:
                     preview += "\n群组不推送思考过程，如需要使用 /history 命令查看"
@@ -74,6 +76,7 @@ async def monitor_loop(user: str) -> None:
         raise
 
     except Exception as e:
+        # 外层兜底：崩溃只记录不外抛，防拖垮宿主
         logger.send_error(f"{user} 监控循环崩溃", e)
 
     finally:

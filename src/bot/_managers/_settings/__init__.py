@@ -22,9 +22,7 @@ from utils.config import (
 from .._base import BaseManager
 from ._connectivity import check_config
 
-# 单次验证的硬超时
-_VERIFY_TIMEOUT = 7.0
-
+_VERIFY_TIMEOUT = 7.0  # 单次验证的硬超时
 __all__ = ["SettingsManager"]
 
 
@@ -47,7 +45,8 @@ def _build_candidates(configured: str, sys_proxy: str | None) -> list[str]:
         candidates.append(configured)
     if sys_proxy and sys_proxy not in candidates:
         candidates.append(sys_proxy)
-    candidates.append("")  # 直连兜底：OS 层 TUN 生效时此步即通
+    # 直连兜底：TUN 接管、或代理软件仅关系统代理开关但进程仍监听时，此步即通
+    candidates.append("")
     return candidates
 
 
@@ -64,10 +63,13 @@ class SettingsManager(BaseManager):
         """初始化配置管理器"""
         super().__init__()
         self._get_config = get_config_func
+
         # 最近一次验证失败：{配置键: 错误文案}，供向导标注字段
         self.last_errors: dict[str, str] = {}
+
         # 三级解析出的生效通道，未通过为 None；空串表示直连
         self.resolved_proxy: str | None = None
+
         # 上次验证时的网络参数：(token, 配置代理)，变化判定基准
         self._net_state: tuple[str, str] = ("", "")
 
@@ -79,18 +81,13 @@ class SettingsManager(BaseManager):
         config_manager.load(load_config())
 
     async def verify_connectivity(self) -> bool:
-        """按字段变化分流的连通校验
-
-        仅 token 变时复用生效通道单点探测，不重跑候选链；
-        其余情况配置代理 → 系统代理 → 直连，谁先通过谁生效；
-        仅 token 错时不换道直接上报；三通道全挂再走本机端口扫描兜底。
-        """
+        """按字段变化分流的连通校验，通过则记录生效通道"""
         schema = get_schema()
         prev_token, prev_cfg = self._net_state
         token, raw = self._get_config()
         configured = raw.strip()
         self._net_state = (token, configured)
-
+        # 分流判定：仅 token 变则复用生效通道，不重跑候选链
         token_only = (
             self.resolved_proxy is not None
             and configured == prev_cfg
@@ -102,6 +99,7 @@ class SettingsManager(BaseManager):
         else:
             candidates = _build_candidates(configured, detect_system_proxy())
 
+        # 逐通道探测：先通者生效，token 错不换道
         resolved: str | None = None
         net_errors: dict[str, str] = {}
         start = time.monotonic()
@@ -109,8 +107,7 @@ class SettingsManager(BaseManager):
             probe_start = time.monotonic()
             resolved, net_errors = await self._attempt_channel(token, proxy)
             self.logger.debug(
-                f"通道 {proxy or '直连'} 探测耗时"
-                f" {time.monotonic() - probe_start:.1f}s"
+                f"通道 {proxy or '直连'} 探测耗时 {time.monotonic() - probe_start:.1f}s"
             )
             if resolved is not None or (net_errors and "proxy" not in net_errors):
                 break  # 通过，或通道已通仅 token 错：换道无意义
@@ -136,6 +133,7 @@ class SettingsManager(BaseManager):
             elif len(candidates) > 1:
                 base += "，请点「网络诊断」自查"
             net_errors = {"proxy": base}
+        # 结果落地：聚合错误，或标注生效通道
         self.resolved_proxy = resolved
         if resolved is not None:
             via = (
@@ -146,15 +144,14 @@ class SettingsManager(BaseManager):
                 else f"系统代理 {resolved}"
             )
             self.logger.info(
-                f"连通校验通过：生效通道 {via}"
-                f"（耗时 {time.monotonic() - start:.1f}s）"
+                f"连通校验通过：生效通道 {via}（耗时 {time.monotonic() - start:.1f}s）"
             )
             self._warn_stale(configured, resolved)
 
+        # 并入本地类型校验，全绿才返回 True
         type_errors = validate_types(schema, config_manager.get_all())
         self.last_errors = {**net_errors, **type_errors}
 
-        # 级别只有 info/error/debug；"未检测"项由词表标黄
         for key, text in self.last_errors.items():
             self.logger.error(f"[{_label_of(schema, key)}] {text}")
         return not self.last_errors
@@ -179,8 +176,9 @@ class SettingsManager(BaseManager):
     async def _probe_ports(self, token: str) -> str:
         """本机端口扫描复测
 
-        返回首个 getMe 实测可通的 URL 供提示；TCP 存活不等于
-        可出网，复测不过不提示。TCP 探活走线程池防卡事件循环。
+        返回首个 getMe 实测可通的 URL 供提示。
+        TCP 存活不等于可出网，复测不过不提示。
+        TCP 探活走线程池防卡事件循环。
         """
         urls = await asyncio.to_thread(scan_proxy_ports)
         for url in urls:
