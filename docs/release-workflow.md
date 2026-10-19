@@ -1,7 +1,6 @@
 # 发布工作流
 
 覆盖一次版本从改码到上线的四件套：CHANGELOG → commit → tag → release。
-本规范自 v1.0.0-alpha.1 起生效，CHANGELOG 句号与引号规范自 v1.0.0-alpha.3.dev6 起生效。
 
 ## 总流程（发布日按序执行）
 
@@ -25,15 +24,19 @@
 
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，条目一律 `- **加粗要点**：说明`。
 
-- 分节固定，带 emoji：
-  - `### 📝 Planned` / `### ✨ Added` / `### 🔧 Changed` / `### 🐛 Fixed` / `### 🗑️ Removed`
-  - 破坏性变更额外加 `### ⚠️ Breaking Changes` 置顶该版本段。
+- 分节固定，带 emoji，一个版本段内按此序排列，缺项不占位：
+  - `### ⚠️ Breaking Changes` → `### ✨ Added` → `### 🔧 Changed` → `### 🐛 Fixed` → `### 🗑️ Removed`
+  - `### 📝 Planned` 只出现在 `## [Unreleased]` 里，恒排最前。
+  - 移除能力、入口或渠道的条目归 Removed，不留在 Changed。
 - `## [Unreleased]` 恒在顶部，发布时把其中内容归入新段 `## [X.Y.Z] - YYYY-MM-DD`（日期为发布当天），Planned 段留在 Unreleased 里不过期。
 - 预发布线：`devN` 段随每次预发布实录，发布后不回改。发正式号（如 `1.0.0-alpha.3`）时新增版本段，按用户可感知的功能域写本版变化，不复述 dev 明细。
 - 末个 dev 段之后未单独发号的收敛改动直接写入正式段，按实录颗粒度写足，不倒造无产物的 dev 段。
 - 只写关键条目，琐碎改动一笔带过或不写，加了又删的功能（净效果为零）不留任何痕迹。
 - 条目正文禁用分号：首段 `- **加粗要点**：`，换行书写，每行一段，逐行 `-` 起头，注意缩进。
-- 句号与引号：条目是完整句，行尾带句号。纯主题行 `- **主题**：` 止于冒号不带句号。引用界面词一律半角双引号，不用弯引号。已发布的版本段不回改，Unreleased 内条目随新规整理。
+- 句号与引号：条目是完整句，行尾带句号。纯主题行 `- **主题**：` 止于冒号不带句号。引用界面词一律半角双引号，不用弯引号。
+- 中英文混排按 pangu spacing：中文与英文单词、数字之间补半角空格，如 `PySide6 面板`、`20 秒`、`3 处`。全角标点紧贴中文不加空格，反引号内的代码原样保留、不拆空格。
+- 代码标识一律用反引号括起，且落在正文而非加粗主题行内。专有名词与单位（GitHub、PySide6、KB/s）不算代码标识，裸写。
+- 已发布的版本段日常不回改，Unreleased 内条目随新规整理。历史整备期按现行规范全量重写属例外。
 - 用户视角写行为，不写实现细节：说"坏配置不骗过验证"，不说"复验改走候选通道"。
 - 内部重构属实现方式变化，最终行为不变也要记一条 Changed，写"做了什么、对维护意味着什么"（如"界面控件收敛到公共件，改样式一处生效"），不铺实现黑话。
 - 纯注释与措辞整改不算实现方式变化，不记。
@@ -106,14 +109,20 @@ git push origin main vX.Y.Z
 
 ## Release
 
-发布在 GitHub 网页端操作：进仓库 [Releases](https://github.com/lym2006/FinshinImpact/releases) → Draft a new release → 选推送上来的 tag `vX.Y.Z` → 上传 zip → 按下述格式填标题与正文 → Publish。
+发布在 GitHub 网页端操作：进仓库 [Releases](https://github.com/lym2006/FinshinImpact/releases) → Draft a new release → 选推送上来的 tag `vX.Y.Z` → 填正文 → 点 **Generate release notes** → Publish。
 
-标题：`vX.Y.Z（重要变化，如需手动整包、引入全新操作，若无则不写）`。
-
-正文模板：
+标题不手填，由 Generate release notes 生成，正文末尾随之带上比较链接：
 
 ```
-📦 FinshinImpact-vX.Y.Z.zip
+**Full Changelog**: https://github.com/lym2006/FinshinImpact/compare/v<上一版>...v<X.Y.Z>
+```
+
+上一版取保留序列里的前一条，不是紧邻的上一个 dev 号。自动生成的基线不对时改 Compare 下拉，或直接手改这一行。
+
+### 首发正文（发布日，带 zip）
+
+```
+⬇️ FinshinImpact-vX.Y.Z.zip
 - 国内加速：https://gh-proxy.com/https://github.com/lym2006/FinshinImpact/releases/download/vX.Y.Z/FinshinImpact-vX.Y.Z.zip
 - 官方直连：https://github.com/lym2006/FinshinImpact/releases/download/vX.Y.Z/FinshinImpact-vX.Y.Z.zip
 
@@ -125,6 +134,34 @@ git push origin main vX.Y.Z
 - 只写事实与用户需要的动作，一句一条，禁口语、修辞、情绪化措辞
 - 有破坏性变更时提示用户如何操作
 ```
+
+### 保留序列
+
+Release 不承担升级链（升级走版本页与 PEP440 比对），只承担新用户首次下载与老用户回看某版变化。正式号与预发布段逐版保留，不滚动删除：
+
+- 一个 tag 一条 release，`X.Y.Z`、`X.Y.Z-alpha.N`、`X.Y.Z-alpha.N.devM` 各自单列。
+- 发新版只新增条目，不删旧条目。
+- 旧版按下一节撤发布包、留条目，正文只保留本版变化与注意事项。
+
+### 旧版收敛（不带 zip）
+
+被取代的旧版只删发布包、留条目，正文不写任何下载行。GitHub 每条 release 页自动挂 `Source code (zip)` 与 `Source code (tar.gz)`，要源码的人在那里拿，正文重复挂链接是冗余：
+
+```
+本版变化
+- 条目一（不变）
+- 条目二
+
+注意（不变）
+
+**Full Changelog**: https://github.com/lym2006/FinshinImpact/compare/v<上一版>...vX.Y.Z
+```
+
+⚠️**删发布包不可逆**：zip 随 release 删掉后只能重新构建，而重建产物与当时发出去的不是同一份。每个 zip 在 `dist/` 永久留档，删 release 前先确认本地还在。实测 `v1.0.0-alpha.1` 与 `v1.0.0-alpha.2` 本地已无 zip，其发布包已永久丢失。
+
+### prerelease 与 latest
+
+预发布号一律勾 `This is a pre-release`。GitHub 的 `releases/latest` 自动规则只认非 prerelease，全勾 prerelease 时该深链无落点，所以指路一律用版本页固定地址 `lym2006.github.io/FinshinImpact`，文档与 README 里不写 `releases/latest`。
 
 ## 版本页同步（发布最后一步）
 
