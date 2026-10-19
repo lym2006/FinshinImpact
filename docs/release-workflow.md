@@ -109,24 +109,26 @@ git push origin main vX.Y.Z
 
 ## Release
 
-发布在 GitHub 网页端操作：进仓库 [Releases](https://github.com/lym2006/FinshinImpact/releases) → Draft a new release → 选推送上来的 tag `vX.Y.Z` → 填正文 → 点 **Generate release notes** → Publish。
+发布在 GitHub 网页端操作：进仓库 [Releases](https://github.com/lym2006/FinshinImpact/releases) → Draft a new release → 选推送上来的 tag `vX.Y.Z` → 填正文 → 选上一版 tag 并点 **Generate release notes** → Publish。
 
-标题不手填，由 Generate release notes 生成，正文末尾随之带上比较链接：
+Generate release notes 生成正文末尾比较链接：
 
 ```
 **Full Changelog**: https://github.com/lym2006/FinshinImpact/compare/v<上一版>...v<X.Y.Z>
 ```
 
-上一版取保留序列里的前一条，不是紧邻的上一个 dev 号。自动生成的基线不对时改 Compare 下拉，或直接手改这一行。
+> 正式号那条取上一个**正式号**，覆盖整条预发布线。
+> dev 那条取紧邻的上一个号，只覆盖这一次预发布的增量。
 
 ### 首发正文（发布日，带 zip）
 
 ```
-⬇️ FinshinImpact-vX.Y.Z.zip
+🐳 FinshinImpact-vX.Y.Z
+
 - 国内加速：https://gh-proxy.com/https://github.com/lym2006/FinshinImpact/releases/download/vX.Y.Z/FinshinImpact-vX.Y.Z.zip
 - 官方直连：https://github.com/lym2006/FinshinImpact/releases/download/vX.Y.Z/FinshinImpact-vX.Y.Z.zip
 
-本版变化
+变化
 - 条目一（用户视角，2~5 条，从 CHANGELOG 该版本段提炼）
 - 条目二
 
@@ -135,33 +137,40 @@ git push origin main vX.Y.Z
 - 有破坏性变更时提示用户如何操作
 ```
 
+标题行与列表之间必须空一行。CommonMark 下紧贴标题行的 `-` 会被当作该段落的续行，列表不成立，两条直链会挤成一行显示。
+
 ### 保留序列
 
-Release 不承担升级链（升级走版本页与 PEP440 比对），只承担新用户首次下载与老用户回看某版变化。正式号与预发布段逐版保留，不滚动删除：
+Release 不承担升级链（升级走版本页与 PEP440 比对），只承担新用户首次下载与老用户回看某版变化。所以 release 只跟正式号，不跟预发布号：
 
-- 一个 tag 一条 release，`X.Y.Z`、`X.Y.Z-alpha.N`、`X.Y.Z-alpha.N.devM` 各自单列。
-- 发新版只新增条目，不删旧条目。
-- 旧版按下一节撤发布包、留条目，正文只保留本版变化与注意事项。
+- 正式号（`X.Y.Z`、`X.Y.Z-alpha.N`）各留一条 release，长期保留。
+- dev 段的 release 只在预发布期挂着供当时下载。正式号发出时把该正式号下各 dev 的变化汇总进正式号那一条，再删掉 dev 的 release 条目。
+- 汇总按用户可感知的功能域写，不复述 dev 明细。纯内部重构、用户无感知的 dev 段不写入 release。
+- ⚠️**删的是 release 条目，tag 一律保留**——dev 的 tag 是那一次定稿笔的锚点，删了就 checkout 不回那次预发布。
+- 正式号之间按下一节撤发布包、留条目，正文只去掉两条下载直链，🐳 标题行与变化、注意两节照留。
 
 ### 旧版收敛（不带 zip）
 
 被取代的旧版只删发布包、留条目，正文不写任何下载行。GitHub 每条 release 页自动挂 `Source code (zip)` 与 `Source code (tar.gz)`，要源码的人在那里拿，正文重复挂链接是冗余：
 
 ```
-本版变化
-- 条目一（不变）
+🐳 FinshinImpact-vX.Y.Z
+
+变化
+- 条目一
 - 条目二
 
-注意（不变）
+注意
+- 条目一
 
 **Full Changelog**: https://github.com/lym2006/FinshinImpact/compare/v<上一版>...vX.Y.Z
 ```
 
-⚠️**删发布包不可逆**：zip 随 release 删掉后只能重新构建，而重建产物与当时发出去的不是同一份。每个 zip 在 `dist/` 永久留档，删 release 前先确认本地还在。实测 `v1.0.0-alpha.1` 与 `v1.0.0-alpha.2` 本地已无 zip，其发布包已永久丢失。
+⚠️**删发布包不可逆**：zip 随 release 删掉后只能重新构建，而重建产物与当时发出去的不是同一份。
 
 ### prerelease 与 latest
 
-预发布号一律勾 `This is a pre-release`。GitHub 的 `releases/latest` 自动规则只认非 prerelease，全勾 prerelease 时该深链无落点，所以指路一律用版本页固定地址 `lym2006.github.io/FinshinImpact`，文档与 README 里不写 `releases/latest`。
+预发布号一律勾 `Pre-release`，正式版新发布默认勾选 `Latest`。
 
 ## 版本页同步（发布最后一步）
 
