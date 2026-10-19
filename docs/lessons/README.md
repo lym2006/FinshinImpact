@@ -1,0 +1,33 @@
+# 工程经验
+
+这里沉淀实现过程中实测出来的经验：某条约束的真实成因、某个结论是怎么验出来的、哪条路踩过并为什么走不通。读代码看不出这些，规范条文也不写这些。
+
+规定本身在 [`../coding-style.md`](../coding-style.md)，发布流程在 [`../release-workflow.md`](../release-workflow.md)，环境搭建在 [`../development.md`](../development.md)。本文只讲它们背后的事实。
+
+## 怎么找
+
+按你正在干什么查，不看施工批次：
+
+- 要搬文件、改符号名、做兼容迁移 → [`migration-and-renaming.md`](migration-and-renaming.md)
+- 要给一段代码或一个符号挑归宿、改依赖方向 → [`layering.md`](layering.md)
+- 碰启动链路、引导期窗体、实例锁 → [`bootstrap-and-startup.md`](bootstrap-and-startup.md)
+- 碰界面、样式表、控件尺寸，或要证明观感没变 → [`gui-and-styles.md`](gui-and-styles.md)
+- 碰 asyncio、事件循环、Qt 跨线程、重连与轮询 → [`concurrency.md`](concurrency.md)
+- 碰配置结构、实例数据、落盘与备份 → [`config-and-data.md`](config-and-data.md)
+- 碰装依赖、子进程、打包产物与发布 → [`deps-and-release.md`](deps-and-release.md)
+- 碰大模型调用、token 预算、人设与权限话术 → [`model-and-persona.md`](model-and-persona.md)
+- 碰图片、GIF、渲染降级与输出格式 → [`rendering-and-output.md`](rendering-and-output.md)
+- 闸门、lint、pyright、扫描器报绿但你怀疑 → [`tooling-false-green.md`](tooling-false-green.md)
+- 想提一个以前讨论过的方案，先查有没有被否 → [`rejected.md`](rejected.md)
+
+## 收录规矩
+
+- 只收「换个任务还会再撞」的东西。某批改了哪几个文件、某个符号叫什么名字，属代码与 CHANGELOG，不进这里。
+- 主题归组，不按施工批次开新节。新经验并进已有主题，找不到归属才另开一份，并在文末记核实日期。
+- 每节开头一句交代「什么时候会撞上」，再写成因与做法。读者应该是撞上前顺便看到，而不是出事后才来查。
+- 数字要带来源场合（哪轮实测、什么条件下），别写成普适常数。
+- 设计过程文档 `docs/design/` 是易腐档、不进版本库，经验一律进这里。设计档只留决策与施工实录。
+
+## 修订记录
+
+- 2026-10-19 建档，先收视图层归一线。同日并入分层与命名线、适配层线、数据迁移线、模型选型与渲染调研，并补进项目记忆里的装库、启动、Qt 崩坑与真机验清单，按使用场景拆成上面十一份。
