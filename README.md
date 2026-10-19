@@ -25,7 +25,7 @@
 1. **代理**：大陆用户访问 `github` 和使用 **tg 端** 机器人需 **全程** 开启代理。
 2. **下载**：下最新版的 `FinshinImpact-vX.Y.Z.zip`（认准此文件名。Releases 页标着 `Source code` 的压缩包不含启动器，不要下）。
    - 🚀 [国内镜像加速（推荐）](https://gh-proxy.com/#https://github.com/lym2006/FinshinImpact/releases)：打开最新条目在 `Assets` 里下载，无需代理。
-   - 📦 [GitHub Releases](https://github.com/lym2006/FinshinImpact/releases)：官方直连，需代理时走这条。
+   - ⬇️ [GitHub Releases](https://github.com/lym2006/FinshinImpact/releases)：官方直连，需代理时走这条。
 3. **解压**：解压到任意 **可写目录**（如 `D:\FinshinImpact`）。
 4. **首次启动**：双击 `FinshinImpact\FinshinImpact.exe`，确认后自动安装运行环境（嵌入式 Python 与核心依赖，默认走国内镜像加速），进度窗口实时显示安装步骤与下载速率，期间保持网络畅通。插件依赖与浏览器内核在启用对应插件时按需安装。
 5. **创建并运行实例**：运行后先弹出「选择机器人」窗口，点「新建」填入 Bot Token 即生成专属实例文件夹 `instances\<身份码>\`（同机可建多个、并存运行）。随后管理面板弹出配置向导，填入 API Key 与主人 ID 等即开始收发消息。
@@ -117,7 +117,7 @@
 
 - 🧭 **开发手册**（环境搭建、发布流程、更新方式）：[`docs/development.md`](docs/development.md)
 - 📐 **代码规范**（注释、docstring、命名约定）：[`docs/coding-style.md`](docs/coding-style.md)，模板 [`docs/example.py`](docs/example.py)
-- 📦 **打包教程**（发布原理与操作）：[`docs/packaging.md`](docs/packaging.md)
+- 🔧 **打包教程**（发布原理与操作）：[`docs/packaging.md`](docs/packaging.md)
 - 📝 **提交规范**（commit 格式模板）：[`.gitmessage`](.gitmessage)
 - 🚀 **发布工作流**（CHANGELOG、commit、tag、release 四件套）：[`docs/release-workflow.md`](docs/release-workflow.md)
 - 📚 **工程经验**（实测踩坑与验证方法，按使用场景分册）：[`docs/lessons/README.md`](docs/lessons/README.md)
