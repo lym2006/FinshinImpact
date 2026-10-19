@@ -10,7 +10,7 @@ where = ["src"]
 
 [project]
 name = "finshin-impact"
-version = "0.1.9"
+version = "0.2.0"
 description = "一个基于 aiogram 的机器人"
 requires-python = ">=3.11,<4.0"
 dependencies = [
@@ -18,6 +18,7 @@ dependencies = [
     "aiohttp==3.14.1",
     "aiohttp-socks==0.11.0",
     "beautifulsoup4==4.14.3",
+    "bleach==6.4.0",
     "httpx==0.28.1",
     "markdown==3.10.2",
     "numpy==2.4.3",
@@ -33,39 +34,3 @@ dependencies = [
 dev = [
     "ruff==0.16.3"
 ]
-
-# ================= Ruff 代码规范配置 =================
-[tool.ruff]
-target-version = "py311"
-line-length = 88
-exclude = [
-    ".venv",
-    "__pycache__",
-    "build",
-    "dist",
-    ".git",
-    "src/plugins/AI/record"
-]
-
-[tool.ruff.lint]
-select = [
-    "E",   # pycodestyle 错误 (PEP 8 规范)
-    "F",   # pyflakes (未使用的变量、无效导入等逻辑错误)
-    "I",   # isort (自动整理 import 语句顺序)
-    "UP",  # pyupgrade (自动升级旧语法)
-    "B",   # flake8-bugbear (常见的 Bug 检测)
-    "N",   # pep8-naming (命名规范检查)
-]
-ignore = [
-    "E501", # 忽略行长警告（行太长的问题交给 Formatter 处理）
-]
-fixable = ["ALL"]
-
-[tool.ruff.format]
-quote-style = "double"        # 普通字符串强制使用双引号 ""
-indent-style = "space"        # 使用空格缩进
-skip-magic-trailing-comma = false # 保留尾随逗号（有助于 Git 减少 diff 冲突）
-line-ending = "auto"          # 自动处理换行符 (CRLF/LF)
-
-[tool.ruff.lint.isort]
-known-first-party = ["plugins", "utils"]
