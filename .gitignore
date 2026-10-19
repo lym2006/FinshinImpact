@@ -44,8 +44,7 @@ secrets.json
 *.pem
 
 # --- 项目特定忽略项 ---
-**/record/
-assets/blacklist.txt
+data/
 install.bat
 update.bat
 start.bat
