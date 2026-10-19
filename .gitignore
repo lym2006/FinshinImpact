@@ -39,16 +39,14 @@ logs/
 # --- 敏感信息与配置文件 ---
 .env
 /config.toml
+/config.toml.bak
 secrets.json
 *.key
 *.pem
 
 # --- 项目特定忽略项 ---
 data/
-install.bat
-update.bat
-start.bat
-_temp_start.ps1
+tests/
 
 # --- 操作系统文件 ---
 .DS_Store
