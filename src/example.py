@@ -14,7 +14,6 @@ from utils import get_logger
 # ==================== 全局常量与配置 ====================
 
 logger = get_logger("Example")  # 自动加上 "Bot." 前缀，并接入自定义日志系统
-
 _MAX_RETRIES = 3
 _var = 0
 

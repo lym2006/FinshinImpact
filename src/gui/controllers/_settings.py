@@ -39,28 +39,39 @@ class SettingsController(BaseController):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
+
         # 记录当前打开弹窗的原因（默认为正常编辑）
         self._current_mode: ConfigMode = ConfigMode.EDIT
+
         # 用于标记弹窗是否已打开（防重入）
         self._is_dialog_open: bool = False
+
         # 上次验证失败的字段级错误：{配置键: 文案}（强制向导标注用）
         self._field_errors: dict[str, str] = {}
+
         # SETUP 向导实例（非模态期间防 GC）
         self._setup_dialog: SettingsDialog | None = None
+
         # 配置就绪缓存：仅在 Qt 线程由信号回调更新，默认未就绪
         self._config_ready: bool = False
+
         # EDIT 校验失败切向导标记：区分主动取消与被动关闭
         self._switching: bool = False
+
         # 无修改复验进行中标志：防重复触发校验
         self._validating: bool = False
+
         # 当前打开的面板引用（EDIT/SETUP 共用）：复验结果原地刷新
         self._panel: SettingsDialog | None = None
+
         # 校验进行中的等待弹窗：转圈 + 秒级计时，结果到达即收口
         self._verify_wait: WaitDialog | None = None
         self._verify_secs: int = 0
         self._verify_timer: QTimer | None = None
+
         # 启动路径持有的等待窗：结果到达自动关闭，无需点击
         self._startup_wait: bool = False
+
         # 信号携带最新状态，经 Queued 投递后在本线程写入私有字段
         gui_bridge.config_ready_changed.connect(
             self._on_config_ready_changed, "配置就绪", queued=True
@@ -73,12 +84,10 @@ class SettingsController(BaseController):
 
         向导通过关窗，EDIT 通过弹提示
         """
-        # 未就绪事件不得清 _validating：重验先广播未就绪再广播已就绪，
-        # 若在此处清标记，已就绪到达时无人负责解除 busy 转圈
+        # 未就绪事件不得清 _validating：否则已就绪到达时无人解除 busy 转圈
         self._config_ready = ready
         if not ready:
-            # 裸启动没有面板：1.2 秒后校验仍未结束再弹计时等待窗
-            # 快路径不闪窗；期间面板出现则由面板负责反馈
+            # 裸启动无面板：1.2 秒后校验未完才弹等待窗，快路径不闪窗
             if not (self._panel or self._setup_dialog or self._verify_wait):
                 QTimer.singleShot(1200, self._open_startup_wait)
             return
@@ -102,8 +111,7 @@ class SettingsController(BaseController):
 
     def _execute(self) -> None:
         """用户点击按钮进入编辑模式"""
-        # 配置加载或重验期间禁止编辑：此刻读到的是模板/半新配置，
-        # 一旦保存会覆盖用户真实配置
+        # 重验期间禁编辑：半新配置一旦保存会覆盖用户真实配置
         if not self._config_ready:
             self.logger.info("配置尚未就绪，稍后再试")
             return
@@ -121,9 +129,7 @@ class SettingsController(BaseController):
             return
 
         self._field_errors = dict(field_errors or {})
-        first_err = next(
-            iter(self._field_errors.values()), "校验未通过"
-        )
+        first_err = next(iter(self._field_errors.values()), "校验未通过")
         if self._startup_wait:
             self._close_verify_wait()  # 启动失败：等待窗让位标红向导
         else:
@@ -165,6 +171,7 @@ class SettingsController(BaseController):
         if self._verify_wait is not None:
             return
         self._verify_secs = 0
+
         # 父级优先当前面板：EDIT 模态期间兄弟窗会被挡输入，子窗可用
         parent = self._panel or self.gui
         self._verify_wait = WaitDialog(PD.verify_text, parent=parent)
@@ -198,9 +205,7 @@ class SettingsController(BaseController):
         if self._verify_wait is None:
             return
         self._verify_secs += 1
-        self._verify_wait.set_text(
-            PD.verify_format.format(n=self._verify_secs)
-        )
+        self._verify_wait.set_text(PD.verify_format.format(n=self._verify_secs))
 
     def _finish_verify_wait(self, text: str, passed: bool) -> None:
         """结果到达：停计时、亮按钮；无窗口则静默跳过"""
@@ -269,8 +274,7 @@ class SettingsController(BaseController):
             config_manager.schema, config_manager.get_all(), new_config
         )
 
-        # 有风险：向导态，或代理留空走三级探测（环境随时可能变）；
-        # 无风险且无改动才免检，其余一律复验；通道没变时 Manager 跳重启
+        # 有风险（向导态/代理留空）或有任何改动都要复验；通道没变时 Manager 跳重启
         risky = (
             self._current_mode == ConfigMode.SETUP
             or not str(config_manager.get("basic.proxy", str) or "").strip()

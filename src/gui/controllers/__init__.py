@@ -49,7 +49,6 @@ def build_controllers(
 
         # 提取契约并打包
         controllers.append((instance.btn_id, instance.execute))
-
         instances.append(instance)
 
     return controllers, instances

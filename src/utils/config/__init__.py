@@ -21,10 +21,8 @@ from .models import (
     AppSchema,
 )
 
-# 底层组件实例化
-_IO = ConfigIO(CONFIG_FILE)
+_IO = ConfigIO(CONFIG_FILE)  # 底层组件实例化
 _PARSER = ConfigParser(CONFIG_EXAMPLE)
-
 __all__ = [
     # 占位标记（re-export 自 models）
     "PENDING_MARK",
@@ -54,6 +52,7 @@ def _write_clean_config() -> None:
     for line in lines:
         if line.lstrip().startswith("#"):
             continue
+
         # 压缩连续空行，保持段落间隔为一行
         if not line.strip() and (not kept or not kept[-1].strip()):
             continue

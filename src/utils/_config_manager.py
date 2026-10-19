@@ -52,8 +52,7 @@ class ConfigManager:
         if value is None:
             raise ConfigAttrError(path, expected_type, None) from None
 
-        # 类型转换
-        if (
+        if (  # 类型转换
             isinstance(value, int) and expected_type is float
         ):  # 所有数字全部转 float 类型
             value = float(value)
@@ -75,5 +74,4 @@ class ConfigManager:
         return cast(T, value)
 
 
-# 全局单例
-config_manager = ConfigManager()
+config_manager = ConfigManager()  # 全局单例

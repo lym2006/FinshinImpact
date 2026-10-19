@@ -72,7 +72,6 @@ class ConfigParser:
 
             # 用实际的 section key 去 toml_data 取值
             toml_section = toml_data.get(section_key, {})
-
             fields = self._parse_fields(field_text, toml_section)
             if fields:
                 schema.append(
@@ -95,8 +94,7 @@ class ConfigParser:
             # 在原始文本中，寻找这个 key 上方的注释
             for idx, line in enumerate(lines):
                 if line.strip().startswith(f"{key} ="):
-                    # 防止格式被破坏影响启动
-                    if (
+                    if (  # 防止格式被破坏影响启动
                         idx >= 2
                         and lines[idx - 2].startswith("# ")
                         and lines[idx - 1].startswith("# ")

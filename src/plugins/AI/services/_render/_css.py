@@ -11,9 +11,7 @@ from ._theme import render_theme
 
 # Prism CDN 根地址
 PRISM_CDN_ROOT = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/"
-
-# 核心库
-PRISM_CORE_FILE = "prism.min.js"
+PRISM_CORE_FILE = "prism.min.js"  # 核心库
 PRISM_CORE_URL = f"{PRISM_CDN_ROOT}{PRISM_CORE_FILE}"
 
 # 子目录

@@ -17,7 +17,6 @@ from . import messages as msgs
 
 logger = get_logger("Plg.Welcome")
 router = Router()
-
 __all__ = ["router"]
 
 # ==================== /start 开始命令 ====================

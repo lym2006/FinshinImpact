@@ -109,8 +109,7 @@ QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
     background: none;
 }}"""
 
-# 全局 QSS 拼接
-_GLOBAL_QSS = "\n".join(
+_GLOBAL_QSS = "\n".join(  # 全局 QSS 拼接
     [
         _BODY_QSS,
         _TOOLBAR_QSS,
@@ -327,8 +326,7 @@ QListWidget#list_widget::item:hover {{
     background-color: {BODY.hover_bg};
 }}"""
 
-# 弹窗 QSS 拼接
-_DIALOG_QSS = "\n".join(
+_DIALOG_QSS = "\n".join(  # 弹窗 QSS 拼接
     [
         _DIALOG_BASE_QSS,
         _DIALOG_TAB_QSS,

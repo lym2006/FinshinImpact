@@ -19,20 +19,16 @@ class FatalDialog(BaseDialog):
         super().__init__(parent=parent, title="致命错误")
         self.setStyleSheet(build_settings_dialog_qss())
         self.setFixedSize(FATAL.width, FATAL.height)
-
         layout = QVBoxLayout(self)
         layout.setContentsMargins(*[FATAL.padding] * 4)
         layout.setSpacing(FATAL.spacing)
-
         title = QLabel(FATAL.title)
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(title)
-
         detail = QLabel(message)
         detail.setWordWrap(True)
         detail.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(detail)
-
         btn_layout = QHBoxLayout()
         btn_layout.addStretch()
         btn_ok = QPushButton(FATAL.confirm_text)

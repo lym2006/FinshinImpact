@@ -29,5 +29,4 @@ class RenderConfig:
     orange_target: np.ndarray = field(default_factory=lambda: np.array([255, 165, 0]))
 
 
-# 实例化为全局单例
-render_config = RenderConfig()
+render_config = RenderConfig()  # 实例化为全局单例

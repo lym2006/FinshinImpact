@@ -28,16 +28,17 @@ class BotManager:
         self._is_initialized = True
         self._logger = get_logger("Manager")
         self._loop = loop
-
         self._initializer = InitializationManager()
         self._service_manager = ServiceManager(self._get_config_func)
         self._settings_manager = SettingsManager(self._get_raw_config_func)
 
-        # 以下状态仅在 asyncio 线程读写（线程封闭）
+        # asyncio 线程私有状态
         self._shutdown = False
         self._apply_task: asyncio.Task[None] | None = None
+
         # 最近一次生效并重启过引擎的参数指纹：一致则跳过重启防闪断
         self._last_applied: tuple[str, str, float] | None = None
+
         # 三级解析出的生效通道；引擎与指纹均以此为准
         self._resolved_proxy: str | None = None
 
@@ -64,7 +65,7 @@ class BotManager:
     def stop_service(self) -> None:
         """停止
 
-        关闭服务，清理资源
+        关闭服务，清理资源。
         """
         self._service_manager.stop_service()
 
@@ -104,20 +105,24 @@ class BotManager:
     async def _apply_config(self) -> None:
         """应用当前配置
 
-        失败弹向导等待再次保存，通过则重启服务
+        失败弹向导等待再次保存，通过则重启服务。
         """
         if self._shutdown:
             return
+
         # 重验期间先收回就绪，阻止 EDIT 弹窗读到半新半旧的配置
         gui_bridge.config_ready_changed.emit(False)
         await self._settings_manager.execute()
         if not await self._settings_manager.verify_connectivity():
             self._resolved_proxy = None
+
             # 保持不就绪：数据修复完成前 EDIT 一律拦截
             self._request_setup(self._settings_manager.last_errors)
             return
+
         # 生效通道接引擎：配置不通时自动落到系统代理/直连
         self._resolved_proxy = self._settings_manager.resolved_proxy
+
         # 配置已加载且验证通过（数据先就位，最后广播）
         gui_bridge.config_ready_changed.emit(True)
         try:
@@ -156,10 +161,6 @@ class BotManager:
         return token, cfg
 
     def _get_raw_config_func(self) -> tuple[str, str]:
-        """读取配置文件原值（校验专用）
-
-        不得混入解析通道：否则通道自我反馈，下次校验把生效通道
-        当成配置值，"生效通道 配置代理"之类的标签就成了谎报。
-        """
+        """读取配置文件原值（校验专用）"""
         get: Callable[[str, type], str] = config_manager.get
         return get("basic.telegram_token", str), get("basic.proxy", str).strip()

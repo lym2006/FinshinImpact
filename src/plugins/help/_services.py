@@ -17,7 +17,6 @@ from utils import DOCS_DIR, ROOT_DIR, get_logger
 _SAVE_PATH = DOCS_DIR / "help.png"
 _RENDER_LOCK = threading.Lock()
 _FONT_PATH = ROOT_DIR / "assets/font.ttf"
-
 _logger = get_logger("Plg.Help")
 
 
@@ -153,10 +152,8 @@ def _render_menu() -> Path:
     # 创建画布并绘制
     line_height = _HELP.line_spacing + _HELP.font_size
     padding = _HELP.padding
-
     img_width = int(max_width) + padding * 2
     img_height = len(lines) * line_height + padding * 2
-
     img = Image.new("RGB", (img_width, img_height), _HELP.bg_color)
     dr = ImageDraw.Draw(img)
 

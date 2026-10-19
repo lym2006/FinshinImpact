@@ -63,12 +63,12 @@ class ShutdownController(BaseController):
 
         # 在弹出确认框之前标记关闭意向，阻止关闭期间再弹强制配置
         gui_bridge.set_shutdown_pending(True)
-
         dialog = ShutdownDialog(parent=source or self.gui)
         reply = dialog.exec()
 
         if reply == dialog.DialogCode.Accepted:
             self.logger.info("用户确认退出，开始清理资源...")
+
             # 来源是向导时一并关闭：退出已确认，向导无需再驻留
             if isinstance(source, QDialog):
                 source.accept()

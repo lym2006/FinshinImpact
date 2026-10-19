@@ -27,5 +27,4 @@ class BrowserConfig:
     )
 
 
-# 实例化为全局单例
-browser_config = BrowserConfig()
+browser_config = BrowserConfig()  # 实例化为全局单例

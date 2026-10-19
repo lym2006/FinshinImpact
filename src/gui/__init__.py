@@ -12,7 +12,6 @@ from ._theme import BODY, FONT, TOOLBAR, TOOLBAR_BUTTONS, WINDOW
 from .controllers import BaseController, build_controllers
 
 logger = get_logger("GUI")
-
 __all__ = [
     # 类型
     "BotGUI",
@@ -30,8 +29,7 @@ def create_gui() -> tuple[BotGUI, dict[str, BaseController]]:
         formatter=GUI_FORMATTER,
     )
 
-    # ==================== 打包业务控制器 ====================
-
+    # 打包业务控制器
     controllers, instances = build_controllers(botgui)
 
     # ==================== 防呆校验 ====================

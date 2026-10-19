@@ -23,6 +23,9 @@ class TokenError(ConnectivityError):
     """Token 异常"""
 
 
+# ==================== 代理异常 ====================
+
+
 class ProxyError(ConnectivityError):
     """代理异常基类"""
 

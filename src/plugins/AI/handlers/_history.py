@@ -54,7 +54,6 @@ async def clear_history(message: Message) -> None:
     """清除记忆"""
     user = get_name(message)
     file_path = _get_file_path(user)
-
     user_sessions[user].message = list(ai_config.init)
     file_path.unlink(missing_ok=True)
     await message.answer(msgs.MEMORY_CLEARED)

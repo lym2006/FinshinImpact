@@ -48,8 +48,7 @@ class TextHandler(logging.Handler):
         self._signal = _LogSignal()
         self._signal.log_received.connect(self._append_text)
 
-        # 设置默认日志格式
-        self.setFormatter(formatter)
+        self.setFormatter(formatter)  # 设置默认日志格式
 
     def emit(self, record: logging.LogRecord) -> None:
         """接收并处理日志记录"""
@@ -67,7 +66,6 @@ class TextHandler(logging.Handler):
             cursor = self._widget.textCursor()
             cursor.movePosition(QTextCursor.MoveOperation.End)
             cursor.insertText(msg)
-
             scrollbar = self._widget.verticalScrollBar()
             scrollbar.setValue(scrollbar.maximum())
 
@@ -85,8 +83,7 @@ class DashboardWidget(QTextEdit):
     def __init__(self, fonts: FontConfig, parent=None) -> None:
         super().__init__(parent)
 
-        # 基础属性设置
-        self.setReadOnly(True)
+        self.setReadOnly(True)  # 基础属性设置
         self.setObjectName("dashboard")
 
         # 加载字体

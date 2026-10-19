@@ -36,9 +36,7 @@ class GUIBridge(QObject):
 
     # 请求打开强制配置窗口（参数：{配置键: 上次验证失败文案}）
     request_force_setup = SafeSignal()
-
-    # 配置窗口保存
-    config_saved = SafeSignal()
+    config_saved = SafeSignal()  # 配置窗口保存
 
     # 请求走完整退出流程（向导退出按钮用，携带来源窗口作确认框父级）
     request_exit = SafeSignal()
@@ -71,5 +69,4 @@ class GUIBridge(QObject):
         self._is_shutdown_pending = pending
 
 
-# 全局单例实例化
-gui_bridge = GUIBridge()
+gui_bridge = GUIBridge()  # 全局单例实例化

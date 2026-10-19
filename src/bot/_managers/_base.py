@@ -19,10 +19,7 @@ class BaseManager(ABC):
 
     @abstractmethod
     async def _execute(self) -> None:
-        """异步执行业务逻辑
-
-        子类必须实现。
-        """
+        """异步执行业务逻辑"""
 
     # ==================== 初始化与生命周期 ====================
 

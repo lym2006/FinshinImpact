@@ -17,8 +17,7 @@ def get_router() -> Router:
     """组装 AI 总路由"""
     router = Router()
 
-    # 注册所有子路由（顺序即优先级）
-    # 确保 ai_chat 是最后一个注册
+    # 子路由顺序即优先级，ai_chat 必须最后
     routers = [
         _auth.auth,
         _history.history,

@@ -18,6 +18,7 @@ class ProxyController(BaseController):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
+
         # 非模态期间防 GC（与 SETUP 向导同理）
         self._dialog: ProxyDialog | None = None
 

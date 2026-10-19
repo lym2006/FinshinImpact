@@ -30,6 +30,7 @@ class LoggingMiddleware(BaseMiddleware):
 
     def __init__(self) -> None:
         super().__init__()
+
         # 使用专属子 Logger，便于在日志中区分中间件产生的记录
         self._logger = get_logger("Middleware")
 
@@ -72,9 +73,9 @@ class LoggingMiddleware(BaseMiddleware):
         user = message.from_user
         sender_chat = message.sender_chat
 
-        # 解析聊天信息
-        # 优先使用群组标题，其次使用个人名，兜底为"未知聊天"
+        # 群标题 → 个人名 → "未知聊天" 逐级兜底
         chat_name = chat.title or chat.first_name or "未知聊天"
+
         # 将 ChatType 枚举映射为中文标签
         chat_label = self._CHAT_TYPE_LABELS.get(ChatType(chat.type), "未知")
         chat_info = f"{chat_label}[{chat.id}]<{chat_name}>"
@@ -89,8 +90,7 @@ class LoggingMiddleware(BaseMiddleware):
             sender_name = sender_chat.title or "未知来源"
             sender_info = f"匿名/频道[{sender_chat.id}]<{sender_name}>"
         else:
-            # 系统消息或未知来源
-            sender_info = "系统/未知"
+            sender_info = "系统/未知"  # 系统消息或未知来源
 
         # 解析内容预览
         content_type = message.content_type

@@ -40,8 +40,7 @@ def _generate_html(text: str) -> str:
 
 def _build_prism_scripts(langs_found: set[str]) -> str:
     """构建高亮脚本标签"""
-    # 未检测到代码时返回空串
-    # 提取所有代码块的语言标识
+    # 无代码块时不注入高亮脚本
     if not langs_found:
         return ""
     scripts = [
@@ -65,6 +64,7 @@ def render_html(text: str) -> str:
     MD→HTML→XSS 清洗→高亮注入流水线。
     """
     html_body = _generate_html(text)
+
     # 将 re.findall 返回的 list 转换为 set，去除重复的语言标识
     langs_found = set(re.findall(r"language-([\w-]+)", html_body))
     scripts_html = _build_prism_scripts(langs_found)

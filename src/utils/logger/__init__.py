@@ -13,14 +13,12 @@ from ._enhancer import BotLogger
 from ._formatter import create_formatter
 from ._handler import create_file_handler
 
-# 模块级状态
-_initialized = False
+_initialized = False  # 模块级状态
 _setup_lock = threading.Lock()
 
 # 全局派生格式器（对外提供）
 FORMATTER = create_formatter()
 GUI_FORMATTER = create_formatter(marked=True)
-
 __all__ = [
     # 获取日志器
     "get_logger",
@@ -64,8 +62,6 @@ def get_logger(name: str = "") -> BotLogger:
         # 文件 Handler（简化版与详细版）
         bot_logger.addHandler(create_file_handler(FORMATTER, BOT_LOG))
         bot_logger.addHandler(create_file_handler(FORMATTER, DEBUG_LOG, logging.DEBUG))
-
-        # 标记初始化完成
-        _initialized = True
+        _initialized = True  # 标记初始化完成
 
     return logger

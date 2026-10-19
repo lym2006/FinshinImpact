@@ -33,9 +33,7 @@ active_tasks: set[asyncio.Task] = set()
 # 泛型类型变量（用于装饰器的类型推导）
 P = ParamSpec("P")
 T = TypeVar("T")
-
-# 默认会话模板
-_DEFAULT_SESSION = {
+_DEFAULT_SESSION = {  # 默认会话模板
     "message": list(ai_config.init),
     "md_status": False,
     "is_active": False,
