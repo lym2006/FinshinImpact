@@ -79,7 +79,7 @@ class AuthMiddleware(BaseMiddleware):
         message=event.message
         user=message.from_user.id if message.from_user else None
         if not user:
-            self.logger.warning("⚠️ 无法获取用户 ID")
+            self.logger.warning("🚨 无法获取用户 ID")
             return
         if is_blocked(user):
             self.logger.warning(f"🚫 拦截黑名单用户: {user}")

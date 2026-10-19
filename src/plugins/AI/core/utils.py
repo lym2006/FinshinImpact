@@ -20,7 +20,7 @@ def retry_sending(max_retries=3):
         stop=stop_after_attempt(max_retries),
         wait=wait_exponential(multiplier=1,max=10,min=1),
         before= lambda retry_state: logger.warning(
-            f"⚠️ 消息发送失败，正在第 {retry_state.attempt_number-1} 次重试..."
+            f"🚨 消息发送失败，正在第 {retry_state.attempt_number-1} 次重试..."
         ) if retry_state.attempt_number>1 else None,
         reraise=True
     )

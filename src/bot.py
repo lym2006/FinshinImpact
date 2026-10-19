@@ -13,7 +13,7 @@ logger=setup_logger()
     stop=stop_after_delay(60), 
     wait=wait_exponential(multiplier=1,max=10,min=1),
     before=lambda retry_state: (
-        logger.warning(f"⚠️ 机器人断开连接，准备第 {retry_state.attempt_number-1} 次重连...")
+        logger.warning(f"🚨 机器人断开连接，准备第 {retry_state.attempt_number-1} 次重连...")
         if retry_state.attempt_number>1
         else None
     ),

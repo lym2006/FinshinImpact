@@ -77,14 +77,14 @@ def _crop_screenshot(pa:str):
         img=Image.open(pa).convert('RGB')
         img_array=np.array(img)
         if img_array.size==0:
-            logger.warning(f"⚠️ 图片内容为空，跳过裁剪: {pa}")
+            logger.warning(f"🚨 图片内容为空，跳过裁剪: {pa}")
             return
         ORANGE=np.array([255,165,0])
         is_orange=np.all(img_array==ORANGE,axis=-1)
         rows=np.where(~np.all(is_orange,axis=1))[0]
         cols=np.where(~np.all(is_orange,axis=0))[0]
         if rows.size==0 or cols.size==0:
-            logger.warning("⚠️ 未检测到有效内容，保留原图")
+            logger.warning("🚨 未检测到有效内容，保留原图")
             return
         top,bottom=rows[0],rows[-1]+1
         left,right=cols[0],cols[-1]+1

@@ -31,4 +31,4 @@ def register_routers(dp:Dispatcher,CONFIG:Dict[str,Any]):
             logger.error(f"❌ [{index}] 插件 '{plugin_name}' 加载异常: {e}",exc_info=True)
     logger.info(f"🎉 插件加载完成 | 成功: {success_count} / 总计: {len(PLUGIN_ORDER)}")
     if success_count==0:
-        logger.critical("⚠️ 警告：未加载任何插件！")
+        logger.critical("🚨 警告：未加载任何插件！")

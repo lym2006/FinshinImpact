@@ -55,7 +55,7 @@ async def worker_loop(task:TaskItem,user:str):
     message=task.message
     city=message.text
     if not city:
-        logger.warning("⚠️ 没有文本")
+        logger.warning("🚨 没有文本")
         return
     session=user_session[user]
     task.draft_id=int(time.time_ns()%2**63)
@@ -79,7 +79,7 @@ async def worker_loop(task:TaskItem,user:str):
                                     task.last_draft_time=current_time
                         except TelegramRetryAfter as err:
                             if (t:=err.retry_after)>0:
-                                logger.warning(f"⚠️ 触发频控，等待 {t} 秒...")
+                                logger.warning(f"🚨 触发频控，等待 {t} 秒...")
                                 await asyncio.sleep(t)
                         except:
                             raise
@@ -93,7 +93,7 @@ async def worker_loop(task:TaskItem,user:str):
         try:
             if has_error:
                 final_display_text=f"❌ 思考中断\n{error_msg}"
-                logger.warning(f"⚠️ 思考中断")
+                logger.warning(f"🚨 思考中断")
             else:
                 preview_think=trim(final_think)
                 final_display_text=f"✅ 思考完成\n{preview_think}"
@@ -108,7 +108,7 @@ async def worker_loop(task:TaskItem,user:str):
         except TaskStopped:
             raise
         except:
-            logger.warning(f"⚠️ UI 更新失败: {Exception}")
+            logger.warning(f"🚨 UI 更新失败: {Exception}")
         if len(final_msg)>4000:
             await _send_long_message(task,final_msg)
         else:
