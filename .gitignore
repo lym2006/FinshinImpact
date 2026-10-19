@@ -48,6 +48,8 @@ secrets.json
 assets/blacklist.txt
 install.bat
 update.bat
+start.bat
+_temp_start.ps1
 
 # --- 操作系统文件 ---
 .DS_Store

@@ -23,6 +23,7 @@
 - [💡 脚本提示信息翻译](#-脚本提示信息翻译)
     - [install.bat](#installbat)
     - [update.bat](#updatebat)
+    - [start.bat](#startbat)
 - [🚨 温馨提示](#-温馨提示)
 - [📄 许可证 (`LICENSE`)](#-许可证-license)
 
@@ -38,9 +39,9 @@
 - **配置自动检测**: 每次启动机器人会自动检测是否更新了新配置项并提醒用户在 `config.toml` 中填写。
 - **一键安装与更新**: 提供 `install.bat` 和 `update.bat` 自动化脚本，请在项目的 [Releases 发布页面](../../releases) 下载最新版本。
   > **重要提示**：
-  > - **首次安装**：请将 `install.bat` 放在一个**新建的空文件夹**中双击运行，请确保路径下 **没有** 名为 `TelegramBot` 文件夹，脚本会自动创建 `TelegramBot` 项目文件夹。
-  > - **日常更新**：请将 `update.bat` 放在与 `TelegramBot` 文件夹**同级的目录**下双击运行。
-  > - **路径要求**：整个路径中**请勿包含中文或特殊字符**，以免引发环境报错。
+  > - **首次安装**：请将 `install.bat` 放在一个 **新建的空文件夹** 中双击运行，请确保路径下 **没有** 名为 `TelegramBot` 文件夹，脚本会自动创建 `TelegramBot` 项目文件夹。
+  > - **日常更新**：请将 `update.bat` 放在与 `TelegramBot` 文件夹 **同级的目录** 下双击运行。
+  > - **路径要求**：整个路径中 **请勿包含中文或特殊字符**，以免引发环境报错。
   > - **环境要求**：请参照 **[️ 环境准备（Windows 用户必读）](#️-环境准备windows-用户必读)** 安装环境，若旧版本 CMD 出现问题，请尝试在 Windows Terminal 中执行脚本。
   > - **序号提示**：脚本所有提示信息均已添加序号，方便定位和排查问题。详见下方 **[ 💡 脚本提示信息翻译 ](#-脚本提示信息翻译)** 区域。
 - **一键启动机器人**: 配置完成后，请双击运行 `start.bat` 启动机器人。
@@ -49,7 +50,10 @@
   > - **智能路径检查**：启动前会自动校验环境完整性。如果未找到虚拟环境或依赖缺失，窗口会显示红色警告并暂停，防止直接报错闪退。
   > - **自动使用 `Windows Terminal`**：脚本会自动调用 `Windows Terminal` 打开新标签页启动机器人。
   > - **停止机器人**：直接在弹出的终端窗口中按 `Ctrl + C` 即可安全停止服务。
-  > - **路径警告**：同样请确保 `start.bat` 位于 `TelegramBot` 文件夹内，且**全路径无中文**。
+  > - **路径要求**：请将 `start.bat` 放在与 `TelegramBot` 文件夹 **同级的目录** 下双击运行。
+
+**![ 参考图 ](assets/example.png)**
+请 **严格** 按照参考图存放文件！！！
 
 [⤴️ 返回目录](#-目录)
 
@@ -250,6 +254,15 @@ python -m bot
 | [15] | Syncing project dependencies... | 正在同步项目依赖... |
 | [16] | [WARNING] Since code pull failed, dependencies may be incomplete. Please check manually. | [警告] 由于代码拉取失败，依赖可能不完整，建议手动检查。 |
 | [17] | Update Completed! | 更新完成！ |
+
+#### start.bat
+
+| # | English Prompt | 中文翻译 |
+|---|---------------|---------|
+| [01] | [ERROR] Project folder TelegramBot not found! | [错误] 未找到项目文件夹 TelegramBot！ |
+| [02] | Please ensure start.bat and the TelegramBot folder are in the same directory. | 请确保 start.bat 和 TelegramBot 文件夹在同一级目录。 |
+| [03] | [INFO] Windows Terminal detected. Launching gracefully... | [信息] 检测到 Windows Terminal，正在优雅启动... |
+| [04] | [INFO] Windows Terminal not found. Falling back to CMD compatibility mode... | [信息] 未检测到 Windows Terminal，正在降级为 CMD 兼容模式启动... |
 
 </details>
 
