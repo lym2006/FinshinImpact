@@ -22,7 +22,7 @@ class TelegramAdapter(BaseAdapter):
     - bot 与 dispatcher 供装配层挂日志与注册路由
     """
 
-    def __init__(self, token: str, proxy: str | None = None) -> None:
+    def __init__(self, token: str, *, proxy: str | None = None) -> None:
         from aiogram import Bot, Dispatcher
 
         from utils.network import SSLUnverifiedSession

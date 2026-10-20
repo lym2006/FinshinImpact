@@ -12,7 +12,7 @@ from core.dto import CommandDTO
 from services.context import HandlerContext
 
 
-def has_help_flag(command: CommandDTO) -> bool:
+def _has_help_flag(command: CommandDTO) -> bool:
     """判定命令带 -h"""
     return CommandFlag.HELP.value in command.flags
 
@@ -22,7 +22,6 @@ class CommandFilter(Filter):
 
     - 只比命令头，命令额外认哪些开关看插件清单
     - 带 -h 一律让行给帮助插件
-    - 首位形参由 aiogram 按位置绑定，名字不可改
     """
 
     def __init__(self, name: str) -> None:
@@ -35,4 +34,4 @@ class CommandFilter(Filter):
         command = ctx.event.command
         if not command.matched or command.head != self._name:
             return False
-        return not has_help_flag(command)
+        return not _has_help_flag(command)
