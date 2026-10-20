@@ -100,13 +100,6 @@ def dependencies(root: Path) -> list[str]:
     return list(_pyproject_data(root)["project"]["dependencies"])
 
 
-def removed_deps(root: Path) -> list[str]:
-    """获取旧依赖清理清单"""
-    data = _pyproject_data(root)
-    tool = data.get("tool", {}).get(data["project"]["name"], {})
-    return list(tool.get("removed-dependencies", []))
-
-
 def _tool_settings(root: Path) -> dict:
     """读取 [tool.finshin-impact] 表
 

@@ -4,8 +4,10 @@
 - 子进程驱动 uv 装卸插件依赖
 - 同步依赖先 compile 闭包再 sync，已装 dev 工具与解释器基建并入保留清单
 - 装完即编字节码，下次启动导入直接命中缓存
+- 同步成功落对账戳，启动期据此判断要不要提示同步
 """
 
+import hashlib
 import tempfile
 import tomllib
 from pathlib import Path
@@ -13,7 +15,7 @@ from pathlib import Path
 from skin.messages import PluginMessage
 from system.profile_env import ROOT_DIR
 
-from .deps_manifest import dev_dependencies
+from .deps_manifest import dev_dependencies, keep_union
 from .subprocess_ops import (
     ProgressCallback,
     degraded,
@@ -21,7 +23,10 @@ from .subprocess_ops import (
     is_pin_installed,
     with_index_retry,
 )
-from .toolchain import PIP_FLAGS, PYPROJECT, dev_mode, uv_cmd
+from .toolchain import PIP_FLAGS, PYPROJECT, RUNTIME_DIR, dev_mode, uv_cmd
+
+# 依赖对账戳，记声明清单指纹，与启动器记装没装过的 .installed 各说一件事
+_SYNC_STAMP = RUNTIME_DIR / ".synced"
 
 
 def install_deps(pins: list[str], on_line: ProgressCallback | None = None) -> list[str]:
@@ -97,6 +102,42 @@ def _editable_project_pin() -> list[str]:
     return [f"-e {ROOT_DIR}"]
 
 
+def _keep_digest(keep: list[str]) -> str:
+    """声明清单指纹
+
+    - 排序去重，扫描顺序或重复声明变动不误判为待同步
+    """
+    return hashlib.sha256("\n".join(sorted(set(keep))).encode("utf-8")).hexdigest()
+
+
+def _write_stamp(digest: str) -> None:
+    """落对账戳
+
+    - 写不进即视作未对账，下次启动再提示，与运行日志留痕同取舍
+    """
+    try:
+        _SYNC_STAMP.parent.mkdir(parents=True, exist_ok=True)
+        _SYNC_STAMP.write_text(digest, encoding="utf-8")
+    except OSError:
+        pass
+
+
+def sync_needed() -> bool:
+    """判断声明清单与对账戳是否相符
+
+    - 只比声明清单与戳，不实测盘上装了哪些包
+    - 找不到任何 uv 时按降级手动命令处理，不判同步
+    - 戳缺失即从未对过账，此时按需要同步处理
+    """
+    if dev_mode():
+        return False
+    digest = _keep_digest(keep_union())
+    try:
+        return _SYNC_STAMP.read_text(encoding="utf-8") != digest
+    except OSError:
+        return True
+
+
 def sync_env(keep: list[str], on_line: ProgressCallback | None = None) -> list[str]:
     """按保留清单重建环境并返回失败清单
 
@@ -104,11 +145,12 @@ def sync_env(keep: list[str], on_line: ProgressCallback | None = None) -> list[s
     - 已装 dev 工具、项目 editable 安装、解释器基建并入保留清单
     - 整批执行，失败时失败清单为保留清单全体
     - 会删除保留清单外的包，调用方须先向用户确认
+    - 成功即按声明清单落对账戳，追加项不进指纹
     """
     if dev_mode():
         emit(on_line, PluginMessage.DEV_SYNC)
         return list(keep)
-    keep = [
+    argv_keep = [
         *keep,
         *_installed_dev_pins(),
         *_editable_project_pin(),
@@ -116,7 +158,7 @@ def sync_env(keep: list[str], on_line: ProgressCallback | None = None) -> list[s
     ]
     with tempfile.TemporaryDirectory(prefix="finshin-sync-") as stage:
         pins_path = Path(stage) / "requirements.in"
-        pins_path.write_text("\n".join(keep), encoding="utf-8")
+        pins_path.write_text("\n".join(argv_keep), encoding="utf-8")
         lock_path = Path(stage) / "requirements.txt"
 
         # uv pip sync 不做依赖解析，直喂顶层 pin 会删掉全部传递依赖
@@ -143,4 +185,7 @@ def sync_env(keep: list[str], on_line: ProgressCallback | None = None) -> list[s
         ]
         emit(on_line, PluginMessage.STAGE_SYNC)
         code = with_index_retry(sync_argv, on_line)
-    return [] if code == 0 else list(keep)
+    if code != 0:
+        return list(keep)
+    _write_stamp(_keep_digest(keep))
+    return []

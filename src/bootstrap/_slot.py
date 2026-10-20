@@ -1,7 +1,7 @@
 # src/bootstrap/_slot.py
 """启动资格判定
 
-- 引导锁内完成实例身份选择与实例锁抢占
+- 引导锁内完成身份选择、启动结算与依赖对账，再抢实例锁
 - 非正常启动结果分别提示并给出退出码
 - 抢到实例锁才导入主程序，路径常量在导入期随身份码确定
 - utils 与引擎重依赖后台线程导入，主线程全程泵事件让提示卡秒表连走
@@ -41,6 +41,20 @@ class _SlotResult(IntEnum):
     PICKER_BUSY = 3
 
 
+def _sync_if_stale() -> None:
+    """依赖对账，清单指纹与对账戳不符即弹同步窗
+
+    - 同步要删清单外的包，故必在只装不删的结算之后
+    - 用户选否或同步失败都不落戳，下次启动再问
+    """
+    from services.env_setup.deps_install import sync_needed
+
+    if sync_needed():
+        from ui import sync_deps
+
+        sync_deps()
+
+
 def _acquire_slot() -> _SlotResult:
     """取得本实例的启动资格
 
@@ -54,6 +68,7 @@ def _acquire_slot() -> _SlotResult:
         from ui import settle_runtime
 
         settle_runtime(profile)
+        _sync_if_stale()
         return _SlotResult.RUN if acquire_instance_lock() else _SlotResult.CONFLICT
 
     if not acquire_bootstrap_lock():
@@ -79,6 +94,7 @@ def _acquire_slot() -> _SlotResult:
 
         # 启用集变动此刻结算，缺库补装装完才起，装失败禁用相关插件
         settle_runtime(code)
+        _sync_if_stale()
 
         if not acquire_instance_lock():
             return _SlotResult.CONFLICT

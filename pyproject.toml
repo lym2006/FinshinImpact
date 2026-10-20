@@ -45,13 +45,3 @@ uv-index-urls = [
 ]
 uv-cache-dir = "uv-cache"
 playwright-cdn = "https://cdn.npmmirror.com/binaries/playwright"
-removed-dependencies = [
-    "beautifulsoup4",
-    "soupsieve",
-    "opencv-python",
-    "pydub",
-    "PySide6",
-    "PySide6-Addons",
-    "PySide6-Essentials",
-    "shiboken6",
-]
