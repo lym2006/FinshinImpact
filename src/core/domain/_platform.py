@@ -26,8 +26,8 @@ class ChatScope(StrEnum):
     UNKNOWN = "unknown"
 
 
-# 身份码分隔符，平台前缀与账号 id 的唯一分界
-_PROFILE_CODE_SEP = "-"
+# 身份码分隔符，平台前缀与账号 id 的唯一分界，与键段同用点号
+_PROFILE_CODE_SEP = "."
 
 
 def make_profile_code(platform: Platform, account_id: str) -> str:

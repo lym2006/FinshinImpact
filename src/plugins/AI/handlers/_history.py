@@ -30,7 +30,7 @@ def _get_file_path(stem: str) -> Path:
 @session_guard
 async def show_history(raw: Message, ctx: HandlerContext) -> None:
     """发送历史记录"""
-    stem = ctx.event.principal.record_stem
+    stem = ctx.event.principal.key
     file_path = _get_file_path(stem)
 
     if not file_path.exists():
@@ -52,7 +52,7 @@ async def show_history(raw: Message, ctx: HandlerContext) -> None:
 async def clear_history(raw: Message, ctx: HandlerContext) -> None:
     """清除记忆"""
     user = ctx.event.principal.key
-    file_path = _get_file_path(ctx.event.principal.record_stem)
+    file_path = _get_file_path(ctx.event.principal.key)
     user_sessions[user].message = list(ai_config.init)
     file_path.unlink(missing_ok=True)
     await ctx.answer(BotMessage.HISTORY_MEMORY_CLEARED)

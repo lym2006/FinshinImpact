@@ -106,7 +106,7 @@ async def worker_loop(ctx: HandlerContext, user: str) -> None:
     if not await ctx.interaction.probe_existence(ctx.event.ref):
         raise MessageVanishedError(ctx.event.ref)
 
-    stem = ctx.event.principal.record_stem
+    stem = ctx.event.principal.key
     session = user_sessions[user]
     final_msg = ""
     has_error = False

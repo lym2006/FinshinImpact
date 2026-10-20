@@ -7,7 +7,7 @@
 from dataclasses import dataclass
 
 from ..domain import TaskKind, TaskPayload, TaskPriority, TaskStatus
-from ..domain.ids import TaskId
+from ..domain.ids import KEY_SEP, TaskId
 from ._content import ContentDTO
 from ._identity import MsgReferenceDTO, PrincipalDTO
 
@@ -30,7 +30,7 @@ class TaskDTO:
 
     @property
     def task_id(self) -> TaskId:
-        return TaskId(f"{self.principal.key}:{self.kind}")
+        return TaskId(f"{self.principal.key}{KEY_SEP}{self.kind}")
 
 
 @dataclass(frozen=True, slots=True)
