@@ -3,6 +3,7 @@
 
 - 依赖管理弹下拉菜单，同步重建与清理缓存两条操作并列
 - 保留清单取全实例启用并集，操作对象为共享 runtime 依赖层
+- 启动期对账不符调的也是这条同步流程
 """
 
 from PySide6.QtCore import QPoint
@@ -15,21 +16,12 @@ from PySide6.QtWidgets import (
 )
 
 from services.env_setup.deps_install import sync_env
-from services.env_setup.deps_manifest import core_dependencies, enabled_deps_union
+from services.env_setup.deps_manifest import keep_union
 from services.env_setup.subprocess_ops import ProgressCallback, clean_cache
 from skin.messages import PluginMessage
 
 from .._lifecycle import ensure_app
 from ._progress import run_with_progress
-
-
-def _keep_union() -> list[str]:
-    """全局保留清单
-
-    - 核心依赖与全实例启用插件依赖并集
-    - 本实例刚保存的启用集已在盘上，并集即最新状态
-    """
-    return [*core_dependencies(), *enabled_deps_union()]
 
 
 def _confirm(parent: QWidget | None, warning: str) -> bool:
@@ -51,7 +43,7 @@ def _sync_flow(parent: QWidget | None) -> list[str]:
         return []
     return run_with_progress(
         PluginMessage.PROGRESS_SYNC,
-        lambda on_line: sync_env(_keep_union(), on_line),
+        lambda on_line: sync_env(keep_union(), on_line),
     )
 
 
@@ -66,6 +58,14 @@ def _cache_flow(parent: QWidget | None) -> list[str]:
     if not _confirm(parent, PluginMessage.CACHE_WARNING):
         return []
     return run_with_progress(PluginMessage.PROGRESS_CACHE, _cache_task)
+
+
+def sync_deps() -> None:
+    """启动期依赖同步，此刻无宿主窗口即独立弹
+
+    - 用户选否或同步失败都不落对账戳，下次启动清单仍不符再问
+    """
+    _sync_flow(None)
 
 
 def open_maintain_menu(anchor: QPushButton, parent: QWidget) -> None:

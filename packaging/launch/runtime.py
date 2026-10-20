@@ -1,7 +1,7 @@
 # packaging/launch/runtime.py
 """运行环境补齐
 
-- 解压嵌入式 Python、放开 site、部署 uv、清理旧依赖、装依赖
+- 解压嵌入式 Python、放开 site、部署 uv、装依赖
 - 已装且清单未变即免装，失败保缓存供续装命中
 """
 
@@ -18,7 +18,6 @@ from pack_spec import (
     UV_PAYLOAD_DIR,
     UV_ZIP_NAME,
     dependencies,
-    removed_deps,
     require_setting,
 )
 
@@ -42,12 +41,6 @@ def _installed_ok(runtime: Path, deps: list[str]) -> bool:
     if not (runtime / "python.exe").exists() or not stamp.exists():
         return False
     return stamp.read_text() == _list_digest(deps)
-
-
-def _cleaned_ok(runtime: Path, removed: list[str]) -> bool:
-    """清理清单指纹比对"""
-    stamp = runtime / ".cleaned"
-    return stamp.exists() and stamp.read_text() == _list_digest(removed)
 
 
 def _extract_embed(runtime: Path) -> None:
@@ -76,25 +69,6 @@ def _place_uv(root: Path, runtime: Path) -> Path:
             zf.extract(UV_EXE_NAME, runtime)
     shutil.rmtree(root / UV_PAYLOAD_DIR, ignore_errors=True)
     return exe
-
-
-def _cleanup_removed(uv: Path, python: Path, removed: list[str], cache: Path) -> None:
-    """整批卸载已删依赖的旧残留"""
-    # 静默档压掉警告刷屏，真报错仍照常输出
-    subprocess.run(
-        [
-            str(uv),
-            "pip",
-            "uninstall",
-            "--python",
-            str(python),
-            "--cache-dir",
-            str(cache),
-            "--quiet",
-            *removed,
-        ],
-        check=True,
-    )
 
 
 def _uv_with_index_retry(
@@ -132,31 +106,27 @@ def _uv_with_index_retry(
 def ensure_runtime(root: Path) -> None:
     """补齐运行环境
 
-    - 依次：解压嵌入式 Python、放开 site、部署 uv、清理旧依赖、装依赖
+    - 依次：解压嵌入式 Python、放开 site、部署 uv、装依赖
+    - 只追加安装，删掉的库由引导层同步环境收口
     """
     runtime = root / RUNTIME_DIR_NAME
 
     # 装包期缓存放包内，装完删除，不落用户目录
     cache = runtime / str(require_setting(root, _SETTING_CACHE))
     deps = dependencies(root)
-    removed = removed_deps(root)
 
-    # 旧壳升级用 pip 装完时 .cleaned 缺失，新壳须补跑一次清理再按新清单重装
-    need_clean = (runtime / "python.exe").exists() and not _cleaned_ok(runtime, removed)
-    if _installed_ok(runtime, deps) and not need_clean:
+    if _installed_ok(runtime, deps):
         return
     dialogs.info("首次运行需要安装运行环境，期间保持网络畅通，可能需要几分钟。")
     console.open_console()
     try:
-        print("[1/4] 解压嵌入式 Python…")
+        print("[1/3] 解压嵌入式 Python…")
         if not (runtime / "python.exe").exists():
             _extract_embed(runtime)
-        print("[2/4] 放开 site-packages…")
+        print("[2/3] 放开 site-packages…")
         _enable_site(runtime)
-        print("[3/4] 准备安装器 uv…")
+        print("[3/3] 准备安装器 uv 并装依赖（下方为 uv 实时输出）…")
         uv = _place_uv(root, runtime)
-        print("[4/4] 清理旧依赖并安装（下方为 uv 实时输出）…")
-        _cleanup_removed(uv, runtime / "python.exe", removed, cache)
         _uv_with_index_retry(root, uv, runtime / "python.exe", deps, cache)
         print("环境安装完成，即将启动主程序")
     except subprocess.CalledProcessError:
@@ -174,4 +144,3 @@ def ensure_runtime(root: Path) -> None:
     # 装完即删：缓存在用户目录会留近 400MB 运行期无用的副本，改放包内用完清掉
     shutil.rmtree(cache, ignore_errors=True)
     (runtime / ".installed").write_text(_list_digest(deps))
-    (runtime / ".cleaned").write_text(_list_digest(removed))
