@@ -58,7 +58,6 @@ class DialogMessage:
     RELEASE_NOTES_TITLE = "版本变化"
     RELEASE_NOTES_LOADING = "正在拉取发布内容..."
     RELEASE_NOTES_READY = "已取到 {count} 个版本的发布说明"
-    RELEASE_NOTES_PRERELEASE = "{tag}（预发布）"
 
     # 用：theme WaitDialogTheme 文案字段
     WAIT_TITLE = "请稍候"

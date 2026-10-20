@@ -136,7 +136,6 @@ class ReleaseNote:
     """
 
     tag: str
-    prerelease: bool
     body: str
 
 
@@ -144,7 +143,6 @@ def _to_note(row: dict[str, Any]) -> ReleaseNote:
     """release 条目转发布说明"""
     return ReleaseNote(
         tag=str(row.get("tag_name") or ""),
-        prerelease=bool(row.get("prerelease")),
         body=_autolink_bare_urls(_drop_download_lines(str(row.get("body") or ""))),
     )
 
