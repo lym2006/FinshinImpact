@@ -35,8 +35,6 @@ class _StaticAIConfig:
     # API 与模型基础配置
     base_url: str = "https://maas.qianwenaiapi.com/compatible-mode/v1"
     request_path: str = "/chat/completions"
-    msg_chunk_size: int = 4000  # 消息发送相关
-    flood_threshold: int = 5
 
 
 _HOUR_SECONDS = 60 * 60

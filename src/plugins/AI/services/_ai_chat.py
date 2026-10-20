@@ -6,30 +6,26 @@
 
 import asyncio
 
-from aiogram import Bot
-from aiogram.types import Message
-
+from services.context import HandlerContext
 from utils import get_logger
 
-from ..core import TelegramTaskItem, active_tasks, task_queues, user_sessions
+from ..core import active_tasks, task_queues, user_sessions
 from ..state import user_locks
-from ..utils import get_name
 from ._monitor import monitor_loop
 
 _logger = get_logger("Plg.AI")
 
 
-async def handle_ai_chat(message: Message, bot: Bot) -> None:
+async def handle_ai_chat(ctx: HandlerContext) -> None:
     """入队消息并启动监控"""
-    user = get_name(message)
+    user = ctx.event.principal.key
 
     session = user_sessions[user]
     queue = task_queues[user]
-    task = TelegramTaskItem(message, bot)
 
     lock = user_locks[user]
     async with lock:
-        await queue.add_task(task)
+        await queue.add_task(ctx)
 
         if not session.is_active:
             _logger.debug(f"{user} 监控循环启动")

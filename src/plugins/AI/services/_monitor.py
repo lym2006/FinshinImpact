@@ -9,10 +9,11 @@ import time
 from asyncio import CancelledError
 from typing import NoReturn
 
+from exceptions import MessageVanishedError
 from utils import get_logger
 
 from ..config import ai_config
-from ..core import AITaskStoppedError, task_queues, user_sessions
+from ..core import task_queues, user_sessions
 from ..state import user_locks
 from .worker import worker_loop
 
@@ -30,15 +31,15 @@ async def monitor_loop(user: str) -> None:
     try:
         while True:
             # 消费循环：peek 队首，空则置非活跃退出
-            task = await queue.peek_front()
-            if task is None:
+            ctx = await queue.peek_front()
+            if ctx is None:
                 _logger.debug(f"{user} 队列为空")
                 session.is_active = False
                 break
 
             try:
-                await worker_loop(task, user)
-            except AITaskStoppedError:
+                await worker_loop(ctx, user)
+            except MessageVanishedError:
                 _logger.error(f"{user} 原消息被删除")
             except CancelledError:
                 _logger.error(f"{user} 任务被取消")
@@ -86,12 +87,13 @@ async def cleanup_loop() -> NoReturn:
 
         for user in users_to_remove:
             if user in user_sessions:
+                stem = user_sessions[user].stem
                 user_sessions.pop(user, None)
                 task_queues.pop(user, None)
                 paths = [
-                    rec_dir / f"temp/{user}.html",
-                    rec_dir / f"temp/{user}.png",
-                    rec_dir / f"temp/{user}.md",
+                    rec_dir / f"temp/{stem}.html",
+                    rec_dir / f"temp/{stem}.png",
+                    rec_dir / f"temp/{stem}.md",
                 ]
                 for path in paths:
                     path.unlink(missing_ok=True)

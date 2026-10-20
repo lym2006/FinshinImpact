@@ -5,25 +5,30 @@
 """
 
 from aiogram import Router
-from aiogram.filters import Command
-from aiogram.types import FSInputFile, Message
+from aiogram.types import Message
+
+from core.domain import ContentKind
+from core.dto import OutboundPayloadDTO
+from services.context import HandlerContext
 
 from ..AI.config import ai_config
 from ..AI.core import session_guard, user_sessions
-from ..AI.utils import get_name
+from ..filters import CommandFilter
 from ..messages import BotMessage
 
 md_router = Router()
 
 
-@md_router.message(Command("md"))
+@md_router.message(CommandFilter("md"))
 @session_guard
-async def send_markdown(message: Message) -> None:
+async def send_markdown(raw: Message, ctx: HandlerContext) -> None:
     """图片形式发送回复"""
-    user = get_name(message)
-    img_path = ai_config.record_dir / f"temp/{user}.png"
+    user = ctx.event.principal.key
+    img_path = ai_config.record_dir / f"temp/{ctx.event.principal.record_stem}.png"
 
     if user_sessions[user].md_status and img_path.exists():
-        await message.answer_photo(FSInputFile(img_path))
+        await ctx.answer(
+            OutboundPayloadDTO(kind=ContentKind.PHOTO, local_path=str(img_path))
+        )
     else:
-        await message.answer(BotMessage.HISTORY_NO_CONTENT)
+        await ctx.answer(BotMessage.HISTORY_NO_CONTENT)

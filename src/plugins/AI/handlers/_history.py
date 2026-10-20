@@ -8,43 +8,51 @@
 from pathlib import Path
 
 from aiogram import Router
-from aiogram.filters import Command
-from aiogram.types import FSInputFile, Message
+from aiogram.types import Message
 
+from core.domain import ContentKind
+from core.dto import OutboundPayloadDTO
+from services.context import HandlerContext
+
+from ...filters import CommandFilter
 from ...messages import BotMessage
 from ..config import ai_config
 from ..core import session_guard, user_sessions
-from ..utils import get_name
 
 history = Router()
 
 
-def _get_file_path(user: str) -> Path:
-    return ai_config.record_dir / f"temp/{user}.md"
+def _get_file_path(stem: str) -> Path:
+    return ai_config.record_dir / f"temp/{stem}.md"
 
 
-@history.message(Command("history"))
+@history.message(CommandFilter("history"))
 @session_guard
-async def show_history(message: Message) -> None:
+async def show_history(raw: Message, ctx: HandlerContext) -> None:
     """发送历史记录"""
-    user = get_name(message)
-    file_path = _get_file_path(user)
+    stem = ctx.event.principal.record_stem
+    file_path = _get_file_path(stem)
 
     if not file_path.exists():
-        await message.answer(BotMessage.HISTORY_EMPTY)
+        await ctx.answer(BotMessage.HISTORY_EMPTY)
         return
 
-    await message.answer_document(
-        document=FSInputFile(file_path), caption=BotMessage.HISTORY_CAPTION
+    await ctx.answer(
+        OutboundPayloadDTO(
+            kind=ContentKind.DOCUMENT,
+            text=BotMessage.HISTORY_CAPTION,
+            local_path=str(file_path),
+            file_name=file_path.name,
+        )
     )
 
 
-@history.message(Command("clear"))
+@history.message(CommandFilter("clear"))
 @session_guard
-async def clear_history(message: Message) -> None:
+async def clear_history(raw: Message, ctx: HandlerContext) -> None:
     """清除记忆"""
-    user = get_name(message)
-    file_path = _get_file_path(user)
+    user = ctx.event.principal.key
+    file_path = _get_file_path(ctx.event.principal.record_stem)
     user_sessions[user].message = list(ai_config.init)
     file_path.unlink(missing_ok=True)
-    await message.answer(BotMessage.HISTORY_MEMORY_CLEARED)
+    await ctx.answer(BotMessage.HISTORY_MEMORY_CLEARED)

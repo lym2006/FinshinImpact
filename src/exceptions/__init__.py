@@ -45,7 +45,7 @@ from ._network import (
     NetworkError,
     RequestTimeoutError,
 )
-from ._plugins import AIError, AITaskStoppedError, PluginsError, PluginsMissingError
+from ._plugins import AIError, PluginsError, PluginsMissingError
 from ._version import (
     VERSION_MAP,
     LocalVersionError,
@@ -116,5 +116,4 @@ __all__ = [
     "PluginsError",
     "PluginsMissingError",
     "AIError",
-    "AITaskStoppedError",
 ]
