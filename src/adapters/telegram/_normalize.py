@@ -182,7 +182,7 @@ def _reply_to_bot(reply: Message | None, identity: BotIdentity) -> bool:
 
 
 def normalize_update(
-    update: Update, identity: BotIdentity = _UNKNOWN_IDENTITY
+    update: Update, *, identity: BotIdentity = _UNKNOWN_IDENTITY
 ) -> InboundEventDTO | None:
     """归一一条更新
 
@@ -252,7 +252,9 @@ class NormalizeMiddleware(BaseMiddleware):
                 me = await self._bot.me()
                 inbound = normalize_update(
                     event,
-                    BotIdentity(user_id=str(me.id), username=me.username or ""),
+                    identity=BotIdentity(
+                        user_id=str(me.id), username=me.username or ""
+                    ),
                 )
             except Exception as e:
                 # 单条畸形更新只记日志，不能中断事件流
