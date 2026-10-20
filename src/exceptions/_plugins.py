@@ -19,7 +19,3 @@ class PluginsMissingError(PluginsError):
 
 class AIError(PluginsError):
     """AI 插件异常基类"""
-
-
-class AITaskStoppedError(AIError):
-    """AI 任务中断异常"""

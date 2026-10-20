@@ -5,11 +5,11 @@
 - 提供对话任务入队分发
 """
 
-from aiogram import Bot, Router
-from aiogram.enums import ChatType, ContentType
+from aiogram import Router
 from aiogram.filters import Filter
 from aiogram.types import Message
 
+from core.domain import ChatScope
 from services.context import HandlerContext
 
 from ..config import ai_config
@@ -27,30 +27,32 @@ class _ChatFilter(Filter):
     - 群聊按 @ 点名、引用本机器人、触发词三档降级命中
     """
 
-    async def __call__(
-        self, message: Message, ctx: HandlerContext | None = None
-    ) -> bool:
+    async def __call__(self, raw: Message, ctx: HandlerContext | None = None) -> bool:
         """判断消息是否应该触发 AI 聊天"""
-        if message.content_type != ContentType.TEXT or ctx is None:
+        if ctx is None:
             return False
+        event = ctx.event
 
-        assert message.text is not None
-        text = message.text
-
-        command = ctx.event.command
+        # 命令格式错误
+        command = event.command
         if command.matched or command.format_error:
             return False
 
-        match message.chat.type:
-            case ChatType.PRIVATE:
+        # 非纯文字或无文本
+        content = event.content
+        if content.media or not content.text:
+            return False
+
+        match event.scope:
+            case ChatScope.PRIVATE:
                 # 私聊：非命令文本全部接管
                 return True
-            case ChatType.GROUP | ChatType.SUPERGROUP:
+            case ChatScope.GROUP:
                 # 群聊：点名或引用本机器人直接应答，否则须命中触发词（忽略大小写）
-                if ctx.event.is_mention_bot or ctx.event.reply_to_bot:
+                if event.is_mention_bot or event.reply_to_bot:
                     return True
                 return any(
-                    keyword.lower() in text.lower()
+                    keyword.lower() in event.content.text.lower()
                     for keyword in ai_config.group_triggers
                 )
             case _:
@@ -60,6 +62,6 @@ class _ChatFilter(Filter):
 @ai_chat.message(_ChatFilter())
 @session_guard
 @retry_sending()
-async def process_ai_chat(message: Message, bot: Bot) -> None:
+async def process_ai_chat(raw: Message, ctx: HandlerContext) -> None:
     """AI 聊天核心处理器"""
-    await handle_ai_chat(message, bot)
+    await handle_ai_chat(ctx)

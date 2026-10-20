@@ -1,7 +1,7 @@
 # src/plugins/AI/utils.py
 """AI 工具
 
-- 提供消息构建与身份提取
+- 提供消息构建
 - 定义退避重试装饰器
 """
 
@@ -10,7 +10,6 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, ParamSpec, TypeVar
 
 from aiogram.exceptions import TelegramNetworkError
-from aiogram.types import Message
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -46,19 +45,6 @@ def build_message(role: str, content: str) -> dict[str, str]:
 def make_data(session: "UserSession", thisinput: str) -> list[dict[str, str]]:
     """构建包含新输入的用户消息数据列表"""
     return session.message + [build_message("user", thisinput)]
-
-
-def get_name(message: Message) -> str:
-    """用户唯一标识
-
-    - 格式 u_{id}（私聊）/ g_{群}_{id}（群聊）
-    """
-    id_ = message.chat.id
-    return (
-        f"g_{abs(id_)}_{getattr(getattr(message, 'from_user', None), 'id', 'unknown')}"
-        if id_ < 0
-        else f"u_{id_}"
-    )
 
 
 def retry_sending() -> Callable[[Callable[P, T]], Callable[P, T]]:
