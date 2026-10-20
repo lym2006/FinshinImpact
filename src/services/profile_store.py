@@ -11,7 +11,7 @@ import shutil
 import time
 from pathlib import Path
 
-from core.domain import Platform, make_profile_code
+from core.domain import Platform, make_profile_code, platform_of_profile
 from system.profile_env import (
     ASSET_PERSONA_EXAMPLE_NAME,
     ASSETS_DIR,
@@ -69,6 +69,7 @@ def list_profiles() -> list[tuple[str, str]]:
 
     - 扫 instances 下一级身份文件夹，返回 (身份码, 备注名) 列表
     - 目录不存在时返回空列表
+    - 身份码解析不出平台的目录跳过，旧格式改名即回来
     - 按最近使用时间降序，时间缺失或相同时按身份码降序
     """
     profiles: list[tuple[float, str, str]] = []
@@ -78,6 +79,8 @@ def list_profiles() -> list[tuple[str, str]]:
 
     for path in sorted(INSTANCES_DIR.iterdir()):
         if not path.is_dir() or not (path / _INSTANCE_MARK).is_file():
+            continue
+        if platform_of_profile(path.name) is None:
             continue
         data = read_profile_data(path.name)
         last_used = data.get(_LAST_USED_KEY)

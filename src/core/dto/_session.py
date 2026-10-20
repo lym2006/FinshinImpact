@@ -7,7 +7,7 @@
 from dataclasses import dataclass
 
 from ..domain import ChatRole, Platform
-from ..domain.ids import ContainerKey, SessionKey
+from ..domain.ids import KEY_SEP, ContainerKey, SessionKey
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,7 +38,7 @@ class SessionDTO:
 
     @property
     def session_key(self) -> SessionKey:
-        return SessionKey(f"{self.platform}:{self.container}")
+        return SessionKey(f"{self.platform}{KEY_SEP}{self.container}")
 
 
 @dataclass(frozen=True, slots=True)

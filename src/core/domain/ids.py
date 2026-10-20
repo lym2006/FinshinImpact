@@ -7,10 +7,12 @@
 
 from typing import NewType
 
+# 联合键分段符，键串即文件名安全串
+KEY_SEP = "."
+
 # 容器与键段
 ContainerKey = NewType("ContainerKey", str)  # g/u 前缀
-RecordStem = NewType("RecordStem", str)  # 落盘文件名主干
-UserKey = NewType("UserKey", str)  # platform:user
+UserKey = NewType("UserKey", str)  # platform.user
 SessionKey = NewType("SessionKey", str)  # SessionDTO.key
 MessageKey = NewType("MessageKey", str)  # MsgReferenceDTO.key
 PrincipalKey = NewType("PrincipalKey", str)  # PrincipalDTO.key
@@ -19,4 +21,4 @@ ConfigPath = NewType("ConfigPath", str)  # 配置段.键
 # 平台原始标识
 UserId = NewType("UserId", str)
 MessageId = NewType("MessageId", str)
-TaskId = NewType("TaskId", str)  # f"{TaskKind}:{MsgReferenceDTO.key}"
+TaskId = NewType("TaskId", str)  # f"{PrincipalDTO.key}.{TaskKind}"

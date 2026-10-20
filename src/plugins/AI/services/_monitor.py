@@ -87,13 +87,14 @@ async def cleanup_loop() -> NoReturn:
 
         for user in users_to_remove:
             if user in user_sessions:
-                stem = user_sessions[user].stem
                 user_sessions.pop(user, None)
                 task_queues.pop(user, None)
+
+                # 字典键即主体键，点号分段可直接当落盘文件名主干
                 paths = [
-                    rec_dir / f"temp/{stem}.html",
-                    rec_dir / f"temp/{stem}.png",
-                    rec_dir / f"temp/{stem}.md",
+                    rec_dir / f"temp/{user}.html",
+                    rec_dir / f"temp/{user}.png",
+                    rec_dir / f"temp/{user}.md",
                 ]
                 for path in paths:
                     path.unlink(missing_ok=True)

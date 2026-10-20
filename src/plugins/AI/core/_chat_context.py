@@ -36,12 +36,9 @@ _DEFAULT_SESSION = {  # 默认会话模板
 }
 
 
-def _create_new_session(stem: str) -> UserSession:
-    """创建并返回一个新的用户会话对象
-
-    - stem 为落盘文件名主干，建会话时一次落定
-    """
-    return UserSession(stem=stem, **_DEFAULT_SESSION)
+def _create_new_session() -> UserSession:
+    """创建并返回一个新的用户会话对象"""
+    return UserSession(**_DEFAULT_SESSION)
 
 
 def session_guard(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
@@ -54,7 +51,7 @@ def session_guard(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
 
         # 初始化用户会话
         if user not in user_sessions:
-            user_sessions[user] = _create_new_session(ctx.event.principal.record_stem)
+            user_sessions[user] = _create_new_session()
             _logger.debug(f"[Decorator] 已为 {user} 初始化会话")
 
         # 检查并初始化任务队列
