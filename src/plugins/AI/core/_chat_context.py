@@ -11,12 +11,10 @@ import time
 from collections.abc import Awaitable, Callable
 from typing import ParamSpec, TypeVar, cast
 
-from aiogram.types import Message
-
+from services.context import HandlerContext
 from utils import get_logger
 
 from ..config import ai_config
-from ..utils import get_name
 from ._tasks import TaskQueue
 from .models import UserSession
 
@@ -38,9 +36,12 @@ _DEFAULT_SESSION = {  # 默认会话模板
 }
 
 
-def _create_new_session() -> UserSession:
-    """创建并返回一个新的用户会话对象"""
-    return UserSession(**_DEFAULT_SESSION)
+def _create_new_session(stem: str) -> UserSession:
+    """创建并返回一个新的用户会话对象
+
+    - stem 为落盘文件名主干，建会话时一次落定
+    """
+    return UserSession(stem=stem, **_DEFAULT_SESSION)
 
 
 def session_guard(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
@@ -48,12 +49,12 @@ def session_guard(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
 
     @functools.wraps(func)
     async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
-        message = cast(Message, args[0])
-        user = get_name(message)
+        ctx = cast(HandlerContext, kwargs["ctx"])
+        user = ctx.event.principal.key
 
         # 初始化用户会话
         if user not in user_sessions:
-            user_sessions[user] = _create_new_session()
+            user_sessions[user] = _create_new_session(ctx.event.principal.record_stem)
             _logger.debug(f"[Decorator] 已为 {user} 初始化会话")
 
         # 检查并初始化任务队列

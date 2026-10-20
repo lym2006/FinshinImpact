@@ -6,7 +6,7 @@
 
 from ._chat_context import active_tasks, session_guard, task_queues, user_sessions
 from ._client import AIClient
-from ._tasks import AITaskStoppedError, TaskQueue, TelegramTaskItem
+from ._tasks import TaskQueue
 
 __all__ = [
     # 网络客户端
@@ -17,7 +17,5 @@ __all__ = [
     "task_queues",
     "user_sessions",
     # 异步任务队列
-    "AITaskStoppedError",
     "TaskQueue",
-    "TelegramTaskItem",
 ]

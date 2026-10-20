@@ -9,6 +9,7 @@ from typing import NewType
 
 # 容器与键段
 ContainerKey = NewType("ContainerKey", str)  # g/u 前缀
+RecordStem = NewType("RecordStem", str)  # 落盘文件名主干
 UserKey = NewType("UserKey", str)  # platform:user
 SessionKey = NewType("SessionKey", str)  # SessionDTO.key
 MessageKey = NewType("MessageKey", str)  # MsgReferenceDTO.key

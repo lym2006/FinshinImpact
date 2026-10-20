@@ -6,8 +6,15 @@
 
 from dataclasses import dataclass
 
-from ..domain import Platform
-from ..domain.ids import ContainerKey, MessageId, MessageKey, PrincipalKey, UserId
+from ..domain import Platform, make_record_stem
+from ..domain.ids import (
+    ContainerKey,
+    MessageId,
+    MessageKey,
+    PrincipalKey,
+    RecordStem,
+    UserId,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,6 +32,14 @@ class PrincipalDTO:
         - 形如 tg:g100123:456 或 qq:u123:123
         """
         return PrincipalKey(f"{self.platform}:{self.container}:{self.user}")
+
+    @property
+    def record_stem(self) -> RecordStem:
+        """落盘文件名主干
+
+        - key 含冒号不能当文件名，主干由容器段与用户段派生
+        """
+        return make_record_stem(self.container, self.user)
 
 
 @dataclass(frozen=True, slots=True)

@@ -4,19 +4,18 @@
 - 实现流式接收、UI 更新与记录持久化
 """
 
-import asyncio
 import time
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from pathlib import Path
 from typing import Any, Literal
 
-from aiogram.exceptions import TelegramBadRequest
-
+from exceptions import MessageVanishedError
+from services.context import HandlerContext
 from utils import get_logger
 
 from ...messages import BotMessage
 from ..config import ai_config
-from ..core import AIClient, AITaskStoppedError, TelegramTaskItem, user_sessions
+from ..core import AIClient, user_sessions
 from ..utils import build_message, make_data
 
 _logger = get_logger("Plg.AI.Worker")
@@ -39,30 +38,7 @@ def set_render_provider(
     _screenshot = screenshot
 
 
-async def _send_long_message(task: TelegramTaskItem, text: str) -> None:
-    """分段发送长消息
-
-    - 内置防频控
-    """
-    total_len = len(text)
-    size = ai_config.msg_chunk_size
-    total_chunks = (total_len + size - 1) // size
-
-    for idx, i in enumerate(range(0, total_len, size)):
-        chunk = text[i : i + size]
-        try:
-            await task.safe_reply(chunk)
-        except TelegramBadRequest as e:
-            _logger.send_error("分段消息请求错误", e)
-        except Exception as e:
-            _logger.send_error("分段消息未知错误", e)
-
-        # 如果总段数超过阈值，且当前不是最后一段，则在发送后休眠防频控
-        if total_chunks > ai_config.flood_threshold and idx < total_chunks - 1:
-            await asyncio.sleep(1)
-
-
-async def _save_conversation_record(user: str, text: str, final_msg: str) -> None:
+async def _save_conversation_record(stem: str, text: str, final_msg: str) -> None:
     """写入对话记录
 
     - txt/md 必写，渲染产物尽力而为，失败不影响记录
@@ -76,9 +52,9 @@ async def _save_conversation_record(user: str, text: str, final_msg: str) -> Non
         f"AI回复：\n{final_msg}\n\n\n"
     )
     try:
-        with open(rec_dir / f"staged/{user}.txt", "a", encoding="utf8") as f:
+        with open(rec_dir / f"staged/{stem}.txt", "a", encoding="utf8") as f:
             f.write(wrt)
-        with open(rec_dir / f"temp/{user}.md", "a", encoding="utf8") as f:
+        with open(rec_dir / f"temp/{stem}.md", "a", encoding="utf8") as f:
             f.write(wrt)
     except Exception as e:
         _logger.send_error("保存本地对话记录失败", e)
@@ -88,10 +64,10 @@ async def _save_conversation_record(user: str, text: str, final_msg: str) -> Non
 
     # 生成 HTML 并截图
     try:
-        html_path = ai_config.record_dir / f"temp/{user}.html"
+        html_path = ai_config.record_dir / f"temp/{stem}.html"
         with open(html_path, "w", encoding="utf-8") as f:
             f.write(_render_html(final_msg))
-        await _screenshot(user, html_path)
+        await _screenshot(stem, html_path)
     except Exception as e:
         _logger.send_error("渲染对话记录图片失败", e)
 
@@ -119,22 +95,18 @@ async def _handle_ai_message(
         yield "error", e
 
 
-async def _send_final_reply(task: TelegramTaskItem, final_msg: str) -> None:
-    """发送最终回复"""
-    if len(final_msg) > ai_config.msg_chunk_size:
-        await _send_long_message(task, final_msg)
-    else:
-        await task.safe_reply(final_msg)
-
-
-async def worker_loop(task: TelegramTaskItem, user: str) -> None:
+async def worker_loop(ctx: HandlerContext, user: str) -> None:
     """核心工作循环"""
-    message = task.message
-    text = message.text
-    if text is None:
+    text = ctx.event.content.text
+    if not text:
         _logger.debug("消息无文本，跳过")
         return
 
+    # 任务开始前探一次，原消息已删即中断，不持续轮询
+    if not await ctx.interaction.probe_existence(ctx.event.ref):
+        raise MessageVanishedError(ctx.event.ref)
+
+    stem = ctx.event.principal.record_stem
     session = user_sessions[user]
     final_msg = ""
     has_error = False
@@ -149,23 +121,24 @@ async def worker_loop(task: TelegramTaskItem, user: str) -> None:
                     has_error = True
 
         if has_error or not final_msg:
-            await task.safe_reply(BotMessage.AI_UNAVAILABLE)
+            await ctx.reply(BotMessage.AI_UNAVAILABLE)
             return
 
-        await _send_final_reply(task, final_msg)
+        # 分段与防频控归适配层端口，此处只交整段正文
+        await ctx.reply(final_msg)
 
         session.message.extend(
             [build_message("user", text), build_message("assistant", final_msg)]
         )
 
-        await _save_conversation_record(user, text, final_msg)
+        await _save_conversation_record(stem, text, final_msg)
 
         # 渲染未启用无图可发，md_status 随渲染出口置位
         if _screenshot is not None:
             session.md_status = True
 
-    except AITaskStoppedError:
+    except MessageVanishedError:
         raise
     except Exception as e:
         _logger.send_error("Worker 运行时错误", e)
-        await task.safe_reply(BotMessage.AI_UNAVAILABLE)
+        await ctx.reply(BotMessage.AI_UNAVAILABLE)

@@ -10,10 +10,10 @@ import asyncio
 
 from aiogram import Router
 from aiogram.filters import Filter
-from aiogram.types import FSInputFile, Message
+from aiogram.types import Message
 
-from core.domain import ChatScope, CommandFlag
-from core.dto import CommandDTO
+from core.domain import ChatScope, CommandFlag, ContentKind
+from core.dto import CommandDTO, OutboundPayloadDTO
 from services.context import HandlerContext
 
 from ..messages import BotMessage
@@ -58,9 +58,7 @@ class _CommandReject(Filter):
     - 群聊与频道只吞掉菜单内命令的多余输入，命令侧拿不到
     """
 
-    async def __call__(
-        self, message: Message, ctx: HandlerContext | None = None
-    ) -> bool:
+    async def __call__(self, raw: Message, ctx: HandlerContext | None = None) -> bool:
         """判定是否接管"""
         if ctx is None:
             return False
@@ -80,9 +78,7 @@ class _KeywordFilter(Filter):
     - 清单没认的输入不接管，群聊里连同回执一并静默
     """
 
-    async def __call__(
-        self, message: Message, ctx: HandlerContext | None = None
-    ) -> bool:
+    async def __call__(self, raw: Message, ctx: HandlerContext | None = None) -> bool:
         """判定是否接管"""
         if ctx is None:
             return False
@@ -98,9 +94,7 @@ class _MenuFilter(Filter):
     - 裸 /help，不带 flag 与参数
     """
 
-    async def __call__(
-        self, message: Message, ctx: HandlerContext | None = None
-    ) -> bool:
+    async def __call__(self, raw: Message, ctx: HandlerContext | None = None) -> bool:
         """判定是否接管"""
         if ctx is None:
             return False
@@ -121,11 +115,10 @@ def _reject_text(command: CommandDTO) -> str:
 
 
 @router.message(_CommandReject())
-async def command_check(message: Message, ctx: HandlerContext) -> None:
+async def command_check(raw: Message, ctx: HandlerContext) -> None:
     """拦截命令形态问题
 
     - 私聊回执，群聊与频道静默无视
-    - 首位形参由 aiogram 按位置绑定，名字不可改
     """
     if ctx.event.scope is not ChatScope.PRIVATE:
         return
@@ -133,17 +126,14 @@ async def command_check(message: Message, ctx: HandlerContext) -> None:
 
 
 @router.message(_KeywordFilter())
-async def command_help(message: Message, ctx: HandlerContext) -> None:
-    """发送单个命令的帮助说明
-
-    - 首位形参由 aiogram 按位置绑定，名字不可改
-    """
+async def command_help(raw: Message, ctx: HandlerContext) -> None:
+    """发送单个命令的帮助说明"""
     await ctx.answer(resolve_single_help(ctx.event.command.head))
 
 
 @router.message(_MenuFilter())
-async def show_help_list(message: Message) -> None:
+async def show_help_list(raw: Message, ctx: HandlerContext) -> None:
     """以图片形式发送帮助菜单"""
     # 渲染可能触发绘制，放线程池防卡事件循环
     path = await asyncio.to_thread(generate_image)
-    await message.answer_photo(FSInputFile(str(path)))
+    await ctx.answer(OutboundPayloadDTO(kind=ContentKind.PHOTO, local_path=str(path)))
