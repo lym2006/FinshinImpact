@@ -2,10 +2,12 @@
 """打包共享规格
 
 - 产物身份名、发布地址与 Windows 协议值的标识符单源
-- pyproject 版本与依赖清单的读取入口
+- 版本页、发布说明与依赖清单的读取入口
 """
 
+import json
 import tomllib
+import urllib.request
 from pathlib import Path
 from typing import Any
 
@@ -20,11 +22,19 @@ STAGE = DIST / APP_NAME  # 组装发布物的暂存目录
 CACHE = DIST / "_cache"
 
 _TIMEOUT_VERSION_PAGE = 10.0  # 版本页请求超时 10 秒
+_TIMEOUT_RELEASE = 10.0  # release 正文请求超时 10 秒
 
 HDR_CONTENT_LENGTH = "Content-Length"  # 探测与下载共用的响应头名
 
 # 版本信息网页
 _PAGES_PYPROJECT_URL = "https://lym2006.github.io/FinshinImpact/pyproject.toml"
+_RELEASE_API_URL = (
+    "https://api.github.com/repos/lym2006/FinshinImpact/releases/tags/v{ver}"
+)
+_API_USER_AGENT = "Python-Script"  # GitHub API 认 UA，缺头即拒
+
+# 发布包直链所在行的标记
+_DOWNLOAD_MARK = "releases/download/"
 
 # 发布物下载地址，build 自检与启动器升级共用
 RELEASE_ZIP_URL = "https://github.com/lym2006/FinshinImpact/releases/download/v{ver}/FinshinImpact-v{ver}.zip"
@@ -93,6 +103,34 @@ def remote_version(proxy_url: str | None = None) -> str | None:
         except Exception:
             continue
     return None
+
+
+def _drop_download_lines(body: str) -> str:
+    """release 正文剔掉发布包直链所在行"""
+    return "\n".join(
+        line for line in body.splitlines() if _DOWNLOAD_MARK not in line
+    ).strip()
+
+
+def remote_release_notes(version: str, proxy_url: str | None = None) -> str:
+    """读取指定版本 release 正文，失败返回空串
+
+    - 干净直连优先，给了代理地址再补试一轮
+    """
+    request = urllib.request.Request(
+        _RELEASE_API_URL.format(ver=version), headers={"User-Agent": _API_USER_AGENT}
+    )
+    openers = [netio.clean_opener()]
+    if proxy_url:
+        openers.append(netio.proxied_opener(proxy_url))
+    for opener in openers:
+        try:
+            with opener.open(request, timeout=_TIMEOUT_RELEASE) as resp:
+                body = json.loads(resp.read().decode("utf-8")).get("body")
+        except Exception:
+            continue
+        return _drop_download_lines(str(body or ""))
+    return ""
 
 
 def dependencies(root: Path) -> list[str]:

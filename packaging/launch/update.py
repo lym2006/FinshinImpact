@@ -2,6 +2,7 @@
 """发布物整包升级
 
 - 比对在线版本页，确认后下载新版并覆盖源码，用户资产保留
+- 升级前可先看远程 release 正文
 - 多源带进度下载，坏包自动换源
 - 升级收尾当场换入新壳并拉起
 """
@@ -23,6 +24,7 @@ from pack_spec import (
     SHELL_EXE,
     SHELL_PENDING,
     local_version,
+    remote_release_notes,
     remote_version,
 )
 from packaging.version import Version
@@ -42,13 +44,14 @@ def check_update(root: Path) -> None:
 
     - 网络不通静默跳过
     - GUI 内可手动检查
+    - 升级前可先看本次变化
     """
     local = local_version(root)
     remote = remote_version(proxy.system_proxy_url())
     if remote is None or Version(remote) <= Version(local):
         return
     new_msg = f"新版本可用 v{local} -> v{remote}"
-    if not dialogs.ask_yes_no(f"{new_msg}，立即升级？\n选择否则按当前版本启动。"):
+    if not _ask_upgrade(new_msg, remote):
         return
     console.open_console()
     print(f"{new_msg}，开始升级…")
@@ -66,6 +69,37 @@ def check_update(root: Path) -> None:
 
     # 新壳当场换入并拉起，主程序抢锁后旧壳退场，用户无需关闭再打开
     shell.apply_shell_update(root, handoff=True)
+
+
+def _ask_upgrade(new_msg: str, version: str) -> bool:
+    """确认是否立即升级
+
+    - 选否先看本次变化，看完再问一次
+    """
+    answer = dialogs.ask_yes_no_cancel(
+        f"{new_msg}，立即升级？\n选是立即升级，选否先看本次变化，选取消按当前版本启动。"
+    )
+    if answer is dialogs.Answer.CANCEL:
+        return False
+    if answer is dialogs.Answer.YES:
+        return True
+
+    console.open_console()
+    _print_changes(version)
+    return dialogs.ask_yes_no(f"{new_msg}，立即升级？\n选择否则按当前版本启动。")
+
+
+def _print_changes(version: str) -> None:
+    """打印指定版本的版本变化正文"""
+def _print_changes(version: str) -> None:
+    """打印指定版本的版本变化正文"""
+    notes = remote_release_notes(version, proxy.system_proxy_url())
+    if not notes:
+        print(f"未取到 v{version} 的发布说明，详情见 GitHub Releases 页")
+        console.hold_console()
+        return
+    print(notes)
+    console.hold_console(f"以上为 v{version} 的变化内容，按回车继续…")
 
 
 def _apply_update(root: Path, version: str) -> bool:

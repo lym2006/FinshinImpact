@@ -14,7 +14,10 @@ class VersionMessage:
     # 用：skin/theme/_dialogs.py WaitDialogTheme 兜底字段
     CRASH = "检查异常中断：{err}，详情见日志"
 
-    # 用：utils/_version_checker.py 抛版本异常时的 {msg} 填充值
+    # 用：utils/check/_version.py 抛版本异常时的 {msg} 填充值
     LOCAL_MISS = "项目文件不存在"
     LOCAL_BROKEN = "读取失败"
     REMOTE_BROKEN = "读取未知错误"
+
+    # 用：utils/check/_version.py 发布说明未命中时的 {msg} 填充值
+    RELEASE_MISS = "v{ver} 暂无发布说明"

@@ -1,7 +1,7 @@
 # src/ui/_dialogs/__init__.py
 """弹窗子包门面
 
-- 代发基类、提示、等待、关闭确认与配置、检查、断连各类业务弹窗
+- 代发基类、提示、等待、关闭确认与配置、检查、断连、版本变化各类业务弹窗
 """
 
 from ._base import BaseDialog
@@ -13,6 +13,7 @@ from ._check import (
 )
 from ._link import LinkDialog
 from ._notice import NoticeDialog
+from ._release_notes import ReleaseNotesDialog
 from ._settings import (
     ChangeConfirmDialog,
     ConfigMode,
@@ -26,6 +27,7 @@ __all__ = [
     "BaseDialog",
     # 通用弹窗
     "NoticeDialog",
+    "ReleaseNotesDialog",
     "WaitDialog",
     "ShutdownDialog",
     # 业务弹窗

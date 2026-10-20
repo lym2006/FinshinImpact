@@ -12,6 +12,7 @@ from ._dialogs import (
     FiveStateDialogTheme,
     LinkDialogTheme,
     NoticeDialogTheme,
+    ReleaseNotesDialogTheme,
     ShutdownDialogTheme,
     WaitDialogTheme,
 )
@@ -60,6 +61,7 @@ __all__ = [
     "CheckDialogTheme",
     "WaitDialogTheme",
     "NoticeDialogTheme",
+    "ReleaseNotesDialogTheme",
     "FiveStateDialogTheme",
     "LinkDialogTheme",
     # 引导令牌类型
@@ -85,6 +87,7 @@ __all__ = [
     "CHECK_DIALOG",
     "WAIT_DIALOG",
     "NOTICE_DIALOG",
+    "RELEASE_NOTES_DIALOG",
     "LINK_DIALOG",
     # 引导单例
     "PICKER",
@@ -112,6 +115,7 @@ CHANGE_DIALOG = ChangeDialogTheme()
 CHECK_DIALOG = CheckDialogTheme()
 WAIT_DIALOG = WaitDialogTheme()
 NOTICE_DIALOG = NoticeDialogTheme()
+RELEASE_NOTES_DIALOG = ReleaseNotesDialogTheme()
 LINK_DIALOG = LinkDialogTheme()
 
 # 引导令牌
