@@ -15,6 +15,7 @@ class ObjectName(StrEnum):
     CHANGE_TABLE = "change_table"
     CHANGE_CELL = "change_cell"
     ROW_VIEW = "row_view"
+    RELEASE_NOTES_VIEW = "release_notes_view"
     LIST_WIDGET = "list_widget"
     PERSONA_PREVIEW = "persona_preview"
     LINK_HEAD = "link_head"

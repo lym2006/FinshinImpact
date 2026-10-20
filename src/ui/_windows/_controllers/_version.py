@@ -11,31 +11,48 @@ from PySide6.QtCore import QThread, Signal
 
 from exceptions import MAP_KEY_VERSION, MAPS, NewVersionError, VersionError
 from skin.theme import WAIT_DIALOG
-from utils.check import check_updates
+from utils.check import ReleaseNote, check_updates, release_history
 
-from ..._dialogs import NoticeDialog, WaitDialog
+from ..._dialogs import NoticeDialog, ReleaseNotesDialog, WaitDialog
 from ._base import BaseController
 
 _ERR_MAP_VERSION = MAPS[MAP_KEY_VERSION]
+_TAG_PREFIX = "v"  # release 标签相对版本号多出的前缀
 
 
 class _VersionWorker(QThread):
     """版本检查线程
 
-    - 结果以 (文案, 成败) 发回
+    - 结果以 (文案, 版本清单, 焦点标签, 成败) 发回
+    - 发现新版顺带拉发布说明，拉不到即留空清单
     """
 
-    done = Signal(str, bool)
+    done = Signal(str, list, str, bool)
 
     def run(self) -> None:
         try:
             ver = asyncio.run(check_updates())
-            self.done.emit(WAIT_DIALOG.up_to_date.format(ver=ver), True)
+            self.done.emit(WAIT_DIALOG.up_to_date.format(ver=ver), [], "", True)
+        except NewVersionError as e:
+            tag = f"{_TAG_PREFIX}{e.new_version}"
+            notes = self._notes()
+            focus = tag if any(note.tag == tag for note in notes) else ""
+            self.done.emit(
+                _ERR_MAP_VERSION[NewVersionError].format(**vars(e)), notes, focus, True
+            )
         except VersionError as e:
-            msg = _ERR_MAP_VERSION[type(e)].format(**vars(e))
-            self.done.emit(msg, isinstance(e, NewVersionError))
+            self.done.emit(_ERR_MAP_VERSION[type(e)].format(**vars(e)), [], "", False)
         except Exception as e:
-            self.done.emit(WAIT_DIALOG.crash_text.format(err=type(e).__name__), False)
+            self.done.emit(
+                WAIT_DIALOG.crash_text.format(err=type(e).__name__), [], "", False
+            )
+
+    def _notes(self) -> list[ReleaseNote]:
+        """发布说明清单，拉不到即空"""
+        try:
+            return list(asyncio.run(release_history()))
+        except Exception:
+            return []
 
 
 class VersionController(BaseController):
@@ -49,17 +66,17 @@ class VersionController(BaseController):
         """检查版本更新
 
         - 等待窗可取消，关窗即弃用线程
-        - 结果全文经统一通知弹窗展示
+        - 带得到本版正文即直接开双栏弹窗，否则走通知窗文案
         """
         # 面板只记首行摘要，新版提示文案与成败态一并透出
         dialog = WaitDialog(WAIT_DIALOG.check_text, parent=self.gui, cancelable=True)
         worker = _VersionWorker()
-        result: list[tuple[str, bool]] = []
+        result: list[tuple[str, list, str, bool]] = []
 
-        def _collect(text: str, passed: bool) -> None:
+        def _collect(text: str, notes: list, focus: str, passed: bool) -> None:
 
-            # 先存文案再收窗：finish 自动 accept，防暂存被 disconnect 掐断
-            result.append((text, passed))
+            # 先存结果再收窗：finish 自动 accept，防暂存被 disconnect 掐断
+            result.append((text, notes, focus, passed))
             dialog.finish(text, passed)
 
         worker.done.connect(_collect)
@@ -76,10 +93,14 @@ class VersionController(BaseController):
             self.logger.info("用户取消版本检查")
             return
 
-        msg, passed = result[0]
+        msg, notes, focus, passed = result[0]
         head = next((ln.strip() for ln in msg.splitlines() if ln.strip()), msg)
         if passed:
             self.logger.info(f"版本检查：{head}")
         else:
             self.logger.error(f"版本检查失败：{head}")
+
+        if focus:
+            ReleaseNotesDialog.show_release_notes(notes, focus, parent=self.gui)
+            return
         NoticeDialog.notify(msg, parent=self.gui)

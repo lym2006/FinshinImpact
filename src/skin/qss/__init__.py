@@ -16,6 +16,7 @@ from ._business import (
 from ._dialog import (
     build_link_dialog_qss,
     build_notice_dialog_qss,
+    build_release_notes_dialog_qss,
     build_shutdown_dialog_qss,
     build_wait_dialog_qss,
 )
@@ -27,6 +28,7 @@ __all__ = [
     "Qss",
     # 通用弹窗装配
     "build_notice_dialog_qss",
+    "build_release_notes_dialog_qss",
     "build_wait_dialog_qss",
     "build_shutdown_dialog_qss",
     "build_link_dialog_qss",
