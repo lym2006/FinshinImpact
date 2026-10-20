@@ -17,7 +17,7 @@ from ._palette import PALETTE
 class WindowTheme:
     """窗口基础属性配置"""
 
-    title: str = "Bot Manager"  # 窗口标题
+    title: str = "Finshin Impact"  # 窗口标题
     width: int = 1200  # 窗口默认宽度
     height: int = 600  # 窗口默认高度
     min_width: int = 520  # 窗口最小宽度
