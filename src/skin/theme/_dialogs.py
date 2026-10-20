@@ -174,7 +174,6 @@ class ReleaseNotesDialogTheme:
     title: str = DialogMessage.RELEASE_NOTES_TITLE
     loading: str = DialogMessage.RELEASE_NOTES_LOADING
     ready: str = DialogMessage.RELEASE_NOTES_READY
-    prerelease_text: str = DialogMessage.RELEASE_NOTES_PRERELEASE
     ok_text: str = DialogMessage.NOTICE_OK
 
 

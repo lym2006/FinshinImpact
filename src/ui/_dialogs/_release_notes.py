@@ -23,13 +23,6 @@ _MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
 _NO_ROW = -1
 
 
-def _row_text(note: ReleaseNote) -> str:
-    """清单一行的版本标签文案"""
-    if note.prerelease:
-        return RELEASE_NOTES_DIALOG.prerelease_text.format(tag=note.tag)
-    return note.tag
-
-
 class ReleaseNotesDialog(BaseDialog):
     """版本变化弹窗"""
 
@@ -73,7 +66,7 @@ class ReleaseNotesDialog(BaseDialog):
         listing.setObjectName(ObjectName.LIST_WIDGET)
         listing.setFixedWidth(RELEASE_NOTES_DIALOG.list_width)
         for note in notes:
-            listing.addItem(_row_text(note))
+            listing.addItem(note.tag)
         listing.currentRowChanged.connect(self._show_body)
 
         # 未命中焦点版本即落回最新一版，空清单留无选中
