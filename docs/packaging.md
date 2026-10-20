@@ -15,7 +15,7 @@ FinshinImpact\
 ├── src\              代码文件
 ```
 
-启动器首启：解压嵌入式 Python → 放开 site-packages → 落位随包 uv → 清理旧依赖 → 装依赖 → 拉起主程序。插件依赖与浏览器内核由引导层在启动前按需安装，不在首装链路。此后每次启动比对在线版本页，弹窗确认后整包升级。
+启动器首启：解压嵌入式 Python → 放开 site-packages → 落位随包 uv → 装依赖 → 拉起主程序。插件依赖与浏览器内核由引导层在启动前按需安装，不在首装链路。此后每次启动比对在线版本页，弹窗确认后整包升级。
 
 - 升级换源码与启动器：
   - 新壳有变化时暂存 `_shell_update\`，当场换入并由旧壳拉起新壳，确认新程序抢到引导锁（弹选择窗即持有）后旧壳退场
@@ -24,8 +24,8 @@ FinshinImpact\
   - 换壳遗留的 `.old` 备份在本轮启动收尾限时重试删除，旧壳退场即删，超时留到下次启动
   - 用户资产与运行环境一律保留
 - `runtime\python-embed.zip` 是启动器按名字找的文件，**改名会坏**。`payload\uv.zip` 供首启解出 uv.exe，取用后 payload 自动删除。
-- `runtime\.installed` 记录依赖清单摘要，清单没变下次跳过安装。`runtime\.cleaned` 记录清理清单指纹，清单变更即补做一次旧依赖清理。
-- 旧依赖清理清单登记在 `pyproject.toml` 的 `[tool.finshin-impact] removed-dependencies`，与依赖同处一文件。删库时把名字加进去，重新加回某库时删对应行。
+- `runtime\.installed` 记录依赖清单摘要，清单没变下次跳过安装。
+- `runtime\.synced` 记录保留清单指纹，启动引导比对不符即弹依赖同步窗。删掉的库不需在此登记，由同步一并收口。
 - 装包缓存放 `runtime\uv-cache`（不写用户目录的 uv 默认缓存），全链成功后删除。安装中途失败则保留，续装直接命中免重下。
 - 面板安装链路的缓存在启动结算全部成功后跑 `uv cache clean` 全清，失败时保留供续装命中。
 
@@ -64,7 +64,7 @@ python packaging\build.py
 
 1. 把 zip 复制到别处（如桌面）解压——在 `dist\` 里测会污染构建目录。
 2. 双击 `FinshinImpact.exe`，进度窗口 `[1/5]`～`[5/5]`，uv 按腾讯→阿里→清华→官方四源回退，约一两分钟，别关窗口。
-3. 验证：向导填 token 能收发消息。再开一次应几秒直达、不再出现进度窗口。测试目录只多出 `instances\` 与 `runtime\`。`payload\` 首启取完 uv 即删，不应残留。实例文件夹内应含 `config.toml`、`persona.md`、`profile.json`、`data\`、`logs\`。
+3. 验证：向导填 token 能收发消息。首启没有 `runtime\.synced`，会弹一次"同步重建环境"大警告，选"是"走完才落戳、之后不再弹，选"否"每次启动都再问。走完同步后再开一次应几秒直达、不再出现进度窗口。测试目录只多出 `instances\` 与 `runtime\`。`payload\` 首启取完 uv 即删，不应残留。实例文件夹内应含 `config.toml`、`persona.md`、`profile.json`、`data\`、`logs\`。
 4. 任一环节失败都不许发布。测完删掉测试目录。
 
 ## 第四步：正式发布

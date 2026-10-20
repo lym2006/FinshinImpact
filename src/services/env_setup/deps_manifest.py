@@ -139,7 +139,7 @@ def top_package_name(pin: str) -> str:
     return _PIN_SPLIT.split(pin, 1)[0]
 
 
-def core_dependencies() -> list[str]:
+def _core_dependencies() -> list[str]:
     """读取项目核心依赖清单
 
     - 取 pyproject 的 project.dependencies 段
@@ -160,12 +160,21 @@ def dev_dependencies() -> list[str]:
     return list(optional.get("dev", []))
 
 
-def enabled_deps_union(exclude_code: str = "") -> list[str]:
+def _enabled_deps_union(exclude_code: str = "") -> list[str]:
     """汇总全部实例已启用插件的依赖并集
 
     - exclude_code 为本次操作发起实例，卸载判定须排除
     """
     return _enabled_field_union(exclude_code, ManifestKey.DEPS)
+
+
+def keep_union() -> list[str]:
+    """全局保留清单
+
+    - 核心依赖与全实例启用插件依赖并集
+    - 本实例刚保存的启用集已在盘上，并集即最新状态
+    """
+    return [*_core_dependencies(), *_enabled_deps_union()]
 
 
 def _enabled_field_union(exclude_code: str, field: str) -> list[str]:
