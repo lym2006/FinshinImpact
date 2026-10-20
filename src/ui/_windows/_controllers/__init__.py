@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 from ._base import BaseController
 from ._dashboard import DashboardController
 from ._diagnose import DiagnoseController
+from ._release_notes import ReleaseNotesController
 from ._settings import SettingsController
 from ._shutdown import ShutdownController
 from ._system import LogsController
@@ -36,6 +37,7 @@ _ALL_CONTROLLER_CLASSES = (
     SettingsController,
     ShutdownController,
     VersionController,
+    ReleaseNotesController,
 )
 
 

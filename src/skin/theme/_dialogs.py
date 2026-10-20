@@ -157,6 +157,28 @@ class NoticeDialogTheme:
 
 
 @dataclass(frozen=True)
+class ReleaseNotesDialogTheme:
+    """版本变化弹窗专属配置
+
+    - 左列版本清单，右侧正文走只读文本框，超出高度由滚动条接住
+    """
+
+    # 尺寸配置
+    width: int = 880
+    height: int = 520
+    pad: int = 24
+    spacing: int = 14
+    list_width: int = 170
+
+    # 文案配置
+    title: str = DialogMessage.RELEASE_NOTES_TITLE
+    loading: str = DialogMessage.RELEASE_NOTES_LOADING
+    ready: str = DialogMessage.RELEASE_NOTES_READY
+    prerelease_text: str = DialogMessage.RELEASE_NOTES_PRERELEASE
+    ok_text: str = DialogMessage.NOTICE_OK
+
+
+@dataclass(frozen=True)
 class LinkDialogTheme:
     """断连计时弹窗专属配置"""
 

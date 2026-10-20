@@ -1,11 +1,21 @@
 # src/skin/qss/_dialog.py
 """通用弹窗 QSS 装配
 
-- 用基础件拼出通知与等待两类成品串
+- 用基础件拼出通知、版本变化与等待三类成品串
 - 退出确认与断连计时两窗配色自成一套，不套基础件
 """
 
-from ..theme import BTN, GLOBAL, LINK_DIALOG, SHUTDOWN_DIALOG, ButtonStyle, ObjectName
+from ..theme import (
+    BODY,
+    BTN,
+    GLOBAL,
+    LINK_DIALOG,
+    SETTINGS_DIALOG,
+    SHUTDOWN_DIALOG,
+    TOOLBAR,
+    ButtonStyle,
+    ObjectName,
+)
 from ._base import WAIT_QSS, Qss, with_dialog_base
 
 # 退出确认窗窗口与文字
@@ -67,9 +77,25 @@ QPushButton#{ButtonStyle.SECONDARY} {{
 }}"""
 
 
+# 版本变化窗正文区
+_RELEASE_NOTES_VIEW_QSS = f"""\
+QTextEdit#{ObjectName.RELEASE_NOTES_VIEW} {{
+    background-color: {TOOLBAR.bg};
+    color: {BODY.color};
+    border: {SETTINGS_DIALOG.border_width}px solid {SETTINGS_DIALOG.border_color};
+    border-radius: {GLOBAL.radius}px;
+    padding: {SETTINGS_DIALOG.input_padding_v}px {SETTINGS_DIALOG.input_padding_h}px;
+}}"""
+
+
 def build_notice_dialog_qss() -> Qss:
     """构建通知弹窗 QSS"""
     return with_dialog_base()
+
+
+def build_release_notes_dialog_qss() -> Qss:
+    """构建版本变化弹窗 QSS"""
+    return with_dialog_base(_RELEASE_NOTES_VIEW_QSS)
 
 
 def build_wait_dialog_qss() -> Qss:

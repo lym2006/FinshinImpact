@@ -9,6 +9,9 @@ import sys
 
 _console_open = False
 
+# 失败详情收尾的驻留提示
+_FAIL_TIP = "以上为失败详情，按回车继续…"
+
 
 def open_console() -> None:
     """分配控制台窗口
@@ -36,12 +39,12 @@ def close_console() -> None:
     _console_open = False
 
 
-def hold_console() -> None:
+def hold_console(tip: str = _FAIL_TIP) -> None:
     """驻留进度窗口
 
-    - 供查阅失败详情
+    - 打印提示语并等回车，供查阅窗口内已输出的内容
     """
-    print("\n以上为失败详情，按回车继续…")
+    print(f"\n{tip}")
     try:
         with open("CONIN$", encoding="oem", errors="replace") as f:
             f.readline()

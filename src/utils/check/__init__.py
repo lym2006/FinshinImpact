@@ -10,7 +10,7 @@ from ._connectivity import attempt_channel, preload_engine
 from ._diagnose import diagnose_flow
 from ._fields import TelegramFieldKey
 from ._verify import ChannelOutcome, local_row, run_channels
-from ._version import check_updates
+from ._version import ReleaseNote, check_updates, release_history
 
 __all__ = [
     # 字段错误键
@@ -26,4 +26,6 @@ __all__ = [
     "diagnose_flow",
     # 版本检查
     "check_updates",
+    "release_history",
+    "ReleaseNote",
 ]
