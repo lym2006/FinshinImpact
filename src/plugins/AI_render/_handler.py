@@ -24,7 +24,7 @@ md_router = Router()
 async def send_markdown(raw: Message, ctx: HandlerContext) -> None:
     """图片形式发送回复"""
     user = ctx.event.principal.key
-    img_path = ai_config.record_dir / f"temp/{ctx.event.principal.record_stem}.png"
+    img_path = ai_config.record_dir / f"temp/{ctx.event.principal.key}.png"
 
     if user_sessions[user].md_status and img_path.exists():
         await ctx.answer(

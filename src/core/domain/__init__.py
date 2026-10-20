@@ -19,7 +19,6 @@ from ._plugin import (
     PluginFileName,
     StateKey,
 )
-from ._record import make_record_stem
 from ._role import ChatRole, CommandRole
 from ._task import TaskKind, TaskPayload, TaskPriority, TaskStatus
 from .config import (
@@ -35,7 +34,6 @@ from .config import (
 __all__ = [
     # 字段创建
     "make_container",
-    "make_record_stem",
     # 实例身份码
     "make_profile_code",
     "platform_of_profile",
