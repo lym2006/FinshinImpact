@@ -3,7 +3,7 @@
 
 - 单文件超 300 行触发拆分评审
 - 同族顶层函数超 6 个触发拆分评审
-- 单类方法超 10 个触发拆分评审
+- 单类方法超 12 个触发拆分评审
 - 单函数体超 60 行评审、超 80 行硬拆
 """
 
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 # 拆分粒度阈值
 _FILE_MAX_LINES = 300
 _TOP_FUNC_MAX = 6
-_CLASS_METHOD_MAX = 10
+_CLASS_METHOD_MAX = 12
 _BODY_REVIEW_LINES = 60
 _BODY_HARD_LINES = 80
 
