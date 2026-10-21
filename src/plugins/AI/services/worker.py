@@ -16,7 +16,7 @@ from utils import get_logger
 from ...messages import BotMessage
 from ..config import ai_config
 from ..core import AIClient, user_sessions
-from ..utils import build_message, make_data
+from ..utils import build_message, compose_user_text, make_data
 
 _logger = get_logger("Plg.AI.Worker")
 
@@ -73,7 +73,7 @@ async def _save_conversation_record(stem: str, text: str, final_msg: str) -> Non
 
 
 async def _handle_ai_message(
-    user: str, text: str
+    user: str, prompt: str
 ) -> AsyncGenerator[tuple[Literal["final", "error"], Any], None]:
     """处理 AI 流式数据
 
@@ -81,7 +81,7 @@ async def _handle_ai_message(
     """
     session = user_sessions[user]
     current_msg = ""
-    msg = make_data(session, text)
+    msg = make_data(session, prompt)
 
     try:
         async for delta in AIClient.stream_chat(msg):
@@ -110,9 +110,11 @@ async def worker_loop(ctx: HandlerContext, user: str) -> None:
     session = user_sessions[user]
     final_msg = ""
     has_error = False
+    # 落盘记录存裸正文，标注只进发给模型的轮次
+    prompt = compose_user_text(ctx.event)
 
     try:
-        async for event_type, data in _handle_ai_message(user, text):
+        async for event_type, data in _handle_ai_message(user, prompt):
             match event_type:
                 case "final":
                     final_msg = data
@@ -128,7 +130,7 @@ async def worker_loop(ctx: HandlerContext, user: str) -> None:
         await ctx.reply(final_msg)
 
         session.message.extend(
-            [build_message("user", text), build_message("assistant", final_msg)]
+            [build_message("user", prompt), build_message("assistant", final_msg)]
         )
 
         await _save_conversation_record(stem, text, final_msg)

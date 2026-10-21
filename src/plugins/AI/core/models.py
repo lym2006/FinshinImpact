@@ -12,6 +12,7 @@ class UserSession:
     """用户会话数据结构"""
 
     message: list[dict[str, str]] = field(default_factory=list)
+    summary: str = ""  # 压缩摘要，发给 AI 时作独立 system 轮
     md_status: bool = False  # 是否有 Markdown 内容可以输出
     is_active: bool = False  # 当前会话是否处于活跃状态
     last_active: float = 0.0  # 最后一次活跃时间

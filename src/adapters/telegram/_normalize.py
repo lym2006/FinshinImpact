@@ -107,6 +107,15 @@ def _display_name(message: Message) -> str:
     return ""
 
 
+def _sender_id(message: Message) -> str:
+    """取发言人 id
+
+    - 匿名代发按占位 id 计，与主体键的 user 段同形
+    """
+    user = message.from_user
+    return str(user.id) if user is not None else _ANONYMOUS_USER
+
+
 def build_ref(message: Message, container: ContainerKey) -> MsgReferenceDTO:
     """构造消息定位三元组"""
     return MsgReferenceDTO(
@@ -193,8 +202,7 @@ def normalize_update(
         return None
 
     scope = _scope_of(message.chat.type)
-    user = message.from_user
-    user_id = str(user.id) if user is not None else _ANONYMOUS_USER
+    user_id = _sender_id(message)
     container = make_container(scope, str(message.chat.id), user_id)
     reply = message.reply_to_message
     kind = _kind_of(message.content_type)
@@ -205,6 +213,8 @@ def normalize_update(
         media = (MediaEntryDTO(kind=kind, local_path=""),)
 
     command = _parse_command(message.text or "")
+    reply_sender_id = _sender_id(reply) if reply is not None else ""
+    reply_sender_name = _display_name(reply) if reply is not None else ""
 
     return InboundEventDTO(
         ref=build_ref(message, container),
@@ -223,6 +233,8 @@ def normalize_update(
         command=command,
         reply_ref=build_ref(reply, container) if reply is not None else None,
         reply_text=(reply.text or reply.caption or "") if reply is not None else "",
+        reply_sender_id=reply_sender_id,
+        reply_sender_name=reply_sender_name,
         reply_to_bot=_reply_to_bot(reply, identity),
         is_mention_bot=_mentions_bot(message, identity),
         created_at=message.date.timestamp(),
