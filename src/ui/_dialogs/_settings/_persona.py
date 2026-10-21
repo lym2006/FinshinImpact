@@ -1,29 +1,39 @@
 # src/ui/_dialogs/_settings/_persona.py
 """人设预览
 
-- 组装配置页当前填写的人设正文，点按钮弹窗只读展示
-- 提供打开实例人设文件入口
+- 弹窗展示磁盘人设副本的当前正文并注入主人 id，附来源与对账状态
+- 提供打开实例人设文件入口与用默认模板覆盖副本的入口
 """
 
 from typing import TypeAlias
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QCheckBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
-    QStackedWidget,
+    QPushButton,
     QTextEdit,
     QVBoxLayout,
     QWidget,
 )
 
 from skin.qss import build_settings_dialog_qss
-from skin.theme import SETTINGS_DIALOG, ButtonStyle, ObjectName
+from skin.theme import NOTICE_DIALOG, SETTINGS_DIALOG, ButtonStyle, ObjectName
 from system.shell import open_path
+from utils.init_files import (
+    PersonaState,
+    apply_persona_template,
+    check_persona_state,
+    ensure_persona_copy,
+)
 from utils.paths import PERSONALITY_FILE
-from utils.persona import PersonaSource, build_persona, persona_source
+from utils.persona import (
+    PersonaSource,
+    applied_persona_text,
+    inject_owner,
+    read_persona_text,
+)
 
 from ..._primitives import make_button
 from .._base import BaseDialog
@@ -32,13 +42,20 @@ from .._notice import NoticeDialog
 # 人设字符串被用户改成单行时渲染控件会回落 QLineEdit
 _TextWidget: TypeAlias = QTextEdit | QLineEdit
 
-# 来源标识到弹窗提示语的映射
+# 正文来源到弹窗提示语的映射
 _SOURCE_HINTS = {
     PersonaSource.FILE: SETTINGS_DIALOG.persona_from_file,
-    PersonaSource.CONFIG: SETTINGS_DIALOG.persona_from_config,
-    PersonaSource.MISSING: SETTINGS_DIALOG.persona_missing,
+    PersonaSource.TEMPLATE: SETTINGS_DIALOG.persona_from_template,
+    PersonaSource.EMPTY: SETTINGS_DIALOG.persona_missing,
 }
 
+# 副本与默认模板关系到弹窗提示语的映射
+_STATE_HINTS = {
+    PersonaState.SAME: SETTINGS_DIALOG.persona_same,
+    PersonaState.OUTDATED: SETTINGS_DIALOG.persona_outdated,
+    PersonaState.EDITED: SETTINGS_DIALOG.persona_edited,
+    PersonaState.UNREADABLE: SETTINGS_DIALOG.persona_unreadable,
+}
 
 # Qt 布局四边
 _MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
@@ -54,11 +71,13 @@ def _text_of(widget: _TextWidget) -> str:
 class _PersonaPreviewDialog(BaseDialog):
     """人设正文弹窗
 
-    - 打开即渲染最终正文，底部标注正文来源
+    - 打开即渲染磁盘当前正文，底部标注来源、对账状态与是否已生效
+    - 覆盖副本当场重写文件并刷新窗内提示，正文即所见
     """
 
-    def __init__(self, text: str, hint: str, parent: QWidget | None = None) -> None:
+    def __init__(self, owner_id: str, parent: QWidget | None = None) -> None:
         super().__init__(parent=parent, title=SETTINGS_DIALOG.persona_title)
+        self._owner_id = owner_id
         self.set_always_on_top()
         self.setStyleSheet(build_settings_dialog_qss())
 
@@ -69,46 +88,72 @@ class _PersonaPreviewDialog(BaseDialog):
         body = QTextEdit()
         body.setObjectName(ObjectName.PERSONA_PREVIEW)
         body.setReadOnly(True)
-        body.setPlainText(text)
 
         # 最小尺寸即默认尺寸，窗口拉大时正文框随布局弹性填满
         body.setMinimumSize(
             SETTINGS_DIALOG.persona_preview_width,
             SETTINGS_DIALOG.persona_preview_height,
         )
+        self._body = body
         layout.addWidget(body, stretch=1)
 
-        tip = QLabel(hint)
+        tip = QLabel()
         tip.setWordWrap(True)
+        self._tip = tip
         layout.addWidget(tip)
 
-        btn = make_button(SETTINGS_DIALOG.persona_close_text, ButtonStyle.PRIMARY)
-        btn.clicked.connect(self.accept)
-        btn.setDefault(True)
-        layout.addWidget(btn, alignment=Qt.AlignmentFlag.AlignCenter)
+        btn_layout = QHBoxLayout()
+        btn_layout.addStretch()
+        btn_apply = make_button(SETTINGS_DIALOG.persona_apply_text, ButtonStyle.PRIMARY)
+        btn_apply.clicked.connect(self._on_apply_clicked)
+        btn_close = QPushButton(SETTINGS_DIALOG.persona_close_text)
+        btn_close.clicked.connect(self.accept)
+        btn_close.setDefault(True)
+        btn_layout.addWidget(btn_apply)
+        btn_layout.addWidget(btn_close)
+        layout.addLayout(btn_layout)
+
+        self.refresh()
+
+    def refresh(self) -> None:
+        """按磁盘当前状态重画正文与三行提示"""
+        text, source = read_persona_text()
+        self._body.setPlainText(inject_owner(text, self._owner_id))
+        self._tip.setText("\n".join(self._hints(text, source)))
+
+    def _hints(self, text: str, source: PersonaSource) -> tuple[str, ...]:
+        """取来源、对账与生效三行提示语"""
+        applied = (
+            SETTINGS_DIALOG.persona_applied
+            if text == applied_persona_text()
+            else SETTINGS_DIALOG.persona_pending
+        )
+        return _SOURCE_HINTS[source], _STATE_HINTS[check_persona_state()], applied
+
+    def _on_apply_clicked(self) -> None:
+        """用默认模板覆盖实例副本"""
+        if not apply_persona_template():
+            NoticeDialog.notify(NOTICE_DIALOG.persona_apply_fail, parent=self)
+            return
+        self.refresh()
 
 
 class PersonaPreviewRow(QWidget):
-    """人设预览按钮行
+    """人设正文入口行
 
-    - 与人设输入行共用堆叠槽，切换时整页高度不变
-    - 预览弹窗实时取当前编辑值，文件缺失回退也在弹窗标注
+    - 标签占位与字段行同宽，按钮才与其他输入框左对齐
     """
 
     def __init__(self, label_width: int = 0, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self._use_file: QCheckBox | None = None
-        self._personality: _TextWidget | None = None
         self._owner: _TextWidget | None = None
-        self._slot: QStackedWidget | None = None
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(*[SETTINGS_DIALOG.margin] * _MARGIN_EDGES)
         layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
 
-        # 占位标签撑出与字段行同宽的左列，按钮才与其他输入框左对齐
-        spacer = QLabel()
-        spacer.setMinimumWidth(label_width)
+        title = QLabel(SETTINGS_DIALOG.persona_label)
+        title.setMinimumWidth(label_width)
 
         btn_preview = make_button(
             SETTINGS_DIALOG.persona_preview_text, ButtonStyle.PERSONA_PREVIEW
@@ -120,65 +165,38 @@ class PersonaPreviewRow(QWidget):
         )
         btn_open.clicked.connect(self._on_open_clicked)
 
-        # 槽位按输入行取高，本行内容顶部对齐不悬空
-        layout.addWidget(spacer)
+        # 本行内容顶部对齐，不与上方多行输入框的底边缠斗
+        layout.addWidget(title)
         layout.addWidget(btn_preview, alignment=Qt.AlignmentFlag.AlignTop)
         layout.addWidget(btn_open, alignment=Qt.AlignmentFlag.AlignTop)
         layout.addStretch()
 
-    def bind(
-        self,
-        use_file: QWidget,
-        personality: QWidget,
-        owner: QWidget,
-        slot: QStackedWidget,
-    ) -> bool:
-        """绑定联动源
+    def bind(self, owner: QWidget) -> bool:
+        """绑定主人输入行
 
-        - 任一控件类型不符返回 False，由调用方放弃堆叠改回原布局
-        - slot 为输入行与本行共用的堆叠槽位，页面装配由调用方完成
+        - 控件类型不符返回 False，由调用方放弃挂载
         """
-        if not isinstance(use_file, QCheckBox):
+        if not isinstance(owner, (QTextEdit, QLineEdit)):
             return False
-        if not isinstance(personality, _TextWidget) or not isinstance(
-            owner, _TextWidget
-        ):
-            return False
-
-        self._use_file, self._personality, self._owner = use_file, personality, owner
-        self._slot = slot
-        use_file.toggled.connect(lambda _checked: self.sync())
+        self._owner = owner
         return True
 
-    def sync(self) -> None:
-        """按勾选态切换堆叠页
-
-        - 高度取两页最大值，切换时版面不跳动
-        """
-        use_file = bool(self._use_file and self._use_file.isChecked())
-        if self._slot is not None:
-            self._slot.setCurrentIndex(1 if use_file else 0)
-
     def _on_preview_clicked(self) -> None:
-        """弹窗展示最终正文与来源"""
-        if self._personality is None or self._owner is None:
+        """弹窗展示磁盘正文"""
+        if self._owner is None:
             return
-        use_file = bool(self._use_file and self._use_file.isChecked())
-        text = build_persona(
-            _text_of(self._personality),
-            use_file,
-            _text_of(self._owner).strip(),
-        )
-        hint = _SOURCE_HINTS[persona_source(use_file)]
-        _PersonaPreviewDialog(text, hint, parent=self.window()).exec()
+        owner_id = _text_of(self._owner).strip()
+        _PersonaPreviewDialog(owner_id, parent=self.window()).exec()
 
     def _on_open_clicked(self) -> None:
         """打开实例人设文件
 
-        - 文件缺失或系统拒绝一律弹窗告知，不静默失败
+        - 副本没建先从默认模板建好，建不出才弹窗告知
         """
-        if not PERSONALITY_FILE.is_file():
-            self._notify(f"{PERSONALITY_FILE}\n{SETTINGS_DIALOG.persona_file_miss}")
+        if not ensure_persona_copy():
+            self._notify(
+                f"{PERSONALITY_FILE}\n{SETTINGS_DIALOG.persona_file_create_fail}"
+            )
             return
         try:
             open_path(PERSONALITY_FILE)

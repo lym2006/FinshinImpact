@@ -40,16 +40,6 @@ class _StaticAIConfig:
 _HOUR_SECONDS = 60 * 60
 
 
-def _build_persona(fallback: str) -> str:
-    """取人设正文并注入主人 id
-
-    - 勾选 use_file 则优先读实例人设文件，读不到回退配置字符串
-    """
-    use_file = config_manager.get(ConfigKey.USE_FILE.path(ConfigSection.CHORE), bool)
-    owner_id = config_manager.get(ConfigKey.OWNER.path(ConfigSection.CHORE), str)
-    return build_persona(fallback, use_file, owner_id)
-
-
 class _DynamicAIConfig:
     """动态配置代理
 
@@ -68,7 +58,7 @@ class _DynamicAIConfig:
             "group_triggers": (ConfigKey.TRIGGERS.path(ConfigSection.CHORE), list),
             "cleanup_time": (ConfigKey.CLEARUP.path(ConfigSection.DATA), float),
             "waiting_time": (ConfigKey.WAITING.path(ConfigSection.DATA), float),
-            "init": (ConfigKey.PERSONALITY.path(ConfigSection.CHORE), str),
+            "init": (ConfigKey.OWNER.path(ConfigSection.CHORE), str),
         }
 
     @error_guard("AI 配置读取", reraise=True)
@@ -95,7 +85,7 @@ class _DynamicAIConfig:
                 case "waiting_time":
                     return value * _HOUR_SECONDS
                 case "init":
-                    return tuple([build_message("system", _build_persona(value))])
+                    return tuple([build_message("system", build_persona(value))])
 
             return value
 

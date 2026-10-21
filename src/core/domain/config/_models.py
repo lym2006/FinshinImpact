@@ -46,8 +46,6 @@ class ConfigKey(StrEnum):
     TEMPERATURE = "temperature"
     OWNER = "owner"
     TRIGGERS = "triggers"
-    USE_FILE = "use_file"
-    PERSONALITY = "personality"
     CLEARUP = "clearup"
     WAITING = "waiting"
 

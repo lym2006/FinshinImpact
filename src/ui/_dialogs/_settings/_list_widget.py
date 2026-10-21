@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (
 
 from skin.messages import ConfigMessage
 from skin.qss import build_settings_list_qss
-from skin.theme import SETTINGS_DIALOG, ButtonStyle, ObjectName
+from skin.theme import LIST_DIALOG, SETTINGS_DIALOG, ButtonStyle, ObjectName
 
 from ..._primitives import ThemedList, make_button
 
@@ -46,6 +46,9 @@ class ConfigListWidget(QWidget):
         main_layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
         self.list_widget = ThemedList()  # 列表区域
         self.list_widget.setObjectName(ObjectName.LIST_WIDGET)
+
+        # 框高定死在约四行，超出走滚动条，条数少也不塌成一条缝
+        self.list_widget.setFixedHeight(LIST_DIALOG.height)
         self._populate_items()
 
         # 连接双击编辑信号

@@ -12,9 +12,11 @@ from skin.messages import CheckMessage
 from skin.theme import NOTICE_DIALOG, SETTINGS_DIALOG
 from utils import config_manager
 from utils.config import (
+    AppConfigData,
     compare_configs,
     save_config,
 )
+from utils.persona import reload_persona_cache
 
 from ..._bridge import gui_bridge
 from ..._dialogs import (
@@ -106,16 +108,15 @@ class SettingsController(BaseController):
         elif was_pending:
             self._is_dialog_open = False  # 面板已被用户关掉：复位防卡死
 
-    def _close_panel_verified(self) -> None:
-        """校验通过后关闭面板
+    def _close_panel_verified(self, text: str = SETTINGS_DIALOG.verified_ok) -> None:
+        """关闭面板并弹一条结果提示
 
-        - 先关窗再弹一条已验证提示
+        - 先关窗再提示，标红残留随窗消失
         """
-        # 向导与 EDIT 同路，SETUP 的标红残留随窗消失，两模式同处理
         if self._panel is None:
             return
         self._panel.accept()
-        NoticeDialog.notify(SETTINGS_DIALOG.verified_ok, parent=self.gui)
+        NoticeDialog.notify(text, parent=self.gui)
 
     def _execute(self) -> None:
         """用户点击按钮进入编辑模式"""
@@ -201,6 +202,10 @@ class SettingsController(BaseController):
             return
 
         new_config = dialog.get_modified_config()
+
+        # 人设正文以磁盘副本为准，改文件不算改配置项
+        persona_changed = reload_persona_cache()
+
         changes, logs = compare_configs(
             config_manager.schema, config_manager.get_all(), new_config
         )
@@ -213,6 +218,10 @@ class SettingsController(BaseController):
             ).strip()
         )
         if not changes and not risky:
+            if persona_changed:
+                self.logger.info("人设正文已按文件刷新")
+                self._close_panel_verified(SETTINGS_DIALOG.persona_reloaded)
+                return
             NoticeDialog.notify(NOTICE_DIALOG.not_changed, parent=dialog)
             self.logger.info("配置未修改")
             return
@@ -240,6 +249,15 @@ class SettingsController(BaseController):
         self._log_changes(logs)
 
         # 先验后存，候选只进内存，通过才落盘，取消即回退
+        self._start_save_verify(dialog, new_config)
+
+    def _start_save_verify(
+        self, dialog: SettingsDialog, new_config: AppConfigData
+    ) -> None:
+        """候选进内存并起保存校验轮
+
+        - 起窗失败即撤候选与待落盘标记，面板解除忙碌
+        """
         self._verify.pending_candidate = new_config
         self._verify.save_pending = True
         dialog.set_busy(True)
