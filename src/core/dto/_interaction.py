@@ -54,6 +54,8 @@ class InboundEventDTO:
     command: CommandDTO = field(default_factory=CommandDTO)
     reply_ref: MsgReferenceDTO | None = None
     reply_text: str = ""  # 只取被引用消息的一层文字
+    reply_sender_id: str = ""  # 被引用消息发言人 id，判身份用
+    reply_sender_name: str = ""  # 被引用消息发言人当时显示名
     reply_to_bot: bool = False  # 被引用消息由本 bot 发出
     is_mention_bot: bool = False  # 正文点名本机器人
     created_at: float = 0.0
