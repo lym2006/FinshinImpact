@@ -115,21 +115,23 @@ class SettingsManager(BaseManager):
             self.logger.info(CheckMessage.ROUND_COST.format(cost=time.monotonic() - t0))
             return self._emit_advice(schema)
 
-        outcome = await run_channels(
-            channels,
-            self._make_probe(token),
-            gui_bridge.verify_progress.emit,
-            via_label,
-        )
+        probe = self._make_probe(token)
+        emit = gui_bridge.verify_progress.emit
+        outcome = await run_channels(channels, probe, emit, via_label)
         if not outcome.passed and mode == ProxyMode.AUTO and not token_only:
             # 首轮全挂多为冷启动握手慢：趁热连接原地重检一轮再定性
             self.logger.info(CheckMessage.RETRY_HEAD)
-            outcome = await run_channels(
+
+            # 重发整表清场：已定案的行不吃单行帧，不重建则首轮的红行盖不掉
+            self._emit_opening(
                 channels,
-                self._make_probe(token),
-                gui_bridge.verify_progress.emit,
-                via_label,
+                token_only,
+                sys_dedup,
+                single,
+                schema,
+                head=CheckMessage.RETRY_HEAD,
             )
+            outcome = await run_channels(channels, probe, emit, via_label)
         if single is not None:
             port_hint = ""
         else:
@@ -187,24 +189,28 @@ class SettingsManager(BaseManager):
         sys_dedup: bool,
         single: tuple[str, str, str] | None,
         schema: AppSchema,
+        *,
+        head: str = "",
     ) -> FieldErrors:
         """发送首帧进度整表
 
         - 本地校验结果随首帧先行显示，不等网络探测
+        - head 非空即同时给出弹窗头部提示
         - 返回本地类型错误供后续结论合并
         """
         local_frame, type_errors = local_row(schema, config_manager.get_all())
-        gui_bridge.verify_progress.emit(
-            {
-                FrameKey.ROWS: verify_plan(
-                    channels,
-                    reuse=token_only,
-                    local_frame=local_frame,
-                    sys_dedup=sys_dedup,
-                    single=single,
-                )
-            }
-        )
+        frame: dict = {
+            FrameKey.ROWS: verify_plan(
+                channels,
+                reuse=token_only,
+                local_frame=local_frame,
+                sys_dedup=sys_dedup,
+                single=single,
+            )
+        }
+        if head:
+            frame[FrameKey.HEAD] = head
+        gui_bridge.verify_progress.emit(frame)
         return type_errors
 
     def _make_probe(
