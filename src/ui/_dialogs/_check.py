@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
 
 from skin.qss import build_check_dialog_qss
 from skin.theme import CHECK_DIALOG, ButtonStyle, ObjectName
-from utils.network import RowId, RowStatus
+from utils.network import FrameKey, RowId, RowStatus
 
 from .._lifecycle import Ticker
 from .._primitives import make_button
@@ -218,9 +218,12 @@ class CheckDialog(BaseDialog):
         """消费一帧进度
 
         - rows 帧整表重建，id 帧更新单行，结论帧结束当轮
+        - head 键换头部提示，结束文案落地时覆写回成败句
         """
         if self._done:
             return
+        if frame.get(FrameKey.HEAD):
+            self._head.setText(frame[FrameKey.HEAD])
         self._view.apply(frame)
         if frame.get("id") == RowId.ADVICE and frame.get("status") in (
             RowStatus.OK,

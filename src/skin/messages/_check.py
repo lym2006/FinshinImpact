@@ -129,8 +129,8 @@ class CheckMessage:
     REASON_SAVE = "保存"
     REASON_RECHECK = "复验"
 
-    # 用：bot/_managers/_settings.py 首轮全不通后自动重检的面板反馈
-    RETRY_HEAD = "首轮全部不通，热连接自动重检一轮"
+    # 用：bot/_managers/_settings.py 首轮全不通后自动重检的面板日志与弹窗头部提示
+    RETRY_HEAD = "首轮全部不通，正在自动重测一轮"
 
     # 用：单通道探测用时（debug 级，面板不展示）
     COST = "通道 {via} 探测耗时 {cost:.1f}s"
