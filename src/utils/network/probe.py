@@ -44,10 +44,11 @@ class RowId:
 class FrameKey:
     """进度帧的键协议
 
-    - 整表帧判别键与断链标记键
+    - 整表帧判别键、弹窗头部文案键与断链标记键
     """
 
     ROWS = "rows"
+    HEAD = "head"
     BROKEN = "broken"
 
 
