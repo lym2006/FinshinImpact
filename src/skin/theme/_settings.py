@@ -68,11 +68,20 @@ class SettingsDialogTheme:
 
     # 人设预览文案
     persona_title: str = DialogMessage.SETUP_PERSONA_TITLE
+    persona_label: str = DialogMessage.SETUP_PERSONA_LABEL
     persona_preview_text: str = DialogMessage.SETUP_PERSONA_PREVIEW
+    persona_apply_text: str = DialogMessage.PERSONA_APPLY
     persona_from_file: str = DialogMessage.SETUP_PERSONA_FROM_FILE
-    persona_from_config: str = DialogMessage.SETUP_PERSONA_FROM_CONFIG
+    persona_from_template: str = DialogMessage.SETUP_PERSONA_FROM_TEMPLATE
     persona_missing: str = DialogMessage.SETUP_PERSONA_MISSING
-    persona_file_miss: str = DialogMessage.SETUP_PERSONA_FILE_MISS
+    persona_same: str = DialogMessage.SETUP_PERSONA_SAME
+    persona_outdated: str = DialogMessage.SETUP_PERSONA_OUTDATED
+    persona_edited: str = DialogMessage.SETUP_PERSONA_EDITED
+    persona_unreadable: str = DialogMessage.SETUP_PERSONA_UNREADABLE
+    persona_applied: str = DialogMessage.SETUP_PERSONA_APPLIED
+    persona_pending: str = DialogMessage.SETUP_PERSONA_PENDING
+    persona_reloaded: str = DialogMessage.PERSONA_RELOADED
+    persona_file_create_fail: str = DialogMessage.SETUP_PERSONA_FILE_CREATE_FAIL
     persona_open_text: str = DialogMessage.SETUP_PERSONA_OPEN
     persona_open_fail: str = DialogMessage.SETUP_PERSONA_OPEN_FAIL
     persona_close_text: str = DialogMessage.SETUP_PERSONA_CLOSE
@@ -120,3 +129,4 @@ class SettingsListTheme:
 
     # 列表容器
     container_inner_margin = 2  # 内边距
+    height: int = 90  # 列表区高度，可见约四行

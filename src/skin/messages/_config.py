@@ -27,8 +27,6 @@ class ConfigMessage:
         "temperature": "温度",
         "owner": "主人",
         "triggers": "触发词",
-        "use_file": "人设文件",
-        "personality": "人格设定",
         "clearup": "清理间隔（小时）",
         "waiting": "检测间隔（小时）",
     }
@@ -40,10 +38,8 @@ class ConfigMessage:
         "network_timeout": "控制读取响应、写入请求及连接池等待的最大耗时",
         "api_key": "在千问 AI 平台自行创建并填入",
         "temperature": "取值范围 0~2，越高越有创造性，越低越稳定",
-        "owner": "具有最高权限的用户 ID（平台已依据实例区分）",
+        "owner": "具有最高权限的用户 ID（注意实例对应的平台）",
         "triggers": "用户消息包含关键词（如 @Bot）触发 AI 回复，不区分大小写，双击编辑",
-        "use_file": "勾选则从独立文件读取人设",
-        "personality": "用于定义机器人的性格和行为",
         "clearup": "定期清理过期的会话数据",
         "waiting": "间隔多久检测一次后台任务",
     }

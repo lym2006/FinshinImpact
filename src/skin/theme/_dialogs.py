@@ -8,7 +8,7 @@
 
 from dataclasses import dataclass
 
-from ..messages import CheckMessage, DialogMessage, VersionMessage
+from ..messages import CheckMessage, DialogMessage, MiscMessage, VersionMessage
 
 # 五态渲染色：诊断窗与校验窗同款（一处一源）
 _PENDING_COLOR = "#808080"  # 等待检测
@@ -154,6 +154,14 @@ class NoticeDialogTheme:
     fatal_head: str = DialogMessage.NOTICE_FATAL_HEAD
     fatal_ok: str = DialogMessage.NOTICE_FATAL_OK
     not_changed: str = DialogMessage.NOTICE_NOT_CHANGED
+
+    # 人设对账弹窗文案
+    persona_title: str = DialogMessage.NOTICE_TITLE
+    persona_text: str = MiscMessage.PERSONA_OUTDATED
+    persona_apply_text: str = DialogMessage.PERSONA_APPLY
+    persona_keep_text: str = DialogMessage.PERSONA_KEEP
+    persona_applied: str = MiscMessage.PERSONA_APPLIED
+    persona_apply_fail: str = MiscMessage.PERSONA_APPLY_FAIL
 
 
 @dataclass(frozen=True)

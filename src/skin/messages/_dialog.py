@@ -25,11 +25,18 @@ class DialogMessage:
 
     # 用：settings 弹窗 chore 页人设按钮行与预览弹窗
     SETUP_PERSONA_TITLE = "人设预览"
+    SETUP_PERSONA_LABEL = "人设文件"
     SETUP_PERSONA_PREVIEW = "预览人设"
     SETUP_PERSONA_FROM_FILE = "正文来源：实例 persona.md"
-    SETUP_PERSONA_FROM_CONFIG = "未勾选读文件，展示配置字符串拼装结果"
-    SETUP_PERSONA_MISSING = "人设文件缺失，已回退配置字符串"
-    SETUP_PERSONA_FILE_MISS = "文件不存在"
+    SETUP_PERSONA_FROM_TEMPLATE = "正文来源：内置默认模板，实例副本读不出"
+    SETUP_PERSONA_MISSING = "正文来源：无，实例副本与内置模板都读不出"
+    SETUP_PERSONA_SAME = "副本与默认模板一致"
+    SETUP_PERSONA_OUTDATED = "默认模板已更新，副本还是旧版，点覆盖即换新"
+    SETUP_PERSONA_EDITED = "副本与默认模板不同，覆盖会丢掉你的改动"
+    SETUP_PERSONA_UNREADABLE = "副本或默认模板读不出，无法比对"
+    SETUP_PERSONA_APPLIED = "正文已生效"
+    SETUP_PERSONA_PENDING = "磁盘正文尚未生效，保存配置后启用"
+    SETUP_PERSONA_FILE_CREATE_FAIL = "人设文件建不出来，检查目录是否可写"
     SETUP_PERSONA_OPEN = "打开人设文件"
     SETUP_PERSONA_OPEN_FAIL = "打开人设文件失败"
     SETUP_PERSONA_CLOSE = "关闭"
@@ -53,6 +60,13 @@ class DialogMessage:
     NOTICE_FATAL_HEAD = "程序遇到无法恢复的错误，即将退出"
     NOTICE_FATAL_OK = "确认并退出"
     NOTICE_NOT_CHANGED = "您未修改任何配置"
+
+    # 用：theme NoticeDialogTheme 人设对账弹窗字段
+    PERSONA_APPLY = "用默认人设覆盖"
+    PERSONA_KEEP = "保留我的人设"
+
+    # 用：配置面板仅人设正文变化时的保存提示
+    PERSONA_RELOADED = "人设正文已按文件刷新"
 
     # 用：theme ReleaseNotesDialogTheme 文案字段
     RELEASE_NOTES_TITLE = "版本变化"

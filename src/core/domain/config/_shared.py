@@ -6,14 +6,6 @@
 
 from ._models import ConfigKey, ConfigSection, FieldSpec, SectionSpec
 
-# 人格设定默认正文，四行短正文与 assets/persona.example.md 完整人设不是同一段
-_PERSONALITY_DEFAULT = (
-    "重要：若无必要，只能使用简体中文和英语，优先使用用户的语言。\n"
-    "使用Markdown格式回复，严禁使用与Markdown语法冲突的字符。\n"
-    "在表达情绪、强调重点或增加可读性时，请适量使用emoji。\n"
-    "再次强调：不要随意编造你的身份和能力。"
-)
-
 _GLOBAL_SECTION = SectionSpec(
     section=ConfigSection.GLOBAL,
     fields=(
@@ -63,18 +55,6 @@ _CHORE_SECTION = SectionSpec(
             value_type=list,
             default=[],
             required=True,
-        ),
-        FieldSpec(
-            section=ConfigSection.CHORE,
-            key=ConfigKey.USE_FILE,
-            value_type=bool,
-            default=True,
-        ),
-        FieldSpec(
-            section=ConfigSection.CHORE,
-            key=ConfigKey.PERSONALITY,
-            value_type=str,
-            default=_PERSONALITY_DEFAULT,
         ),
     ),
 )

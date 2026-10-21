@@ -18,7 +18,6 @@ class GUIBridge(QObject):
     # GUI → Bot：配置事件与关闭指令
     config_candidate = SafeSignal()  # 候选配置进内存待验，校验通过才落盘
     config_abort = SafeSignal()  # 中止在途校验，候选回退不触磁盘
-    config_saved = SafeSignal()  # 配置已落盘，唤醒验证循环热重载
     request_shutdown = SafeSignal()  # 退出确认后发，Bot 停服务并清理放行
     request_shutdown_cancel = SafeSignal()  # 确认框取消，Bot 复位关闭状态
 
@@ -35,6 +34,7 @@ class GUIBridge(QObject):
     request_notice = SafeSignal(
         str, bool
     )  # 弹通知窗，致命确认后直退：(展示文案，是否致命)
+    request_persona_update = SafeSignal()  # 默认人设有更新，弹一键覆盖窗
 
     # GUI → GUI：退出入口
     request_exit = SafeSignal(
