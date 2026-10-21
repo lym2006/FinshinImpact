@@ -14,10 +14,11 @@ from typing import Any
 # 实例身份码环境变量名，值在 development.md 有字面引用，改值须同步
 PROFILE_ENV = "FINSHINIMPACT_PROFILE"
 
-# 身份码拼进路径与锁名，不校验可穿越出数据目录
-# 首尾只许字母数字连字符，令 "." 与 ".." 两个相对路径段进不了 fullmatch
+# 身份码校验，首尾只许字母数字连字符，拦截相对路径段，防穿越出数据目录
 _CODE_PATTERN = re.compile(r"[A-Za-z0-9-](?:[A-Za-z0-9.-]*[A-Za-z0-9-])?")
-_ROOT_MARKERS = (".git", "pyproject.toml")  # 项目根特征文件，按优先级排序
+
+# 项目根特征文件，按优先级排序
+_ROOT_MARKERS = (".git", "pyproject.toml")
 
 # 实例与资源标识符，各方必须取同一个值
 INSTANCE_PROFILE_NAME = "profile.json"  # 自描述文件，token 与备注名的唯一载体
