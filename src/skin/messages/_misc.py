@@ -22,6 +22,13 @@ class MiscMessage:
         "机器人已在运行，请勿重复启动\n请先关闭已开的窗口，或使用「网络诊断」查看状态"
     )
 
+    # 用：bot/_managers 启动期人设对账判不出未改动时的弹窗
+    PERSONA_OUTDATED = (
+        "内置默认人设已更新\n"
+        "你实例里的人设文件未被改动，本次没有替换\n"
+        "想换用新的默认人设，请到「修改配置」打开人设文件对照更新"
+    )
+
     # 用：ui/_windows/_assembly.py 主窗口工具栏（文案, 按钮键）
     TOOLBAR_BUTTONS: list[tuple[str, str]] = [
         ("修改配置", "settings"),

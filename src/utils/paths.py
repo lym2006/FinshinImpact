@@ -11,6 +11,7 @@ from system.profile_env import (
     ASSET_PERSONA_EXAMPLE_NAME,
     ASSETS_DIR,
     INSTANCE_PERSONA_NAME,
+    INSTANCE_PERSONA_STAMP_NAME,
     get_profile,
     profile_dir,
 )
@@ -27,6 +28,7 @@ PLATFORM = platform_of_profile(_PROFILE) or Platform.TELEGRAM
 
 CONFIG_FILE = PROFILE_DIR / "config.toml"
 PERSONALITY_FILE = PROFILE_DIR / INSTANCE_PERSONA_NAME
+PERSONALITY_STAMP = PROFILE_DIR / INSTANCE_PERSONA_STAMP_NAME
 
 # 运行时记录按实例拆分，防止污染
 RECORDS_DIR = PROFILE_DIR / "data/ai_records"
