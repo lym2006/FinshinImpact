@@ -116,9 +116,6 @@ class Main:
             settings_controller.show_setup_dialog, "强制配置", queued=True
         )
 
-        # 配置保存信号：唤醒验证循环或触发热重载
-        gui_bridge.config_saved.connect(self._manager.on_config_saved, "配置唤醒")
-
         # 候选校验信号：候选已在内存，通过才落盘
         gui_bridge.config_candidate.connect(
             self._manager.on_config_candidate, "候选唤醒"
@@ -139,6 +136,11 @@ class Main:
 
         # 通知弹窗：(文案, 是否致命) Queued 投递到 GUI 线程，致命确认后直退
         gui_bridge.request_notice.connect(window.show_notice, "通知弹窗", queued=True)
+
+        # 人设更新提示：Queued 投递到 GUI 线程，点覆盖才改写实例副本
+        gui_bridge.request_persona_update.connect(
+            window.show_persona_update, "人设覆盖提示", queued=True
+        )
 
         # 向导内"退出程序"按钮：携带向导窗口，确认框以其为父级
         gui_bridge.request_exit.connect(

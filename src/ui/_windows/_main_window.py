@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
 from skin.theme import BodyTheme, FontTheme, ObjectName, ToolbarTheme, WindowTheme
 from utils.logger import get_logger
 
-from .._dialogs import NoticeDialog
+from .._dialogs import NoticeDialog, PersonaSyncDialog
 from .._lifecycle import Ticker
 from ._dashboard import DashboardWidget, TextHandler
 
@@ -169,3 +169,14 @@ class BotGUI(QMainWindow):
 
         if critical and self._shutdown_handler is not None:
             self._shutdown_handler()
+
+    def show_persona_update(self) -> None:
+        """弹出默认人设更新提示
+
+        - 已有模态窗时延后重试，防止弹窗被吞
+        """
+        if QApplication.activeModalWidget() is not None:
+            Ticker.after(_NOTICE_RETRY_DELAY_MS, self.show_persona_update)
+            return
+
+        PersonaSyncDialog.notify_update(parent=self)

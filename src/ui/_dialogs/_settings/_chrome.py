@@ -15,7 +15,6 @@ from PySide6.QtWidgets import (
     QLabel,
     QPushButton,
     QScrollArea,
-    QStackedWidget,
     QTabWidget,
     QVBoxLayout,
     QWidget,
@@ -166,7 +165,7 @@ class ChromeBuilder:
             )
             rows[field.key] = row
             main_layout.addWidget(row)
-        self._mount_persona_preview(tab_schema.section, main_layout, label_width, rows)
+        self._mount_persona_row(tab_schema.section, main_layout, label_width)
         self._mount_proxy_mode_lock(tab_schema.section, rows)
         main_layout.addStretch()
         scroll.setWidget(container)
@@ -197,46 +196,26 @@ class ChromeBuilder:
         mode_combo.currentIndexChanged.connect(lambda: sync(mode_combo.currentData()))
         sync(mode_combo.currentData())
 
-    def _mount_persona_preview(
+    def _mount_persona_row(
         self,
         section: str,
         layout: QVBoxLayout,
         label_width: int,
-        rows: dict[str, QWidget],
     ) -> None:
-        """人设预览挂载
+        """人设入口行挂载
 
-        - 三个联动控件缺一即不挂载，缺件说明字段表已改键
-        - 输入行与预览按钮行共用堆叠槽，切换时整页等高不跳动
+        - 主人输入行取不到或控件类型不符即不挂载，缺件说明字段表已改键
         """
         if section != ConfigSection.CHORE:
             return
-        inputs = self._fields.inputs
-        use_file = inputs.get(ConfigKey.USE_FILE)
-        personality = inputs.get(ConfigKey.PERSONALITY)
-        owner = inputs.get(ConfigKey.OWNER)
-        personality_row = rows.get(ConfigKey.PERSONALITY)
-        if use_file is None or personality is None or owner is None:
-            return
-        if personality_row is None:
+        owner = self._fields.inputs.get(ConfigKey.OWNER)
+        if owner is None:
             return
 
-        index = layout.indexOf(personality_row)
-        layout.removeWidget(personality_row)
-        slot = QStackedWidget()
-        slot.addWidget(personality_row)
         row = PersonaPreviewRow(label_width)
-        slot.addWidget(row)
-
-        if not row.bind(use_file, personality, owner, slot):
-            # 控件类型不符撤堆叠，输入行原位放回
-            slot.removeWidget(row)
-            slot.removeWidget(personality_row)
-            layout.insertWidget(index, personality_row)
+        if not row.bind(owner):
             return
-
-        layout.insertWidget(index, slot)
-        row.sync()
+        layout.addWidget(row)
 
     def _build_bottom_buttons(self, is_setup: bool) -> QHBoxLayout:
         """按模式构建底部按钮"""

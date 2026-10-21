@@ -48,9 +48,8 @@ class BotManager:
         await self._initializer.execute()
         await self._applier.apply_config()
 
-    def on_config_saved(self) -> None:
-        """配置保存回调"""
-        self._loop.call_soon_threadsafe(self._signals.handle_config_saved)
+        # 勾选态已进内存，人设对账据此决定要不要打扰用户
+        self._initializer.sync_persona()
 
     def on_config_candidate(self) -> None:
         """候选配置待验回调"""

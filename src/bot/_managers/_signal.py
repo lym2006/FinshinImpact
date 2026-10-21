@@ -28,17 +28,6 @@ class SignalHandler:
         # 当前在途的配置应用任务，串行化防重入
         self._apply_task: asyncio.Task[None] | None = None
 
-    def handle_config_saved(self) -> None:
-        """重新校验并应用配置"""
-        host = self._host
-        if host._shutdown:
-            host._logger.info("关闭流程中忽略配置保存事件")
-            return
-        if self._apply_task is not None and not self._apply_task.done():
-            host._logger.debug("上一次配置应用尚未完成，跳过本次触发")
-            return
-        self._apply_task = host._loop.create_task(host._applier.apply_config())
-
     def handle_candidate(self) -> None:
         """候选入队"""
         host = self._host
