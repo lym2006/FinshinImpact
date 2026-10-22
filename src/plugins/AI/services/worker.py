@@ -5,8 +5,7 @@
 """
 
 import time
-from collections.abc import AsyncGenerator, Awaitable, Callable
-from pathlib import Path
+from collections.abc import AsyncGenerator
 from typing import Any, Literal
 
 from exceptions import MessageVanishedError
@@ -20,56 +19,22 @@ from ..utils import build_message, compose_user_text, make_data
 
 _logger = get_logger("Plg.AI.Worker")
 
-# AI_render 经 set_render_provider 注入，未注入即渲染插件未启用
-_render_html: Callable[[str], str] | None = None
-_screenshot: Callable[[str, Path], Awaitable[None]] | None = None
-
-
-def set_render_provider(
-    render_html: Callable[[str], str],
-    screenshot: Callable[[str, Path], Awaitable[None]],
-) -> None:
-    """注册渲染出口
-
-    - 由 AI_render 加载时调用
-    """
-    global _render_html, _screenshot
-    _render_html = render_html
-    _screenshot = screenshot
-
 
 async def _save_conversation_record(stem: str, text: str, final_msg: str) -> None:
     """写入对话记录
 
-    - txt/md 必写，渲染产物尽力而为，失败不影响记录
+    - 落盘失败只记错误，不影响本轮应答
     """
-    rec_dir = ai_config.record_dir
-
-    # 格式化并写入 TXT 和 MD
     wrt = (
         f"{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}\n\n"
         f"用户：{text}\n\n"
         f"AI回复：\n{final_msg}\n\n\n"
     )
     try:
-        with open(rec_dir / f"staged/{stem}.txt", "a", encoding="utf8") as f:
-            f.write(wrt)
-        with open(rec_dir / f"temp/{stem}.md", "a", encoding="utf8") as f:
+        with open(ai_config.record_dir / f"temp/{stem}.md", "a", encoding="utf8") as f:
             f.write(wrt)
     except Exception as e:
         _logger.send_error("保存本地对话记录失败", e)
-
-    if _render_html is None or _screenshot is None:
-        return
-
-    # 生成 HTML 并截图
-    try:
-        html_path = ai_config.record_dir / f"temp/{stem}.html"
-        with open(html_path, "w", encoding="utf-8") as f:
-            f.write(_render_html(final_msg))
-        await _screenshot(stem, html_path)
-    except Exception as e:
-        _logger.send_error("渲染对话记录图片失败", e)
 
 
 async def _handle_ai_message(
@@ -137,10 +102,6 @@ async def worker_loop(ctx: HandlerContext, user: str) -> None:
         )
 
         await _save_conversation_record(stem, text, final_msg)
-
-        # 渲染未启用无图可发，md_status 随渲染出口置位
-        if _screenshot is not None:
-            session.md_status = True
 
     except MessageVanishedError:
         raise
