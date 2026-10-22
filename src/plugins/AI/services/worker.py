@@ -4,6 +4,7 @@
 - 实现流式接收、UI 更新与记录持久化
 """
 
+import asyncio
 import time
 from collections.abc import AsyncGenerator
 from typing import Any, Literal
@@ -20,10 +21,11 @@ from ..utils import build_message, compose_user_text, make_data
 _logger = get_logger("Plg.AI.Worker")
 
 
-async def _save_conversation_record(stem: str, text: str, final_msg: str) -> None:
+def _save_conversation_record(stem: str, text: str, final_msg: str) -> None:
     """写入对话记录
 
     - 落盘失败只记错误，不影响本轮应答
+    - 走线程落盘，磁盘慢不冻事件循环
     """
     wrt = (
         f"{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}\n\n"
@@ -101,7 +103,7 @@ async def worker_loop(ctx: HandlerContext, user: str) -> None:
             [build_message("user", prompt), build_message("assistant", final_msg)]
         )
 
-        await _save_conversation_record(stem, text, final_msg)
+        await asyncio.to_thread(_save_conversation_record, stem, text, final_msg)
 
     except MessageVanishedError:
         raise
