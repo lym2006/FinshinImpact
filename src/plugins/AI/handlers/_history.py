@@ -17,7 +17,8 @@ from services.context import HandlerContext
 from ...filters import CommandFilter
 from ...messages import BotMessage
 from ..config import ai_config
-from ..core import session_guard, user_sessions
+from ..core import clear_session, session_guard
+from ..utils import make_session_key
 
 history = Router()
 
@@ -52,7 +53,6 @@ async def show_history(raw: Message, ctx: HandlerContext) -> None:
 async def clear_history(raw: Message, ctx: HandlerContext) -> None:
     """清除记忆"""
     user = ctx.event.principal.key
-    file_path = _get_file_path(ctx.event.principal.key)
-    user_sessions[user].message = list(ai_config.init)
-    file_path.unlink(missing_ok=True)
+    await clear_session(make_session_key(ctx.event.principal))
+    _get_file_path(user).unlink(missing_ok=True)
     await ctx.answer(BotMessage.HISTORY_MEMORY_CLEARED)

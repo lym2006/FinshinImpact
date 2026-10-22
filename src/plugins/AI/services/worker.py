@@ -1,7 +1,7 @@
 # src/plugins/AI/services/worker.py
 """对话工作循环
 
-- 实现流式接收、UI 更新与记录持久化
+- 实现流式接收、会话落库与记录持久化
 """
 
 import asyncio
@@ -15,8 +15,14 @@ from utils import get_logger
 
 from ...messages import BotMessage
 from ..config import ai_config
-from ..core import AIClient, user_sessions
-from ..utils import build_message, compose_user_text, make_data
+from ..core import AIClient, read_session, save_session
+from ..utils import (
+    build_turns,
+    compose_user_text,
+    make_rows,
+    make_session_key,
+    needs_reset,
+)
 
 _logger = get_logger("Plg.AI.Worker")
 
@@ -40,15 +46,13 @@ def _save_conversation_record(stem: str, text: str, final_msg: str) -> None:
 
 
 async def _handle_ai_message(
-    user: str, prompt: str
+    msg: list[dict[str, str]],
 ) -> AsyncGenerator[tuple[Literal["final", "error"], Any], None]:
     """处理 AI 流式数据
 
     - 产出 (事件类型, 数据)
     """
-    session = user_sessions[user]
     current_msg = ""
-    msg = make_data(session, prompt)
 
     try:
         async for delta in AIClient.stream_chat(msg):
@@ -62,7 +66,7 @@ async def _handle_ai_message(
         yield "error", e
 
 
-async def worker_loop(ctx: HandlerContext, user: str) -> None:
+async def worker_loop(ctx: HandlerContext) -> None:
     """核心工作循环"""
     text = ctx.event.content.text
     if not text:
@@ -74,17 +78,28 @@ async def worker_loop(ctx: HandlerContext, user: str) -> None:
         raise MessageVanishedError(ctx.event.ref)
 
     stem = ctx.event.principal.key
-    session = user_sessions[user]
+    session_key = make_session_key(ctx.event.principal)
+    snapshot = await read_session(session_key)
 
-    # 人设轮每轮按当前配置与磁盘正文重取，改完不必重启也不必先清会话
-    session.message[:1] = ai_config.init
+    # 人设轮每轮按当前配置与磁盘正文重取，库里那行人设正文只当版本标记
+    persona = ai_config.init[0]["content"]
+    reset = needs_reset(persona, snapshot.messages)
+    history = () if reset else snapshot.messages
     final_msg = ""
     has_error = False
+
     # 落盘记录存裸正文，标注只进发给模型的轮次
     prompt = compose_user_text(ctx.event)
+    msg = build_turns(
+        persona=persona,
+        summary=snapshot.summary,
+        history=history,
+        scope=ctx.event.scope,
+        thisinput=prompt,
+    )
 
     try:
-        async for event_type, data in _handle_ai_message(user, prompt):
+        async for event_type, data in _handle_ai_message(msg):
             match event_type:
                 case "final":
                     final_msg = data
@@ -99,8 +114,8 @@ async def worker_loop(ctx: HandlerContext, user: str) -> None:
         # 分段与防频控归适配层端口，此处只交整段正文
         await ctx.reply(final_msg)
 
-        session.message.extend(
-            [build_message("user", prompt), build_message("assistant", final_msg)]
+        await save_session(
+            session_key, persona, make_rows(ctx.event, final_msg), reset=reset
         )
 
         await asyncio.to_thread(_save_conversation_record, stem, text, final_msg)

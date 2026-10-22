@@ -38,7 +38,7 @@ async def monitor_loop(user: str) -> None:
                 break
 
             try:
-                await worker_loop(ctx, user)
+                await worker_loop(ctx)
             except MessageVanishedError:
                 _logger.error(f"{user} 原消息被删除")
             except CancelledError:
@@ -91,11 +91,5 @@ async def cleanup_loop() -> NoReturn:
                 task_queues.pop(user, None)
 
                 # 字典键即主体键，点号分段可直接当落盘文件名主干
-                paths = [
-                    rec_dir / f"temp/{user}.html",
-                    rec_dir / f"temp/{user}.png",
-                    rec_dir / f"temp/{user}.md",
-                ]
-                for path in paths:
-                    path.unlink(missing_ok=True)
+                (rec_dir / f"temp/{user}.md").unlink(missing_ok=True)
                 _logger.info(f"清理长时间不活跃会话: {user}")

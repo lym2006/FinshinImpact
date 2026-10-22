@@ -6,8 +6,9 @@
 """
 
 import functools
+import time
 from collections.abc import Callable
-from typing import TYPE_CHECKING, ParamSpec, TypeVar
+from typing import ParamSpec, TypeVar
 
 from aiogram.exceptions import TelegramNetworkError
 from tenacity import (
@@ -17,12 +18,10 @@ from tenacity import (
     wait_exponential,
 )
 
-from core.domain import ChatScope
-from core.dto import InboundEventDTO
+from core.domain import ChatRole, ChatScope
+from core.domain.ids import KEY_SEP, SessionKey
+from core.dto import InboundEventDTO, MessageDTO, PrincipalDTO
 from utils import get_logger
-
-if TYPE_CHECKING:
-    from .core.models import UserSession
 
 _logger_retry = get_logger("Plg.AI.Retry")
 
@@ -34,6 +33,9 @@ T = TypeVar("T")
 _MAX_RETRIES = 3
 _MIN_RETRY_DELAY = 1
 _MAX_RETRY_DELAY = 10
+
+# 上文条数上限，越过即整串作废，压缩上线后换掉这条判据
+_MAX_CONTEXT_MESSAGES = 40
 
 # 发给模型的内部标记，格式与随包人设 §二 逐字一致，改一处必改另一处
 _GROUP_MARK = "[{name} | {id}] "
@@ -51,34 +53,107 @@ def build_message(role: str, content: str) -> dict[str, str]:
     return {"role": role, "content": content}
 
 
-def make_data(session: "UserSession", thisinput: str) -> list[dict[str, str]]:
-    """构建包含新输入的用户消息数据列表
+def make_session_key(principal: PrincipalDTO) -> SessionKey:
+    """取会话键
 
+    - 键只到平台与容器两段，同群共用一串上下文
+    """
+    return SessionKey(f"{principal.platform}{KEY_SEP}{principal.container}")
+
+
+def needs_reset(persona: str, history: tuple[MessageDTO, ...]) -> bool:
+    """判定上文是否整串作废
+
+    - 缺人设首行、人设正文换过、条数越过上限
+    """
+    return (
+        not history
+        or history[0].role is not ChatRole.SYSTEM
+        or history[0].content != persona
+        or len(history) > _MAX_CONTEXT_MESSAGES
+    )
+
+
+def build_turns(
+    *,
+    persona: str,
+    summary: str,
+    history: tuple[MessageDTO, ...],
+    scope: ChatScope,
+    thisinput: str,
+) -> list[dict[str, str]]:
+    """构建发给模型的消息列表
+
+    - 人设轮按当前正文现取，库里那行人设不重复发
     - 摘要作独立 system 轮排在人设之后
     """
-    turns = session.message + [build_message("user", thisinput)]
-    if not session.summary:
-        return turns
-    summary_round = build_message("system", f"{_SUMMARY_MARK}{session.summary}")
-    # 首位恒为人设 system 轮，建会话与 /clear 都以 ai_config.init 起头
-    return [turns[0], summary_round, *turns[1:]]
+    turns = [build_message(ChatRole.SYSTEM.value, persona)]
+    if summary:
+        turns.append(build_message(ChatRole.SYSTEM.value, f"{_SUMMARY_MARK}{summary}"))
+
+    turns.extend(
+        _render_turn(message, scope)
+        for message in history
+        if message.role is not ChatRole.SYSTEM
+    )
+    turns.append(build_message(ChatRole.USER.value, thisinput))
+    return turns
+
+
+def _render_turn(message: MessageDTO, scope: ChatScope) -> dict[str, str]:
+    """构建单条历史轮
+
+    - 发言人标注按库里两列现拼，AI 回复不带标注
+    """
+    if message.role is ChatRole.ASSISTANT:
+        return build_message(message.role.value, message.content)
+    mark = _speaker_mark(scope, message.sender_id, message.sender_name)
+    return build_message(message.role.value, f"{mark}{message.content}")
+
+
+def make_rows(event: InboundEventDTO, reply: str) -> tuple[MessageDTO, MessageDTO]:
+    """构建入库的两条消息
+
+    - 问答各一条，发言人两列只挂在问句上
+    """
+    now = time.time()
+    return (
+        MessageDTO(
+            role=ChatRole.USER,
+            content=_compose_body(event),
+            created_at=now,
+            sender_id=event.principal.user,
+            sender_name=event.display_name,
+        ),
+        MessageDTO(role=ChatRole.ASSISTANT, content=reply, created_at=now),
+    )
 
 
 def compose_user_text(event: InboundEventDTO) -> str:
     """拼发给 AI 的 user 轮正文
 
     - 顺序为发言人标注、引用块、正文
-    - 落盘记录用裸正文，不带这些标记
     """
-    if event.scope is ChatScope.PRIVATE:
-        mark = _PRIVATE_MARK.format(id=event.principal.user)
-    else:
-        mark = _GROUP_MARK.format(
-            # 名称缺位用 id 段填，格式仍是 [名称 | id]
-            name=event.display_name or event.principal.user,
-            id=event.principal.user,
-        )
-    return f"{mark}{_quote_block(event)}{event.content.text}"
+    mark = _speaker_mark(event.scope, event.principal.user, event.display_name)
+    return f"{mark}{_compose_body(event)}"
+
+
+def _compose_body(event: InboundEventDTO) -> str:
+    """拼入库正文
+
+    - 引用块加裸正文，落盘记录只取其中的裸正文
+    """
+    return f"{_quote_block(event)}{event.content.text}"
+
+
+def _speaker_mark(scope: ChatScope, sender_id: str, sender_name: str) -> str:
+    """拼发言人标注前缀
+
+    - 名称缺位用 id 段填，格式仍是 [名称 | id]
+    """
+    if scope is ChatScope.PRIVATE:
+        return _PRIVATE_MARK.format(id=sender_id)
+    return _GROUP_MARK.format(name=sender_name or sender_id, id=sender_id)
 
 
 def _quote_block(event: InboundEventDTO) -> str:
