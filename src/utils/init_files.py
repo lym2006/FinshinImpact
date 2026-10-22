@@ -15,12 +15,9 @@ from .paths import (
     PERSONALITY_EXAMPLE,
     PERSONALITY_FILE,
     PERSONALITY_STAMP,
-    RECORDS_DIR,
     TEMP_DIR,
 )
 from .persona import reset_persona_cache
-
-_STAGED_DIR = RECORDS_DIR / "staged"
 
 
 class PersonaSync(Enum):
@@ -183,7 +180,7 @@ def sync_persona_template() -> PersonaSync:
 
 def init_project_files() -> None:
     """初始化项目必要文件"""
-    for d in (TEMP_DIR, _STAGED_DIR):
+    for d in (TEMP_DIR,):
         d.mkdir(parents=True, exist_ok=True)
 
     _ensure_file_exists(BOT_LOG)

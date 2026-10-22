@@ -3,7 +3,7 @@
 
 - playwright 内核等资源通过模块子命令安装，声明按模块名与资源名两段拼 argv
 - 镜像下载失败时清除环境变量回退官方源
-- 落盘探活分两档：磁盘前缀匹配秒判，存疑再走 dry-run 权威目录复核
+- 落盘探活走 dry-run 取权威安装目录逐个复核
 """
 
 import os
@@ -20,25 +20,15 @@ from .subprocess_ops import (
 )
 from .toolchain import PLAYWRIGHT_CDN, dev_mode, py_cmd, python_target
 
-# 浏览器内核根目录随平台而异，Windows 在 LOCALAPPDATA，类 Unix 在 ~/.cache
-_BROWSER_DIR_NAME = "ms-playwright"
-
 # dry-run 行内"Install location: 路径"的定位前缀
 _LOCATION_MARK = "Install location:"
-
-
-def _browser_root() -> Path:
-    """定位浏览器内核根目录"""
-    local = os.environ.get("LOCALAPPDATA", "")
-    base = Path(local) if local else Path.home() / ".cache"
-    return base / _BROWSER_DIR_NAME
 
 
 def _install_dirs(module: str, res: str) -> list[str]:
     """经 dry-run 取资源的权威安装目录清单
 
     - playwright 会把 ffmpeg/winldd 等随附件一并列出，全查宁严勿漏
-    - 子进程开销近一秒，只在磁盘前缀探活落空时兜底复核
+    - 子进程开销近一秒，只在确有资源要判时付
     """
     argv = [str(python_target()), "-m", module, "install", "--dry-run", res]
     locs: list[str] = []
@@ -52,17 +42,13 @@ def _install_dirs(module: str, res: str) -> list[str]:
 def is_asset_installed(asset: str) -> bool:
     """判断资源是否已落盘
 
-    - 资源名连字符换下划线做目录前缀匹配，命中即已装
-    - 前缀落空走 dry-run 复核：权威目录都在仍算已装，内核挪过位置不误装
-    - 快路径纯磁盘探测以毫秒计，启动判定用得起
+    - 走 dry-run 取权威目录，逐个存在才算已装
+    - 内核目录挪过位置也判得出，不误装
     """
     parts = asset.split()
     if len(parts) != 2:
         return False
     module, res = parts
-    slug = res.replace("-", "_")
-    if any(entry.is_dir() for entry in _browser_root().glob(f"{slug}-*")):
-        return True
     locs = _install_dirs(module, res)
     return bool(locs) and all(Path(loc).is_dir() for loc in locs)
 
