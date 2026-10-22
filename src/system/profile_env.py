@@ -11,6 +11,8 @@ import re
 from pathlib import Path
 from typing import Any
 
+from .atomic_write import write_text_atomic
+
 # 实例身份码环境变量名，值在 development.md 有字面引用，改值须同步
 PROFILE_ENV = "FINSHINIMPACT_PROFILE"
 
@@ -108,12 +110,10 @@ def write_profile_data(code: str, payload: dict[str, Any]) -> None:
     """写入实例自描述数据
 
     - 整份覆盖，调用方负责合并既有字段
+    - 写不进抛 OSError，由调用方决定是报错还是降级
     """
-    target = profile_dir(code)
-    target.mkdir(parents=True, exist_ok=True)
-    (target / INSTANCE_PROFILE_NAME).write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
+    target = profile_dir(code) / INSTANCE_PROFILE_NAME
+    write_text_atomic(target, json.dumps(payload, ensure_ascii=False, indent=2))
 
 
 def read_token(code: str) -> str:
