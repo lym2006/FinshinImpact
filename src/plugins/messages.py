@@ -22,7 +22,6 @@ class BotMessage:
     HISTORY_EMPTY = "暂无历史记录"
     HISTORY_CAPTION = "📄 这是您最近的对话历史记录"
     HISTORY_MEMORY_CLEARED = "记忆清除成功"
-    HISTORY_NO_CONTENT = "没有可展示的对话"
 
     # AI 对话
     AI_UNAVAILABLE = "AI 对话服务暂不可用"
