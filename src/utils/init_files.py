@@ -9,6 +9,8 @@ import hashlib
 from enum import Enum, StrEnum
 from pathlib import Path
 
+from system.atomic_write import write_bytes_atomic
+
 from .paths import (
     BOT_LOG,
     DEBUG_LOG,
@@ -51,7 +53,7 @@ def _ensure_file_exists(target: Path, template: Path | None = None) -> None:
     target.parent.mkdir(parents=True, exist_ok=True)
 
     if template and template.exists():
-        target.write_bytes(template.read_bytes())
+        write_bytes_atomic(target, template.read_bytes())
         return
 
 
@@ -110,7 +112,7 @@ def apply_persona_template() -> bool:
     """
     try:
         template = _digest(PERSONALITY_EXAMPLE)
-        PERSONALITY_FILE.write_bytes(PERSONALITY_EXAMPLE.read_bytes())
+        write_bytes_atomic(PERSONALITY_FILE, PERSONALITY_EXAMPLE.read_bytes())
     except OSError:
         return False
     _write_persona_stamp(template)

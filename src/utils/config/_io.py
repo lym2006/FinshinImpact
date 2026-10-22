@@ -10,6 +10,7 @@ from pathlib import Path
 import tomlkit
 
 from exceptions import ConfigInputError, ConfigMissingError, ConfigOutputError
+from system.atomic_write import write_text_atomic
 
 from .models import AppConfigData
 
@@ -32,7 +33,10 @@ class ConfigIO:
             raise ConfigInputError() from e
 
     def save(self, config_data: AppConfigData) -> None:
-        """全量保存配置"""
+        """全量保存配置
+
+        - 整份原子替换，写不进即保持旧版原文
+        """
         try:
             # 写入前自动备份旧文件
             if self._config_path.exists():
@@ -46,6 +50,6 @@ class ConfigIO:
                     table[key] = value
                 doc.add(section, table)
 
-            self._config_path.write_text(tomlkit.dumps(doc), encoding="utf-8")
+            write_text_atomic(self._config_path, tomlkit.dumps(doc))
         except Exception as e:
             raise ConfigOutputError() from e
