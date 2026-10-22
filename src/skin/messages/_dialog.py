@@ -75,7 +75,7 @@ class DialogMessage:
 
     # 用：theme WaitDialogTheme 文案字段
     WAIT_TITLE = "请稍候"
-    WAIT_CHECK = "正在检查版本更新..."
+    WAIT_CHECK = "正在检查版本..."
 
     # 用：theme CheckDialogTheme 校验轮字段
     CHECK_VERIFY_TITLE = "连通性校验"

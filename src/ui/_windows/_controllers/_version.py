@@ -1,7 +1,7 @@
 # src/ui/_windows/_controllers/_version.py
 """版本控制器
 
-- 提供检查更新入口与结果透出
+- 提供版本检查入口与结果透出
 - 探测走独立线程，不占 GUI 线程
 """
 
@@ -10,6 +10,7 @@ import asyncio
 from PySide6.QtCore import QThread, Signal
 
 from exceptions import MAP_KEY_VERSION, MAPS, NewVersionError, VersionError
+from skin.messages import VersionMessage
 from skin.theme import WAIT_DIALOG
 from utils.check import ReleaseNote, check_updates, release_history
 
@@ -60,10 +61,10 @@ class VersionController(BaseController):
 
     # 契约声明
     LOGGER_NAME = "GUI.Version"
-    BTN_KEY = "update"  # 工具栏接线标识，改名需连动 _misc 与主窗
+    BTN_KEY = "version"  # 工具栏接线标识，改名需连动 _misc 与主窗
 
     def _execute(self) -> None:
-        """检查版本更新
+        """版本检查
 
         - 等待窗可取消，关窗即弃用线程
         - 带得到本版正文即直接开双栏弹窗，否则走通知窗文案
@@ -103,4 +104,4 @@ class VersionController(BaseController):
         if focus:
             ReleaseNotesDialog.show_release_notes(notes, focus, parent=self.gui)
             return
-        NoticeDialog.notify(msg, parent=self.gui)
+        NoticeDialog.notify(msg, parent=self.gui, title=VersionMessage.CHECK_TITLE)
