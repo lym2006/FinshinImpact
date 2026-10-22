@@ -8,7 +8,6 @@ import asyncio
 from collections import defaultdict
 
 from core.contracts import SessionRepository
-from core.domain import ChatRole
 from core.domain.ids import SessionKey
 from core.dto import MessageDTO, SessionDTO, SessionPatchDTO
 from data import build_repositories, get_connection
@@ -39,26 +38,15 @@ async def read_session(session_key: SessionKey) -> SessionDTO:
     return await (await _repo()).load(session_key)
 
 
-async def save_session(
-    session_key: SessionKey,
-    persona: str,
-    messages: tuple[MessageDTO, ...],
-    *,
-    reset: bool = False,
-) -> None:
-    """续写会话消息
+async def save_session(session_key: SessionKey, window: tuple[MessageDTO, ...]) -> None:
+    """覆盖写会话窗口
 
-    - reset 为真时整串上文作废，人设正文重作首行
+    - 人设首行随窗口一起重作，序号从头排
     """
-    rows = (
-        (MessageDTO(role=ChatRole.SYSTEM, content=persona), *messages)
-        if reset
-        else messages
-    )
     async with _write_locks[session_key]:
         repo = await _repo()
         await repo.apply_patch(
-            session_key, SessionPatchDTO(append=rows, reset_to_system=reset)
+            session_key, SessionPatchDTO(append=window, reset_to_system=True)
         )
 
 
