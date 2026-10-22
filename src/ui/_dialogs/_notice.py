@@ -21,14 +21,21 @@ class NoticeDialog(BaseDialog):
     """统一通知弹窗
 
     - 提示/致命共用，critical 区分标题与确认语义
+    - 标题缺省按 critical 取通用提示或致命错误，调用点可覆盖
     """
 
     def __init__(
-        self, text: str, critical: bool = False, parent: QWidget | None = None
+        self,
+        text: str,
+        critical: bool = False,
+        parent: QWidget | None = None,
+        *,
+        title: str | None = None,
     ) -> None:
         super().__init__(
             parent=parent,
-            title=NOTICE_DIALOG.fatal_title if critical else NOTICE_DIALOG.title,
+            title=title
+            or (NOTICE_DIALOG.fatal_title if critical else NOTICE_DIALOG.title),
         )
         self.set_always_on_top()
         self.setStyleSheet(build_notice_dialog_qss())
@@ -59,6 +66,11 @@ class NoticeDialog(BaseDialog):
         self.setFixedHeight(height)
 
     @staticmethod
-    def notify(text: str, parent: QWidget | None = None) -> None:
+    def notify(
+        text: str,
+        parent: QWidget | None = None,
+        *,
+        title: str | None = None,
+    ) -> None:
         """模态展示一行提示"""
-        NoticeDialog(text, parent=parent).exec()
+        NoticeDialog(text, parent=parent, title=title).exec()
