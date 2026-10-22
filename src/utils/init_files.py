@@ -12,8 +12,6 @@ from pathlib import Path
 from system.atomic_write import write_bytes_atomic
 
 from .paths import (
-    BOT_LOG,
-    DEBUG_LOG,
     PERSONALITY_EXAMPLE,
     PERSONALITY_FILE,
     PERSONALITY_STAMP,
@@ -45,16 +43,18 @@ class PersonaState(StrEnum):
     UNREADABLE = "unreadable"
 
 
-def _ensure_file_exists(target: Path, template: Path | None = None) -> None:
-    """确保文件存在"""
+def _copy_if_missing(target: Path, template: Path) -> None:
+    """目标缺失即从模板整份复制
+
+    - 模板读不到即不建文件，交由调用方判定
+    """
     if target.exists():
         return
 
     target.parent.mkdir(parents=True, exist_ok=True)
 
-    if template and template.exists():
+    if template.exists():
         write_bytes_atomic(target, template.read_bytes())
-        return
 
 
 def _digest(path: Path) -> str:
@@ -97,7 +97,7 @@ def ensure_persona_copy() -> bool:
         return True
     try:
         template = _digest(PERSONALITY_EXAMPLE)
-        _ensure_file_exists(PERSONALITY_FILE, PERSONALITY_EXAMPLE)
+        _copy_if_missing(PERSONALITY_FILE, PERSONALITY_EXAMPLE)
     except OSError:
         return False
     _write_persona_stamp(template)
@@ -181,9 +181,6 @@ def sync_persona_template() -> PersonaSync:
 
 
 def init_project_files() -> None:
-    """初始化项目必要文件"""
+    """初始化实例运行所需目录"""
     for d in (TEMP_DIR,):
         d.mkdir(parents=True, exist_ok=True)
-
-    _ensure_file_exists(BOT_LOG)
-    _ensure_file_exists(DEBUG_LOG)
