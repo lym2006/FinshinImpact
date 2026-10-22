@@ -31,14 +31,13 @@ PERSONALITY_FILE = PROFILE_DIR / INSTANCE_PERSONA_NAME
 PERSONALITY_STAMP = PROFILE_DIR / INSTANCE_PERSONA_STAMP_NAME
 
 # 运行时记录按实例拆分，防止污染
-RECORDS_DIR = PROFILE_DIR / "data/ai_records"
-TEMP_DIR = RECORDS_DIR / "temp"
+RECORDS_DIR = PROFILE_DIR / "records"
 
-# 帮助图属实例产物，落实例数据目录，不与 data 按实例隔离冲突
-HELP_IMAGE = PROFILE_DIR / "data/help.png"
+# 帮助图与它的指纹成对，单独一档放
+HELP_IMAGE = PROFILE_DIR / "help/help.png"
 
 # 库按实例分库，路径由装配层取走注入存储层
-DB_DIR = PROFILE_DIR / "data"
+DB_DIR = PROFILE_DIR / "db"
 DB_FILE = DB_DIR / "bot.db"
 DB_BACKUP_DIR = DB_DIR / "backups"
 

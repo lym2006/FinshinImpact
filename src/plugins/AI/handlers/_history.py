@@ -24,7 +24,7 @@ history = Router()
 
 
 def _get_file_path(stem: str) -> Path:
-    return ai_config.record_dir / f"temp/{stem}.md"
+    return ai_config.record_dir / f"{stem}.md"
 
 
 @history.message(CommandFilter("history"))
