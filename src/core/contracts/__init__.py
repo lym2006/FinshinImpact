@@ -6,9 +6,22 @@
 """
 
 from ._adapter import BaseAdapter, InteractionPort
+from ._repository import (
+    GrantRepository,
+    MediaRepository,
+    PrincipalRepository,
+    SessionRepository,
+    TaskRepository,
+)
 
 __all__ = [
     # 适配器
     "InteractionPort",
     "BaseAdapter",
+    # 仓储
+    "PrincipalRepository",
+    "SessionRepository",
+    "TaskRepository",
+    "MediaRepository",
+    "GrantRepository",
 ]

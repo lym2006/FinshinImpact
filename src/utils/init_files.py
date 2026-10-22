@@ -12,6 +12,8 @@ from pathlib import Path
 from system.atomic_write import write_bytes_atomic
 
 from .paths import (
+    DB_BACKUP_DIR,
+    DB_DIR,
     PERSONALITY_EXAMPLE,
     PERSONALITY_FILE,
     PERSONALITY_STAMP,
@@ -182,5 +184,6 @@ def sync_persona_template() -> PersonaSync:
 
 def init_project_files() -> None:
     """初始化实例运行所需目录"""
-    for d in (TEMP_DIR,):
+    # sqlite3 只建库文件不建父目录，父目录缺失即打不开库
+    for d in (TEMP_DIR, DB_DIR, DB_BACKUP_DIR):
         d.mkdir(parents=True, exist_ok=True)
