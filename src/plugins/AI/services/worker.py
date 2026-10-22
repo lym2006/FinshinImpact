@@ -21,7 +21,7 @@ from ..utils import (
     compose_user_text,
     make_rows,
     make_session_key,
-    needs_reset,
+    open_window,
 )
 
 _logger = get_logger("Plg.AI.Worker")
@@ -83,8 +83,7 @@ async def worker_loop(ctx: HandlerContext) -> None:
 
     # 人设轮每轮按当前配置与磁盘正文重取，库里那行人设正文只当版本标记
     persona = ai_config.init[0]["content"]
-    reset = needs_reset(persona, snapshot.messages)
-    history = () if reset else snapshot.messages
+    window = open_window(persona, snapshot.messages)
     final_msg = ""
     has_error = False
 
@@ -93,7 +92,7 @@ async def worker_loop(ctx: HandlerContext) -> None:
     msg = build_turns(
         persona=persona,
         summary=snapshot.summary,
-        history=history,
+        history=window[1:],
         scope=ctx.event.scope,
         thisinput=prompt,
     )
@@ -114,9 +113,7 @@ async def worker_loop(ctx: HandlerContext) -> None:
         # 分段与防频控归适配层端口，此处只交整段正文
         await ctx.reply(final_msg)
 
-        await save_session(
-            session_key, persona, make_rows(ctx.event, final_msg), reset=reset
-        )
+        await save_session(session_key, (*window, *make_rows(ctx.event, final_msg)))
 
         await asyncio.to_thread(_save_conversation_record, stem, text, final_msg)
 

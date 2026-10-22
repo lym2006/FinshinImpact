@@ -34,8 +34,11 @@ _MAX_RETRIES = 3
 _MIN_RETRY_DELAY = 1
 _MAX_RETRY_DELAY = 10
 
-# 上文条数上限，越过即整串作废，压缩上线后换掉这条判据
+# 会话窗口条数上限，含人设首行，压缩上线后换掉这条判据
 _MAX_CONTEXT_MESSAGES = 40
+
+# 一轮问答入库的消息条数
+_ROUND_ROWS = 2
 
 # 发给模型的内部标记，格式与随包人设 §二 逐字一致，改一处必改另一处
 _GROUP_MARK = "[{name} | {id}] "
@@ -61,17 +64,38 @@ def make_session_key(principal: PrincipalDTO) -> SessionKey:
     return SessionKey(f"{principal.platform}{KEY_SEP}{principal.container}")
 
 
-def needs_reset(persona: str, history: tuple[MessageDTO, ...]) -> bool:
-    """判定上文是否整串作废
+def open_window(
+    persona: str, history: tuple[MessageDTO, ...], *, new_count: int = _ROUND_ROWS
+) -> tuple[MessageDTO, ...]:
+    """归一会话窗口
 
-    - 缺人设首行、人设正文换过、条数越过上限
+    - 缺人设首行或人设正文换过即整串重起，只留人设行
+    - 窗口连同人设行与新写入的条数一起算上限
+    - 越过上限从头部成对丢最旧问答
     """
+    kept = history[1:] if _has_persona(persona, history) else ()
+    tail = _drop_oldest(kept, _MAX_CONTEXT_MESSAGES - 1 - new_count)
+    return (MessageDTO(role=ChatRole.SYSTEM, content=persona), *tail)
+
+
+def _has_persona(persona: str, history: tuple[MessageDTO, ...]) -> bool:
+    """判定窗口首行存的是当前人设正文"""
     return (
-        not history
-        or history[0].role is not ChatRole.SYSTEM
-        or history[0].content != persona
-        or len(history) > _MAX_CONTEXT_MESSAGES
+        bool(history)
+        and history[0].role is ChatRole.SYSTEM
+        and history[0].content == persona
     )
+
+
+def _drop_oldest(rows: tuple[MessageDTO, ...], keep: int) -> tuple[MessageDTO, ...]:
+    """从头部丢到只剩指定条数
+
+    - 落点撞上答句时连答句一起丢，问答不留半截
+    """
+    start = max(len(rows) - keep, 0)
+    while start < len(rows) and rows[start].role is ChatRole.ASSISTANT:
+        start += 1
+    return rows[start:]
 
 
 def build_turns(
