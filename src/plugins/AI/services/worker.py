@@ -39,7 +39,7 @@ def _save_conversation_record(stem: str, text: str, final_msg: str) -> None:
         f"AI回复：\n{final_msg}\n\n\n"
     )
     try:
-        with open(ai_config.record_dir / f"temp/{stem}.md", "a", encoding="utf8") as f:
+        with open(ai_config.record_dir / f"{stem}.md", "a", encoding="utf8") as f:
             f.write(wrt)
     except Exception as e:
         _logger.send_error("保存本地对话记录失败", e)

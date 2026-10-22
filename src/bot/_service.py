@@ -6,7 +6,6 @@
 """
 
 import asyncio
-import shutil
 import threading
 from typing import TYPE_CHECKING
 
@@ -14,7 +13,6 @@ from skin.messages import EngineMessage
 from ui import gui_bridge
 from utils import get_logger, register_lifecycle, unregister_lifecycle
 from utils.network import link_report
-from utils.paths import TEMP_DIR
 
 if TYPE_CHECKING:
     from adapters.telegram.adapter import TelegramAdapter
@@ -112,11 +110,9 @@ class BotService:
 
     async def _polling_task(self) -> None:
         """执行自动重连轮询"""
-        self._temp_hook = lambda: shutil.rmtree(TEMP_DIR, ignore_errors=True)
         register_lifecycle(
             self._adapter.bot.session.close, "Telegram Session", "hook_async"
         )
-        register_lifecycle(self._temp_hook, "临时目录", "hook_sync")
 
         try:
             await self._start_polling()
@@ -128,9 +124,7 @@ class BotService:
                 await self._adapter.bot.session.close()
             except Exception as e:
                 _logger.send_error("关闭 Session 失败", e)
-            self._temp_hook()
             unregister_lifecycle(self._adapter.bot.session.close, "hook_async")
-            unregister_lifecycle(self._temp_hook, "hook_sync")
             unregister_lifecycle(self._thread, "thread")
 
     async def _start_polling(self) -> None:

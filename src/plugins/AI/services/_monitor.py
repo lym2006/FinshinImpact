@@ -91,5 +91,5 @@ async def cleanup_loop() -> NoReturn:
                 task_queues.pop(user, None)
 
                 # 字典键即主体键，点号分段可直接当落盘文件名主干
-                (rec_dir / f"temp/{user}.md").unlink(missing_ok=True)
+                (rec_dir / f"{user}.md").unlink(missing_ok=True)
                 _logger.info(f"清理长时间不活跃会话: {user}")
