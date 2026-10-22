@@ -8,6 +8,9 @@ class VersionMessage:
     - 升级检查回执与异常填充话术的聚合入口
     """
 
+    # 用：ui/_windows/_controllers/_version.py 回执通知窗标题
+    CHECK_TITLE = "版本检查"
+
     # 用：skin/theme/_dialogs.py WaitDialogTheme 回执字段
     UP_TO_DATE = "已是最新版本：v{ver}"
 

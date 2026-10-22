@@ -38,7 +38,7 @@ class MiscMessage:
         ("修改配置", "settings"),
         ("网络诊断", "diagnose"),
         ("查看日志", "log"),
-        ("检查更新", "update"),
+        ("版本检查", "version"),
         ("版本变化", "release_notes"),
         ("清空仪表盘", "clear"),
         ("关闭机器人", "shutdown"),  # 该按钮应被隐藏
