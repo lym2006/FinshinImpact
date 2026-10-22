@@ -112,7 +112,7 @@ class GrantRepository(ABC):
     """命令授权仓储
 
     - owner 名单在 config，不进本表
-    - user_key 为 platform:user 二段键，不含 container
+    - user_key 为 platform.user 二段键，不含 container
     """
 
     @abstractmethod
