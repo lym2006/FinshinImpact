@@ -17,7 +17,7 @@ from .paths import (
     PERSONALITY_EXAMPLE,
     PERSONALITY_FILE,
     PERSONALITY_STAMP,
-    TEMP_DIR,
+    RECORDS_DIR,
 )
 from .persona import reset_persona_cache
 
@@ -185,5 +185,5 @@ def sync_persona_template() -> PersonaSync:
 def init_project_files() -> None:
     """初始化实例运行所需目录"""
     # sqlite3 只建库文件不建父目录，父目录缺失即打不开库
-    for d in (TEMP_DIR, DB_DIR, DB_BACKUP_DIR):
+    for d in (RECORDS_DIR, DB_DIR, DB_BACKUP_DIR):
         d.mkdir(parents=True, exist_ok=True)
