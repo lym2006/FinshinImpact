@@ -37,6 +37,11 @@ TEMP_DIR = RECORDS_DIR / "temp"
 # 帮助图属实例产物，落实例数据目录，不与 data 按实例隔离冲突
 HELP_IMAGE = PROFILE_DIR / "data/help.png"
 
+# 库按实例分库，路径由装配层取走注入存储层
+DB_DIR = PROFILE_DIR / "data"
+DB_FILE = DB_DIR / "bot.db"
+DB_BACKUP_DIR = DB_DIR / "backups"
+
 # 日志按实例拆分，共用目录会互相污染且 GUI 打不开对应实例的记录
 LOGS_DIR = PROFILE_DIR / "logs"
 BOT_LOG = LOGS_DIR / "bot.log"
