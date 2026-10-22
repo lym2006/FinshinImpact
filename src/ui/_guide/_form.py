@@ -129,7 +129,12 @@ class NewProfileDialog(_ProfileFormDialog):
             self._warn(PickerMessage.FORM_TOKEN_INVALID)
             return
 
-        create_profile(code, token, self._remark.text())
+        try:
+            create_profile(code, token, self._remark.text())
+        except OSError:
+            self._warn(PickerMessage.FORM_SAVE_FAIL)
+            return
+
         self.code = code
         self.accept()
 
@@ -167,6 +172,11 @@ class EditProfileDialog(_ProfileFormDialog):
             )
             return
 
-        update_profile(self._code, token, self._remark.text())
+        try:
+            update_profile(self._code, token, self._remark.text())
+        except OSError:
+            self._warn(PickerMessage.FORM_SAVE_FAIL)
+            return
+
         self.code = self._code
         self.accept()

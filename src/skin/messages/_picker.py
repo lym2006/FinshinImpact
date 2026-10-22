@@ -40,6 +40,7 @@ class PickerMessage:
     FORM_TOKEN_HINT = "从 @BotFather 获取，形如 123456:ABCDEF"
     FORM_TOKEN_INVALID = "Token 格式不正确\n应形如 123456:ABCDEF"
     FORM_REMARK_LABEL = "备注名（可选）"
+    FORM_SAVE_FAIL = "实例信息没能保存\n文件可能正被占用，请关闭占用它的程序后重试"
 
     # 用：ui._guide._form 新建窗
     NEW_TITLE = "新建机器人"

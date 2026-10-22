@@ -12,6 +12,7 @@ import time
 from pathlib import Path
 
 from core.domain import Platform, make_profile_code, platform_of_profile
+from system.atomic_write import write_bytes_atomic
 from system.profile_env import (
     ASSET_PERSONA_EXAMPLE_NAME,
     ASSETS_DIR,
@@ -96,13 +97,16 @@ def touch_profile(code: str) -> None:
     """记录实例最近使用时间
 
     - 选窗确认启动时调用，下次打开选窗该实例置顶
-    - 整份读改写，文件损坏时静默放弃，不阻断启动
+    - 整份读改写，文件损坏或写不进一律静默放弃，不阻断启动
     """
     data = read_profile_data(code)
     if not data:
         return
     data[_LAST_USED_KEY] = time.time()
-    write_profile_data(code, data)
+    try:
+        write_profile_data(code, data)
+    except OSError:
+        return
 
 
 def remark_of(code: str) -> str:
@@ -121,7 +125,9 @@ def create_profile(code: str, token: str, remark: str) -> None:
     target.mkdir(parents=True, exist_ok=True)
 
     if _PERSONALITY_EXAMPLE.exists():
-        (target / INSTANCE_PERSONA_NAME).write_bytes(_PERSONALITY_EXAMPLE.read_bytes())
+        write_bytes_atomic(
+            target / INSTANCE_PERSONA_NAME, _PERSONALITY_EXAMPLE.read_bytes()
+        )
 
     write_profile_data(
         code,
