@@ -4,6 +4,8 @@
 - 提供检查、读写与校验出口
 """
 
+from system.atomic_write import write_text_atomic
+
 from ..paths import CONFIG_FILE, PLATFORM
 from ._differ import compare_configs
 from ._io import ConfigIO
@@ -46,8 +48,7 @@ def ensure_config() -> None:
     """
     if CONFIG_FILE.exists():
         return
-    CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
-    CONFIG_FILE.write_text(render_config(PLATFORM), encoding="utf-8")
+    write_text_atomic(CONFIG_FILE, render_config(PLATFORM))
 
 
 def get_schema() -> AppSchema:
