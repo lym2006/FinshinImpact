@@ -108,6 +108,9 @@ async def worker_loop(ctx: HandlerContext, user: str) -> None:
 
     stem = ctx.event.principal.key
     session = user_sessions[user]
+
+    # 人设轮每轮按当前配置与磁盘正文重取，改完不必重启也不必先清会话
+    session.message[:1] = ai_config.init
     final_msg = ""
     has_error = False
     # 落盘记录存裸正文，标注只进发给模型的轮次
