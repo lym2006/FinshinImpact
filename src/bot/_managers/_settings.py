@@ -73,8 +73,8 @@ class SettingsManager(BaseManager):
         # 三级解析出的生效通道，未通过为 None，空串表示直连
         self.resolved_proxy: str | None = None
 
-        # 上次验证时的网络参数：(token, 配置代理)，变化判定基准
-        self._net_state: tuple[str, str] = ("", "")
+        # 上次验证时的网络参数：(token, 配置代理, 代理模式, 超时)，变化判定基准
+        self._net_state: tuple[str, str, str, float] = ("", "", "", 0.0)
 
     async def _execute(self) -> None:
         """加载配置进内存"""
@@ -84,6 +84,7 @@ class SettingsManager(BaseManager):
     async def verify_connectivity(self) -> bool:
         """按字段变化分流的连通校验
 
+        - 网络参数与 token 全未变且已连通过时只跑本地校验
         - 通过则记录生效通道
         - 单路模式只测选定通道，缺席不发探测
         - 自动模式全挂先原地重检一轮再报失败
@@ -91,12 +92,14 @@ class SettingsManager(BaseManager):
         """
         t0 = time.monotonic()
         schema = get_schema()
-        prev_token, prev_cfg = self._net_state
-        token, raw = self._get_config()
-        configured = raw.strip()
-        self._net_state = (token, configured)
-        proxy = config_manager.get_all().get(ConfigSection.PROXY) or {}
-        mode = str(proxy.get(ConfigKey.PROXY_MODE, ProxyMode.AUTO)).strip()
+        prev_state = self._net_state
+        prev_token, prev_cfg, _, _ = prev_state
+        state = self._read_net_state()
+        self._net_state = state
+        token, configured, mode, _ = state
+
+        if state == prev_state and self.resolved_proxy is not None:
+            return self._local_round(schema, t0)
 
         channels, token_only, sys_dedup = self._plan_channels(
             token, configured, prev_token, prev_cfg, mode
@@ -146,6 +149,34 @@ class SettingsManager(BaseManager):
         self._settle(outcome.resolved, configured, mode == ProxyMode.AUTO)
         self.last_errors = {**net_errors, **type_errors}
         self.logger.info(CheckMessage.ROUND_COST.format(cost=time.monotonic() - t0))
+        return self._emit_advice(schema)
+
+    def _read_net_state(self) -> tuple[str, str, str, float]:
+        """读取连通校验用的网络参数
+
+        - token、配置代理串、代理模式与超时四项
+        """
+        token, raw = self._get_config()
+        proxy = config_manager.get_all().get(ConfigSection.PROXY) or {}
+        return (
+            token,
+            raw.strip(),
+            str(proxy.get(ConfigKey.PROXY_MODE, ProxyMode.AUTO)).strip(),
+            config_manager.get(
+                ConfigKey.NETWORK_TIMEOUT.path(ConfigSection.GLOBAL), float
+            ),
+        )
+
+    def _local_round(self, schema: AppSchema, started: float) -> bool:
+        """只跑本地校验的免测轮
+
+        - 通道行整表标复用，生效通道原样保留
+        """
+        type_errors = self._emit_opening([], True, False, None, schema)
+        self.last_errors = cast("dict[str, str]", type_errors)
+        self.logger.info(
+            CheckMessage.ROUND_COST.format(cost=time.monotonic() - started)
+        )
         return self._emit_advice(schema)
 
     def _plan_channels(
