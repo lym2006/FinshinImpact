@@ -32,6 +32,14 @@ class _StaticAIConfig:
     model_name: str = "qwen3.7-flash"
     think_mode: tuple[tuple[str, Any], ...] = (("enable_thinking", False),)
 
+    # 上文压缩：超触发线即压，尾部保留指定轮数原文
+    summary_trigger_tokens: int = 16384
+    summary_keep_rounds: int = 6
+
+    # 摘要体量：软线提示调阈值，硬线按句子边界裁掉前段
+    summary_soft_limit: int = 512
+    summary_hard_limit: int = 1024
+
     # API 与模型基础配置
     base_url: str = "https://maas.qianwenaiapi.com/compatible-mode/v1"
     request_path: str = "/chat/completions"

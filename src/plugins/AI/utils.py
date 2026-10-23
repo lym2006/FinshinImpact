@@ -3,6 +3,7 @@
 
 - 提供消息构建与发言人标注拼装
 - 定义会话窗口归一与人设版本判定
+- 定义上下文体量的字符折算
 - 定义退避重试装饰器
 """
 
@@ -35,11 +36,22 @@ _MAX_RETRIES = 3
 _MIN_RETRY_DELAY = 1
 _MAX_RETRY_DELAY = 10
 
-# 会话窗口条数上限，含人设首行，压缩上线后换掉这条判据
-_MAX_CONTEXT_MESSAGES = 40
+# 会话窗口条数上限，含人设首行，条数只当兜底
+_MAX_CONTEXT_MESSAGES = 120
 
 # 一轮问答入库的消息条数
 _ROUND_ROWS = 2
+
+# 问答行的类型别名，窗口切段与渲染共用
+_Rows = tuple[MessageDTO, ...]
+
+# 字符折算系数，官方比例为汉字 0.6、其余 0.3
+_CN_TOKENS_PER_CHAR = 0.6
+_OTHER_TOKENS_PER_CHAR = 0.3
+
+# 汉字基本区上下界，即 U+4E00 与 U+9FFF
+_HAN_LOW = "一"
+_HAN_HIGH = "鿿"
 
 # 发给模型的内部标记，格式与随包人设 §二 逐字一致，改一处必改另一处
 _GROUP_MARK = "[{name} | {id}]"
@@ -66,8 +78,8 @@ def make_session_key(principal: PrincipalDTO) -> SessionKey:
 
 
 def open_window(
-    persona: str, history: tuple[MessageDTO, ...], *, new_count: int = _ROUND_ROWS
-) -> tuple[MessageDTO, ...]:
+    persona: str, history: _Rows, *, new_count: int = _ROUND_ROWS
+) -> _Rows:
     """归一会话窗口
 
     - 缺人设首行或人设正文换过即整串重起，只留人设行
@@ -75,11 +87,11 @@ def open_window(
     - 越过上限从头部成对丢最旧问答
     """
     kept = history[1:] if matches_persona(persona, history) else ()
-    tail = _drop_oldest(kept, _MAX_CONTEXT_MESSAGES - 1 - new_count)
+    _, tail = _cut_oldest(kept, _MAX_CONTEXT_MESSAGES - 1 - new_count)
     return (MessageDTO(role=ChatRole.SYSTEM, content=persona), *tail)
 
 
-def matches_persona(persona: str, history: tuple[MessageDTO, ...]) -> bool:
+def matches_persona(persona: str, history: _Rows) -> bool:
     """判定窗口首行存的是当前人设正文"""
     return (
         bool(history)
@@ -88,15 +100,55 @@ def matches_persona(persona: str, history: tuple[MessageDTO, ...]) -> bool:
     )
 
 
-def _drop_oldest(rows: tuple[MessageDTO, ...], keep: int) -> tuple[MessageDTO, ...]:
+def _cut_oldest(rows: _Rows, keep: int) -> tuple[_Rows, _Rows]:
     """从头部丢到只剩指定条数
 
     - 落点撞上答句时连答句一起丢，问答不留半截
+    - 返回丢掉段与保留段
     """
     start = max(len(rows) - keep, 0)
     while start < len(rows) and rows[start].role is ChatRole.ASSISTANT:
         start += 1
-    return rows[start:]
+    return rows[:start], rows[start:]
+
+
+def split_rounds(rows: _Rows, keep_rounds: int) -> tuple[_Rows, _Rows]:
+    """按保留轮数切窗口
+
+    - 尾部留满指定轮数原文，更早的问答进丢掉段
+    """
+    return _cut_oldest(rows, keep_rounds * _ROUND_ROWS)
+
+
+def estimate_tokens(text: str) -> int:
+    """按字符估算 token
+
+    - 汉字按 0.6 折算，其余字符按 0.3
+    """
+    han = sum(1 for char in text if _HAN_LOW <= char <= _HAN_HIGH)
+    other = len(text) - han
+    return int(han * _CN_TOKENS_PER_CHAR + other * _OTHER_TOKENS_PER_CHAR)
+
+
+def estimate_window(window: _Rows, summary: str, prompt: str) -> int:
+    """估算一轮请求的上下文体量
+
+    - 人设行、摘要、历史问答与新问句逐段累加
+    """
+    total = estimate_tokens(summary) + estimate_tokens(prompt)
+    return total + sum(estimate_tokens(message.content) for message in window)
+
+
+def render_history(rows: _Rows, scope: ChatScope) -> str:
+    """渲染交模型压缩的问答文本
+
+    - 发言人标注逐字带上，名称与 id 的对应关系原样进压缩请求
+    """
+    return "\n".join(
+        _render_turn(message, scope)["content"]
+        for message in rows
+        if message.role is not ChatRole.SYSTEM
+    )
 
 
 def build_turns(
