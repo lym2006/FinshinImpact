@@ -2,6 +2,7 @@
 """会话落库
 
 - 按会话键读写消息，仓储首次用时装配
+- 人设或主人变更后清掉全部会话与落盘记录
 """
 
 import asyncio
@@ -12,6 +13,8 @@ from core.domain.ids import SessionKey
 from core.dto import MessageDTO, SessionDTO, SessionPatchDTO
 from data import build_repositories, get_connection
 from utils.paths import DB_FILE
+
+from ..config import ai_config
 
 # 同会话两路并发写会算出同一个序号，写入按会话键串行
 _write_locks: dict[SessionKey, asyncio.Lock] = defaultdict(asyncio.Lock)
@@ -58,3 +61,13 @@ async def clear_session(session_key: SessionKey) -> None:
     async with _write_locks[session_key]:
         repo = await _repo()
         await repo.apply_patch(session_key, SessionPatchDTO(reset_to_system=True))
+
+
+async def purge_history() -> None:
+    """清空全部会话与落盘记录
+
+    - 换过人设或主人后所有人的历史一并作废
+    """
+    await (await _repo()).delete_all()
+    for path in ai_config.record_dir.glob("*.md"):
+        path.unlink(missing_ok=True)
