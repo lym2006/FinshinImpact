@@ -3,12 +3,14 @@
 
 - 实现后台线程中的 asyncio 事件循环
 - 托管轮询的启停与日志记录
+- 托管插件常驻协程的起停
 """
 
 import asyncio
 import threading
 from typing import TYPE_CHECKING
 
+from core.domain import PluginBackground
 from skin.messages import EngineMessage
 from ui import gui_bridge
 from utils import get_logger, register_lifecycle, unregister_lifecycle
@@ -28,8 +30,13 @@ _logger = get_logger("Service")
 class BotService:
     """Bot 服务线程"""
 
-    def __init__(self, adapter: "TelegramAdapter") -> None:
+    def __init__(
+        self,
+        adapter: "TelegramAdapter",
+        backgrounds: tuple[PluginBackground, ...] = (),
+    ) -> None:
         self._adapter = adapter
+        self._backgrounds = backgrounds
         self._loop: asyncio.AbstractEventLoop | None = None
         self._thread: threading.Thread | None = None
         self._stop_event = threading.Event()
@@ -109,16 +116,22 @@ class BotService:
             self._loop = None
 
     async def _polling_task(self) -> None:
-        """执行自动重连轮询"""
+        """执行自动重连轮询
+
+        - 常驻协程与轮询同一条命，退出路径统一在 finally 收
+        """
         register_lifecycle(
             self._adapter.bot.session.close, "Telegram Session", "hook_async"
         )
+        tasks = [asyncio.create_task(hook()) for hook in self._backgrounds]
 
         try:
             await self._start_polling()
         except asyncio.CancelledError:
             _logger.debug("轮询被取消")
         finally:
+            await self._stop_backgrounds(tasks)
+
             # 只清自己并按对象注销：全局清理留给进程退出，防热重载互踩注册表
             try:
                 await self._adapter.bot.session.close()
@@ -126,6 +139,18 @@ class BotService:
                 _logger.send_error("关闭 Session 失败", e)
             unregister_lifecycle(self._adapter.bot.session.close, "hook_async")
             unregister_lifecycle(self._thread, "thread")
+
+    async def _stop_backgrounds(self, tasks: list[asyncio.Task]) -> None:
+        """收掉插件常驻协程
+
+        - 取消后等一轮，穿透出来的异常按原样记录，不外抛
+        """
+        for task in tasks:
+            task.cancel()
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        for result in results:
+            if isinstance(result, Exception):
+                _logger.send_error("插件后台协程出错", result)
 
     async def _start_polling(self) -> None:
         """启动轮询任务

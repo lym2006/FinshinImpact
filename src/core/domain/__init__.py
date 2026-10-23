@@ -16,6 +16,7 @@ from ._plugin import (
     HelpKey,
     ManifestFieldSpec,
     ManifestKey,
+    PluginBackground,
     PluginFileName,
     StateKey,
 )
@@ -42,6 +43,7 @@ __all__ = [
     "ChatScope",
     # 插件
     "PLUGINS_PKG",
+    "PluginBackground",
     "CommandPriority",
     "PluginFileName",
     "ManifestKey",
