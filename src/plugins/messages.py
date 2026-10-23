@@ -22,6 +22,10 @@ class BotMessage:
     # 命令授权
     GRANT_USAGE = "用法：/grant <用户 id>"
     UNGRANT_USAGE = "用法：/ungrant <用户 id>"
+    GRANT_ASK_TARGET = "要授权谁？把对方的 id 单独发一条，发 -1 取消"
+    UNGRANT_ASK_TARGET = "要撤销谁的授权？把对方的 id 单独发一条，发 -1 取消"
+    GRANT_BAD_TARGET = "这不是 id，请重新发一个，或发 -1 取消"
+    GRANT_CANCELED = "已取消，授权名单没动"
     GRANT_ADDED = "已授权 {id} 使用管理命令"
     GRANT_EXISTS = "{id} 已在授权名单里"
     UNGRANT_REMOVED = "已撤销 {id} 的管理权限"
