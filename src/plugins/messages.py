@@ -22,14 +22,15 @@ class BotMessage:
     # 命令授权
     GRANT_USAGE = "用法：/grant <用户 id>"
     UNGRANT_USAGE = "用法：/ungrant <用户 id>"
-    GRANT_ASK_TARGET = "要授权谁？把对方的 id 单独发一条，发 -1 取消"
-    UNGRANT_ASK_TARGET = "要撤销谁的授权？把对方的 id 单独发一条，发 -1 取消"
-    GRANT_BAD_TARGET = "这不是 id，请重新发一个，或发 -1 取消"
-    GRANT_CANCELED = "已取消，授权名单没动"
-    GRANT_ADDED = "已授权 {id} 使用管理命令"
-    GRANT_EXISTS = "{id} 已在授权名单里"
-    UNGRANT_REMOVED = "已撤销 {id} 的管理权限"
-    UNGRANT_MISSING = "授权名单里没有 {id}"
+    GRANT_ASK_TARGET = "请发送要授权的 id，发 -1 取消"
+    UNGRANT_ASK_TARGET = "请发送要撤销授权的 id，发 -1 取消"
+    GRANT_BAD_TARGET = "这不是 id，请重试，或发 -1 取消"
+    GRANT_RETRY_TARGET = "没记上，请重试，或发 -1 取消"
+    GRANT_CANCELED = "已取消，授权名单未变"
+    GRANT_ADDED = "已授权 {id}"
+    GRANT_EXISTS = "{id} 已在授权名单，请重试，或发 -1 取消"
+    UNGRANT_REMOVED = "已撤销授权 {id}"
+    UNGRANT_MISSING = "{id} 不在授权名单，请重试，或发 -1 取消"
 
     # 历史记录
     HISTORY_EMPTY = "暂无历史记录"
@@ -38,3 +39,4 @@ class BotMessage:
 
     # AI 对话
     AI_UNAVAILABLE = "AI 对话服务暂不可用"
+    CHAT_PRIVATE_DENIED = "私聊要主人或管理员，群里 @我 或说触发词就能聊"

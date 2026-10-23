@@ -4,7 +4,7 @@
 - 提供网络客户端、会话状态、落库与命令授权出口
 """
 
-from ._access import require_role
+from ._access import require_role, role_of
 from ._chat_context import active_tasks, session_guard, session_states, task_queues
 from ._client import AIClient
 from ._grants import add_admin, remove_admin
@@ -31,6 +31,7 @@ __all__ = [
     "add_admin",
     "remove_admin",
     "require_role",
+    "role_of",
     # 异步任务队列
     "TaskQueue",
     # 会话落库

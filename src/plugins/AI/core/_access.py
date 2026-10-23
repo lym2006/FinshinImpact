@@ -2,6 +2,7 @@
 """命令权限守卫
 
 - 主人档取配置 owner，管理员档为 owner 与被授权用户
+- 档位判定单源在这里，命令与对话门槛都走它
 - 装饰器按档位拦住无权限的命令
 """
 
@@ -24,7 +25,7 @@ _logger = get_logger("Plg.AI.Access")
 P = ParamSpec("P")
 
 
-async def _role_of(principal: PrincipalDTO) -> CommandRole:
+async def role_of(principal: PrincipalDTO) -> CommandRole:
     """判定用户权限档
 
     - 配置里的 owner 串去空白后再比
@@ -51,7 +52,7 @@ def require_role(
         @wraps(func)
         async def wrapper(*args: P.args, **kwargs: P.kwargs) -> None:
             ctx = cast(HandlerContext, kwargs["ctx"])
-            if await _role_of(ctx.event.principal) > limit:
+            if await role_of(ctx.event.principal) > limit:
                 _logger.info(f"{ctx.event.principal.key} 无权执行命令")
                 await ctx.answer(BotMessage.CMD_NO_PERMISSION)
                 return
