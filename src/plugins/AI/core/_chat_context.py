@@ -11,17 +11,19 @@ import time
 from collections.abc import Awaitable, Callable
 from typing import ParamSpec, TypeVar, cast
 
+from core.domain.ids import SessionKey
 from services.context import HandlerContext
 from utils import get_logger
 
+from ..utils import make_session_key
 from ._tasks import TaskQueue
-from .models import UserSession
+from .models import SessionState
 
 _logger = get_logger("Plg.AI.Session")
 
-# 全局状态存储
-user_sessions: dict[str, UserSession] = {}
-task_queues: dict[str, TaskQueue] = {}
+# 全局状态存储，键为容器级会话键，同群共用一套队列与状态
+session_states: dict[SessionKey, SessionState] = {}
+task_queues: dict[SessionKey, TaskQueue] = {}
 active_tasks: set[asyncio.Task] = set()
 
 
@@ -36,19 +38,19 @@ def session_guard(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
     @functools.wraps(func)
     async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         ctx = cast(HandlerContext, kwargs["ctx"])
-        user = ctx.event.principal.key
+        key = make_session_key(ctx.event.principal)
 
-        # 初始化用户会话
-        if user not in user_sessions:
-            user_sessions[user] = UserSession()
-            _logger.debug(f"[Decorator] 已为 {user} 初始化会话")
+        # 初始化容器会话
+        if key not in session_states:
+            session_states[key] = SessionState()
+            _logger.debug(f"[Decorator] 已为 {key} 初始化会话")
 
         # 检查并初始化任务队列
-        if user not in task_queues:
-            task_queues[user] = TaskQueue()
+        if key not in task_queues:
+            task_queues[key] = TaskQueue()
 
         # 更新最后活跃时间
-        user_sessions[user].last_active = time.time()
+        session_states[key].last_active = time.time()
 
         return await func(*args, **kwargs)
 
