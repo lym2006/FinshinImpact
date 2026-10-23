@@ -9,57 +9,58 @@ import time
 from asyncio import CancelledError
 from typing import NoReturn
 
+from core.domain.ids import SessionKey
 from exceptions import MessageVanishedError
 from utils import get_logger
 
 from ..config import ai_config
-from ..core import purge_idle_sessions, task_queues, user_sessions
-from ..state import user_locks
+from ..core import purge_idle_sessions, session_states, task_queues
+from ..state import session_locks
 from .worker import worker_loop
 
 _logger = get_logger("Plg.AI.Monitor")
 
 
-async def monitor_loop(user: str) -> None:
+async def monitor_loop(key: SessionKey) -> None:
     """监控任务队列
 
     - 有任务即消费，队列空时清理退出
     """
-    session = user_sessions[user]
-    queue = task_queues[user]
+    state = session_states[key]
+    queue = task_queues[key]
 
     try:
         while True:
             # 消费循环：peek 队首，空则置非活跃退出
             ctx = await queue.peek_front()
             if ctx is None:
-                _logger.debug(f"{user} 队列为空")
-                session.is_active = False
+                _logger.debug(f"{key} 队列为空")
+                state.is_active = False
                 break
 
             try:
                 await worker_loop(ctx)
             except MessageVanishedError:
-                _logger.error(f"{user} 原消息被删除")
+                _logger.error(f"{key} 原消息被删除")
             except CancelledError:
-                _logger.error(f"{user} 任务被取消")
+                _logger.error(f"{key} 任务被取消")
                 raise
             except Exception as e:
-                _logger.send_error(f"{user} 任务出错", e)
+                _logger.send_error(f"{key} 任务出错", e)
             finally:
                 # 无论成功失败，都必须将当前任务出队
                 await queue.pop_front()
 
     except CancelledError:
-        _logger.error(f"{user} 监控循环被取消")
+        _logger.error(f"{key} 监控循环被取消")
         raise
     except Exception as e:
         # 外层兜底：崩溃只记录不外抛，防拖垮宿主
-        _logger.send_error(f"{user} 监控循环崩溃", e)
+        _logger.send_error(f"{key} 监控循环崩溃", e)
     finally:
-        session.is_active = False
-        user_locks.pop(user, None)
-        _logger.debug(f"{user} 监控循环结束")
+        state.is_active = False
+        session_locks.pop(key, None)
+        _logger.debug(f"{key} 监控循环结束")
 
 
 def _purge_records() -> None:
@@ -90,18 +91,18 @@ async def cleanup_loop() -> NoReturn:
 
         deadline = time.time() - ai_config.keep_seconds
 
-        # list() 快照防遍历途中改字典大小，任务非空或正在应答的用户不动
-        idle_users = [
-            user
-            for user, session in list(user_sessions.items())
-            if session.last_active < deadline
-            and not session.is_active
-            and task_queues[user].size == 0
+        # list() 快照防遍历途中改字典大小，任务非空或正在应答的容器不动
+        idle_keys = [
+            key
+            for key, state in list(session_states.items())
+            if state.last_active < deadline
+            and not state.is_active
+            and task_queues[key].size == 0
         ]
-        for user in idle_users:
-            user_sessions.pop(user, None)
-            task_queues.pop(user, None)
-            _logger.info(f"清理闲置会话: {user}")
+        for key in idle_keys:
+            session_states.pop(key, None)
+            task_queues.pop(key, None)
+            _logger.info(f"清理闲置会话: {key}")
 
         _purge_records()
         purged = await purge_idle_sessions(deadline)

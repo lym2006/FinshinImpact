@@ -1,11 +1,13 @@
 # src/plugins/AI/state.py
 """并发状态
 
-- 定义用户级并发锁与全局注册表
+- 定义容器级并发锁与全局注册表
 """
 
 from asyncio import Lock
 from collections import defaultdict
 
-# 用户级异步锁：defaultdict 对新用户自动建锁
-user_locks: dict[str, Lock] = defaultdict(Lock)
+from core.domain.ids import SessionKey
+
+# 容器级异步锁：defaultdict 对新容器自动建锁
+session_locks: dict[SessionKey, Lock] = defaultdict(Lock)
