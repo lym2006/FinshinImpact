@@ -13,7 +13,7 @@ from utils.check import ChannelOutcome, TelegramFieldKey, attempt_channel
 from utils.network import RowId, RowStatus, scan_proxy_ports
 
 
-async def verify_port_row(outcome: ChannelOutcome, token: str, token_only: bool) -> str:
+async def verify_port_row(outcome: ChannelOutcome, token: str) -> str:
     """渲染本机端口复测行
 
     - 已有通道可用时标跳过
@@ -30,7 +30,7 @@ async def verify_port_row(outcome: ChannelOutcome, token: str, token_only: bool)
         )
         return ""
 
-    if TelegramFieldKey.PROXY not in outcome.errors or token_only:
+    if TelegramFieldKey.PROXY not in outcome.errors:
         return ""
 
     gui_bridge.verify_progress.emit(

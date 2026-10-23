@@ -214,7 +214,6 @@ def single_row_of(mode: str) -> tuple[str, str, str] | None:
 
 def verify_plan(
     channels: Sequence[Channel],
-    reuse: bool = False,
     local_frame: dict | None = None,
     sys_dedup: bool = False,
     single: tuple[str, str, str] | None = None,
@@ -223,7 +222,6 @@ def verify_plan(
 
     - 待探测通道标进行中，缺席与免测行直接给出状态
     - 不探测的通道按原因直接给结论
-    - reuse 为真表示仅复查 token，未涉及的通道行标已验证通道
     - sys_dedup 为真时系统代理行标同端口去重而非缺席
     - single 传入即单路模式，表裁剪为该通道行加本地与结论行
     - local_frame 传入则本地行随首帧先行显示
@@ -244,8 +242,6 @@ def verify_plan(
             status, detail = local_frame["status"], local_frame["detail"]
         elif rid in _TAIL_ROWS:
             status, detail = RowStatus.PENDING, ""
-        elif reuse:
-            status, detail = RowStatus.SKIP, CheckMessage.VERIFY_REUSE
         else:
             status, detail = absent_status, absent_detail
         row = {"id": rid, "title": title, "status": status, "detail": detail}

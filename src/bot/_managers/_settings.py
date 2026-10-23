@@ -73,8 +73,8 @@ class SettingsManager(BaseManager):
         # 三级解析出的生效通道，未通过为 None，空串表示直连
         self.resolved_proxy: str | None = None
 
-        # 上次验证时的网络参数：(token, 配置代理, 代理模式, 超时)，变化判定基准
-        self._net_state: tuple[str, str, str, float] = ("", "", "", 0.0)
+        # 上次验证时的网络参数：(配置代理, 代理模式, 超时)，变化判定基准
+        self._net_state: tuple[str, str, float] = ("", "", 0.0)
 
     async def _execute(self) -> None:
         """加载配置进内存"""
@@ -84,7 +84,7 @@ class SettingsManager(BaseManager):
     async def verify_connectivity(self) -> bool:
         """按字段变化分流的连通校验
 
-        - 网络参数与 token 全未变且已连通过时只跑本地校验
+        - 网络参数全未变且已连通过时只跑本地校验
         - 通过则记录生效通道
         - 单路模式只测选定通道，缺席不发探测
         - 自动模式全挂先原地重检一轮再报失败
@@ -92,24 +92,20 @@ class SettingsManager(BaseManager):
         """
         t0 = time.monotonic()
         schema = get_schema()
+        token, raw = self._get_config()
         prev_state = self._net_state
-        prev_token, prev_cfg, _, _ = prev_state
-        state = self._read_net_state()
+        state = self._read_net_state(raw)
         self._net_state = state
-        token, configured, mode, _ = state
+        configured, mode, _ = state
 
         if state == prev_state and self.resolved_proxy is not None:
             return self._local_round(schema, t0)
 
-        channels, token_only, sys_dedup = self._plan_channels(
-            token, configured, prev_token, prev_cfg, mode
-        )
-
-        # token 单独重跑时通道未变，通道行保持全行标生效，不按模式裁
-        single = None if token_only else single_row_of(mode)
-        type_errors = self._emit_opening(
-            channels, token_only, sys_dedup, single, schema
-        )
+        detected = detect_system_proxy()
+        channels = plan_channels(configured, detected, mode)
+        sys_dedup = sys_deduped(configured, detected)
+        single = single_row_of(mode)
+        type_errors = self._emit_opening(channels, sys_dedup, single, schema)
         if single is not None and not channels:
             # 单路选路缺地址：代理行被联动隐藏，缺席句标红落在可见的模式行上
             type_errors = {**type_errors, ConfigKey.PROXY_MODE: single[2]}
@@ -121,14 +117,13 @@ class SettingsManager(BaseManager):
         probe = self._make_probe(token)
         emit = gui_bridge.verify_progress.emit
         outcome = await run_channels(channels, probe, emit, via_label)
-        if not outcome.passed and mode == ProxyMode.AUTO and not token_only:
+        if not outcome.passed and mode == ProxyMode.AUTO:
             # 首轮全挂多为冷启动握手慢：趁热连接原地重检一轮再定性
             self.logger.info(CheckMessage.RETRY_HEAD)
 
             # 重发整表清场：已定案的行不吃单行帧，不重建则首轮的红行盖不掉
             self._emit_opening(
                 channels,
-                token_only,
                 sys_dedup,
                 single,
                 schema,
@@ -138,7 +133,7 @@ class SettingsManager(BaseManager):
         if single is not None:
             port_hint = ""
         else:
-            port_hint = await verify_port_row(outcome, token, token_only)
+            port_hint = await verify_port_row(outcome, token)
         net_errors = self._aggregate_errors(outcome, channels, port_hint)
         if not outcome.passed and port_hint and is_flap_hit(channels, port_hint):
             # 复测用的正是刚判失败那条通道：同地址重探即通属抖动，不推荐重填
@@ -151,16 +146,14 @@ class SettingsManager(BaseManager):
         self.logger.info(CheckMessage.ROUND_COST.format(cost=time.monotonic() - t0))
         return self._emit_advice(schema)
 
-    def _read_net_state(self) -> tuple[str, str, str, float]:
+    def _read_net_state(self, configured: str) -> tuple[str, str, float]:
         """读取连通校验用的网络参数
 
-        - token、配置代理串、代理模式与超时四项
+        - 配置代理串、代理模式与超时三项
         """
-        token, raw = self._get_config()
         proxy = config_manager.get_all().get(ConfigSection.PROXY) or {}
         return (
-            token,
-            raw.strip(),
+            configured.strip(),
             str(proxy.get(ConfigKey.PROXY_MODE, ProxyMode.AUTO)).strip(),
             config_manager.get(
                 ConfigKey.NETWORK_TIMEOUT.path(ConfigSection.GLOBAL), float
@@ -170,53 +163,18 @@ class SettingsManager(BaseManager):
     def _local_round(self, schema: AppSchema, started: float) -> bool:
         """只跑本地校验的免测轮
 
-        - 通道行整表标复用，生效通道原样保留
+        - 不发进度帧，秒过的轮次不占等待窗
         """
-        type_errors = self._emit_opening([], True, False, None, schema)
+        _, type_errors = local_row(schema, config_manager.get_all())
         self.last_errors = cast("dict[str, str]", type_errors)
         self.logger.info(
             CheckMessage.ROUND_COST.format(cost=time.monotonic() - started)
         )
         return self._emit_advice(schema)
 
-    def _plan_channels(
-        self,
-        token: str,
-        configured: str,
-        prev_token: str,
-        prev_cfg: str,
-        mode: str,
-    ) -> tuple[list[Channel], bool, bool]:
-        """规划候选通道
-
-        - 仅 token 变则直接采用生效通道，不重跑候选链
-        - 返回 (通道表, token 复查标志, 系统代理去重标志)
-        """
-        token_only = (
-            self.resolved_proxy is not None
-            and configured == prev_cfg
-            and token != prev_token
-        )
-        if token_only:
-            # 代理字段未动：通道已验证过，只对 token 单点复查
-            reuse = cast(str, self.resolved_proxy)
-            kind = (
-                RowId.DIRECT
-                if not reuse
-                else (RowId.CFG if reuse == configured else RowId.SYS)
-            )
-            return [Channel(kind, reuse)], True, False
-        detected = detect_system_proxy()
-        return (
-            plan_channels(configured, detected, mode),
-            False,
-            sys_deduped(configured, detected),
-        )
-
     def _emit_opening(
         self,
         channels: list[Channel],
-        token_only: bool,
         sys_dedup: bool,
         single: tuple[str, str, str] | None,
         schema: AppSchema,
@@ -233,7 +191,6 @@ class SettingsManager(BaseManager):
         frame: dict = {
             FrameKey.ROWS: verify_plan(
                 channels,
-                reuse=token_only,
                 local_frame=local_frame,
                 sys_dedup=sys_dedup,
                 single=single,
