@@ -30,6 +30,7 @@ router = Router()
 _HELP_MENU = "help"  # 帮助菜单命令名
 _MAX_FLAGS = 1
 _MAX_FLAGS_WITH_HELP = 2  # -h 之外还可带一个
+_ARGS_ALLOWED = frozenset({"grant", "ungrant"})  # 认位置参数的命令，其余带字即算多余
 
 
 def _is_stray(command: CommandDTO) -> bool:
@@ -37,7 +38,7 @@ def _is_stray(command: CommandDTO) -> bool:
 
     - 不带 -h 时只认一个 flag，带 -h 时可再带一个
     - 同一 flag 重复算多余
-    - 命令行只认开关，多打的文字一律算多余
+    - 命令行只认开关，名单里的命令才收位置参数
     """
     spec = command_specs.get(command.head)
     declared = spec.flags if spec is not None else ()
@@ -48,7 +49,9 @@ def _is_stray(command: CommandDTO) -> bool:
     if any(flag not in allowed for flag in flags):
         return True
     limit = _MAX_FLAGS_WITH_HELP if CommandFlag.HELP.value in flags else _MAX_FLAGS
-    return len(flags) > limit or bool(command.args)
+    if len(flags) > limit:
+        return True
+    return bool(command.args) and command.head not in _ARGS_ALLOWED
 
 
 class _CommandReject(Filter):
