@@ -3,6 +3,7 @@
 
 - 按事件循环与库文件缓存连接
 - 统一开启 WAL 与外键约束
+- 退出时合并 WAL 并逐条关闭
 """
 
 import asyncio
@@ -30,3 +31,14 @@ async def get_connection(db_path: Path) -> aiosqlite.Connection:
     await conn.execute("PRAGMA foreign_keys=ON")
     _connections[key] = conn
     return conn
+
+
+async def close_all() -> None:
+    """合并并关闭全部库连接
+
+    - 已提交内容落回主文件后把 -wal 截成 0
+    """
+    for key, conn in list(_connections.items()):
+        _connections.pop(key, None)
+        await conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        await conn.close()

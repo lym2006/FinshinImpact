@@ -7,12 +7,14 @@
 from data import (
     SUPPORTED_SCHEMA,
     check_schema_compatible,
+    close_all,
     get_connection,
     purge_dead_tasks,
     run_migrations,
 )
 from ui import gui_bridge
 from utils.init_files import PersonaSync, init_project_files, sync_persona_template
+from utils.lifecycle import register_lifecycle
 from utils.paths import DB_BACKUP_DIR, DB_FILE
 from utils.persona import reset_persona_cache
 
@@ -48,8 +50,12 @@ class InitializationManager(BaseManager):
             gui_bridge.request_persona_update.emit()
 
     async def _migrate_database(self) -> None:
-        """补做迁移并拒绝读不懂的库结构"""
+        """补做迁移并拒绝读不懂的库结构
+
+        - 库连接打开即挂上退出清理，进程退出时合并 WAL
+        """
         conn = await get_connection(DB_FILE)
+        register_lifecycle(close_all, "SQLite 库连接", "hook_async")
         await run_migrations(conn, DB_FILE, DB_BACKUP_DIR)
         if not await check_schema_compatible(conn):
             raise RuntimeError(
