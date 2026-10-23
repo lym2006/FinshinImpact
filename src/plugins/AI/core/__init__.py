@@ -4,7 +4,7 @@
 - 提供网络客户端、会话状态与落库出口
 """
 
-from ._chat_context import active_tasks, session_guard, task_queues, user_sessions
+from ._chat_context import active_tasks, session_guard, session_states, task_queues
 from ._client import AIClient
 from ._store import (
     clear_session,
@@ -21,8 +21,8 @@ __all__ = [
     # 会话状态管理
     "active_tasks",
     "session_guard",
+    "session_states",
     "task_queues",
-    "user_sessions",
     # 异步任务队列
     "TaskQueue",
     # 会话落库

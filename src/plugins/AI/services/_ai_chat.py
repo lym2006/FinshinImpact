@@ -9,8 +9,9 @@ import asyncio
 from services.context import HandlerContext
 from utils import get_logger
 
-from ..core import active_tasks, task_queues, user_sessions
-from ..state import user_locks
+from ..core import active_tasks, session_states, task_queues
+from ..state import session_locks
+from ..utils import make_session_key
 from ._monitor import monitor_loop
 
 _logger = get_logger("Plg.AI")
@@ -18,20 +19,20 @@ _logger = get_logger("Plg.AI")
 
 async def handle_ai_chat(ctx: HandlerContext) -> None:
     """入队消息并启动监控"""
-    user = ctx.event.principal.key
+    key = make_session_key(ctx.event.principal)
 
-    session = user_sessions[user]
-    queue = task_queues[user]
+    state = session_states[key]
+    queue = task_queues[key]
 
-    lock = user_locks[user]
+    lock = session_locks[key]
     async with lock:
         await queue.add_task(ctx)
 
-        if not session.is_active:
-            _logger.debug(f"{user} 监控循环启动")
-            session.is_active = True
-            monitor_task = asyncio.create_task(monitor_loop(user))
+        if not state.is_active:
+            _logger.debug(f"{key} 监控循环启动")
+            state.is_active = True
+            monitor_task = asyncio.create_task(monitor_loop(key))
             active_tasks.add(monitor_task)
             monitor_task.add_done_callback(active_tasks.discard)
         else:
-            _logger.info(f"用户 {user} 新任务入队，当前长度: {queue.size}")
+            _logger.info(f"容器 {key} 新任务入队，当前长度: {queue.size}")

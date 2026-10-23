@@ -8,8 +8,8 @@ from dataclasses import dataclass
 
 
 @dataclass
-class UserSession:
-    """用户会话并发状态"""
+class SessionState:
+    """会话并发状态"""
 
     is_active: bool = False  # 当前会话是否处于活跃状态
     last_active: float = 0.0  # 最后一次活跃时间
