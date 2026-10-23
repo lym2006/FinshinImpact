@@ -1,8 +1,8 @@
 # src/plugins/AI/handlers/_history.py
 """历史命令
 
-- /history：发送对话记录文档
-- /clear：清除当前会话记忆
+- /history：发送本容器的对话记录文档
+- /clear：清除本容器的会话记忆与记录
 """
 
 from pathlib import Path
@@ -11,6 +11,7 @@ from aiogram import Router
 from aiogram.types import Message
 
 from core.domain import ContentKind
+from core.domain.ids import SessionKey
 from core.dto import OutboundPayloadDTO
 from services.context import HandlerContext
 
@@ -23,16 +24,15 @@ from ..utils import make_session_key
 history = Router()
 
 
-def _get_file_path(stem: str) -> Path:
-    return ai_config.record_dir / f"{stem}.md"
+def _get_file_path(key: SessionKey) -> Path:
+    return ai_config.record_dir / f"{key}.md"
 
 
 @history.message(CommandFilter("history"))
 @session_guard
 async def show_history(raw: Message, ctx: HandlerContext) -> None:
     """发送历史记录"""
-    stem = ctx.event.principal.key
-    file_path = _get_file_path(stem)
+    file_path = _get_file_path(make_session_key(ctx.event.principal))
 
     if not file_path.exists():
         await ctx.answer(BotMessage.HISTORY_EMPTY)
@@ -52,7 +52,7 @@ async def show_history(raw: Message, ctx: HandlerContext) -> None:
 @session_guard
 async def clear_history(raw: Message, ctx: HandlerContext) -> None:
     """清除记忆"""
-    user = ctx.event.principal.key
-    await clear_session(make_session_key(ctx.event.principal))
-    _get_file_path(user).unlink(missing_ok=True)
+    key = make_session_key(ctx.event.principal)
+    await clear_session(key)
+    _get_file_path(key).unlink(missing_ok=True)
     await ctx.answer(BotMessage.HISTORY_MEMORY_CLEARED)

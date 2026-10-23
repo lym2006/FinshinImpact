@@ -7,7 +7,6 @@
 import asyncio
 import time
 from asyncio import CancelledError
-from pathlib import Path
 from typing import NoReturn
 
 from exceptions import MessageVanishedError
@@ -63,15 +62,18 @@ async def monitor_loop(user: str) -> None:
         _logger.debug(f"{user} 监控循环结束")
 
 
-def _purge_records(rec_dir: Path, deadline: float) -> None:
-    """按文件时间清落盘记录
+def _purge_records() -> None:
+    """清除过期落盘记录
 
+    - 一群一份、一私聊一份，文件时间即最后一次问答时间
     - 内存字典重启即空，落盘记录只认文件自己的时间
     """
-    for path in rec_dir.glob("*.md"):
+    deadline = time.time() - ai_config.keep_seconds
+    for path in ai_config.record_dir.glob("*.md"):
         try:
             if path.stat().st_mtime < deadline:
                 path.unlink(missing_ok=True)
+                _logger.info(f"清理过期记录: {path.name}")
         except OSError as e:
             _logger.send_error(f"清理记录文件失败: {path.name}", e)
 
@@ -82,8 +84,6 @@ async def cleanup_loop() -> NoReturn:
     - 内存会话按最后活跃时间清，记录按文件时间清，库内上下文按最后问答时间清
     - 三路各扫各的，重启后留下的记录与上下文照样扫得到
     """
-    rec_dir = ai_config.record_dir
-
     while True:
         # 放在循环开头，确保启动时立即执行一次清理
         await asyncio.sleep(ai_config.waiting_time)
@@ -103,7 +103,7 @@ async def cleanup_loop() -> NoReturn:
             task_queues.pop(user, None)
             _logger.info(f"清理闲置会话: {user}")
 
-        _purge_records(rec_dir, deadline)
+        _purge_records()
         purged = await purge_idle_sessions(deadline)
         if purged:
             _logger.info(f"清理闲置上下文: {purged} 串")
