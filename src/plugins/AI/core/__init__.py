@@ -14,6 +14,7 @@ from ._store import (
     purge_idle_sessions,
     read_session,
     save_session,
+    save_summary,
 )
 from ._tasks import TaskQueue
 
@@ -37,4 +38,5 @@ __all__ = [
     "purge_idle_sessions",
     "read_session",
     "save_session",
+    "save_summary",
 ]
