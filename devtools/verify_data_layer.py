@@ -212,9 +212,36 @@ async def check_roundtrip() -> None:
     reset = await repos.session.apply_patch(key, SessionPatchDTO(reset_to_system=True))
     assert reset.messages == (), reset
 
+    await _check_delete_one(repos, conn)
     await _check_delete_all(repos, conn)
     await _check_delete_idle(repos, conn)
-    print("✅ 主体往返、会话追加/限量/重置/整表清除/闲置清除")
+    print("✅ 主体往返、会话追加/限量/重置/按键清除/整表清除/闲置清除")
+
+
+async def _check_delete_one(repos: Repositories, conn: aiosqlite.Connection) -> None:
+    """按会话键清除单串会话
+
+    - 消息行随会话行一起消失，另一串不动
+    - 键不在库内返回零
+    """
+    mine = SessionKey(f"{Platform.TELEGRAM}.g100456")
+    theirs = SessionKey(f"{Platform.TELEGRAM}.g100789")
+    await repos.session.apply_patch(
+        mine,
+        SessionPatchDTO(append=(MessageDTO(role=ChatRole.USER, content="我的问答"),)),
+    )
+    await repos.session.apply_patch(
+        theirs,
+        SessionPatchDTO(append=(MessageDTO(role=ChatRole.USER, content="别人的问答"),)),
+    )
+
+    assert await repos.session.delete(mine) == 1
+    assert await repos.session.delete(mine) == 0
+    assert (await repos.session.load(mine)).messages == (), mine
+    left = await _one(conn, "SELECT COUNT(*) FROM session WHERE key = ?", mine)
+    assert left[0] == 0, mine
+    kept = await repos.session.load(theirs)
+    assert [m.content for m in kept.messages] == ["别人的问答"], kept
 
 
 async def _check_delete_idle(repos: Repositories, conn: aiosqlite.Connection) -> None:
