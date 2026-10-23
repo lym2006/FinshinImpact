@@ -19,3 +19,13 @@ flags = []
 cmd = "clear"
 desc = "清空记忆"
 flags = []
+
+[[help.commands]]
+cmd = "grant"
+desc = "主人授权 id 用管理命令"
+flags = []
+
+[[help.commands]]
+cmd = "ungrant"
+desc = "主人撤销该 id 的授权"
+flags = []
