@@ -80,9 +80,6 @@ class CheckMessage:
     # 用：端口行——存活候选全部实测不可用
     VERIFY_PORT_NONE = "存活端口均无法出网"
 
-    # 用：通道行——仅换 token 复查时标出未重测的已验证通道
-    VERIFY_REUSE = "复用已验证通道"
-
     # 用：本地配置行——类型校验全过
     VERIFY_LOCAL_OK = "全部通过"
 
