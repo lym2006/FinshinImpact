@@ -2,6 +2,7 @@
 """校验轮协调
 
 - 驱动进程级唯一校验进度窗，校验轮之间互斥
+- 等待窗等首个进度帧才开，免测轮全程无窗
 - 维护复验与保存状态标记、待保存候选与开窗前的帧缓存
 """
 
@@ -42,6 +43,9 @@ class VerifyCoordinator:
         # 待落盘候选：校验通过才写入磁盘，关面板/取消即弃
         self.pending_candidate: AppConfigData | None = None
 
+        # 开轮未开窗时的中断标记：None 表示没有在途轮，帧到达即按它开窗
+        self.pending_aborts: bool | None = None
+
         # 迟滞开窗前的帧缓存：启动轮后台先跑，计划帧先到窗未开，开轮后补播
         self.pre_frames: list[dict] = []
 
@@ -53,11 +57,12 @@ class VerifyCoordinator:
         win = current_check_window()
         return win if win is not None and win.round == Round.VERIFY else None
 
-    def start_wait(self, aborts: bool) -> bool:
-        """在唯一窗上开校验轮
+    def start_round(self, aborts: bool) -> bool:
+        """开一轮校验，等待窗留给首个进度帧
 
         - 其他轮次进行中则记日志并返回 False
-        - 返回是否成功打开进度窗
+        - 免测轮不发进度帧，窗口一次也不会开
+        - 返回是否成功起轮
         """
         # 调用方据此决定是否唤醒后台
         busy = current_check_window()
@@ -69,10 +74,25 @@ class VerifyCoordinator:
                 self._host._panel.set_busy(False)
             return False
 
+        self.pending_aborts = aborts
+        self.pre_frames = []
+        return True
+
+    def open_wait(self, aborts: bool) -> bool:
+        """在唯一窗上开校验轮并补播缓存帧
+
+        - 其他轮次抢占则缓存帧作废，返回是否成功开窗
+        """
+        self.pending_aborts = None
+        busy = current_check_window()
+        if busy is not None and busy.is_running:
+            self.pre_frames = []
+            return False
+
         wait = open_check_window(self._host.gui)
         wait.begin_round(Round.VERIFY, aborts, verify_skeleton(), self.on_closed)
 
-        # 补播迟滞期缓存的帧：计划帧带缺席结论重建表格，逐行帧按序点亮
+        # 补播缓存的帧：计划帧带缺席结论重建表格，逐行帧按序点亮
         for frame in self.pre_frames:
             wait.apply(frame)
         self.pre_frames = []
@@ -99,6 +119,8 @@ class VerifyCoordinator:
 
         - 中止校验、丢弃待保存候选并解锁面板
         """
+        self.pending_aborts = None
+
         # 保存在途走 abort 通道（Bot 中止任务并回退内存）
         if self.save_pending:
             self.pending_candidate = None
@@ -132,8 +154,10 @@ class VerifyCoordinator:
     def on_frame(self, frame: dict) -> None:
         """进度帧转发
 
-        - 结论帧即轮次收口，无窗轮次的缓存行帧随之作废
-        - 窗口未开时先缓存，开窗后补播
+        - 起轮后的首个非结论帧拉起等待窗
+        - 免测轮无进度帧可发，全程不开窗
+        - 启动轮的帧先缓存，定时器到点开窗补播
+        - 结论帧即轮次收口，缓存帧随之作废
         - 其他轮次占用时直接丢弃
         """
         wait = self.window()
@@ -141,10 +165,16 @@ class VerifyCoordinator:
             wait.apply(frame)
             return
         if self._is_conclusion(frame):
+            self.pending_aborts = None
             self.pre_frames = []
             return
-        if current_check_window() is None:
-            self.pre_frames.append(frame)
+        aborts = self.pending_aborts
+        if aborts is None:
+            if current_check_window() is None:
+                self.pre_frames.append(frame)
+            return
+        self.pre_frames.append(frame)
+        self.open_wait(aborts)
 
     @staticmethod
     def _is_conclusion(frame: dict) -> bool:
@@ -169,4 +199,4 @@ class VerifyCoordinator:
         self._host.logger.info(
             CheckMessage.VERIFY_START.format(reason=CheckMessage.REASON_STARTUP)
         )
-        self.start_wait(aborts=False)
+        self.open_wait(aborts=False)

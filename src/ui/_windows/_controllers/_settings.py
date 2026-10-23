@@ -227,7 +227,7 @@ class SettingsController(BaseController):
             self.logger.info(
                 CheckMessage.VERIFY_START.format(reason=CheckMessage.REASON_RECHECK)
             )
-            if not self._verify.start_wait(aborts=True):
+            if not self._verify.start_round(aborts=True):
                 self._verify.validating = False
                 dialog.set_busy(False)
                 return
@@ -250,7 +250,7 @@ class SettingsController(BaseController):
     ) -> None:
         """候选进内存并起保存校验轮
 
-        - 起窗失败即撤候选与待落盘标记，面板解除忙碌
+        - 起轮失败即撤候选与待落盘标记，面板解除忙碌
         """
         self._verify.pending_candidate = new_config
         self._verify.save_pending = True
@@ -258,7 +258,7 @@ class SettingsController(BaseController):
         self.logger.info(
             CheckMessage.VERIFY_START.format(reason=CheckMessage.REASON_SAVE)
         )
-        if not self._verify.start_wait(aborts=True):
+        if not self._verify.start_round(aborts=True):
             self._verify.pending_candidate = None
             self._verify.save_pending = False
             dialog.set_busy(False)
