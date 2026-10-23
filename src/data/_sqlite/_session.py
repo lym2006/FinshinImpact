@@ -86,28 +86,6 @@ class SqliteSessionRepository(SessionRepository):
         await self._conn.commit()
         return await self.load(session_key)
 
-    async def trim_to(self, session_key: SessionKey, keep_count: int) -> int:
-        """裁剪会话历史
-
-        - 返回删除条数
-        """
-        async with self._conn.execute(
-            "DELETE FROM session_message WHERE session_key = ? AND id NOT IN ("
-            "SELECT id FROM session_message WHERE session_key = ?"
-            " ORDER BY seq DESC LIMIT ?)",
-            (session_key, session_key, keep_count),
-        ) as cursor:
-            removed = cursor.rowcount
-        await self._conn.commit()
-        return removed
-
-    async def touch(self, session_key: SessionKey, at: float) -> None:
-        """刷新活跃时间"""
-        await self._conn.execute(
-            "UPDATE session SET last_active_at = ? WHERE key = ?", (at, session_key)
-        )
-        await self._conn.commit()
-
     async def _messages(
         self, session_key: SessionKey, limit: int | None
     ) -> tuple[MessageDTO, ...]:

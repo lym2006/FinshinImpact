@@ -202,20 +202,10 @@ async def check_roundtrip() -> None:
     )
     kept = await repos.session.load(key)
     assert [m.content for m in kept.messages] == ["你好", "在的", "第三条"], kept
-    removed = await repos.session.trim_to(key, 2)
-    assert removed == 1, removed
-    assert [m.content for m in (await repos.session.load(key)).messages] == [
-        "在的",
-        "第三条",
-    ]
-
-    await repos.session.touch(key, 88.0)
-    refreshed = await repos.session.load(key)
-    assert refreshed.last_active == 88.0, refreshed
 
     reset = await repos.session.apply_patch(key, SessionPatchDTO(reset_to_system=True))
     assert reset.messages == (), reset
-    print("✅ 主体往返、会话追加/限量/裁剪/活跃时间/重置")
+    print("✅ 主体往返、会话追加/限量/重置")
 
 
 def _empty_session() -> SessionDTO:
@@ -244,10 +234,10 @@ async def check_task_rules() -> None:
     assert first.task_id == again.task_id, (first.task_id, again.task_id)
     assert first.status is TaskStatus.PENDING
 
-    md = await repos.task.insert(
+    hist = await repos.task.insert(
         TaskRequestDTO(
             principal=principal,
-            kind=TaskKind.MD,
+            kind=TaskKind.HISTORY,
             source_ref=_ref(),
             priority=TaskPriority.HIGH,
         )
@@ -260,7 +250,7 @@ async def check_task_rules() -> None:
             priority=TaskPriority.IMMEDIATE,
         )
     )
-    assert md.task_id != clear.task_id, "空去重键不得互相挡住"
+    assert hist.task_id != clear.task_id, "空去重键不得互相挡住"
 
     running = await repos.task.patch(
         first.task_id, TaskPatchDTO(status=TaskStatus.RUNNING)
@@ -295,26 +285,46 @@ async def check_task_rules() -> None:
     )
 
     unfinished = await repos.task.list_unfinished(principal.key)
-    assert [t.kind for t in unfinished] == [TaskKind.CLEAR, TaskKind.MD], unfinished
+    assert [t.kind for t in unfinished] == [TaskKind.CLEAR, TaskKind.HISTORY], unfinished
+    print("✅ 去重返回既有、空键不查重、非法迁移与缺行均拒")
 
-    # 直落一行 running，模拟进程被杀后的死行
-    dead_id = f"{principal.key}.delete"
-    await conn.execute(
-        "INSERT INTO task(id, principal, kind, priority, sequence, status, source_ref,"
-        " created_at) VALUES(?, ?, 'delete', 50, 9, 'running', '{}', 1.0)",
-        (dead_id, principal.key),
+
+async def check_task_purge() -> None:
+    """启动清死行与按主体清除任务"""
+    db, backup = _db("task-purge")
+    conn = await _migrate(db, backup)
+    repos = build_repositories(conn)
+    principal = _principal()
+    await repos.principal.upsert(principal, "张三")
+
+    chat = await repos.task.insert(
+        TaskRequestDTO(
+            principal=principal,
+            kind=TaskKind.CHAT,
+            source_ref=_ref(),
+            priority=TaskPriority.NORMAL,
+        )
     )
-    await conn.commit()
-    dead = await purge_dead_tasks(conn)
+    await repos.task.insert(
+        TaskRequestDTO(
+            principal=principal,
+            kind=TaskKind.CLEAR,
+            source_ref=_ref(),
+            priority=TaskPriority.IMMEDIATE,
+        )
+    )
+    await repos.task.patch(chat.task_id, TaskPatchDTO(status=TaskStatus.RUNNING))
+
     # 启动清死行把排队中与执行中一并判死，重发同内容才不会命中永不完成的行
-    assert dead == 3, dead
+    assert await purge_dead_tasks(conn) == 2
     assert await repos.task.list_unfinished(principal.key) == ()
-    row = await _one(conn, "SELECT status, finished_at FROM task WHERE id = ?", dead_id)
+    row = await _one(
+        conn, "SELECT status, finished_at FROM task WHERE id = ?", chat.task_id
+    )
     assert row["status"] == TaskStatus.FAILED and row["finished_at"] is not None, row
 
-    assert await repos.task.delete_by_principal(principal.key) == 4
-    assert await repos.task.list_unfinished(principal.key) == ()
-    print("✅ 去重返回既有、空键不查重、非法迁移与缺行均拒、死行判失败")
+    assert await repos.task.delete_by_principal(principal.key) == 2
+    print("✅ 排队中与执行中一并判死、按主体清除全部任务")
 
 
 async def check_grant_media() -> None:
@@ -409,6 +419,7 @@ _CHECKS = (
     check_baseline,
     check_roundtrip,
     check_task_rules,
+    check_task_purge,
     check_grant_media,
     check_backup_and_version,
 )

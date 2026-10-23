@@ -50,17 +50,6 @@ class SessionRepository(ABC):
     ) -> SessionDTO:
         """应用会话增量"""
 
-    @abstractmethod
-    async def trim_to(self, session_key: SessionKey, keep_count: int) -> int:
-        """裁剪会话历史
-
-        - 返回删除条数
-        """
-
-    @abstractmethod
-    async def touch(self, session_key: SessionKey, at: float) -> None:
-        """刷新活跃时间"""
-
 
 class TaskRepository(ABC):
     """任务仓储

@@ -19,9 +19,7 @@ class TaskKind(StrEnum):
     CHAT = "chat"
 
     # 特权
-    MD = "md"
     CLEAR = "clear"
-    DELETE = "delete"
     HISTORY = "history"
 
 
@@ -41,6 +39,6 @@ class TaskPriority(IntEnum):
     - 数值越小越优先
     """
 
-    IMMEDIATE = 0  # 指令类：clear、delete
-    HIGH = 10  # 查询类：md、history
+    IMMEDIATE = 0  # 指令类：clear
+    HIGH = 10  # 查询类：history
     NORMAL = 50  # 普通对话：chat
