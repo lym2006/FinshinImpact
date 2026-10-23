@@ -46,6 +46,7 @@ from core.dto import (  # noqa: E402
     TaskRequestDTO,
 )
 from data import (  # noqa: E402
+    Repositories,
     build_repositories,
     check_schema_compatible,
     get_connection,
@@ -205,7 +206,25 @@ async def check_roundtrip() -> None:
 
     reset = await repos.session.apply_patch(key, SessionPatchDTO(reset_to_system=True))
     assert reset.messages == (), reset
-    print("✅ 主体往返、会话追加/限量/重置")
+
+    await _check_delete_all(repos, conn)
+    print("✅ 主体往返、会话追加/限量/重置/整表清除")
+
+
+async def _check_delete_all(repos: Repositories, conn: aiosqlite.Connection) -> None:
+    """整表清除跨会话生效
+
+    - 另一个群另起一串键，清除后两表都得空
+    """
+    other = SessionKey(f"{Platform.TELEGRAM}.g100456")
+    await repos.session.apply_patch(
+        other,
+        SessionPatchDTO(append=(MessageDTO(role=ChatRole.USER, content="另一群"),)),
+    )
+    await repos.session.delete_all()
+    assert (await repos.session.load(other)).messages == (), other
+    assert (await _one(conn, "SELECT COUNT(*) FROM session"))[0] == 0
+    assert (await _one(conn, "SELECT COUNT(*) FROM session_message"))[0] == 0
 
 
 def _empty_session() -> SessionDTO:
@@ -285,7 +304,9 @@ async def check_task_rules() -> None:
     )
 
     unfinished = await repos.task.list_unfinished(principal.key)
-    assert [t.kind for t in unfinished] == [TaskKind.CLEAR, TaskKind.HISTORY], unfinished
+    assert [t.kind for t in unfinished] == [TaskKind.CLEAR, TaskKind.HISTORY], (
+        unfinished
+    )
     print("✅ 去重返回既有、空键不查重、非法迁移与缺行均拒")
 
 

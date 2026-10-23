@@ -2,6 +2,7 @@
 """AI 工具
 
 - 提供消息构建与发言人标注拼装
+- 定义会话窗口归一与人设版本判定
 - 定义退避重试装饰器
 """
 
@@ -73,12 +74,12 @@ def open_window(
     - 窗口连同人设行与新写入的条数一起算上限
     - 越过上限从头部成对丢最旧问答
     """
-    kept = history[1:] if _has_persona(persona, history) else ()
+    kept = history[1:] if matches_persona(persona, history) else ()
     tail = _drop_oldest(kept, _MAX_CONTEXT_MESSAGES - 1 - new_count)
     return (MessageDTO(role=ChatRole.SYSTEM, content=persona), *tail)
 
 
-def _has_persona(persona: str, history: tuple[MessageDTO, ...]) -> bool:
+def matches_persona(persona: str, history: tuple[MessageDTO, ...]) -> bool:
     """判定窗口首行存的是当前人设正文"""
     return (
         bool(history)

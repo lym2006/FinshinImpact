@@ -15,12 +15,13 @@ from utils import get_logger
 
 from ...messages import BotMessage
 from ..config import ai_config
-from ..core import AIClient, read_session, save_session
+from ..core import AIClient, purge_history, read_session, save_session
 from ..utils import (
     build_turns,
     compose_user_text,
     make_rows,
     make_session_key,
+    matches_persona,
     open_window,
 )
 
@@ -83,6 +84,12 @@ async def worker_loop(ctx: HandlerContext) -> None:
 
     # 人设轮每轮按当前配置与磁盘正文重取，库里那行人设正文只当版本标记
     persona = ai_config.init[0]["content"]
+
+    # 库里的人设版本对不上即换过人设或主人，所有人的记录连带库一起清
+    if snapshot.messages and not matches_persona(persona, snapshot.messages):
+        await purge_history()
+        snapshot = await read_session(session_key)
+
     window = open_window(persona, snapshot.messages)
     final_msg = ""
     has_error = False

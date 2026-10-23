@@ -50,6 +50,10 @@ class SessionRepository(ABC):
     ) -> SessionDTO:
         """应用会话增量"""
 
+    @abstractmethod
+    async def delete_all(self) -> None:
+        """清除全部会话与消息"""
+
 
 class TaskRepository(ABC):
     """任务仓储
