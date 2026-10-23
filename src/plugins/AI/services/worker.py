@@ -9,6 +9,8 @@ import time
 from collections.abc import AsyncGenerator
 from typing import Any, Literal
 
+from core.domain.ids import SessionKey
+from core.dto import InboundEventDTO
 from exceptions import MessageVanishedError
 from services.context import HandlerContext
 from utils import get_logger
@@ -23,24 +25,30 @@ from ..utils import (
     make_session_key,
     matches_persona,
     open_window,
+    speaker_mark,
 )
 
 _logger = get_logger("Plg.AI.Worker")
 
 
-def _save_conversation_record(stem: str, text: str, final_msg: str) -> None:
+def _save_conversation_record(
+    key: SessionKey, event: InboundEventDTO, final_msg: str
+) -> None:
     """写入对话记录
 
+    - 一群一份、一私聊一份，条目内注明发言人
+    - 落盘记录不含引用块，只存发言人与裸正文
     - 落盘失败只记错误，不影响本轮应答
     - 走线程落盘，磁盘慢不冻事件循环
     """
+    speaker = speaker_mark(event.scope, event.principal.user, event.display_name)
     wrt = (
         f"{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}\n\n"
-        f"用户：{text}\n\n"
+        f"{speaker}：{event.content.text}\n\n"
         f"AI回复：\n{final_msg}\n\n\n"
     )
     try:
-        with open(ai_config.record_dir / f"{stem}.md", "a", encoding="utf8") as f:
+        with open(ai_config.record_dir / f"{key}.md", "a", encoding="utf8") as f:
             f.write(wrt)
     except Exception as e:
         _logger.send_error("保存本地对话记录失败", e)
@@ -78,7 +86,6 @@ async def worker_loop(ctx: HandlerContext) -> None:
     if not await ctx.interaction.probe_existence(ctx.event.ref):
         raise MessageVanishedError(ctx.event.ref)
 
-    stem = ctx.event.principal.key
     session_key = make_session_key(ctx.event.principal)
     snapshot = await read_session(session_key)
 
@@ -94,7 +101,6 @@ async def worker_loop(ctx: HandlerContext) -> None:
     final_msg = ""
     has_error = False
 
-    # 落盘记录存裸正文，标注只进发给模型的轮次
     prompt = compose_user_text(ctx.event)
     msg = build_turns(
         persona=persona,
@@ -122,7 +128,9 @@ async def worker_loop(ctx: HandlerContext) -> None:
 
         await save_session(session_key, (*window, *make_rows(ctx.event, final_msg)))
 
-        await asyncio.to_thread(_save_conversation_record, stem, text, final_msg)
+        await asyncio.to_thread(
+            _save_conversation_record, session_key, ctx.event, final_msg
+        )
 
     except MessageVanishedError:
         raise

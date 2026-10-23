@@ -42,8 +42,8 @@ _MAX_CONTEXT_MESSAGES = 40
 _ROUND_ROWS = 2
 
 # 发给模型的内部标记，格式与随包人设 §二 逐字一致，改一处必改另一处
-_GROUP_MARK = "[{name} | {id}] "
-_PRIVATE_MARK = "[{id}] "
+_GROUP_MARK = "[{name} | {id}]"
+_PRIVATE_MARK = "[{id}]"
 _GROUP_QUOTE = "（引用 [{name} | {id}]：{text}）"
 _PRIVATE_QUOTE = "（引用 [{id}]：{text}）"
 _SUMMARY_MARK = "[历史摘要] "
@@ -132,8 +132,8 @@ def _render_turn(message: MessageDTO, scope: ChatScope) -> dict[str, str]:
     """
     if message.role is ChatRole.ASSISTANT:
         return build_message(message.role.value, message.content)
-    mark = _speaker_mark(scope, message.sender_id, message.sender_name)
-    return build_message(message.role.value, f"{mark}{message.content}")
+    mark = speaker_mark(scope, message.sender_id, message.sender_name)
+    return build_message(message.role.value, f"{mark} {message.content}")
 
 
 def make_rows(event: InboundEventDTO, reply: str) -> tuple[MessageDTO, MessageDTO]:
@@ -159,8 +159,8 @@ def compose_user_text(event: InboundEventDTO) -> str:
 
     - 顺序为发言人标注、引用块、正文
     """
-    mark = _speaker_mark(event.scope, event.principal.user, event.display_name)
-    return f"{mark}{_compose_body(event)}"
+    mark = speaker_mark(event.scope, event.principal.user, event.display_name)
+    return f"{mark} {_compose_body(event)}"
 
 
 def _compose_body(event: InboundEventDTO) -> str:
@@ -171,8 +171,8 @@ def _compose_body(event: InboundEventDTO) -> str:
     return f"{_quote_block(event)}{event.content.text}"
 
 
-def _speaker_mark(scope: ChatScope, sender_id: str, sender_name: str) -> str:
-    """拼发言人标注前缀
+def speaker_mark(scope: ChatScope, sender_id: str, sender_name: str) -> str:
+    """拼发言人标注
 
     - 名称缺位用 id 段填，格式仍是 [名称 | id]
     """
