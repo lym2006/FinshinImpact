@@ -54,6 +54,13 @@ class SessionRepository(ABC):
     async def delete_all(self) -> None:
         """清除全部会话与消息"""
 
+    @abstractmethod
+    async def delete_idle(self, before: float) -> int:
+        """清除最后问答时间早于界限的会话
+
+        - 返回清除条数
+        """
+
 
 class TaskRepository(ABC):
     """任务仓储

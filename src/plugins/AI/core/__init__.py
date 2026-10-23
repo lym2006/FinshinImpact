@@ -6,7 +6,13 @@
 
 from ._chat_context import active_tasks, session_guard, task_queues, user_sessions
 from ._client import AIClient
-from ._store import clear_session, purge_history, read_session, save_session
+from ._store import (
+    clear_session,
+    purge_history,
+    purge_idle_sessions,
+    read_session,
+    save_session,
+)
 from ._tasks import TaskQueue
 
 __all__ = [
@@ -22,6 +28,7 @@ __all__ = [
     # 会话落库
     "clear_session",
     "purge_history",
+    "purge_idle_sessions",
     "read_session",
     "save_session",
 ]

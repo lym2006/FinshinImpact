@@ -56,6 +56,11 @@ from data import (  # noqa: E402
 
 _TMP = Path(tempfile.mkdtemp(prefix="verify-data-"))
 
+# 闲置判定样本时刻（秒），只用于比对清除界限
+_STALE_AT = 1.0
+_LIVE_AT = 9.0
+_DEADLINE = 5.0
+
 # 打开过的库路径，收尾统一关闭连接
 _PATHS: list[Path] = []
 
@@ -208,7 +213,42 @@ async def check_roundtrip() -> None:
     assert reset.messages == (), reset
 
     await _check_delete_all(repos, conn)
-    print("✅ 主体往返、会话追加/限量/重置/整表清除")
+    await _check_delete_idle(repos, conn)
+    print("✅ 主体往返、会话追加/限量/重置/整表清除/闲置清除")
+
+
+async def _check_delete_idle(repos: Repositories, conn: aiosqlite.Connection) -> None:
+    """按最后问答时间清除闲置会话
+
+    - 问答早于界限的清，没消息的会话按零计一并清
+    """
+    live = SessionKey(f"{Platform.TELEGRAM}.g100456")
+    stale = SessionKey(f"{Platform.TELEGRAM}.g100789")
+    empty = SessionKey(f"{Platform.TELEGRAM}.g100999")
+    await repos.session.apply_patch(
+        live,
+        SessionPatchDTO(
+            append=(
+                MessageDTO(role=ChatRole.USER, content="新问答", created_at=_LIVE_AT),
+            )
+        ),
+    )
+    await repos.session.apply_patch(
+        stale,
+        SessionPatchDTO(
+            append=(
+                MessageDTO(role=ChatRole.USER, content="旧问答", created_at=_STALE_AT),
+            )
+        ),
+    )
+    await repos.session.apply_patch(empty, SessionPatchDTO(reset_to_system=True))
+
+    assert await repos.session.delete_idle(_DEADLINE) == 2
+    assert (await repos.session.load(stale)).messages == (), stale
+    kept = await repos.session.load(live)
+    assert [m.content for m in kept.messages] == ["新问答"], kept
+    assert (await _one(conn, "SELECT COUNT(*) FROM session"))[0] == 1
+    assert (await _one(conn, "SELECT COUNT(*) FROM session_message"))[0] == 1
 
 
 async def _check_delete_all(repos: Repositories, conn: aiosqlite.Connection) -> None:

@@ -87,10 +87,26 @@ class SqliteSessionRepository(SessionRepository):
         return await self.load(session_key)
 
     async def delete_all(self) -> None:
-        """清除全部会话与消息"""
-        await self._conn.execute("DELETE FROM session_message")
+        """清除全部会话，消息行随外键级联删除"""
         await self._conn.execute("DELETE FROM session")
         await self._conn.commit()
+
+    async def delete_idle(self, before: float) -> int:
+        """清除最后问答时间早于界限的会话
+
+        - 没消息的会话按 0 计，一并清掉
+        - 消息行随外键级联删除
+        - 返回清除条数
+        """
+        async with self._conn.execute(
+            "DELETE FROM session WHERE COALESCE("
+            "(SELECT MAX(created_at) FROM session_message "
+            "WHERE session_message.session_key = session.key), 0) < ?",
+            (before,),
+        ) as cursor:
+            removed = cursor.rowcount
+        await self._conn.commit()
+        return removed
 
     async def _messages(
         self, session_key: SessionKey, limit: int | None
