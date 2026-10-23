@@ -2,6 +2,7 @@
 """对话工作循环
 
 - 实现流式接收、会话落库与记录持久化
+- 上下文超线即裁窗并投递后台压缩
 """
 
 import asyncio
@@ -9,24 +10,34 @@ import time
 from collections.abc import AsyncGenerator
 from typing import Any, Literal
 
+from core.domain import ChatScope
 from core.domain.ids import SessionKey
-from core.dto import InboundEventDTO
+from core.dto import InboundEventDTO, MessageDTO
 from exceptions import MessageVanishedError
 from services.context import HandlerContext
 from utils import get_logger
 
 from ...messages import BotMessage
 from ..config import ai_config
-from ..core import AIClient, purge_history, read_session, save_session
+from ..core import (
+    AIClient,
+    active_tasks,
+    purge_history,
+    read_session,
+    save_session,
+)
 from ..utils import (
     build_turns,
     compose_user_text,
+    estimate_window,
     make_rows,
     make_session_key,
     matches_persona,
     open_window,
     speaker_mark,
+    split_rounds,
 )
+from ._summary import compress_history
 
 _logger = get_logger("Plg.AI.Worker")
 
@@ -75,6 +86,51 @@ async def _handle_ai_message(
         yield "error", e
 
 
+async def _collect_reply(turns: list[dict[str, str]]) -> tuple[str, bool]:
+    """收全一轮应答
+
+    - 交出正文与是否出错
+    """
+    final_msg = ""
+    has_error = False
+    async for event_type, data in _handle_ai_message(turns):
+        match event_type:
+            case "final":
+                final_msg = data
+            case "error":
+                _logger.send_error("流式处理错误", data)
+                has_error = True
+    return final_msg, has_error
+
+
+def _kick_compression(
+    key: SessionKey, scope: ChatScope, head: tuple[MessageDTO, ...], tokens: int
+) -> None:
+    """投递后台压缩协程
+
+    - 压缩不落对话队列，跟用户命令不抢同一条语义
+    """
+    _logger.info(f"{key} 上下文 {tokens} token 超线，交后台压缩")
+    summary_task = asyncio.create_task(compress_history(key, scope, head))
+    active_tasks.add(summary_task)
+    summary_task.add_done_callback(active_tasks.discard)
+
+
+def _cut_for_budget(
+    window: tuple[MessageDTO, ...], summary: str, prompt: str
+) -> tuple[tuple[MessageDTO, ...], tuple[MessageDTO, ...], int]:
+    """按 token 触发线裁窗
+
+    - 交出裁过的窗口、待压段与体量估算
+    - 没超线窗口一字不动，待压段为空
+    """
+    tokens = estimate_window(window, summary, prompt)
+    if tokens <= ai_config.summary_trigger_tokens:
+        return window, (), tokens
+    head, rows = split_rounds(window[1:], ai_config.summary_keep_rounds)
+    return (window[0], *rows), head, tokens
+
+
 async def worker_loop(ctx: HandlerContext) -> None:
     """核心工作循环"""
     text = ctx.event.content.text
@@ -98,10 +154,11 @@ async def worker_loop(ctx: HandlerContext) -> None:
         snapshot = await read_session(session_key)
 
     window = open_window(persona, snapshot.messages)
-    final_msg = ""
-    has_error = False
-
     prompt = compose_user_text(ctx.event)
+
+    # 超线当轮即裁到保留窗口照常发出，被裁的问答交后台压成摘要，用户不等待
+    window, head, tokens = _cut_for_budget(window, snapshot.summary, prompt)
+
     msg = build_turns(
         persona=persona,
         summary=snapshot.summary,
@@ -111,14 +168,7 @@ async def worker_loop(ctx: HandlerContext) -> None:
     )
 
     try:
-        async for event_type, data in _handle_ai_message(msg):
-            match event_type:
-                case "final":
-                    final_msg = data
-                case "error":
-                    _logger.send_error("流式处理错误", data)
-                    has_error = True
-
+        final_msg, has_error = await _collect_reply(msg)
         if has_error or not final_msg:
             await ctx.reply(BotMessage.AI_UNAVAILABLE)
             return
@@ -131,6 +181,9 @@ async def worker_loop(ctx: HandlerContext) -> None:
         await asyncio.to_thread(
             _save_conversation_record, session_key, ctx.event, final_msg
         )
+
+        if head:
+            _kick_compression(session_key, ctx.event.scope, head, tokens)
 
     except MessageVanishedError:
         raise

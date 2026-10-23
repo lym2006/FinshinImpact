@@ -2,6 +2,7 @@
 """会话落库
 
 - 按会话键读写消息，仓储首次用时装配
+- 摘要按会话键覆盖写入
 - 人设或主人变更后清掉全部会话与落盘记录
 - 闲置够久的会话按最后问答时间清除
 """
@@ -16,6 +17,7 @@ from data import build_repositories, get_connection
 from utils.paths import DB_FILE
 
 from ..config import ai_config
+from ..utils import matches_persona
 
 # 同会话两路并发写会算出同一个序号，写入按会话键串行
 _write_locks: dict[SessionKey, asyncio.Lock] = defaultdict(asyncio.Lock)
@@ -54,14 +56,32 @@ async def save_session(session_key: SessionKey, window: tuple[MessageDTO, ...]) 
         )
 
 
+async def save_summary(session_key: SessionKey, summary: str) -> bool:
+    """覆盖写会话摘要
+
+    - 新摘要整段顶掉旧的
+    - 串里人设行对不上当前正文即视为会话已清，摘要不落
+    - 返回是否写入
+    """
+    async with _write_locks[session_key]:
+        repo = await _repo()
+        snapshot = await repo.load(session_key)
+        if not matches_persona(ai_config.init[0]["content"], snapshot.messages):
+            return False
+        await repo.apply_patch(session_key, SessionPatchDTO(summary=summary))
+        return True
+
+
 async def clear_session(session_key: SessionKey) -> None:
-    """清空会话消息
+    """清空会话消息与摘要
 
     - 人设首行随后一轮重建
     """
     async with _write_locks[session_key]:
         repo = await _repo()
-        await repo.apply_patch(session_key, SessionPatchDTO(reset_to_system=True))
+        await repo.apply_patch(
+            session_key, SessionPatchDTO(reset_to_system=True, summary="")
+        )
 
 
 async def purge_history() -> None:

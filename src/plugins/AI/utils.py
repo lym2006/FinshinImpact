@@ -77,9 +77,7 @@ def make_session_key(principal: PrincipalDTO) -> SessionKey:
     return SessionKey(f"{principal.platform}{KEY_SEP}{principal.container}")
 
 
-def open_window(
-    persona: str, history: _Rows, *, new_count: int = _ROUND_ROWS
-) -> _Rows:
+def open_window(persona: str, history: _Rows, *, new_count: int = _ROUND_ROWS) -> _Rows:
     """归一会话窗口
 
     - 缺人设首行或人设正文换过即整串重起，只留人设行
