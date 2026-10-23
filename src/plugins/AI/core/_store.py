@@ -94,6 +94,19 @@ async def purge_history() -> None:
         path.unlink(missing_ok=True)
 
 
+async def purge_sessions(session_keys: tuple[SessionKey, ...]) -> int:
+    """按会话键清除上下文
+
+    - 逐键删，键不在库内即零
+    - 返回清除条数
+    """
+    repo = await _repo()
+    removed = 0
+    for key in session_keys:
+        removed += await repo.delete(key)
+    return removed
+
+
 async def purge_idle_sessions(before: float) -> int:
     """清除最后问答时间早于界限的会话
 

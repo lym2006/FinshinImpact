@@ -86,6 +86,20 @@ class SqliteSessionRepository(SessionRepository):
         await self._conn.commit()
         return await self.load(session_key)
 
+    async def delete(self, session_key: SessionKey) -> int:
+        """按会话键清除一串会话与消息
+
+        - 消息行随外键级联删除
+        - 键不在库内即零
+        - 返回清除条数
+        """
+        async with self._conn.execute(
+            "DELETE FROM session WHERE key = ?", (session_key,)
+        ) as cursor:
+            removed = cursor.rowcount
+        await self._conn.commit()
+        return removed
+
     async def delete_all(self) -> None:
         """清除全部会话，消息行随外键级联删除"""
         await self._conn.execute("DELETE FROM session")

@@ -51,6 +51,14 @@ class SessionRepository(ABC):
         """应用会话增量"""
 
     @abstractmethod
+    async def delete(self, session_key: SessionKey) -> int:
+        """按会话键清除一串会话与消息
+
+        - 键不在库内即零
+        - 返回清除条数
+        """
+
+    @abstractmethod
     async def delete_all(self) -> None:
         """清除全部会话与消息"""
 
