@@ -4,6 +4,7 @@
 - /grant：主人授权某个 id 使用管理命令
 - /ungrant：主人撤销授权
 - 不带 id 时挂起待输入，下一条只认发起人自己发来的 id
+- 这一轮没办成不终止，提示问题接着等，直到发对或发 -1 取消
 """
 
 from enum import StrEnum
@@ -16,10 +17,13 @@ from core.domain import CommandRole, StepInput
 from core.domain.ids import KEY_SEP, PrincipalKey, UserKey
 from core.dto import PrincipalDTO
 from services.context import HandlerContext
+from utils import get_logger
 
 from ...filters import CommandFilter
 from ...messages import BotMessage
 from ..core import add_admin, remove_admin, require_role
+
+_logger = get_logger("Plg.AI.Grant")
 
 grant = Router()
 
@@ -67,21 +71,37 @@ def _is_id(text: str) -> bool:
     return text.isdigit() and int(text) > 0
 
 
-async def _apply(ctx: HandlerContext, step: _GrantStep, raw_id: str) -> None:
-    """落名单并回执"""
+async def _apply(ctx: HandlerContext, step: _GrantStep, raw_id: str) -> bool:
+    """落名单并回执
+
+    - 名单真变动了才交回真，由调用方清掉待输入
+    - 重复授权、撤销不在名单里的与写库抛错都交回假，接着等重发
+    """
     principal = ctx.event.principal
-    if step is _GrantStep.ADD:
-        added = await add_admin(_target_key(principal, raw_id), principal.key)
-        text = BotMessage.GRANT_ADDED if added else BotMessage.GRANT_EXISTS
-    else:
-        removed = await remove_admin(_target_key(principal, raw_id))
-        text = BotMessage.UNGRANT_REMOVED if removed else BotMessage.UNGRANT_MISSING
+    key = _target_key(principal, raw_id)
+    try:
+        if step is _GrantStep.ADD:
+            done = await add_admin(key, principal.key)
+            text = BotMessage.GRANT_ADDED if done else BotMessage.GRANT_EXISTS
+        else:
+            done = await remove_admin(key)
+            text = BotMessage.UNGRANT_REMOVED if done else BotMessage.UNGRANT_MISSING
+    except Exception as e:
+        _logger.send_error("授权名单写入失败", e)
+        await ctx.answer(BotMessage.GRANT_RETRY_TARGET)
+        return False
     await ctx.answer(text.format(id=raw_id))
+    return done
+
+
+def _hold_target(ctx: HandlerContext, step: _GrantStep) -> None:
+    """把发起人留在待输入里"""
+    _pending[ctx.event.principal.key] = step
 
 
 def _ask_target(ctx: HandlerContext, step: _GrantStep) -> str:
     """挂起待输入并交出提问文案"""
-    _pending[ctx.event.principal.key] = step
+    _hold_target(ctx, step)
     return (
         BotMessage.GRANT_ASK_TARGET
         if step is _GrantStep.ADD
@@ -92,13 +112,14 @@ def _ask_target(ctx: HandlerContext, step: _GrantStep) -> str:
 async def _take_command(ctx: HandlerContext, step: _GrantStep, usage: str) -> None:
     """按命令带的参数决定执行、提问还是报用法
 
-    - 恰好一个参数即直接办完
+    - 恰好一个参数即直接办，没办成留在待输入里等重发
     - 没带参数挂起待输入
     - 参数多于一个只报用法
     """
     args = ctx.event.command.args
     if len(args) == 1:
-        await _apply(ctx, step, args[0])
+        if not await _apply(ctx, step, args[0]):
+            _hold_target(ctx, step)
         return
     if not args:
         await ctx.answer(_ask_target(ctx, step))
@@ -136,5 +157,5 @@ async def finish_grant(raw: Message, ctx: HandlerContext) -> None:
         await ctx.answer(BotMessage.GRANT_BAD_TARGET)
         return
 
-    _pending.pop(key, None)
-    await _apply(ctx, step, target)
+    if await _apply(ctx, step, target):
+        _pending.pop(key, None)
