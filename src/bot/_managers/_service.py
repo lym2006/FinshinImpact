@@ -17,6 +17,7 @@ from ._base import BaseManager
 
 if TYPE_CHECKING:
     from adapters.telegram.adapter import TelegramAdapter
+    from core.domain import PluginBackground
 
     from .._service import BotService
 
@@ -41,20 +42,22 @@ class ServiceManager(BaseManager):
         self.stop_service()  # 停掉旧服务（如果有）
 
         self.logger.info(EngineMessage.CREATING)
-        adapter = self._create_components()
-        self._service = BotService(adapter)
+        adapter, backgrounds = self._create_components()
+        self._service = BotService(adapter, backgrounds)
 
         await asyncio.to_thread(self._service.start)
         self.logger.info(EngineMessage.STARTED)
 
-    def _create_components(self) -> TelegramAdapter:
-        """按配置构建适配器
+    def _create_components(
+        self,
+    ) -> tuple[TelegramAdapter, tuple[PluginBackground, ...]]:
+        """按配置构建适配器与插件常驻协程
 
         - aiogram 重依赖此刻才入场，主窗启动不受其拖累
         """
         from adapters.telegram.adapter import TelegramAdapter
         from utils.middleware import LoggingMiddleware
-        from utils.plugin import register_routers
+        from utils.plugin import register_plugins
 
         token, proxy = self._get_config()
         adapter = TelegramAdapter(token=token, proxy=proxy)
@@ -62,7 +65,7 @@ class ServiceManager(BaseManager):
 
         # 注册中间件和路由
         dispatcher.update.outer_middleware(LoggingMiddleware())
-        report = register_routers(dispatcher)
+        report, backgrounds = register_plugins(dispatcher)
         total = len(report)
         self.logger.info(EngineMessage.PLUGINS_DONE.format(n=total))
         for index, (name, ok, reason) in enumerate(report, 1):
@@ -77,7 +80,7 @@ class ServiceManager(BaseManager):
                     )
                 )
 
-        return adapter
+        return adapter, backgrounds
 
     def stop_service(self) -> None:
         """停止 Bot 服务"""

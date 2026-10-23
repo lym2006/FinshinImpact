@@ -6,11 +6,11 @@
 """
 
 from ._manifest import enabled_manifests
-from ._register import register_routers
+from ._register import register_plugins
 
 __all__ = [
     # 清单消费
     "enabled_manifests",
-    # 路由注册
-    "register_routers",
+    # 插件注册
+    "register_plugins",
 ]

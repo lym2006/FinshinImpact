@@ -86,9 +86,6 @@ async def cleanup_loop() -> NoReturn:
     - 三路各扫各的，重启后留下的记录与上下文照样扫得到
     """
     while True:
-        # 放在循环开头，确保启动时立即执行一次清理
-        await asyncio.sleep(ai_config.waiting_time)
-
         deadline = time.time() - ai_config.keep_seconds
 
         # list() 快照防遍历途中改字典大小，任务非空或正在应答的容器不动
@@ -108,3 +105,6 @@ async def cleanup_loop() -> NoReturn:
         purged = await purge_idle_sessions(deadline)
         if purged:
             _logger.info(f"清理闲置上下文: {purged} 串")
+
+        # 扫完再睡，启动即扫一遍重启前攒下的记录
+        await asyncio.sleep(ai_config.waiting_time)

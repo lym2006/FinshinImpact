@@ -5,13 +5,18 @@
 - 定义插件相关文件名词表
 - 定义插件数据契约的键名词表
 - 定义插件清单标量字段的类型、必填与默认
+- 定义插件常驻协程的签名
 """
 
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass
 from enum import IntEnum, StrEnum
 from typing import Any
 
 PLUGINS_PKG = "plugins"  # 插件树顶层包名，find_spec 与动态导入路径共用同值
+
+# 插件声明的无参常驻协程，随 Bot 服务起停
+PluginBackground = Callable[[], Coroutine[Any, Any, None]]
 
 
 class CommandPriority(IntEnum):
