@@ -10,7 +10,7 @@ from ._migrations import (
     purge_dead_tasks,
     run_migrations,
 )
-from ._sqlite import Repositories, build_repositories, get_connection
+from ._sqlite import Repositories, build_repositories, close_all, get_connection
 
 __all__ = [
     # 迁移
@@ -18,8 +18,10 @@ __all__ = [
     "run_migrations",
     "check_schema_compatible",
     "purge_dead_tasks",
-    # 仓储装配
+    # 连接
     "get_connection",
+    "close_all",
+    # 仓储装配
     "Repositories",
     "build_repositories",
 ]
