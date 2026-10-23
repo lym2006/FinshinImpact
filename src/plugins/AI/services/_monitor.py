@@ -7,13 +7,14 @@
 import asyncio
 import time
 from asyncio import CancelledError
+from pathlib import Path
 from typing import NoReturn
 
 from exceptions import MessageVanishedError
 from utils import get_logger
 
 from ..config import ai_config
-from ..core import task_queues, user_sessions
+from ..core import purge_idle_sessions, task_queues, user_sessions
 from ..state import user_locks
 from .worker import worker_loop
 
@@ -62,10 +63,24 @@ async def monitor_loop(user: str) -> None:
         _logger.debug(f"{user} 监控循环结束")
 
 
-async def cleanup_loop() -> NoReturn:
-    """后台清理不活跃用户
+def _purge_records(rec_dir: Path, deadline: float) -> None:
+    """按文件时间清落盘记录
 
-    - 防止内存无限膨胀
+    - 内存字典重启即空，落盘记录只认文件自己的时间
+    """
+    for path in rec_dir.glob("*.md"):
+        try:
+            if path.stat().st_mtime < deadline:
+                path.unlink(missing_ok=True)
+        except OSError as e:
+            _logger.send_error(f"清理记录文件失败: {path.name}", e)
+
+
+async def cleanup_loop() -> NoReturn:
+    """后台清理闲置记录
+
+    - 内存会话按最后活跃时间清，记录按文件时间清，库内上下文按最后问答时间清
+    - 三路各扫各的，重启后留下的记录与上下文照样扫得到
     """
     rec_dir = ai_config.record_dir
 
@@ -73,23 +88,22 @@ async def cleanup_loop() -> NoReturn:
         # 放在循环开头，确保启动时立即执行一次清理
         await asyncio.sleep(ai_config.waiting_time)
 
-        now = time.time()
-        users_to_remove = []
+        deadline = time.time() - ai_config.keep_seconds
 
-        # 使用 list() 创建快照，防止在遍历字典时修改字典大小引发 RuntimeError
-        for user, session in list(user_sessions.items()):
-            if (
-                now - session.last_active > ai_config.cleanup_time
-                and task_queues[user].size == 0
-                and not session.is_active
-            ):
-                users_to_remove.append(user)
+        # list() 快照防遍历途中改字典大小，任务非空或正在应答的用户不动
+        idle_users = [
+            user
+            for user, session in list(user_sessions.items())
+            if session.last_active < deadline
+            and not session.is_active
+            and task_queues[user].size == 0
+        ]
+        for user in idle_users:
+            user_sessions.pop(user, None)
+            task_queues.pop(user, None)
+            _logger.info(f"清理闲置会话: {user}")
 
-        for user in users_to_remove:
-            if user in user_sessions:
-                user_sessions.pop(user, None)
-                task_queues.pop(user, None)
-
-                # 字典键即主体键，点号分段可直接当落盘文件名主干
-                (rec_dir / f"{user}.md").unlink(missing_ok=True)
-                _logger.info(f"清理长时间不活跃会话: {user}")
+        _purge_records(rec_dir, deadline)
+        purged = await purge_idle_sessions(deadline)
+        if purged:
+            _logger.info(f"清理闲置上下文: {purged} 串")

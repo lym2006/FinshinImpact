@@ -64,10 +64,10 @@ _DATA_SECTION = SectionSpec(
     fields=(
         FieldSpec(
             section=ConfigSection.DATA,
-            key=ConfigKey.CLEARUP,
+            key=ConfigKey.RECORD_KEEP,
             value_type=float,
-            default=6.0,
-            bounds=(0.1, 720.0),
+            default=30.0,
+            bounds=(1.0, 3650.0),
         ),
         FieldSpec(
             section=ConfigSection.DATA,

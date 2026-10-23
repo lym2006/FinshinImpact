@@ -46,7 +46,7 @@ class ConfigKey(StrEnum):
     TEMPERATURE = "temperature"
     OWNER = "owner"
     TRIGGERS = "triggers"
-    CLEARUP = "clearup"
+    RECORD_KEEP = "record_keep"
     WAITING = "waiting"
 
     def path(self, section: ConfigSection) -> ConfigPath:
