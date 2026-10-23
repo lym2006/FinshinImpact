@@ -38,6 +38,7 @@ class _StaticAIConfig:
 
 
 _HOUR_SECONDS = 60 * 60
+_DAY_SECONDS = 24 * _HOUR_SECONDS
 
 
 class _DynamicAIConfig:
@@ -56,7 +57,7 @@ class _DynamicAIConfig:
             "api_key": (ConfigKey.API_KEY.path(ConfigSection.AI), str),
             "temperature": (ConfigKey.TEMPERATURE.path(ConfigSection.AI), float),
             "group_triggers": (ConfigKey.TRIGGERS.path(ConfigSection.CHORE), list),
-            "cleanup_time": (ConfigKey.CLEARUP.path(ConfigSection.DATA), float),
+            "keep_seconds": (ConfigKey.RECORD_KEEP.path(ConfigSection.DATA), float),
             "waiting_time": (ConfigKey.WAITING.path(ConfigSection.DATA), float),
             "init": (ConfigKey.OWNER.path(ConfigSection.CHORE), str),
         }
@@ -80,8 +81,8 @@ class _DynamicAIConfig:
             match name:
                 case "group_triggers":
                     return tuple(value)
-                case "cleanup_time":
-                    return value * _HOUR_SECONDS
+                case "keep_seconds":
+                    return value * _DAY_SECONDS
                 case "waiting_time":
                     return value * _HOUR_SECONDS
                 case "init":

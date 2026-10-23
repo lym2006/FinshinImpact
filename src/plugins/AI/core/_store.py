@@ -3,6 +3,7 @@
 
 - 按会话键读写消息，仓储首次用时装配
 - 人设或主人变更后清掉全部会话与落盘记录
+- 闲置够久的会话按最后问答时间清除
 """
 
 import asyncio
@@ -71,3 +72,11 @@ async def purge_history() -> None:
     await (await _repo()).delete_all()
     for path in ai_config.record_dir.glob("*.md"):
         path.unlink(missing_ok=True)
+
+
+async def purge_idle_sessions(before: float) -> int:
+    """清除最后问答时间早于界限的会话
+
+    - 返回清除条数
+    """
+    return await (await _repo()).delete_idle(before)

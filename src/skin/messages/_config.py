@@ -27,7 +27,7 @@ class ConfigMessage:
         "temperature": "温度",
         "owner": "主人",
         "triggers": "触发词",
-        "clearup": "清理间隔（小时）",
+        "record_keep": "记录保留（天）",
         "waiting": "检测间隔（小时）",
     }
 
@@ -40,7 +40,7 @@ class ConfigMessage:
         "temperature": "取值范围 0~2，越高越有创造性，越低越稳定",
         "owner": "具有最高权限的用户 ID（注意实例对应的平台）",
         "triggers": "用户消息包含关键词（如 @Bot）触发 AI 回复，不区分大小写，双击编辑",
-        "clearup": "定期清理过期的会话数据",
+        "record_keep": "闲置超过这个天数的对话记录与群上下文一并删除",
         "waiting": "间隔多久检测一次后台任务",
     }
 
