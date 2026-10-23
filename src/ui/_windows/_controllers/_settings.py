@@ -6,7 +6,6 @@
 - 校验轮驱动进程级唯一 CheckDialog，交 VerifyCoordinator 协调
 """
 
-from core.domain import ConfigKey, ConfigSection
 from exceptions import ConfigOutputError
 from skin.messages import CheckMessage
 from skin.theme import NOTICE_DIALOG, SETTINGS_DIALOG
@@ -210,14 +209,9 @@ class SettingsController(BaseController):
             config_manager.schema, config_manager.get_all(), new_config
         )
 
-        # 有风险（向导态/代理留空）或有任何改动都要复验，通道没变时 Manager 跳过重启
-        risky = (
-            self._current_mode == ConfigMode.SETUP
-            or not str(
-                config_manager.get(ConfigKey.PROXY.path(ConfigSection.PROXY), str) or ""
-            ).strip()
-        )
-        if not changes and not risky:
+        # 向导态或有任何改动都要起校验轮，通道没变时 Manager 只跑本地校验
+        in_setup = self._current_mode == ConfigMode.SETUP
+        if not changes and not in_setup:
             if persona_changed:
                 self.logger.info("人设正文已按文件刷新")
                 self._close_panel_verified(SETTINGS_DIALOG.persona_reloaded)
