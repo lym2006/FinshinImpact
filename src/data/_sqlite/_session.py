@@ -86,6 +86,12 @@ class SqliteSessionRepository(SessionRepository):
         await self._conn.commit()
         return await self.load(session_key)
 
+    async def delete_all(self) -> None:
+        """清除全部会话与消息"""
+        await self._conn.execute("DELETE FROM session_message")
+        await self._conn.execute("DELETE FROM session")
+        await self._conn.commit()
+
     async def _messages(
         self, session_key: SessionKey, limit: int | None
     ) -> tuple[MessageDTO, ...]:
