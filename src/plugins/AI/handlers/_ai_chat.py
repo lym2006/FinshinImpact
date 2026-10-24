@@ -17,7 +17,6 @@ from ...messages import BotMessage
 from ..config import ai_config
 from ..core import role_of, session_guard
 from ..services import handle_ai_chat
-from ..utils import retry_sending
 
 ai_chat = Router()
 
@@ -94,7 +93,6 @@ async def deny_private(raw: Message, ctx: HandlerContext) -> None:
 
 @ai_chat.message(_ChatFilter())
 @session_guard
-@retry_sending()
 async def process_ai_chat(raw: Message, ctx: HandlerContext) -> None:
     """AI 聊天核心处理器"""
     await handle_ai_chat(ctx)
