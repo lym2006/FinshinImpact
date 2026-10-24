@@ -36,7 +36,7 @@ def is_blank(value: object) -> bool:
 class FieldSchema:
     """单个配置项的 UI 属性
 
-    - key 为配置键枚举，落盘才取 .value
+    - key 为配置键枚举
     - options 非空即枚举字段，每项为「值 文案」对
     - bounds 为闭区间，仅 float 字段生效
     """

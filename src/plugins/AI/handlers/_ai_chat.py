@@ -39,11 +39,11 @@ class _PrivateGate(Filter):
         command = event.command
         if command.matched or command.format_error:
             return False
-        if event.scope is not ChatScope.PRIVATE:
+        if event.scope != ChatScope.PRIVATE:
             return False
         if event.content.media or not event.content.text:
             return False
-        return await role_of(event.principal) is CommandRole.MEMBER
+        return await role_of(event.principal) == CommandRole.MEMBER
 
 
 class _ChatFilter(Filter):

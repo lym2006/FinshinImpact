@@ -110,13 +110,13 @@ def _handle(result: _SlotResult) -> int | None:
     - 选窗取消时静默退出
     - 引导锁被占与实例冲突各弹对应提示
     """
-    if result is _SlotResult.RUN:
+    if result == _SlotResult.RUN:
         return None
 
-    if result is _SlotResult.CANCEL:
+    if result == _SlotResult.CANCEL:
         return 0
 
-    if result is _SlotResult.PICKER_BUSY:
+    if result == _SlotResult.PICKER_BUSY:
         from skin.messages import PickerMessage
         from ui import show_popup
 

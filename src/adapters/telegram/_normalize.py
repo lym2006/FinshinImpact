@@ -209,7 +209,7 @@ def normalize_update(
 
     # 媒体不下载，条目只报种类
     media = ()
-    if kind is not ContentKind.TEXT:
+    if kind != ContentKind.TEXT:
         media = (MediaEntryDTO(kind=kind, local_path=""),)
 
     command = _parse_command(message.text or "")

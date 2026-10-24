@@ -14,7 +14,7 @@ from services.context import HandlerContext
 
 def _has_help_flag(command: CommandDTO) -> bool:
     """判定命令带 -h"""
-    return CommandFlag.HELP.value in command.flags
+    return CommandFlag.HELP in command.flags
 
 
 class CommandFilter(Filter):

@@ -125,7 +125,7 @@ class SqliteTaskRepository(TaskRepository):
             assignments.append("status = ?")
             params.append(patch.status)
             now = time.time()
-            if patch.status is TaskStatus.RUNNING:
+            if patch.status == TaskStatus.RUNNING:
                 assignments.append("started_at = ?")
                 params.append(now)
             elif not _ALLOWED_TRANSITIONS[patch.status]:

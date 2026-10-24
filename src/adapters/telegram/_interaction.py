@@ -73,11 +73,11 @@ class TelegramInteractionPort(InteractionPort):
         - 超长文字自动分段
         - 媒体附言走 caption
         """
-        if content.kind is ContentKind.TEXT:
+        if content.kind == ContentKind.TEXT:
             return await self._send_text(
                 principal, content.text, mention=mention, reply_ref=reply_ref
             )
-        if content.kind is ContentKind.UNKNOWN:
+        if content.kind == ContentKind.UNKNOWN:
             raise ValueError(f"不支持的外发内容种类: {content.kind}")
         return await self._send_media(principal, content, reply_ref=reply_ref)
 
@@ -142,7 +142,7 @@ class TelegramInteractionPort(InteractionPort):
         file = FSInputFile(content.local_path, filename=content.file_name or None)
         caption = content.text or None
         chat_id = _chat_id_of(principal.container)
-        if content.kind is ContentKind.PHOTO:
+        if content.kind == ContentKind.PHOTO:
             sent = await self._invoke(
                 self._bot.send_photo(
                     chat_id=chat_id,

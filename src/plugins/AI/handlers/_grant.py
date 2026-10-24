@@ -80,7 +80,7 @@ async def _apply(ctx: HandlerContext, step: _GrantStep, raw_id: str) -> bool:
     principal = ctx.event.principal
     key = _target_key(principal, raw_id)
     try:
-        if step is _GrantStep.ADD:
+        if step == _GrantStep.ADD:
             done = await add_admin(key, principal.key)
             text = BotMessage.GRANT_ADDED if done else BotMessage.GRANT_EXISTS
         else:
@@ -104,7 +104,7 @@ def _ask_target(ctx: HandlerContext, step: _GrantStep) -> str:
     _hold_target(ctx, step)
     return (
         BotMessage.GRANT_ASK_TARGET
-        if step is _GrantStep.ADD
+        if step == _GrantStep.ADD
         else BotMessage.UNGRANT_ASK_TARGET
     )
 

@@ -5,7 +5,7 @@
 - 提供复验结果原地刷新与防重入
 """
 
-from enum import Enum, auto
+from enum import IntEnum, auto
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QCloseEvent, QFont, QKeyEvent, QShowEvent
@@ -37,7 +37,7 @@ __all__ = [
 _ERROR_FONT = QFont(SETTINGS_DIALOG.error_font_family, SETTINGS_DIALOG.error_font_size)
 
 
-class ConfigMode(Enum):
+class ConfigMode(IntEnum):
     """配置弹窗的工作模式"""
 
     EDIT = auto()  # 正常编辑（用户主动点击）
