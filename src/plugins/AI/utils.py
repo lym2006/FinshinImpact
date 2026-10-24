@@ -4,37 +4,13 @@
 - 提供消息构建与发言人标注拼装
 - 定义会话窗口归一与人设版本判定
 - 定义上下文体量的字符折算
-- 定义退避重试装饰器
 """
 
-import functools
 import time
-from collections.abc import Callable
-from typing import ParamSpec, TypeVar
-
-from aiogram.exceptions import TelegramNetworkError
-from tenacity import (
-    retry,
-    retry_if_exception_type,
-    stop_after_attempt,
-    wait_exponential,
-)
 
 from core.domain import ChatRole, ChatScope
 from core.domain.ids import KEY_SEP, SessionKey
 from core.dto import InboundEventDTO, MessageDTO, PrincipalDTO
-from utils import get_logger
-
-_logger_retry = get_logger("Plg.AI.Retry")
-
-# 泛型定义
-P = ParamSpec("P")
-T = TypeVar("T")
-
-# 重试器
-_MAX_RETRIES = 3
-_MIN_RETRY_DELAY = 1
-_MAX_RETRY_DELAY = 10
 
 # 会话窗口条数上限，含人设首行，条数只当兜底
 _MAX_CONTEXT_MESSAGES = 120
@@ -245,28 +221,3 @@ def _quote_block(event: InboundEventDTO) -> str:
         id=event.reply_sender_id,
         text=event.reply_text,
     )
-
-
-def retry_sending() -> Callable[[Callable[P, T]], Callable[P, T]]:
-    """消息发送重试装饰器
-
-    - 网络异常时指数退避重试
-    """
-
-    def decorator(func: Callable[P, T]) -> Callable[P, T]:
-        @functools.wraps(func)
-        @retry(
-            retry=retry_if_exception_type(TelegramNetworkError),
-            stop=stop_after_attempt(_MAX_RETRIES),
-            wait=wait_exponential(min=_MIN_RETRY_DELAY, max=_MAX_RETRY_DELAY),
-            before_sleep=lambda retry_state: _logger_retry.error(
-                f"消息发送失败，正在第 {retry_state.attempt_number} 次重试..."
-            ),
-            reraise=True,
-        )
-        def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
-            return func(*args, **kwargs)
-
-        return wrapper
-
-    return decorator
