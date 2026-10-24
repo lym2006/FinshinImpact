@@ -1,7 +1,7 @@
 # devtools/_style_checks/_registry.py
 """检查登记表
 
-- 具名收集十个分节的检查函数，赋予各自明确的消费者
+- 具名收集十一个分节的检查函数，赋予各自明确的消费者
 - run_checks 统一入口，屏蔽命名节需要额外导入图的签名差异
 """
 
@@ -15,6 +15,7 @@ from ._s3_docstring import check as _check_docstring
 from ._s4_comment import check as _check_comment
 from ._s5_naming import check as _check_naming
 from ._s5d_access import check as _check_access
+from ._s5e_enum import check as _check_enum
 from ._s6_magic import check as _check_magic
 from ._s7_text import check as _check_text
 from ._s8_messages import check as _check_messages
@@ -30,6 +31,7 @@ _FILE_CHECKS = (
     _check_split,
     _check_docstring,
     _check_comment,
+    _check_enum,
     _check_magic,
     _check_text,
     _check_messages,
