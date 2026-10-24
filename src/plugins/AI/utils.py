@@ -93,7 +93,7 @@ def matches_persona(persona: str, history: _Rows) -> bool:
     """判定窗口首行存的是当前人设正文"""
     return (
         bool(history)
-        and history[0].role is ChatRole.SYSTEM
+        and history[0].role == ChatRole.SYSTEM
         and history[0].content == persona
     )
 
@@ -105,7 +105,7 @@ def _cut_oldest(rows: _Rows, keep: int) -> tuple[_Rows, _Rows]:
     - 返回丢掉段与保留段
     """
     start = max(len(rows) - keep, 0)
-    while start < len(rows) and rows[start].role is ChatRole.ASSISTANT:
+    while start < len(rows) and rows[start].role == ChatRole.ASSISTANT:
         start += 1
     return rows[:start], rows[start:]
 
@@ -145,7 +145,7 @@ def render_history(rows: _Rows, scope: ChatScope) -> str:
     return "\n".join(
         _render_turn(message, scope)["content"]
         for message in rows
-        if message.role is not ChatRole.SYSTEM
+        if message.role != ChatRole.SYSTEM
     )
 
 
@@ -162,16 +162,16 @@ def build_turns(
     - 人设轮按当前正文现取，库里那行人设不重复发
     - 摘要作独立 system 轮排在人设之后
     """
-    turns = [build_message(ChatRole.SYSTEM.value, persona)]
+    turns = [build_message(ChatRole.SYSTEM, persona)]
     if summary:
-        turns.append(build_message(ChatRole.SYSTEM.value, f"{_SUMMARY_MARK}{summary}"))
+        turns.append(build_message(ChatRole.SYSTEM, f"{_SUMMARY_MARK}{summary}"))
 
     turns.extend(
         _render_turn(message, scope)
         for message in history
-        if message.role is not ChatRole.SYSTEM
+        if message.role != ChatRole.SYSTEM
     )
-    turns.append(build_message(ChatRole.USER.value, thisinput))
+    turns.append(build_message(ChatRole.USER, thisinput))
     return turns
 
 
@@ -180,10 +180,10 @@ def _render_turn(message: MessageDTO, scope: ChatScope) -> dict[str, str]:
 
     - 发言人标注按库里两列现拼，AI 回复不带标注
     """
-    if message.role is ChatRole.ASSISTANT:
-        return build_message(message.role.value, message.content)
+    if message.role == ChatRole.ASSISTANT:
+        return build_message(message.role, message.content)
     mark = speaker_mark(scope, message.sender_id, message.sender_name)
-    return build_message(message.role.value, f"{mark} {message.content}")
+    return build_message(message.role, f"{mark} {message.content}")
 
 
 def make_rows(event: InboundEventDTO, reply: str) -> tuple[MessageDTO, MessageDTO]:
@@ -226,7 +226,7 @@ def speaker_mark(scope: ChatScope, sender_id: str, sender_name: str) -> str:
 
     - 名称缺位用 id 段填，格式仍是 [名称 | id]
     """
-    if scope is ChatScope.PRIVATE:
+    if scope == ChatScope.PRIVATE:
         return _PRIVATE_MARK.format(id=sender_id)
     return _GROUP_MARK.format(name=sender_name or sender_id, id=sender_id)
 
@@ -238,7 +238,7 @@ def _quote_block(event: InboundEventDTO) -> str:
     """
     if not event.reply_text:
         return ""
-    if event.scope is ChatScope.PRIVATE:
+    if event.scope == ChatScope.PRIVATE:
         return _PRIVATE_QUOTE.format(id=event.reply_sender_id, text=event.reply_text)
     return _GROUP_QUOTE.format(
         name=event.reply_sender_name or event.reply_sender_id,

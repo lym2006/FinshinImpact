@@ -106,4 +106,4 @@ MANIFEST_FIELDS: tuple[ManifestFieldSpec, ...] = (
 )
 
 # order 合法取值域，越界拒收
-ORDER_TIERS = frozenset(tier.value for tier in CommandPriority)
+ORDER_TIERS = frozenset(CommandPriority)
