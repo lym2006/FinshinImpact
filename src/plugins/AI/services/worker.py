@@ -26,6 +26,7 @@ from ..core import (
     read_session,
     save_session,
 )
+from ..markdown import strip_model_marks
 from ..utils import (
     build_turns,
     compose_user_text,
@@ -172,6 +173,9 @@ async def worker_loop(ctx: HandlerContext) -> None:
         if has_error or not final_msg:
             await ctx.reply(BotMessage.AI_UNAVAILABLE)
             return
+
+        # 漏网样式在入库前洗掉，发出、落记录与回喂模型的三路拿到的都是纯文本
+        final_msg = strip_model_marks(final_msg)
 
         # 分段与防频控归适配层端口，此处只交整段正文
         await ctx.reply(final_msg)
