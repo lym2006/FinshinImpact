@@ -18,6 +18,6 @@ def render_config(platform: Platform) -> str:
     for tab in SECTIONS_BY_PLATFORM[platform]:
         table = tomlkit.table()
         for spec in tab.fields:
-            table[spec.key.value] = spec.default
-        doc.add(tab.section.value, table)
+            table[spec.key] = spec.default
+        doc.add(tab.section, table)
     return tomlkit.dumps(doc)

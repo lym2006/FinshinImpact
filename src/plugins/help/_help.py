@@ -42,13 +42,13 @@ def _is_stray(command: CommandDTO) -> bool:
     """
     spec = command_specs.get(command.head)
     declared = spec.flags if spec is not None else ()
-    allowed: tuple[str, ...] = (CommandFlag.HELP.value, *(flag for flag, _ in declared))
+    allowed: tuple[str, ...] = (CommandFlag.HELP, *(flag for flag, _ in declared))
     flags = command.flags
     if len(set(flags)) != len(flags):
         return True
     if any(flag not in allowed for flag in flags):
         return True
-    limit = _MAX_FLAGS_WITH_HELP if CommandFlag.HELP.value in flags else _MAX_FLAGS
+    limit = _MAX_FLAGS_WITH_HELP if CommandFlag.HELP in flags else _MAX_FLAGS
     if len(flags) > limit:
         return True
     return bool(command.args) and command.head not in _ARGS_ALLOWED
@@ -67,7 +67,7 @@ class _CommandReject(Filter):
             return False
         command = ctx.event.command
         listed = command.matched and command.head in help_list
-        if ctx.event.scope is not ChatScope.PRIVATE:
+        if ctx.event.scope != ChatScope.PRIVATE:
             return listed and _is_stray(command)
         return command.format_error or (
             command.matched and (not listed or _is_stray(command))
@@ -87,7 +87,7 @@ class _KeywordFilter(Filter):
             return False
         command = ctx.event.command
         listed = command.matched and command.head in help_list
-        has_help = CommandFlag.HELP.value in command.flags
+        has_help = CommandFlag.HELP in command.flags
         return listed and has_help and not _is_stray(command)
 
 
@@ -123,7 +123,7 @@ async def command_check(raw: Message, ctx: HandlerContext) -> None:
 
     - 私聊回执，群聊与频道静默无视
     """
-    if ctx.event.scope is not ChatScope.PRIVATE:
+    if ctx.event.scope != ChatScope.PRIVATE:
         return
     await ctx.answer(_reject_text(ctx.event.command))
 

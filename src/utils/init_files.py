@@ -6,7 +6,7 @@
 """
 
 import hashlib
-from enum import Enum, StrEnum
+from enum import StrEnum
 from pathlib import Path
 
 from system.atomic_write import write_bytes_atomic
@@ -22,7 +22,7 @@ from .paths import (
 from .persona import reset_persona_cache
 
 
-class PersonaSync(Enum):
+class PersonaSync(StrEnum):
     """人设模板对账结果
 
     - 启动日志与弹窗分派共用，禁裸写协议串

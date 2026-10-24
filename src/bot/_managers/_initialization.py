@@ -43,9 +43,9 @@ class InitializationManager(BaseManager):
         """
         reset_persona_cache()
         result = sync_persona_template()
-        if result is PersonaSync.UPDATED:
+        if result == PersonaSync.UPDATED:
             self.logger.info("实例人设从未改动，已更新为最新默认人设")
-        elif result is PersonaSync.NOTIFY:
+        elif result == PersonaSync.NOTIFY:
             self.logger.info("默认人设有更新，弹窗询问是否覆盖")
             gui_bridge.request_persona_update.emit()
 

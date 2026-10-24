@@ -59,8 +59,8 @@ async def compress_history(
 async def _request_summary(text: str) -> str:
     """发一次压缩请求并收全正文"""
     turns = [
-        build_message(ChatRole.SYSTEM.value, _COMPRESS_PROMPT),
-        build_message(ChatRole.USER.value, text),
+        build_message(ChatRole.SYSTEM, _COMPRESS_PROMPT),
+        build_message(ChatRole.USER, text),
     ]
 
     current = ""

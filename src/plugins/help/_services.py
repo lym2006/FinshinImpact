@@ -154,7 +154,7 @@ def _usage_line(spec: HelpCommandDTO) -> str:
     - -h 全命令默认支持，清单 flag 追加其后
     - 开关说明只进帮助图，这一行只列开关
     """
-    inputs = [CommandFlag.HELP.value, *(flag for flag, _ in spec.flags)]
+    inputs = [CommandFlag.HELP, *(flag for flag, _ in spec.flags)]
     return BotMessage.CMD_USAGE.format(inputs="、".join(inputs))
 
 

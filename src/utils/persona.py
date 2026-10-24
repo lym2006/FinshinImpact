@@ -113,7 +113,7 @@ def _read_cached() -> str:
     global _persona_text
     if _persona_text is None:
         text, source = read_persona_text()
-        if source is not PersonaSource.FILE:
+        if source != PersonaSource.FILE:
             _logger.error(_FALLBACK_HINTS[source])
         _persona_text = text
     return _persona_text

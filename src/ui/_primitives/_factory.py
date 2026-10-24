@@ -17,7 +17,7 @@ def make_button(
 ) -> QPushButton:
     """按样式名建一个按钮"""
     button = QPushButton(text, parent)
-    button.setObjectName(style.value)
+    button.setObjectName(style)
     return button
 
 
