@@ -74,6 +74,7 @@ def _kind_of(content_type: str) -> ContentKind:
     """归一内容类型
 
     - 词表外的 Telegram 种类一律 UNKNOWN
+    - 语音条与音乐文件同归 AUDIO
     """
     match content_type:
         case ContentType.TEXT:
@@ -82,10 +83,8 @@ def _kind_of(content_type: str) -> ContentKind:
             return ContentKind.PHOTO
         case ContentType.DOCUMENT:
             return ContentKind.DOCUMENT
-        case ContentType.AUDIO:
+        case ContentType.AUDIO | ContentType.VOICE:
             return ContentKind.AUDIO
-        case ContentType.VOICE:
-            return ContentKind.VOICE
         case ContentType.ANIMATION:
             return ContentKind.ANIMATION
         case ContentType.VIDEO:

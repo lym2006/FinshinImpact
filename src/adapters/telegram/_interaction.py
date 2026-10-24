@@ -138,32 +138,86 @@ class TelegramInteractionPort(InteractionPort):
         *,
         reply_ref: MsgReferenceDTO | None,
     ) -> MsgReferenceDTO | None:
-        """发送媒体，file_name 缺省取路径末段"""
+        """发送媒体，形态被拒即回退文件
+
+        - file_name 缺省取路径末段
+        - 引用原消息已删属目标失效，不换形态重发
+        """
         file = FSInputFile(content.local_path, filename=content.file_name or None)
         caption = content.text or None
         chat_id = _chat_id_of(principal.container)
-        if content.kind == ContentKind.PHOTO:
+        reply_id = _reply_id(reply_ref)
+        try:
             sent = await self._invoke(
-                self._bot.send_photo(
-                    chat_id=chat_id,
-                    photo=file,
-                    caption=caption,
-                    reply_to_message_id=_reply_id(reply_ref),
-                ),
+                self._send_native(content.kind, file, caption, chat_id, reply_id),
                 reply_ref,
             )
-        else:
+        except TelegramAPIError as exc:
+            if reply_ref is not None and is_vanished(exc):
+                raise translate(exc, reply_ref) from None
+            if content.kind == ContentKind.DOCUMENT:
+                raise
             sent = await self._invoke(
                 self._bot.send_document(
                     chat_id=chat_id,
                     document=file,
                     caption=caption,
-                    reply_to_message_id=_reply_id(reply_ref),
+                    reply_to_message_id=reply_id,
                 ),
                 reply_ref,
             )
 
         return build_ref(sent, principal.container)
+
+    async def _send_native(
+        self,
+        kind: ContentKind,
+        file: FSInputFile,
+        caption: str | None,
+        chat_id: int,
+        reply_id: int | None,
+    ) -> Message:
+        """按内容种类选原生形态发送
+
+        - 音频一律走语音条，能不能显成播放器由平台判定
+        - 词表内没有专属形态的种类按文件发
+        """
+        match kind:
+            case ContentKind.PHOTO:
+                return await self._bot.send_photo(
+                    chat_id=chat_id,
+                    photo=file,
+                    caption=caption,
+                    reply_to_message_id=reply_id,
+                )
+            case ContentKind.VIDEO:
+                return await self._bot.send_video(
+                    chat_id=chat_id,
+                    video=file,
+                    caption=caption,
+                    reply_to_message_id=reply_id,
+                )
+            case ContentKind.ANIMATION:
+                return await self._bot.send_animation(
+                    chat_id=chat_id,
+                    animation=file,
+                    caption=caption,
+                    reply_to_message_id=reply_id,
+                )
+            case ContentKind.AUDIO:
+                return await self._bot.send_voice(
+                    chat_id=chat_id,
+                    voice=file,
+                    caption=caption,
+                    reply_to_message_id=reply_id,
+                )
+            case _:
+                return await self._bot.send_document(
+                    chat_id=chat_id,
+                    document=file,
+                    caption=caption,
+                    reply_to_message_id=reply_id,
+                )
 
     async def _invoke(
         self, awaitable: Awaitable[Message], reply_ref: MsgReferenceDTO | None
