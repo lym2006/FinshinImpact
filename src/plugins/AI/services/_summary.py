@@ -12,6 +12,7 @@ from utils import get_logger
 
 from ..config import ai_config
 from ..core import AIClient, save_summary
+from ..markdown import strip_model_marks
 from ..utils import build_message, estimate_tokens, render_history
 
 _logger = get_logger("Plg.AI.Summary")
@@ -21,7 +22,7 @@ _COMPRESS_PROMPT = (
     "把下面的对话记录压成一段摘要，要求：\n"
     "1. 每处 [名称 | id] 标注原样照抄，不改名、不并人、不编造\n"
     "2. 保留聊过的话题、给出的结论、没办完的事和出现过的数字\n"
-    "3. 只输出摘要正文，不加标题，不作评价\n\n"
+    "3. 只输出摘要正文，纯文本，不加标题与任何样式标记，不作评价\n\n"
     "对话记录："
 )
 
@@ -43,7 +44,7 @@ async def compress_history(
         return
 
     try:
-        summary = (await _request_summary(text)).strip()
+        summary = strip_model_marks((await _request_summary(text)).strip())
         if not summary:
             _logger.error(f"{key} 压缩返回空，保留原摘要")
             return
