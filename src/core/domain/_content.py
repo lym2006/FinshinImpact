@@ -14,7 +14,6 @@ class ContentKind(StrEnum):
     PHOTO = "photo"
     DOCUMENT = "document"
     AUDIO = "audio"
-    VOICE = "voice"
     ANIMATION = "animation"
     VIDEO = "video"
     UNKNOWN = "unknown"
