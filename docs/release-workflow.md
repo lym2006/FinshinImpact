@@ -28,7 +28,7 @@ $env:PYTHONUTF8 = 1; $env:PYTHONPATH = "src"
 
 - 绿的标准：ruff 两项通过，pyright 0 errors，契约 0 broken，扫描器 0 硬性，pytest 全过。
 - `.venv\Scripts\pyright.exe` 会联网拉 nodeenv 失败，必须用外部 node 跑随包 dist，`node` 可换成任意 node 等价可执行文件。
-- 扫描器的待核条数与上一轮比对，只许减不许增。分节与豁免见 [style-checker.md](style-checker.md)。
+- 扫描器的待核条数与上一轮比对，只许减不许增。基线取登记完豁免清单后池子里的读数，预留待接的项留池子不算新增。分节与豁免见 [style-checker.md](style-checker.md)。
 
 ## 开发分支攒改动
 
