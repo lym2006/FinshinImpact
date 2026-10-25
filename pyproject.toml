@@ -39,6 +39,14 @@ dev = [
 # 测试用鸭子类型的假件，静态类型在此只报假阳性，口径与规范扫描器的 tests 豁免一致
 exclude = ["devtools/tests"]
 
+# exclude 只挡项目级扫描，编辑器打开单个用例仍会分析，故按目录另配一套口径
+[[tool.pyright.executionEnvironments]]
+root = "devtools/tests"
+# 用例运行期自行把 src 与 devtools 挂进 sys.path，静态层看不见，搜索路径在此显式补上
+extraPaths = ["src", "devtools"]
+reportArgumentType = "none"
+reportAttributeAccessIssue = "none"
+
 [tool.finshin-impact]
 uv-index-urls = [
     "https://mirrors.cloud.tencent.com/pypi/simple",
