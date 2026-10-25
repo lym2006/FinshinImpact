@@ -112,7 +112,7 @@ def _drop_download_lines(body: str) -> str:
     ).strip()
 
 
-def remote_release_notes(version: str, proxy_url: str | None = None) -> str:
+def remote_release_notes(version: str, *, proxy_url: str | None = None) -> str:
     """读取指定版本 release 正文，失败返回空串
 
     - 干净直连优先，给了代理地址再补试一轮

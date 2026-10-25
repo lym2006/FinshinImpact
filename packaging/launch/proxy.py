@@ -18,7 +18,8 @@ def system_proxy_url() -> str | None:
     """注册表系统代理 URL
 
     - ProxyEnable 为 0 或读不到值时返回 None
-    - 兼容 "127.0.0.1:7890" 与 "http=…;https=…" 两种写法
+    - 兼容裸地址写法，例如 "127.0.0.1:7890"
+    - 按协议分项的写法逐段取等号右边的地址
     """
     try:
         import winreg

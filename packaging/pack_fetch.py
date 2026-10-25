@@ -49,7 +49,7 @@ def fetch_embed() -> Path:
 
 def fetch_uv() -> Path:
     """取用 uv 安装包原料"""
-    return _fetch_to_cache(list(_UV_URLS), _UV_CACHE_NAME, _UV_SHA256)
+    return _fetch_to_cache(list(_UV_URLS), _UV_CACHE_NAME, sha256=_UV_SHA256)
 
 
 def _download(url: str, target: Path) -> None:
@@ -96,7 +96,7 @@ def _download_verified(urls: list[str], target: Path, sha256: str = "") -> None:
     raise RuntimeError(f"全部下载源均失败，中止构建：{last_error}")
 
 
-def _fetch_to_cache(urls: list[str], name: str, sha256: str = "") -> Path:
+def _fetch_to_cache(urls: list[str], name: str, *, sha256: str = "") -> Path:
     """构建原料取用缓存
 
     - 原料跨构建复用
