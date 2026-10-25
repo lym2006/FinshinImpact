@@ -45,14 +45,23 @@ def _sync_if_stale() -> None:
     """依赖对账，清单指纹与对账戳不符即弹同步窗
 
     - 同步要删清单外的包，故必在只装不删的结算之后
-    - 用户选否或同步失败都不落戳，下次启动再问
+    - 用户选否或同步失败都不落戳，下次启动再问，下载缓存一并留着供续装命中
+    - 对账落定才清启动器留下的下载缓存，早清会让同步重下一遍
     """
     from services.env_setup.deps_install import sync_needed
 
-    if sync_needed():
-        from ui import sync_deps
+    if not sync_needed():
+        return
 
-        sync_deps()
+    from ui import sync_deps
+
+    sync_deps()
+    if sync_needed():
+        return
+
+    from services.env_setup.subprocess_ops import clean_cache
+
+    clean_cache()
 
 
 def _acquire_slot() -> _SlotResult:
