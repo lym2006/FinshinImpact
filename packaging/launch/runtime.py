@@ -118,7 +118,8 @@ def ensure_runtime(root: Path) -> None:
 
     if _installed_ok(runtime, deps):
         return
-    dialogs.info("首次运行需要安装运行环境，期间保持网络畅通，可能需要几分钟。")
+    fresh = not (runtime / "python.exe").exists()
+    dialogs.info("首次运行需要安装运行环境" if fresh else "升级后补装变动依赖")
     console.open_console()
     try:
         print("[1/3] 解压嵌入式 Python…")
