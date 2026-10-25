@@ -5,6 +5,7 @@
 - 违规条目的分节名必须在 SECTIONS 内，防字面量改写错位
 - 回调形参四条判据各命中一次，业务协程与已合规写法不误报
 - 豁免清单只罩待核，条目须可解析且每条都在命中，失效即红
+- devtools 树可直连私有模块：不报越界，其引用不把 src 公共名算成对外
 """
 
 import sys
@@ -166,7 +167,9 @@ _PKG_INITS: tuple[str, ...] = (
 )
 
 
-def _scan(samples: list[tuple[str, str]]) -> dict[str, list[str]]:
+def _scan(
+    samples: list[tuple[str, str]], targets: tuple[str, ...] = ("src",)
+) -> dict[str, list[str]]:
     """在临时树里落样本并跑全量检查，按分节归名"""
     tree: dict[str, str] = {rel: _skeleton(rel) for rel in _PKG_INITS}
     tree.update(dict(samples))
@@ -176,7 +179,7 @@ def _scan(samples: list[tuple[str, str]]) -> dict[str, list[str]]:
             target = root / rel
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(source, encoding="utf-8")
-        files = load_files(root, [root / "src"])
+        files = load_files(root, [root / part for part in targets])
         findings = run_checks(files, ImportGraph(files))
     bucket: dict[str, list[str]] = {}
     for item in findings:
@@ -322,6 +325,34 @@ class TestWaiverFile(unittest.TestCase):
             [],
             "有豁免条目已不再命中，代码改完要删清单",
         )
+
+
+class TestDevtoolsWhiteBox(unittest.TestCase):
+    """devtools 树可直连私有模块，但引用不给公共名转正"""
+
+    # 工具跨包取 src 的私有模块，模块内一个只被工具用的公共名
+    _SAMPLE = [
+        (
+            "src/ui/_probe_white.py",
+            _skeleton("src/ui/_probe_white.py") + "class Public:\n" + _CLASS_DOC,
+        ),
+        (
+            "devtools/_probe_tool.py",
+            _skeleton("devtools/_probe_tool.py")
+            + "from ui._probe_white import Public\n\n_RUN = Public\n",
+        ),
+    ]
+    _TARGETS = ("src", "devtools")
+
+    def test_private_import_from_tool_passes(self) -> None:
+        """工具直连私有模块不报跨包越界"""
+        messages = _scan(self._SAMPLE, self._TARGETS).get("命名与门面导出", [])
+        self.assertFalse([m for m in messages if "跨包访问私有模块" in m], messages)
+
+    def test_tool_use_does_not_promote(self) -> None:
+        """只被工具引用的公共名照样提示加下划线"""
+        messages = _scan(self._SAMPLE, self._TARGETS).get("命名与门面导出", [])
+        self.assertTrue([m for m in messages if "Public" in m], messages)
 
 
 if __name__ == "__main__":

@@ -3,6 +3,7 @@
 
 - 导入路径含 `_` 前缀模块段且消费方在宿主包树外即违规
 - 宿主包树内互用豁免，私有性边界止于宿主包
+- devtools 树整片豁免，工具与用例直连内部实现属职责所在
 - 符号级下划线归 _s5_naming，本档只管模块路径级越界
 """
 
@@ -10,7 +11,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ._common import Finding, ImportGraph
+from ._common import DEVTOOLS_PREFIX, Finding, ImportGraph
 
 if TYPE_CHECKING:
     from ._common import FileData
@@ -23,7 +24,7 @@ def check(files: list[FileData], graph: ImportGraph) -> list[Finding]:
     seen: set[tuple[str, str, int]] = set()
     for importer, target, lineno in graph.edges:
         file = by_module.get(importer)
-        if file is None:
+        if file is None or file.rel.startswith(DEVTOOLS_PREFIX):
             continue
         findings.extend(_check_edge(file, importer, target, lineno, seen))
     return findings

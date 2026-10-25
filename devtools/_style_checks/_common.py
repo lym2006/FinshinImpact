@@ -49,6 +49,9 @@ _EXCLUDE_DIRS: frozenset[str] = frozenset(
 )
 _EXCLUDE_SUFFIXES: tuple[str, ...] = (".egg-info",)
 
+# 开发者工具整树可直连私有模块，其引用也不给公共名转正
+DEVTOOLS_PREFIX = "devtools/"
+
 _CJK_RE = re.compile(r"[\u4e00-\u9fff]")
 
 
@@ -207,11 +210,15 @@ class ImportGraph:
 
     - 记录每个模块被谁导入、导入了哪些符号
     - 相对导入按所在包逐级解析
+    - devtools 树内的引用单列一份，供命名分节剔除工具侧取用
     """
 
     def __init__(self, files: list[FileData]) -> None:
         """从文件列表构建导入图"""
         self.modules: set[str] = {f.module for f in files if f.module}
+        self.devtools_modules: set[str] = {
+            f.module for f in files if f.rel.startswith(DEVTOOLS_PREFIX)
+        }
         self.consumers: dict[str, dict[str, set[str]]] = {}
         self.importers_of: dict[str, set[str]] = {}
         self.edges: list[tuple[str, str, int]] = []

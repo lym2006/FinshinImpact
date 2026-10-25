@@ -4,6 +4,7 @@
 - 仅被自家包门面导入的子模块应带 `_` 前缀
 - `_` 前缀模块被包外直接导入提示转正
 - 被其他模块导入的符号禁 `_` 前缀，无任何消费者建议加
+- 消费者只算 src 侧调用，devtools 直连内部实现不属业务消费，其引用不给公共名转正
 - 模块级常量细则委托 _s5c_constants
 - 命名风格细则委托 _s5b_naming_style
 """
@@ -54,8 +55,12 @@ def _getattr_names(files: list[FileData]) -> set[str]:
 
 
 def _outside_consumers(graph: ImportGraph, target: str) -> set[str]:
-    """包外消费者集合"""
+    """包外消费者集合，工具侧直连的不计
+
+    - devtools 消费方不计入 src 符号的转正，但 devtools 自家树互用是真消费者
+    """
     package = target.rpartition(".")[0]
+    target_devtools = target in graph.devtools_modules
     consumers = graph.consumers.get(target, {})
     result: set[str] = set()
     for module in consumers:
@@ -63,18 +68,12 @@ def _outside_consumers(graph: ImportGraph, target: str) -> set[str]:
             continue
         if module.rpartition(".")[0] == package:
             continue
-        if _is_test_module(module):
+        if module in graph.devtools_modules and not target_devtools:
             continue
         if _is_ancestor_package(module, package):
             continue
         result.add(module)
     return result
-
-
-def _is_test_module(module: str) -> bool:
-    """测试模块白盒导入内部实现不构成转正依据"""
-    parts = module.split(".")
-    return any(p == "tests" or p.startswith("test_") for p in parts)
 
 
 def _is_ancestor_package(module: str, package: str) -> bool:
@@ -124,11 +123,12 @@ def _check_symbol_prefix(
     findings: list[Finding] = []
     consumed: dict[str, dict[str, set[str]]] = {}
     for target, consumers in graph.consumers.items():
+        target_devtools = target in graph.devtools_modules
         merged: dict[str, set[str]] = {}
         for consumer, symbols in consumers.items():
             if consumer == target:
                 continue
-            if _is_test_module(consumer):
+            if consumer in graph.devtools_modules and not target_devtools:
                 continue
             for symbol in symbols:
                 if symbol and symbol != "*":
