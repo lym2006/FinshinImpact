@@ -46,15 +46,3 @@ section = "文案类"
 path = "src/skin/messages/_check.py"
 match = "保存"
 reason = "同上，校验发起原因与保存按钮文案撞字"
-
-[[waiver]]
-section = "命名与门面导出"
-path = "src/adapters/telegram/_normalize.py"
-match = "normalize_update"
-reason = "归一层对外入口名，设计文档已裁定不加下划线，中间件与用例都按此名打桩"
-
-[[waiver]]
-section = "命名与门面导出"
-path = "src/adapters/telegram/_normalize.py"
-match = "BotIdentity"
-reason = "上述入口的 identity 形参类型，随入口名一起留公共名，改私有即逼调用方 import 私有"
