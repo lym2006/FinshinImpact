@@ -12,7 +12,7 @@ import ast
 import re
 from typing import TYPE_CHECKING
 
-from ._common import SECTIONS, Finding
+from ._common import Finding
 
 if TYPE_CHECKING:
     from ._common import FileData
@@ -142,4 +142,4 @@ def _check_dto_suffix(file: FileData) -> list[Finding]:
 
 def _f(file: FileData, line: int, message: str, hard: bool) -> Finding:
     """构造本分节违规条目"""
-    return Finding(SECTIONS[4], file.rel, line, message, hard)
+    return Finding("命名与门面导出", file.rel, line, message, hard)

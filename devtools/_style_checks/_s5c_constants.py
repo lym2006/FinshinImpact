@@ -12,7 +12,7 @@ import ast
 import re
 from typing import TYPE_CHECKING
 
-from ._common import SECTIONS, Finding, ImportGraph, all_names
+from ._common import Finding, ImportGraph, all_names
 
 if TYPE_CHECKING:
     from ._common import FileData
@@ -91,4 +91,4 @@ def _is_type_var(node: ast.stmt) -> bool:
 
 def _f(file: FileData, line: int, message: str, hard: bool) -> Finding:
     """构造命名分节违规条目"""
-    return Finding(SECTIONS[4], file.rel, line, message, hard)
+    return Finding("命名与门面导出", file.rel, line, message, hard)
