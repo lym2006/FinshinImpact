@@ -83,7 +83,7 @@
 
 ## 📖 开发与维护<a id="development"></a>
 
-- 🧭 **开发手册**（环境搭建、新增插件、发布流程）：[`docs/development.md`](docs/development.md)，代码规范：[`docs/coding-style.md`](docs/coding-style.md)
+- 🧭 **开发手册**（环境搭建、新增插件、发布流程）：[`docs/development.md`](docs/development.md)，代码规范：[`docs/coding-style.md`](docs/coding-style.md)，检查工具与回归用例：[`docs/style-checker.md`](docs/style-checker.md)、[`docs/testing.md`](docs/testing.md)
 - 🚀 **发布工作流与打包**：[`docs/release-workflow.md`](docs/release-workflow.md)、[`docs/packaging.md`](docs/packaging.md)，commit 模板 [`.gitmessage`](.gitmessage)
 - 📚 **工程经验**（实测踩坑与验证方法）：[`docs/lessons/README.md`](docs/lessons/README.md)
 - 🧩 **插件清单模板**：[`assets/plugin.example.toml`](assets/plugin.example.toml)，配置字段表单源在 [`src/core/domain/config/`](src/core/domain/config/)
