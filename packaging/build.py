@@ -32,7 +32,7 @@ from pack_spec import (
 # 应用图标唯一来源：随 assets 白名单进发布包，exe 与 GUI 任务栏同源
 _ICON = ROOT / "assets" / "app.ico"
 
-# 发布 zip 白名单：只装运行必需与用户文档，devtools/tests/docs/packaging 不在名单天然排除
+# 发布 zip 白名单：只装运行必需与用户文档，devtools（含测试）、docs、packaging 不在名单天然排除
 _COPY_DIRS = ("src", "assets")
 _COPY_FILES = (
     "pyproject.toml",
