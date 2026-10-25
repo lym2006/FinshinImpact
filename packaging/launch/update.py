@@ -91,7 +91,7 @@ def _ask_upgrade(new_msg: str, version: str) -> bool:
 
 def _print_changes(version: str) -> None:
     """打印指定版本的版本变化正文"""
-    notes = remote_release_notes(version, proxy.system_proxy_url())
+    notes = remote_release_notes(version, proxy_url=proxy.system_proxy_url())
     if not notes:
         print(f"未取到 v{version} 的发布说明，详情见 GitHub Releases 页")
         console.hold_console()
