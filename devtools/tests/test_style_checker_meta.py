@@ -295,6 +295,29 @@ class TestWaiverFile(unittest.TestCase):
             waiver.covers(Finding("注释", "src/ui/_probe.py", 9, message, False))
         )
 
+    def test_file_size_not_waivable(self) -> None:
+        """单文件行数超限只认拆或抬常量，清单罩不住"""
+        rel = "src/ui/_probe_size.py"
+        source = _skeleton(rel) + "_USE = None\n" * 300
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            target = root / rel
+            target.parent.mkdir(parents=True)
+            target.write_text(source, encoding="utf-8")
+            files = load_files(root, [root / "src"])
+            sized = [
+                item
+                for item in run_checks(files, ImportGraph(files))
+                if item.section == "拆分粒度" and item.rel == rel
+            ]
+        self.assertTrue(sized, "样本没造出单文件行数超限")
+        waiver = Waiver(section="拆分粒度", path=rel, reason="探针")
+        self.assertEqual(
+            [item.message for item in sized if waiver.covers(item)],
+            [],
+            "行数阈值被清单罩住了",
+        )
+
     def test_waiver_needs_no_line_number(self) -> None:
         """行号漂移不影响罩住，清单不许靠行号续命"""
         waiver = Waiver(section="注释", path="src/ui/_probe.py", reason="探针")
