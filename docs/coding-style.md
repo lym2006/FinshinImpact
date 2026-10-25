@@ -1,6 +1,7 @@
 # 代码规范
 
 以 [`ruff.toml`](../ruff.toml) 管可机检项，本文管机器查不了的习惯。
+扫描器按本文分节报违规，审过决定不改的待核登记在 [`devtools/style_waivers.toml`](../devtools/style_waivers.toml)，细则见 [style-checker.md](style-checker.md)。
 
 ## 文件骨架（自上而下）
 

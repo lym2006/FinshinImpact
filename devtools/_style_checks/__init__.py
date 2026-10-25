@@ -7,6 +7,7 @@
 
 from ._common import SECTIONS, Finding, ImportGraph, load_files
 from ._registry import run_checks
+from ._waivers import Waiver, apply_waivers, load_waivers
 
 __all__ = [
     # 公共设施
@@ -16,4 +17,8 @@ __all__ = [
     "load_files",
     # 统一入口
     "run_checks",
+    # 待核豁免
+    "Waiver",
+    "apply_waivers",
+    "load_waivers",
 ]
