@@ -13,6 +13,7 @@ from collections.abc import Iterator
 from datetime import datetime
 from pathlib import Path
 
+# 库定位与明细输出参数
 _ROOT = Path(__file__).resolve().parent.parent
 _DB_GLOB = "instances/*/db/bot.db"
 _BODY_WIDTH = 80  # 明细正文截断宽度，约合四十个中文
