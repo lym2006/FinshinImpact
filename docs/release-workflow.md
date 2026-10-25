@@ -22,13 +22,14 @@ $env:ELECTRON_RUN_AS_NODE = 1
 node .venv\Lib\site-packages\pyright\dist\index.js --pythonpath .venv\Scripts\python.exe --project pyproject.toml src packaging devtools
 $env:PYTHONUTF8 = 1; $env:PYTHONPATH = "src"
 .venv\Scripts\lint-imports.exe
-.venv\Scripts\python.exe devtools\check_coding_style.py
+.venv\Scripts\python.exe devtools\check_coding_style.py src packaging devtools
 .venv\Scripts\pytest.exe devtools\tests -q
 ```
 
 - 绿的标准：ruff 两项通过，pyright 0 errors，契约 0 broken，扫描器 0 硬性，pytest 全过。
 - `.venv\Scripts\pyright.exe` 会联网拉 nodeenv 失败，必须用外部 node 跑随包 dist，`node` 可换成任意 node 等价可执行文件。
-- 扫描器的待核条数与上一轮比对，只许减不许增。基线取登记完豁免清单后池子里的读数，预留待接的项留池子不算新增。分节与豁免见 [style-checker.md](style-checker.md)。
+- 扫描器的待核条数与上一轮比对，只许减不许增。基线取登记完豁免清单后的读数，预留待接的项照样报待核，不算新增。
+- 三棵 Python 树（`src`、`packaging`、`devtools`）全进扫描目标，漏一棵就有照不到的硬性。分节与豁免见 [style-checker.md](style-checker.md)。
 
 ## 开发分支攒改动
 
