@@ -7,8 +7,11 @@
 ## 跑法
 
 ```powershell
-python -m pytest                                         # 全跑，约二十秒
-python -m pytest devtools/tests/test_grant_access.py -v  # 只跑一组，逐条列用例名
+# 全跑
+python -m pytest
+
+# 只跑一组，逐条列用例名
+python -m pytest devtools/tests/test_grant_access.py -v
 ```
 
 - 在项目根跑，`pytest` 自己找到 `devtools/tests`，无需配 `testpaths`。

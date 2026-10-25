@@ -6,10 +6,17 @@
 ## 跑法
 
 ```powershell
-python devtools\check_coding_style.py                # 默认扫 src，按分节输出违规清单
-python devtools\check_coding_style.py src\bot        # 只扫指定目录或文件
-python devtools\check_coding_style.py --hard-only    # 只看规则明确可判的硬性违规
-python devtools\check_coding_style.py --section 注释  # 只看某一节，可重复
+# 默认扫 src，按分节输出违规清单
+python devtools\check_coding_style.py
+
+# 只扫指定目录或文件
+python devtools\check_coding_style.py src\bot
+
+# 只看规则明确可判的硬性违规
+python devtools\check_coding_style.py --hard-only
+
+# 只看某一节，可重复
+python devtools\check_coding_style.py --section 注释
 ```
 
 - 每条违规带标记：`[H]` 硬性，规则明确可判，须改。`[?]` 待核，启发式提示，人工判断后再改。
@@ -34,7 +41,8 @@ python devtools\check_coding_style.py --section 注释  # 只看某一节，可�
 - 类型注解：`_s9_typing.py`
 - 导入：`_s10_import_direction.py`
 
-「分层职责」不在扫描器里，由 `.importlinter` 的契约把关，跑 `.venv\Scripts\lint-imports.exe`。
+「分层职责」不在扫描器里，由 `.importlinter` 的契约管依赖方向，跑 `.venv\Scripts\lint-imports.exe`。
+契约只判谁准 import 谁，某层内部写了什么业务规则它看不见，那部分仍靠人工评审。
 
 ## 加一节的做法
 

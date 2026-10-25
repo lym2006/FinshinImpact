@@ -17,7 +17,7 @@ from utils.check import TelegramFieldKey
 from ..error_guard import error_guard
 
 if TYPE_CHECKING:
-    from . import BotManager
+    from ._manager import BotManager
 
 
 class ConfigApplier:

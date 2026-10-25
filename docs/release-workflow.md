@@ -97,7 +97,9 @@ type(scope): 主题
 
 ```powershell
 python packaging\build.py
-python packaging\build.py --check   # 自检：本地版本号、远端 tag、本地 zip、在线版本页、发布物官方直连、发布物 gh-proxy
+
+# 自检：本地版本号、远端 tag、本地 zip、在线版本页、发布物官方直连、发布物 gh-proxy
+python packaging\build.py --check
 ```
 
 成功标志：末行打印 `完成：dist\FinshinImpact-vX.Y.Z.zip`。发布前必须拿这个 zip 走一遍用户路径实测（解压、双击、装环境、收发），细节见 [packaging.md](packaging.md)。
