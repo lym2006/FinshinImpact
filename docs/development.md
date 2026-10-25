@@ -1,6 +1,8 @@
 # 开发手册
 
-面向贡献者与维护者。用户侧安装与更新见根目录 [`README.md`](../README.md)，发布操作细节见 [`packaging.md`](packaging.md)，代码风格见 [`coding-style.md`](coding-style.md)，实测出来的约束与踩坑见 [`lessons/`](lessons/README.md)。
+面向贡献者与维护者。用户侧安装与更新见根目录 [`README.md`](../README.md)，发布操作细节见 [`packaging.md`](packaging.md)，
+代码风格见 [`coding-style.md`](coding-style.md)，静态检查工具见 [`style-checker.md`](style-checker.md)，
+回归用例见 [`testing.md`](testing.md)，实测出来的约束与踩坑见 [`lessons/`](lessons/README.md)。
 
 ## 环境搭建
 
@@ -31,35 +33,6 @@
 > 判定以启用插件的 pip 包实测优先、指纹兜底资源，装完才放行启动，装失败的插件自动禁用并弹窗告知。
 > 装卸纪律：禁用只改启用集，不删已装库。删库只由依赖同步执行，入口是选窗"依赖管理"与启动引导期对账不符时的弹窗。
 > 实例未保存过插件选择时仅 core 插件运行。
-
-## 测试
-
-用例全在 `devtools/tests/`，改完主程序跑一次即可回归：
-
-```powershell
-python -m pytest                                        # 全跑，约二十秒
-python -m pytest devtools/tests/test_grant_access.py -v  # 只跑一组，逐条列用例名
-```
-
-- 每个文件开头自行把 `src` 挂进 `sys.path`，无 `conftest.py`，也不依赖已安装的包。
-- 测试不套生产规范口径：规范扫描器把 `tests` 目录列进跳过名单，
-  跨包取私有函数、桩函数缺类型注解都不算违规，ruff 在此只关 docstring 一组规则。
-- 首行注释写的是文件自身路径，改名或搬动要连着改。
-
-## 代码规范检查
-
-改码前后跑一次规范扫描器，对照 `docs/coding-style.md` 九个分节自查。扫描器只报不改，输出供人工核实。
-
-```powershell
-python devtools\check_coding_style.py            # 默认扫 src，按分节输出违规清单
-python devtools\check_coding_style.py src\bot    # 只扫指定目录或文件
-python devtools\check_coding_style.py --hard-only  # 只看规则明确可判的硬性违规
-python devtools\check_coding_style.py --section 注释  # 只看某一节，可重复
-```
-
-- 每条违规带标记：`[H]` 硬性，规则明确可判，须改。`[?]` 待核，启发式提示，人工判断后再改。
-- 扫描器本体在 `devtools/`，与 `src`、`packaging` 同级，属开发者内容，不进发布包（打包走白名单，见 [packaging.md](packaging.md)）。
-- 扫描器自身也须合规，改完检查逻辑后跑 `python devtools\check_coding_style.py devtools` 自查，应保持 0 违规。
 
 ## 发布流程
 

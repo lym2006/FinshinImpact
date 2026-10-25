@@ -13,6 +13,23 @@
   → 版本页校验收尾
 ```
 
+## 五项闸门（提交与发布前跑齐）
+
+```powershell
+.venv\Scripts\ruff.exe format --check .
+.venv\Scripts\ruff.exe check .
+$env:ELECTRON_RUN_AS_NODE = 1
+node .venv\Lib\site-packages\pyright\dist\index.js --pythonpath .venv\Scripts\python.exe --project pyproject.toml src packaging devtools
+$env:PYTHONUTF8 = 1; $env:PYTHONPATH = "src"
+.venv\Scripts\lint-imports.exe
+.venv\Scripts\python.exe devtools\check_coding_style.py
+.venv\Scripts\pytest.exe devtools\tests -q
+```
+
+- 绿的标准：ruff 两项通过，pyright 0 errors，契约 0 broken，扫描器 0 硬性，pytest 全过。
+- `.venv\Scripts\pyright.exe` 会联网拉 nodeenv 失败，必须用外部 node 跑随包 dist，`node` 可换成任意 node 等价可执行文件。
+- 扫描器的待核条数与上一轮比对，只许减不许增。分节与豁免见 [style-checker.md](style-checker.md)。
+
 ## 开发分支攒改动
 
 - 一轮改动四件套全绿即分组 commit，本地攒着不 push，半成品不入库。
