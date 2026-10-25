@@ -22,7 +22,6 @@ instances/
 runtime/
 
 # --- 项目特定忽略项 ---
-tests/
 docs/design/
 uv.lock
 .qoderignore
