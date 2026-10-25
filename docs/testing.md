@@ -32,8 +32,10 @@ python -m pytest devtools/tests/test_grant_access.py -v
 
 - 规范扫描器把名为 `tests` 的目录列进跳过名单（`devtools/_style_checks/_common.py`），
   跨包取私有函数、桩函数缺类型注解都不算违规。
-- 类型检查由 `pyproject.toml` 的 `[tool.pyright] exclude` 挡住本目录，
-  用例大量用鸭子类型的假件，静态类型在这只报假阳性。
+- 类型检查在 `pyproject.toml` 的 `[tool.pyright]` 里分两层：`exclude` 让闸门跳过本目录；
+  编辑器打开单个用例时 `exclude` 拦不住分析，另配一套按目录的环境——`extraPaths` 补 `src` 与
+  `devtools`（用例运行期自己挂路径，静态层不补就整片报缺导入），只关掉假件那两类
+  `reportArgumentType` 与 `reportAttributeAccessIssue`，其余照报。
 - ruff 在 `ruff.toml` 里对本目录关掉 docstring 一组规则，测试函数名即文档。
 
 ruff 的其余规则照查，pytest 照跑，改名或漏文件都过不了闸门。
