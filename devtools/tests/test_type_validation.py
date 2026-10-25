@@ -10,6 +10,7 @@
 import sys
 import unittest
 from pathlib import Path
+from typing import cast
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "src"))
 
@@ -196,7 +197,7 @@ class TestConfigManagerFallback(unittest.TestCase):
 
         manager = self._manager()
         manager.load({})
-        first = manager._schema_default("ai.tags")
+        first = cast("list[str]", manager._schema_default("ai.tags"))
         first.append("mutated")
         self.assertEqual(manager._schema_default("ai.tags"), ["a"])
 

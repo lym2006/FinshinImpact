@@ -36,7 +36,7 @@ def _section(raw_command: Any) -> list[dict[str, Any]]:
 class TestHelpCommandParse(unittest.TestCase):
     """清单里单命令的解析口径"""
 
-    def _parse(self, raw_command: Any) -> HelpCommandDTO | None:
+    def _parse(self, raw_command: Any) -> HelpCommandDTO:
         return _manifest._read_help_sections(_section(raw_command))[0].commands[0]
 
     def test_defaults_when_optional_keys_absent(self) -> None:

@@ -131,7 +131,7 @@ def _capture(bucket: list) -> object:
 def _run_worker(history: tuple[MessageDTO, ...], *, trigger: int):
     """走过一轮工作循环并交出落库窗口与压缩入参"""
     ctx = _Ctx(_event())
-    saved: list[tuple[MessageDTO, ...]] = []
+    saved: list[tuple[SessionKey, tuple[MessageDTO, ...]]] = []
     compressed: list[tuple[SessionKey, ChatScope, tuple[MessageDTO, ...]]] = []
 
     async def _fake_compress(key, scope, rows) -> None:
