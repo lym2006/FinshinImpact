@@ -10,7 +10,7 @@ from __future__ import annotations
 import ast
 from typing import TYPE_CHECKING
 
-from ._common import SECTIONS, Finding
+from ._common import Finding
 
 if TYPE_CHECKING:
     from ._common import FileData
@@ -81,4 +81,4 @@ def _from_violation(file: FileData, node: ast.ImportFrom, top: str) -> list[Find
 
 def _f(file: FileData, line: int, message: str, hard: bool) -> Finding:
     """构造本分节违规条目"""
-    return Finding(SECTIONS[9], file.rel, line, message, hard)
+    return Finding("导入", file.rel, line, message, hard)

@@ -13,7 +13,7 @@ from __future__ import annotations
 import ast
 from typing import TYPE_CHECKING
 
-from ._common import SECTIONS, Finding, has_cjk
+from ._common import Finding, has_cjk
 
 if TYPE_CHECKING:
     from ._common import FileData
@@ -215,4 +215,4 @@ def _in_fstring(file: FileData, node: ast.Constant) -> bool:
 
 def _f(file: FileData, line: int, message: str, hard: bool) -> Finding:
     """构造本分节违规条目"""
-    return Finding(SECTIONS[6], file.rel, line, message, hard)
+    return Finding("日志与文案", file.rel, line, message, hard)

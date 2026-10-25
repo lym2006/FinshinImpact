@@ -15,7 +15,7 @@ import re
 from collections import defaultdict
 from typing import TYPE_CHECKING
 
-from ._common import SECTIONS, Finding, has_cjk
+from ._common import Finding, has_cjk
 
 if TYPE_CHECKING:
     from ._common import FileData
@@ -43,7 +43,7 @@ def check(files: list[FileData]) -> list[Finding]:
             rel, line = spots[0]
             findings.append(
                 Finding(
-                    SECTIONS[7],
+                    "文案类",
                     rel,
                     line,
                     f"跨域同义文案 `{text[:24]}…` 出现在 {len(hit_files)} 个文件，应单源一处定义",
@@ -180,4 +180,4 @@ def _camel_to_upper(name: str) -> str:
 
 def _f(file: FileData, line: int, message: str, hard: bool) -> Finding:
     """构造本分节违规条目"""
-    return Finding(SECTIONS[7], file.rel, line, message, hard)
+    return Finding("文案类", file.rel, line, message, hard)
