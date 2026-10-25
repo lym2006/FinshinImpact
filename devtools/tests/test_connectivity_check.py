@@ -685,7 +685,7 @@ class TestSingleRowPlan(unittest.TestCase):
         from utils.network import plan_channels, verify_plan
         from utils.network.probe import single_row_of
 
-        channels = plan_channels("http://127.0.0.1:9999", None, "cfg")
+        channels = plan_channels("http://127.0.0.1:9999", None, mode="cfg")
         rows = verify_plan(channels, single=single_row_of("cfg"))
         self.assertEqual([r["id"] for r in rows], ["cfg", "local", "advice"])
 

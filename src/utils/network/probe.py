@@ -116,7 +116,7 @@ def sys_deduped(configured: str, sys_proxy: str | None) -> bool:
 
 
 def plan_channels(
-    configured: str, sys_proxy: str | None, mode: str = ProxyMode.AUTO
+    configured: str, sys_proxy: str | None, *, mode: str = ProxyMode.AUTO
 ) -> list[Channel]:
     """规划候选代理通道
 
