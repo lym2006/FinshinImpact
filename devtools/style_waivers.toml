@@ -1,0 +1,47 @@
+# 待核豁免清单
+#
+# 扫描器判据查不到真实消费面、或人工评审后确认不改的待核条目在此登记。
+# 只罩待核，不罩硬性。匹配键为分节加路径，match 为消息里的稳定子串，故意不写行号防漂移。
+# 全量扫描时一条都没命中即转一条硬性「失效豁免」报出，代码改完要顺手删掉对应条目。
+
+[[waiver]]
+section = "命名与门面导出"
+path = "src/data/_migrations/_0001_baseline.py"
+match = "apply"
+reason = "迁移脚本由 runner 按属性反射调用，导入图查不到消费方"
+
+[[waiver]]
+section = "命名与门面导出"
+path = "src/utils/check/_connectivity.py"
+match = "get_me"
+reason = "探测接缝函数，用例按同名关键字替换实现，不经 import 消费"
+
+[[waiver]]
+section = "拆分粒度"
+path = "src/ui/_dialogs/_check.py"
+match = "CheckDialog"
+reason = "界面类方法互传控件引用，拆开即跨模块来回传引用，规范明文不拆"
+
+[[waiver]]
+section = "拆分粒度"
+path = "src/utils/check/_verify.py"
+match = "run_channels"
+reason = "并发汇聚点，按通道拆函数要多传一层 channel 引用，评审 70 行不改"
+
+[[waiver]]
+section = "枚举"
+path = "src/ui/_dialogs/_settings/__init__.py"
+match = "ConfigMode"
+reason = "纯分支标识只判相等，不比大小也不落盘，auto 属规范允许形态"
+
+[[waiver]]
+section = "文案类"
+path = "src/skin/messages/_check.py"
+match = "启动"
+reason = "诊断原因词与按钮标签同字不同义，两处各有语义，合并即错"
+
+[[waiver]]
+section = "文案类"
+path = "src/skin/messages/_check.py"
+match = "保存"
+reason = "同上，校验发起原因与保存按钮文案撞字"
