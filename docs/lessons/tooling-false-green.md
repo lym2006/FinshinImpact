@@ -42,7 +42,7 @@ pyright 必须用 Qoder 自带的 node 直接跑 `pyright/dist/index.js` 并带�
 
 临时脚本不要放项目根目录。根目录下有个 `libssl-3.dll` 之类的运行库，Windows 的 DLL 搜索顺序会让 python 先撞上它，表现为 `_ssl` 导入失败，和一个你正在跑的脚本毫无关系。
 
-`tests/` 和 `docs/design/` 在 `.gitignore` 里，Grep 工具搜这两个目录永远 0 命中，不等于没有引用。改路径时这两处要用命令行 `grep` 单独扫，`git add tests/...` 会被拒绝。
+`docs/design/` 在 `.gitignore` 里，Grep 工具搜这个目录永远 0 命中，不等于没有引用。改路径时它要用命令行 `grep` 单独扫。
 
 ## 别信文档与记忆里的「已完成」
 
