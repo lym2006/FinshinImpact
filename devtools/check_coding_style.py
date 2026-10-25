@@ -70,11 +70,13 @@ def _dead_finding(waiver: Waiver) -> Finding:
 
 
 def _full_scan(sections: list[str], targets: list[Path]) -> bool:
-    """全分节且只扫 src 根时才判失效豁免，局部扫描的没命中不作数"""
-    src = _ROOT / "src"
-    return len(sections) == len(SECTIONS) and all(
-        path == src or path == _ROOT for path in targets
-    )
+    """清单覆盖面扫到才判失效豁免
+
+    - 条目全在 src 下，目标含 src 根或仓库根即算扫全，再带别的树不影响
+    - 单扫某棵树或子目录时清单本来就可能不命中，不误报失效
+    """
+    covered = {_ROOT, _ROOT / "src"}
+    return len(sections) == len(SECTIONS) and any(path in covered for path in targets)
 
 
 def _render(findings: list[Finding], sections: list[str]) -> str:
