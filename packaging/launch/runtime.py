@@ -108,10 +108,11 @@ def ensure_runtime(root: Path) -> None:
 
     - 依次：解压嵌入式 Python、放开 site、部署 uv、装依赖
     - 只追加安装，删掉的库由引导层同步环境收口
+    - 装包缓存不在此清，留到引导层同步落定后收口
     """
     runtime = root / RUNTIME_DIR_NAME
 
-    # 装包期缓存放包内，装完删除，不落用户目录
+    # 装包期缓存放包内，不落用户目录
     cache = runtime / str(require_setting(root, _SETTING_CACHE))
     deps = dependencies(root)
 
@@ -141,6 +142,4 @@ def ensure_runtime(root: Path) -> None:
             "内嵌运行环境包损坏（发布物不完整）\n请到 Releases 页重新下载最新发布包"
         )
 
-    # 装完即删：缓存在用户目录会留近 400MB 运行期无用的副本，改放包内用完清掉
-    shutil.rmtree(cache, ignore_errors=True)
     (runtime / ".installed").write_text(_list_digest(deps))
