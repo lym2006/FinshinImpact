@@ -25,6 +25,7 @@ from _style_checks import (  # noqa: E402
     load_waivers,
     run_checks,
 )
+from check_coding_style import _full_scan, _run  # noqa: E402
 
 _HERE = Path(__file__).resolve().parent
 _ROOT = _HERE.parent.parent
@@ -325,6 +326,36 @@ class TestWaiverFile(unittest.TestCase):
             [],
             "有豁免条目已不再命中，代码改完要删清单",
         )
+
+    def test_hard_only_keeps_live_waivers(self) -> None:
+        """只输出硬性时不许把在用的豁免判成失效"""
+        ordered, _ = _run([_ROOT / "src"], list(SECTIONS), True)
+        self.assertEqual(
+            [f.message for f in ordered if "失效豁免" in f.message],
+            [],
+            "硬性过滤排在豁免匹配之前，清单条目会全被判死",
+        )
+
+    def test_full_scan_needs_root_coverage(self) -> None:
+        """覆盖面判据，漏改会让失效检测静默停摆"""
+        src, packaging, devtools, ui = (
+            _ROOT / "src",
+            _ROOT / "packaging",
+            _ROOT / "devtools",
+            _ROOT / "src" / "ui",
+        )
+        sections = list(SECTIONS)
+        for targets, expected in (
+            ([_ROOT], True),
+            ([src], True),
+            ([src, packaging, devtools], True),
+            ([packaging, devtools], False),
+            ([ui], False),
+        ):
+            with self.subTest(targets=[str(item.name) for item in targets]):
+                self.assertEqual(_full_scan(sections, targets), expected)
+        with self.subTest(msg="只扫单个分节不算扫全"):
+            self.assertFalse(_full_scan([sections[0]], [_ROOT]))
 
 
 class TestDevtoolsWhiteBox(unittest.TestCase):

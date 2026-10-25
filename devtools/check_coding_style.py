@@ -47,15 +47,18 @@ def _run(
     graph = ImportGraph(list(by_rel.values()))
     findings = run_checks(files, graph)
     findings = [f for f in findings if f.section in sections]
-    if hard_only:
-        findings = [f for f in findings if f.hard]
+
+    # 豁免只罩待核，须拿全量算命中，先滤硬性会把在用的条目全判失效
     kept, dead = apply_waivers(findings, load_waivers(_WAIVER_FILE))
+    waived = len(findings) - len(kept)
+    if hard_only:
+        kept = [f for f in kept if f.hard]
 
     # 只在扫到清单覆盖面时才判失效，局部扫描的没命中不作数
     dead = dead if _full_scan(sections, targets) else ()
     entries = kept + [_dead_finding(waiver) for waiver in dead]
     ordered = sorted(entries, key=lambda f: (SECTIONS.index(f.section), f.rel, f.line))
-    return ordered, len(findings) - len(kept)
+    return ordered, waived
 
 
 def _dead_finding(waiver: Waiver) -> Finding:
