@@ -6,7 +6,7 @@
 
 import sys
 
-from . import main
+from ._slot import main
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -32,8 +32,13 @@ _SECTION_WORDS = (
     "主入口",
 )
 
-# 装饰横线
-_DECORATION_RE = re.compile(r"[=\-*~─—_]{4,}")
+# 装饰符号连排达此数即判装饰线，单个减号与下划线属正常书写（`# -1`、`# __all__`）
+_DECORATION_MIN = 2
+_DECORATION_RE = re.compile(rf"[=\-*~─—_]{{{_DECORATION_MIN},}}(?![\w])")
+
+# 词表项容许的拼接字数，超出即视为说明句而非标题
+_TITLE_SLACK = 4
+_SENTENCE_RE = re.compile(r"[，。：；,.;]")
 
 # __all__ 成员达此数即须按含义分组，单项豁免分组注释
 _GROUP_MIN = 2
@@ -118,9 +123,19 @@ def _check_section_titles(file: FileData) -> list[Finding]:
             )
             continue
         core = re.sub(r"[=\-─—#\s]+", "", text)
-        if core in _SECTION_WORDS:
+        if _is_section_title(core):
             findings.append(_f(file, line, f"区块标题注释：`# {text}`", hard=True))
     return findings
+
+
+def _is_section_title(core: str) -> bool:
+    """去符号后的注释文本是否属区块标题，拼合写法一并判"""
+    if not core or _SENTENCE_RE.search(core):
+        return False
+    return any(
+        word == core or (word in core and len(core) <= len(word) + _TITLE_SLACK)
+        for word in _SECTION_WORDS
+    )
 
 
 def _check_dunder_all(file: FileData) -> list[Finding]:

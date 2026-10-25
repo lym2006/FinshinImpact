@@ -13,7 +13,7 @@ from utils import config_manager
 from utils.config import load_config
 
 if TYPE_CHECKING:
-    from . import BotManager
+    from ._manager import BotManager
 
 
 class SignalHandler:

@@ -16,13 +16,13 @@ exclude = [
 
 [lint]
 select = [
-    "E",   # pycodestyle 错误 (PEP 8 规范)
-    "F",   # pyflakes (未使用的变量、无效导入等逻辑错误)
-    "I",   # isort (自动整理 import 语句顺序)
+    "E",  # pycodestyle 错误 (PEP 8 规范)
+    "F",  # pyflakes (未使用的变量、无效导入等逻辑错误)
+    "I",  # isort (自动整理 import 语句顺序)
     "UP",  # pyupgrade (自动升级旧语法)
-    "B",   # flake8-bugbear (常见的 Bug 检测)
-    "N",   # pep8-naming (命名规范检查)
-    "D",   # pydocstyle (文档字符串规范)
+    "B",  # flake8-bugbear (常见的 Bug 检测)
+    "N",  # pep8-naming (命名规范检查)
+    "D",  # pydocstyle (文档字符串规范)
 ]
 ignore = [
     "E501",  # 忽略行长警告
@@ -52,7 +52,7 @@ extend-ignore-names = [
 known-first-party = ["plugins", "utils", "core", "data", "services", "adapters", "bot"]
 
 [format]
-quote-style = "double"                  # 普通字符串强制使用双引号 ""
-indent-style = "space"                  # 使用空格缩进
-skip-magic-trailing-comma = false       # 保留尾随逗号（有助于 Git 减少 diff 冲突）
-line-ending = "auto"                    # 自动处理换行符 (CRLF/LF)
+quote-style = "double"  # 普通字符串强制使用双引号 ""
+indent-style = "space"  # 使用空格缩进
+skip-magic-trailing-comma = false  # 保留尾随逗号（有助于 Git 减少 diff 冲突）
+line-ending = "auto"  # 自动处理换行符 (CRLF/LF)
