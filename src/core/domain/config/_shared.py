@@ -6,6 +6,7 @@
 
 from ._models import ConfigKey, ConfigSection, FieldSpec, SectionSpec
 
+# 全局
 _GLOBAL_SECTION = SectionSpec(
     section=ConfigSection.GLOBAL,
     fields=(
@@ -19,6 +20,7 @@ _GLOBAL_SECTION = SectionSpec(
     ),
 )
 
+# AI 配置
 _AI_SECTION = SectionSpec(
     section=ConfigSection.AI,
     fields=(
@@ -39,6 +41,7 @@ _AI_SECTION = SectionSpec(
     ),
 )
 
+# 杂项
 _CHORE_SECTION = SectionSpec(
     section=ConfigSection.CHORE,
     fields=(
@@ -59,6 +62,7 @@ _CHORE_SECTION = SectionSpec(
     ),
 )
 
+# 数据维护
 _DATA_SECTION = SectionSpec(
     section=ConfigSection.DATA,
     fields=(
@@ -79,4 +83,5 @@ _DATA_SECTION = SectionSpec(
     ),
 )
 
+# 共享配置段
 SHARED_SECTIONS = (_GLOBAL_SECTION, _AI_SECTION, _CHORE_SECTION, _DATA_SECTION)
