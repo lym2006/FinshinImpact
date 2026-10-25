@@ -13,7 +13,7 @@ from __future__ import annotations
 import ast
 from typing import TYPE_CHECKING
 
-from ._common import SECTIONS, Finding, ImportGraph, all_names
+from ._common import Finding, ImportGraph, all_names
 from ._s5b_naming_style import check_style
 from ._s5c_constants import check_constants
 
@@ -218,4 +218,4 @@ def _is_name_main(test: ast.expr) -> bool:
 
 def _f(file: FileData, line: int, message: str, hard: bool) -> Finding:
     """构造本分节违规条目"""
-    return Finding(SECTIONS[4], file.rel, line, message, hard)
+    return Finding("命名与门面导出", file.rel, line, message, hard)

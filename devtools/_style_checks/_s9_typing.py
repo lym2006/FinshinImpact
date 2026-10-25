@@ -13,7 +13,7 @@ from __future__ import annotations
 import ast
 from typing import TYPE_CHECKING
 
-from ._common import SECTIONS, Finding
+from ._common import Finding
 
 if TYPE_CHECKING:
     from ._common import FileData
@@ -106,4 +106,4 @@ def _is_simple_lambda_stub(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool
 
 def _f(file: FileData, line: int, message: str, hard: bool) -> Finding:
     """构造本分节违规条目"""
-    return Finding(SECTIONS[8], file.rel, line, message, hard)
+    return Finding("类型注解", file.rel, line, message, hard)

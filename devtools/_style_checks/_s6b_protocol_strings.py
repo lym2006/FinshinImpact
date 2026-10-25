@@ -12,7 +12,7 @@ import ast
 from collections import defaultdict
 from typing import TYPE_CHECKING
 
-from ._common import SECTIONS, Finding
+from ._common import Finding
 
 if TYPE_CHECKING:
     from ._common import FileData
@@ -178,4 +178,4 @@ def _contains(root: ast.AST, node: ast.Constant) -> bool:
 
 def _f_by(rel: str, line: int, message: str, hard: bool) -> Finding:
     """按相对路径构造违规条目"""
-    return Finding(SECTIONS[5], rel, line, message, hard)
+    return Finding("魔法数字与字符串", rel, line, message, hard)

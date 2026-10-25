@@ -13,7 +13,7 @@ import ast
 from collections import defaultdict
 from typing import TYPE_CHECKING
 
-from ._common import SECTIONS, Finding
+from ._common import Finding
 
 if TYPE_CHECKING:
     from ._common import FileData
@@ -172,4 +172,4 @@ def _is_docstring(node: ast.stmt) -> bool:
 
 def _f(file: FileData, line: int, message: str, hard: bool) -> Finding:
     """构造本分节违规条目"""
-    return Finding(SECTIONS[1], file.rel, line, message, hard)
+    return Finding("拆分粒度", file.rel, line, message, hard)

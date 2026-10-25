@@ -14,7 +14,7 @@ import ast
 import re
 from typing import TYPE_CHECKING
 
-from ._common import SECTIONS, Finding
+from ._common import Finding
 
 if TYPE_CHECKING:
     from ._common import FileData
@@ -223,4 +223,4 @@ def _is_name_main(test: ast.expr) -> bool:
 
 def _f(file: FileData, line: int, message: str, hard: bool) -> Finding:
     """构造本分节违规条目"""
-    return Finding(SECTIONS[0], file.rel, line, message, hard)
+    return Finding("文件骨架", file.rel, line, message, hard)

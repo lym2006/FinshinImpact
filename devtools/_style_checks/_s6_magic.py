@@ -13,7 +13,7 @@ import ast
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
-from ._common import SECTIONS, Finding
+from ._common import Finding
 from ._s6b_protocol_strings import check_strings
 
 if TYPE_CHECKING:
@@ -147,4 +147,4 @@ def _exempt_number(value: int | float) -> bool:
 
 def _f(file: FileData, line: int, message: str, hard: bool) -> Finding:
     """构造本分节违规条目"""
-    return Finding(SECTIONS[5], file.rel, line, message, hard)
+    return Finding("魔法数字与字符串", file.rel, line, message, hard)

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ._common import SECTIONS, Finding, ImportGraph
+from ._common import Finding, ImportGraph
 
 if TYPE_CHECKING:
     from ._common import FileData
@@ -56,7 +56,7 @@ def _check_edge(
         seen.add(key)
         findings.append(
             Finding(
-                SECTIONS[4],
+                "命名与门面导出",
                 file.rel,
                 lineno,
                 f"跨包访问私有模块 `{priv}`，消费方 `{importer}` 在宿主包 `{holder}` 之外",
