@@ -5,12 +5,13 @@
 - __init__ 返回 -> None（ruff D 不管这里）
 - 豁免：self/cls、简单 lambda、super 纯转发的 vararg/kwarg
 - super().__init__(*args, **kwargs) 转发不引入 ParamSpec 提示
-- # type: ignore 豁免校验，允许三类无法机检且已免注原因
+- `# type: ignore` 必须带 `[错误码]`，裸标记会连整行其他错误一起吞掉
 """
 
 from __future__ import annotations
 
 import ast
+import re
 from typing import TYPE_CHECKING
 
 from ._common import Finding
@@ -20,6 +21,9 @@ if TYPE_CHECKING:
 
 _EXEMPT_PARAMS: frozenset[str] = frozenset({"self", "cls"})
 
+# 未紧跟方括号的抑制标记，缺的就是那份错误码
+_BARE_IGNORE_RE = re.compile(r"type:\s*ignore(?!\s*\[)")
+
 
 def check(files: list[FileData]) -> list[Finding]:
     """扫描类型注解违规"""
@@ -28,6 +32,18 @@ def check(files: list[FileData]) -> list[Finding]:
         if file.parse_error:
             continue
         findings.extend(_check_defs(file))
+        findings.extend(_check_bare_ignores(file))
+    return findings
+
+
+def _check_bare_ignores(file: FileData) -> list[Finding]:
+    """整行与行尾注释里的裸抑制标记"""
+    findings: list[Finding] = []
+    for line, text in {**file.comments, **file.eol}.items():
+        if _BARE_IGNORE_RE.search(text):
+            findings.append(
+                _f(file, line, "`# type: ignore` 未带 `[错误码]`", hard=True)
+            )
     return findings
 
 

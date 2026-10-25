@@ -9,10 +9,10 @@
 ```
 FinshinImpact\
 ├── FinshinImpact.exe   启动器（用户双击这个）
-├── _internal\        启动器运行库
-├── main.py           程序入口，走引导层（调试可单跑：runtime\python.exe main.py，会先弹选择窗）
-├── runtime\          嵌入式 Python 原料，首启自装于此
-├── src\              代码文件
+├── _internal\          启动器运行库
+├── main.py             程序入口，走引导层
+├── runtime\            嵌入式 Python 原料，首启自装于此
+├── src\                代码文件
 ```
 
 启动器首启：解压嵌入式 Python → 放开 site-packages → 落位随包 uv → 装依赖 → 拉起主程序。插件依赖与浏览器内核由引导层在启动前按需安装，不在首装链路。此后每次启动比对在线版本页，弹窗确认后整包升级。
@@ -36,7 +36,7 @@ FinshinImpact\
 
 ```powershell
 pip install -e ".[dev]"
-python -m PyInstaller --version   # 应打印 6.22.3
+python -m PyInstaller --version
 ```
 
 ## 第二步：定稿并构建
@@ -66,8 +66,8 @@ python packaging\build.py
 拿第二步产出的 zip 走一遍用户路径：
 
 1. 把 zip 复制到别处（如桌面）解压——在 `dist\` 里测会污染构建目录。
-2. 双击 `FinshinImpact.exe`，进度窗口 `[1/5]`～`[5/5]`，uv 按腾讯→阿里→清华→官方四源回退，约一两分钟，别关窗口。
-3. 验证：向导填 token 能收发消息。首启没有 `runtime\.synced`，会弹一次"同步重建环境"大警告，选"是"走完才落戳、之后不再弹，选"否"每次启动都再问。走完同步后再开一次应几秒直达、不再出现进度窗口。测试目录只多出 `instances\` 与 `runtime\`。`payload\` 首启取完 uv 即删，不应残留。实例文件夹内应含 `config.toml`、`persona.md`、`profile.json`、`data\`、`logs\`。
+2. 双击 `FinshinImpact.exe`，进度窗口 `[1/3]`～`[3/3]`，uv 按腾讯→阿里→清华→官方四源回退，约一两分钟，别关窗口。
+3. 验证：向导填 token 能收发消息。首启没有 `runtime\.synced`，会弹一次"同步重建环境"大警告，选"是"走完才落戳、之后不再弹，选"否"每次启动都再问。走完同步后再开一次应几秒直达、不再出现进度窗口。测试目录只多出 `instances\` 与 `runtime\`。`payload\` 首启取完 uv 即删，不应残留。实例文件夹内应含 `config.toml`、`persona.md`、`.persona.base`、`profile.json`、`records\`、`db\`、`logs\`。
 4. 升级件另测一条：老目录 `instances\tg-<数字>` 与新格式对不上，选窗不再显示，手工改名成 `instances\tg.<数字>` 后资产原样回来。
 5. 任一环节失败都不许发布。测完删掉测试目录。
 

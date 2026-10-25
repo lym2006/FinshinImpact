@@ -6,6 +6,7 @@
 - 类名已含域义则成员免写域前缀
 - 每条成员行首注释标注使用位置
 - 跨域同义文案单源：相同中文文案多文件出现提示
+- 域文件一个都没命中即报硬性，防包路径变更后本分节空转
 """
 
 from __future__ import annotations
@@ -20,13 +21,22 @@ from ._common import Finding, has_cjk
 if TYPE_CHECKING:
     from ._common import FileData
 
-_MESSAGES_PACKAGE = "messages"
+_MESSAGES_PACKAGE = "skin.messages"
+
+# 文案类类名后缀，域类一律 XxxMessage
+_CLASS_SUFFIX = "Message"
+
+# 哨兵用的目录名，故意不与 _MESSAGES_PACKAGE 同源，否则两者一起失效就查不出
+_DOMAIN_DIR = "messages"
 
 
 def check(files: list[FileData]) -> list[Finding]:
     """扫描文案类违规"""
     findings: list[Finding] = []
     msg_files = [f for f in files if f.package == _MESSAGES_PACKAGE and not f.is_init]
+    dead = _check_matcher_live(files, msg_files)
+    if dead is not None:
+        return [dead]
     texts: dict[str, list[tuple[str, int]]] = defaultdict(list)
     for file in msg_files:
         if file.parse_error:
@@ -53,6 +63,20 @@ def check(files: list[FileData]) -> list[Finding]:
     return findings
 
 
+def _check_matcher_live(
+    files: list[FileData], msg_files: list[FileData]
+) -> Finding | None:
+    """域目录进了扫描却零命中，即包路径与判据脱节"""
+    if msg_files:
+        return None
+    for file in files:
+        if file.parse_error or file.is_init:
+            continue
+        if file.path.parent.name == _DOMAIN_DIR:
+            return _f(file, 1, "文案域文件被扫到却零命中，包路径与判据脱节", True)
+    return None
+
+
 def _check_file_naming(file: FileData, classes: list[ast.ClassDef]) -> list[Finding]:
     """域文件命名检查"""
     findings: list[Finding] = []
@@ -69,8 +93,8 @@ def _check_file_naming(file: FileData, classes: list[ast.ClassDef]) -> list[Find
     if not classes:
         return findings
     expected = f"_{_snake(classes[0].name)}"
-    if classes[0].name.endswith("Message"):
-        expected = f"_{_snake(classes[0].name[: -len('Message')])}"
+    if classes[0].name.endswith(_CLASS_SUFFIX):
+        expected = f"_{_snake(classes[0].name[: -len(_CLASS_SUFFIX)])}"
     if not file.stem.startswith("_"):
         findings.append(
             _f(
@@ -92,7 +116,9 @@ def _check_members(file: FileData, classes: list[ast.ClassDef]) -> list[Finding]
     findings: list[Finding] = []
     for cls in classes:
         domain = (
-            cls.name[: -len("Message")] if cls.name.endswith("Message") else cls.name
+            cls.name[: -len(_CLASS_SUFFIX)]
+            if cls.name.endswith(_CLASS_SUFFIX)
+            else cls.name
         )
         prefix = _camel_to_upper(domain)
         members = _member_items(cls)

@@ -6,26 +6,24 @@
 
 程序启动分两段：先弹「选择机器人」窗拿到实例身份码，再加载业务模块。第一段里能 import 哪些包不是靠试运气，有一条硬机制卡着。
 
-`utils/paths.py` 里的路径常量在 **import 那一刻**就读环境变量算死，身份码为空直接抛 `ProfileMissingError`，之后再补环境变量也来不及。更麻烦的是 Python 规定加载子模块必先执行它父包的 `__init__.py`，而 `utils/__init__.py` eager 转发了 `_config_manager`，那条链一路拉到 `utils.config` 再到 `paths`。结论是**碰 `utils` 底下任何一个子模块都不行**，哪怕你只要其中一个不依赖路径的函数。
+路径常量在 **import 那一刻**就读环境变量算死，身份码为空直接抛异常，之后再补环境变量也来不及。更麻烦的是 Python 规定加载子模块必先执行它父包的 `__init__.py`，门面 eager 转发会把整棵依赖树连带拽起来，一路拉到那个算死路径的模块。结论是**碰路径依赖那一族的任何一个子模块都不行**，哪怕你只要其中一个不依赖路径的函数。
 
-冻结之前实测可导入：`system`、`skin`、`core`、`exceptions`、`services`，以及 `ui` 惰性门面和它的 `ui._primitives`、`ui._lifecycle`、`ui._bridge`。冻结之前当场炸的：`utils` 全族、`ui._dialogs`（门面首行拉 `_check`，`_check` 引 `utils.network`）、`ui._windows`。
-
-测法固定一条命令，在 `src` 目录下、把身份码变量删掉再 import：
+哪些包在冻结前可导入、哪些当场炸，是一份会随搬家变的名单，别抄，用固定命令当场测。测法只有一条：在 `src` 目录下、把身份码环境变量删掉再 import 那一族的门面。
 
 ```powershell
 cd src
-$env:QT_QPA_PLATFORM=「offscreen」
+$env:QT_QPA_PLATFORM="offscreen"
 Remove-Item Env:FINSHINIMPACT_PROFILE
-python -c 「import ui._dialogs」
+python -c "import utils"
 ```
 
-这条边界不靠人自觉，`.importlinter` 里有 `guide-pre-profile-safe` 契约看守：`ui._guide` 禁引 `utils`、`ui._dialogs`、`ui._windows`。引导期新增的任何窗体或工具都归这两个受管位置之一。
+这条边界不靠人自觉，`.importlinter` 里有一条契约专门看守引导期禁引清单。引导期新增的任何窗体或工具都归契约管的那两个位置之一。
 
-同理，早期设计想过把身份码与实例锁两个模块塞进 `utils`，被否：进了就会被 `utils/__init__.py` 连带冻结。它们后来落在 `system`。
+身份码与实例锁这类基础模块不能图省事塞进路径依赖那一族：进了就连带被门面冻结。它们该落在冻结前可导入的那一族里。
 
 ## 身份码与锁
 
-身份码字符集限定 `[A-Za-z0-9-]`，它来自环境变量属外部输入，实测传 `../../evil` 会被净化成空串——净化后为空就直接拒，别让它带着空值往下走。空身份码会让锁名退化成一个共用前缀，全机互拦。这个方向是刻意选的，误拦优于放行。
+身份码首尾只许字母、数字与连字符，中间容许点号。它来自环境变量属外部输入，实测传路径穿越串会被净化成空串——净化后为空就直接拒，别让它带着空值往下走。空身份码会让锁名退化成一个共用前缀，全机互拦。这个方向是刻意选的，误拦优于放行。
 
 引导锁与实例锁必须分开，且衔接处不许留空档。先释放引导锁、再去 import 业务模块（aiogram、PySide6、playwright 加起来要好几秒），这段时间同账号能双开、互踩长轮询。启动器只探引导锁，因为实例锁名带身份码、拉起前根本无从得知。换壳接管时同探引导锁。
 
@@ -56,11 +54,11 @@ python -c 「import ui._dialogs」
 想知道慢在哪，用 `-X importtime` 打印每个模块的自耗时与累计耗时，别猜：
 
 ```powershell
-.venv\Scripts\python.exe -X importtime -c 「import bootstrap」 2>&1 | Select-Object -Last 25
+.venv\Scripts\python.exe -X importtime -c "import bootstrap" 2>&1 | Select-Object -Last 25
 ```
 
 有几笔固定的贵账值得记住。`importlib.metadata` 冷盘一次约 200 毫秒，只有查依赖装没装才用得上它，那就把 import 写进函数体，第一次真查盘才付钱。读一次磁盘元数据比重复读还贵，能合并成一次查完就别在循环里查。子包门面 eager 转发会连带把整棵依赖树拽进来，引导期路过时要掂量。
 
-省下来的和花出去的都要量化到毫秒写进记录，否则下一轮改动把时间吃回去没人发现。引导窗搬家那轮就是这么处理的：搬家带来门面链与元数据两笔，回补后实测净增 102 毫秒。
+省下来的和花出去的都要量化到毫秒写进当轮记录，否则下一轮改动把时间吃回去没人发现。搬家类改动固定带来两笔新账：门面链、依赖元数据查询。
 
 只要有等待就得给反馈——遮罩挡住，或者正计时的进度日志，别让用户对着没反应的窗口。这是界面原则，新增任何耗时路径默认要带上，不用等用户开口。

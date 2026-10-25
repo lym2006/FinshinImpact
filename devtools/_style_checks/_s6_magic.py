@@ -2,7 +2,7 @@
 """魔法数字与字符串分节检查
 
 - 函数体内裸数字字面量提示提取为常量
-- 豁免：-1/0/1 等哨兵值、下标、幂、端口/错误码尾数、时间单位组合
+- 豁免：-1/0/1 等哨兵值、下标、幂、时间单位组合、绝对值达 1000 的量级数
 - 协议串细则委托 _s6b_protocol_strings
 - 函数体内裸定义的模块级名提示下沉
 """
@@ -139,8 +139,6 @@ def _exempt_number(value: int | float) -> bool:
     if isinstance(value, bool):
         return True
     if value in _SENTINELS or value in _TIME_UNITS:
-        return True
-    if isinstance(value, int) and value >= 1024:
         return True
     return abs(value) >= 1000
 
