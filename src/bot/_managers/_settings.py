@@ -102,7 +102,7 @@ class SettingsManager(BaseManager):
             return self._local_round(schema, t0)
 
         detected = detect_system_proxy()
-        channels = plan_channels(configured, detected, mode)
+        channels = plan_channels(configured, detected, mode=mode)
         sys_dedup = sys_deduped(configured, detected)
         single = single_row_of(mode)
         type_errors = self._emit_opening(channels, sys_dedup, single, schema)

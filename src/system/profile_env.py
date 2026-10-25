@@ -14,7 +14,7 @@ from typing import Any
 from .atomic_write import write_text_atomic
 
 # 实例身份码环境变量名，值在 development.md 有字面引用，改值须同步
-PROFILE_ENV = "FINSHINIMPACT_PROFILE"
+_PROFILE_ENV = "FINSHINIMPACT_PROFILE"
 
 # 身份码校验，首尾只许字母数字连字符，拦截相对路径段，防穿越出数据目录
 _CODE_PATTERN = re.compile(r"[A-Za-z0-9-](?:[A-Za-z0-9.-]*[A-Za-z0-9-])?")
@@ -66,7 +66,7 @@ def get_profile() -> str:
 
     - 每次实时读环境变量，不缓存
     """
-    return _sanitize_profile(os.environ.get(PROFILE_ENV, ""))
+    return _sanitize_profile(os.environ.get(_PROFILE_ENV, ""))
 
 
 def set_profile(code: str) -> str:
@@ -75,7 +75,7 @@ def set_profile(code: str) -> str:
     - 返回净化后的身份码，调用方据此建实例文件夹
     """
     clean = _sanitize_profile(code)
-    os.environ[PROFILE_ENV] = clean
+    os.environ[_PROFILE_ENV] = clean
     return clean
 
 
