@@ -46,7 +46,7 @@ _ROLE_MANIFEST = 0x0100
 class _PluginPanelDialog(QDialog):
     """插件选择弹窗"""
 
-    def __init__(self, code: str, mode: str = MODE_AUTO) -> None:
+    def __init__(self, code: str, *, mode: str = MODE_AUTO) -> None:
         """按实例与来源装配面板"""
         # code 为实例身份码，全程显式传参不读冻结值
         super().__init__()
@@ -177,7 +177,7 @@ class _PluginPanelDialog(QDialog):
         self.accept()
 
 
-def open_panel(code: str, mode: str = MODE_AUTO) -> bool:
+def open_panel(code: str, *, mode: str = MODE_AUTO) -> bool:
     """打开面板并返回是否保存
 
     - 空身份码直接拒绝，不打开面板
@@ -185,5 +185,5 @@ def open_panel(code: str, mode: str = MODE_AUTO) -> bool:
     if not code:
         raise ValueError(PluginMessage.PANEL_NEED_CODE)
     ensure_app()
-    dialog = _PluginPanelDialog(code, mode)
+    dialog = _PluginPanelDialog(code, mode=mode)
     return bool(dialog.exec())

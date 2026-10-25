@@ -13,7 +13,7 @@ from typing import Any, Literal
 from core.domain import ChatScope
 from core.domain.ids import SessionKey
 from core.dto import InboundEventDTO, MessageDTO
-from exceptions import MessageVanishedError
+from exceptions import DomainError, MessageVanishedError
 from services.context import HandlerContext
 from utils import get_logger
 
@@ -189,7 +189,7 @@ async def worker_loop(ctx: HandlerContext) -> None:
         if head:
             _kick_compression(session_key, ctx.event.scope, head, tokens)
 
-    except MessageVanishedError:
+    except DomainError:
         raise
     except Exception as e:
         _logger.send_error("Worker 运行时错误", e)

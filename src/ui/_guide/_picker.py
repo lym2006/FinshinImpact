@@ -139,7 +139,7 @@ class _ProfilePickerDialog(QDialog):
         if not code:
             return
 
-        open_panel(code, MODE_EDIT)
+        open_panel(code, mode=MODE_EDIT)
 
     def _on_new(self) -> None:
         """转入新建窗，建成后回列表并选中"""

@@ -98,7 +98,7 @@ def _acquire_slot() -> _SlotResult:
         from services.env_setup.deps_manifest import panel_needed
         from ui import MODE_AUTO, open_panel, settle_runtime
 
-        if panel_needed(code) and not open_panel(code, MODE_AUTO):
+        if panel_needed(code) and not open_panel(code, mode=MODE_AUTO):
             return _SlotResult.CANCEL
 
         # 启用集变动此刻结算，缺库补装装完才起，装失败禁用相关插件

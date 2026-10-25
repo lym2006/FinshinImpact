@@ -12,7 +12,7 @@ from PySide6.QtCore import QObject
 from ._signal import SafeSignal
 
 
-class GUIBridge(QObject):
+class _GUIBridge(QObject):
     """GUI 与 Bot 通信桥梁"""
 
     # GUI → Bot：配置事件与关闭指令
@@ -56,4 +56,4 @@ class GUIBridge(QObject):
         self._is_shutdown_pending = pending
 
 
-gui_bridge = GUIBridge()  # 全局单例实例化
+gui_bridge = _GUIBridge()  # 全局单例实例化
