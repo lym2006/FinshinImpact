@@ -40,7 +40,8 @@ python devtools\check_coding_style.py --section 注释
 
 ## 分节与检查文件
 
-一个分节一个模块，摆在 `devtools/_style_checks/`，文件名前缀记的是并进规范的先后，与分节顺序无关。
+一个分节一个主模块，摆在 `devtools/_style_checks/`，文件名前缀记的是并进规范的先后，与分节顺序无关。
+细则太多就再拆委托模块（`_s5b`／`_s5c`／`_s6b`），由主模块调用，不单独登记。
 
 - 文件骨架：`_s1_skeleton.py`
 - 拆分粒度：`_s2_split.py`
@@ -57,6 +58,10 @@ python devtools\check_coding_style.py --section 注释
 
 `_waivers.py` 不属于任何分节，只负责读清单与按清单静音。
 
+devtools 整棵树允许直连 src 的内部实现，两处各管一头：`_s5d_access` 对 `devtools/` 开头的文件不报跨包取私有模块；
+`_s5_naming` 里 devtools 的引用不算 src 侧公共名的消费方。
+工具自家树互用（如 `_registry` 调各检查模块）仍算真消费者，只被工具用到的 src 符号照样报待核。
+
 ## 回调形参查四样
 
 - 带 `Message` 注解的协程形参须叫 `raw` 且排首位，两个都错就报两条 —— 硬性。
@@ -72,9 +77,13 @@ python devtools\check_coding_style.py --section 注释
 ## 加一节的做法
 
 1. `coding-style.md` 先写条文，写明判据与后果。
-2. `_style_checks/` 新建模块，导出 `check(files)`，只依赖 `_common`，
-   违规条目里把分节名写成字面量。
-3. `_common.py` 的 `SECTIONS` 加同名一项，`_registry.py` 的 `_FILE_CHECKS` 加一项。
+2. `_style_checks/` 新建模块，只依赖 `_common`，违规条目里把分节名写成字面量。
+   - 只看单个文件的导出 `check(files)`。
+   - 要跨模块查消费者的导出 `check(files, graph)`。
+3. `_common.py` 的 `SECTIONS` 加同名一项。
+   - 前者进 `_registry.py` 的 `_FILE_CHECKS`。
+   - 后者不进那张表，得在 `run_checks` 里单独调用并传导入图。
+   - 漏这一步不会报错，只会静默不查。
 4. `devtools/tests/test_style_checker_meta.py` 的 `_SAMPLES` 补一组必中样本，写进真违规那一处即可。
    - 样本只落临时目录，不许留在 `src`。
    - 不补这组，新分节空转没人看得见。
