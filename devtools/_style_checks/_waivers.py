@@ -13,6 +13,9 @@ from pathlib import Path
 
 from ._common import Finding
 
+_SPLIT_SECTION = "拆分粒度"
+_FILE_SIZE_PREFIX = "单文件"
+
 
 @dataclass(frozen=True)
 class Waiver:
@@ -27,13 +30,25 @@ class Waiver:
         """判定本条是否罩住这条违规，不看行号防漂移
 
         - 硬性违规一律不罩，清单只用于已审的待核
+        - 单文件行数超限也不罩，它只认拆或抬常量
         """
         return (
             not finding.hard
+            and not _file_size_finding(finding)
             and self.section == finding.section
             and self.path == finding.rel
             and (not self.match or self.match in finding.message)
         )
+
+
+def _file_size_finding(finding: Finding) -> bool:
+    """单文件行数超限的待核不参与豁免
+
+    - 罩住等于给那个文件永久关掉阈值，越该拆越没声
+    """
+    return finding.section == _SPLIT_SECTION and finding.message.startswith(
+        _FILE_SIZE_PREFIX
+    )
 
 
 def load_waivers(path: Path) -> tuple[Waiver, ...]:
