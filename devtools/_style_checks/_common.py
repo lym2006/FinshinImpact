@@ -31,6 +31,8 @@ SECTIONS: tuple[str, ...] = (
     "导入",
 )
 
+# 跳过名单：缓存与构建产物目录，末尾的 tests 是测试目录豁免
+# 测试越界取私有名、桩函数缺注解都属正常写法，不套生产口径
 _EXCLUDE_DIRS: frozenset[str] = frozenset(
     {
         "__pycache__",
@@ -119,19 +121,20 @@ def load_files(root: Path, targets: list[Path]) -> list[FileData]:
     """装载扫描范围内的全部 py 文件"""
     files: list[FileData] = []
     for target in targets:
-        for path in _iter_py(target):
+        for path in _iter_py(target, root):
             rel = path.relative_to(root).as_posix()
             files.append(_read_file(path, rel, root))
     return sorted(files, key=lambda f: f.rel)
 
 
-def _iter_py(target: Path) -> Iterator[Path]:
-    """遍历目标下的 py 文件并跳过缓存目录"""
+def _iter_py(target: Path, root: Path) -> Iterator[Path]:
+    """遍历目标下的 py 文件，跳过缓存与测试目录"""
     if target.is_file() and target.suffix == ".py":
-        yield target
-        return
-    for path in target.rglob("*.py"):
-        parts = path.relative_to(target).parts[:-1]
+        paths: list[Path] = [target]
+    else:
+        paths = list(target.rglob("*.py"))
+    for path in paths:
+        parts = path.relative_to(root).parts[:-1]
         if any(p in _EXCLUDE_DIRS or p.endswith(_EXCLUDE_SUFFIXES) for p in parts):
             continue
         yield path

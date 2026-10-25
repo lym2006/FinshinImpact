@@ -35,6 +35,10 @@ dev = [
     "uv==0.12.23",
 ]
 
+[tool.pyright]
+# 测试用鸭子类型的假件，静态类型在此只报假阳性，口径与规范扫描器的 tests 豁免一致
+exclude = ["devtools/tests"]
+
 [tool.finshin-impact]
 uv-index-urls = [
     "https://mirrors.cloud.tencent.com/pypi/simple",
