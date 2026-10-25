@@ -1,6 +1,7 @@
 # 待核豁免清单
 #
 # 扫描器判据查不到真实消费面、或人工评审后确认不改的待核条目在此登记。
+# 只罩已裁定永久不改的；预留待接的符号与尚未拍板的取舍留在待核池子，不签进本清单。
 # 只罩待核，不罩硬性。匹配键为分节加路径，match 为消息里的稳定子串，故意不写行号防漂移。
 # 全量扫描时一条都没命中即转一条硬性「失效豁免」报出，代码改完要顺手删掉对应条目。
 
@@ -45,3 +46,15 @@ section = "文案类"
 path = "src/skin/messages/_check.py"
 match = "保存"
 reason = "同上，校验发起原因与保存按钮文案撞字"
+
+[[waiver]]
+section = "命名与门面导出"
+path = "src/adapters/telegram/_normalize.py"
+match = "normalize_update"
+reason = "归一层对外入口名，设计文档已裁定不加下划线，中间件与用例都按此名打桩"
+
+[[waiver]]
+section = "命名与门面导出"
+path = "src/adapters/telegram/_normalize.py"
+match = "BotIdentity"
+reason = "上述入口的 identity 形参类型，随入口名一起留公共名，改私有即逼调用方 import 私有"
