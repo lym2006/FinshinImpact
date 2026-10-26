@@ -31,7 +31,6 @@ from core.domain.ids import (  # noqa: E402
     SessionKey,
     TaskId,
     UserId,
-    UserKey,
 )
 from core.dto import (  # noqa: E402
     MediaEntryDTO,
@@ -547,20 +546,20 @@ class TestGrant(_RealDb):
     async def test_grant_revoke_once(self) -> None:
         """新增为真、重复为假、撤销同理"""
         principal = _principal()
-        user_key = UserKey(f"{Platform.TELEGRAM}.456")
+        user = UserId("456")
 
-        self.assertTrue(await self.repos.grant.grant(user_key, principal.key))
-        self.assertTrue(await self.repos.grant.contains(user_key))
-        self.assertFalse(await self.repos.grant.grant(user_key, principal.key))
-        self.assertTrue(await self.repos.grant.revoke(user_key))
-        self.assertFalse(await self.repos.grant.contains(user_key))
-        self.assertFalse(await self.repos.grant.revoke(user_key))
+        self.assertTrue(await self.repos.grant.grant(user, principal.key))
+        self.assertTrue(await self.repos.grant.contains(user))
+        self.assertFalse(await self.repos.grant.grant(user, principal.key))
+        self.assertTrue(await self.repos.grant.revoke(user))
+        self.assertFalse(await self.repos.grant.contains(user))
+        self.assertFalse(await self.repos.grant.revoke(user))
 
     async def test_expired_grant_misses(self) -> None:
         """过期授权不命中，未过期命中"""
         principal = _principal()
-        expired = UserKey("tg.777")
-        live = UserKey("tg.888")
+        expired = UserId("777")
+        live = UserId("888")
 
         self.assertTrue(
             await self.repos.grant.grant(expired, principal.key, expires_at=1.0)
@@ -574,12 +573,12 @@ class TestGrant(_RealDb):
     async def test_list_active_skips_expired_and_revoked(self) -> None:
         """未到期的按授权先后列出，过期与已撤销的不出现"""
         principal = _principal()
-        forever = UserKey("tg.111")
-        timed = UserKey("tg.222")
+        forever = UserId("111")
+        timed = UserId("222")
         await self.repos.grant.grant(forever, principal.key)
         await self.repos.grant.grant(timed, principal.key, expires_at=9e18)
-        await self.repos.grant.grant(UserKey("tg.333"), principal.key, expires_at=1.0)
-        dropped = UserKey("tg.444")
+        await self.repos.grant.grant(UserId("333"), principal.key, expires_at=1.0)
+        dropped = UserId("444")
         await self.repos.grant.grant(dropped, principal.key)
         await self.repos.grant.revoke(dropped)
 

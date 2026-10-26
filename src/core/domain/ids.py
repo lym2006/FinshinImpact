@@ -12,7 +12,6 @@ KEY_SEP = "."
 
 # 容器与键段
 ContainerKey = NewType("ContainerKey", str)  # g/u 前缀
-UserKey = NewType("UserKey", str)  # platform.user
 SessionKey = NewType("SessionKey", str)  # SessionDTO.key
 MessageKey = NewType("MessageKey", str)  # MsgReferenceDTO.key
 PrincipalKey = NewType("PrincipalKey", str)  # PrincipalDTO.key

@@ -14,7 +14,6 @@ from ..domain.ids import (
     MessageKey,
     PrincipalKey,
     UserId,
-    UserKey,
 )
 
 
@@ -36,14 +35,6 @@ class PrincipalDTO:
         return PrincipalKey(
             f"{self.platform}{KEY_SEP}{self.container}{KEY_SEP}{self.user}"
         )
-
-    @property
-    def user_key(self) -> UserKey:
-        """用户二段键
-
-        - 形如 tg.456，不含容器段，跨容器同一人只算一条
-        """
-        return UserKey(f"{self.platform}{KEY_SEP}{self.user}")
 
 
 @dataclass(frozen=True, slots=True)

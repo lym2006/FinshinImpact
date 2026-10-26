@@ -42,7 +42,7 @@ async def role_of(principal: PrincipalDTO) -> CommandRole:
     """
     if _owner_id() == principal.user:
         return CommandRole.OWNER
-    if await is_admin(principal.user_key):
+    if await is_admin(principal.user):
         return CommandRole.ADMIN
     return CommandRole.MEMBER
 
