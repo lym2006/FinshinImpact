@@ -6,7 +6,7 @@
 
 from ._access import require_role, role_of
 from ._chat_context import active_tasks, session_guard, session_states, task_queues
-from ._client import AIClient
+from ._client import AIClient, StreamUsage
 from ._grants import add_admin, remove_admin
 from ._store import (
     clear_session,
@@ -22,6 +22,7 @@ from ._tasks import TaskQueue
 __all__ = [
     # 网络客户端
     "AIClient",
+    "StreamUsage",
     # 会话状态管理
     "active_tasks",
     "session_guard",

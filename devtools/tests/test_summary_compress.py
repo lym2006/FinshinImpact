@@ -89,7 +89,7 @@ class _Ctx:
 def _stream(*texts: str) -> object:
     """交出按块吐出正文的流式替身"""
 
-    async def _fake(msg: object):
+    async def _fake(msg: object, usage: object = None):
         for text in texts:
             yield {"content": text}
 
