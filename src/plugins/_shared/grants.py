@@ -44,3 +44,8 @@ async def remove_admin(user_key: UserKey) -> bool:
     - 返回撤销前名单里有没有
     """
     return await (await _repo()).revoke(user_key)
+
+
+async def list_admins() -> tuple[UserKey, ...]:
+    """列出未到期的授权，按授权先后升序"""
+    return await (await _repo()).list_active()

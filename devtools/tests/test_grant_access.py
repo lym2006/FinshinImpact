@@ -87,6 +87,9 @@ class _FakeRepo:
     async def contains(self, user_key: str) -> bool:
         return user_key in self.rows
 
+    async def list_active(self) -> tuple[str, ...]:
+        return tuple(self.rows)
+
 
 def _ctx(
     user_id: str,
@@ -117,6 +120,11 @@ def _ctx(
 def _grant_ctx(user_id: str, args: tuple[str, ...]):
     """构造一条授权命令事件"""
     return _ctx(user_id, command=CommandDTO(matched=True, head="grant", args=args))
+
+
+def _admin_ctx(user_id: str, scope: ChatScope):
+    """构造一条名单查询命令事件"""
+    return _ctx(user_id, command=CommandDTO(matched=True, head="admin"), scope=scope)
 
 
 def _text_ctx(user_id: str, text: str):
@@ -484,6 +492,47 @@ class TestPrivateGate(AccessCase):
     def test_empty_text_is_not_taken(self) -> None:
         """没有正文的消息不当门槛对象"""
         self.assertFalse(self._taken("999", text=""))
+
+
+class TestAdminView(AccessCase):
+    """/admin 查授权名单"""
+
+    def _ask(
+        self, user_id: str = "456", scope: ChatScope = ChatScope.PRIVATE
+    ) -> list[str]:
+        """发一条查询并交出回执"""
+        ctx, port = _admin_ctx(user_id, scope)
+        asyncio.run(_commands.show_admins(raw=None, ctx=ctx))
+        return port.sent
+
+    def test_private_lists_each_key(self) -> None:
+        """私聊逐条列出二段键"""
+        asyncio.run(self._grant_user("777"))
+        asyncio.run(self._grant_user("888"))
+
+        self.assertEqual(
+            self._ask(),
+            [BotMessage.ADMIN_LIST.format(count=2, ids="- tg.777\n- tg.888")],
+        )
+
+    def test_group_reports_count_only(self) -> None:
+        """群里只回条数，名单不外泄"""
+        asyncio.run(self._grant_user("777"))
+
+        self.assertEqual(
+            self._ask(scope=ChatScope.GROUP), [BotMessage.ADMIN_COUNT.format(count=1)]
+        )
+
+    def test_empty_list_answers_once(self) -> None:
+        """名单为空时两种场景同一句"""
+        self.assertEqual(self._ask(), [BotMessage.ADMIN_EMPTY])
+        self.assertEqual(self._ask(scope=ChatScope.GROUP), [BotMessage.ADMIN_EMPTY])
+
+    def test_admin_cannot_look(self) -> None:
+        """管理员档看不到名单，只有主人能使"""
+        asyncio.run(self._grant_user("999"))
+
+        self.assertEqual(self._ask("999"), [BotMessage.CMD_NO_PERMISSION])
 
 
 class TestUserKey(unittest.TestCase):
