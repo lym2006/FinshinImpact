@@ -27,11 +27,10 @@
 
 ## 新增插件（清单驱动流程）
 
-1. 建目录 `src/plugins/<Name>/`，`__init__.py` 导出 `spec` 或 `router`。
+1. 建目录 `src/plugins/<Name>/`，`__init__.py` 导出 `spec`。
    - `spec` 交一份按顺序判定的路由清单，谓词只吃归一后的处理上下文，装配时由平台侧编成引擎对象。
-   - `router` 直接交引擎原生路由，判定逻辑得写在过滤器里。
-   - 要跨插件共用的守卫、过滤器、话术放 `src/plugins/_shared/`，那里没有清单故不会被当作插件加载。
-2. 要常驻后台的，`spec` 里带 `backgrounds`，走 `router` 的再导出同名属性。
+   - 要跨插件共用的守卫、谓词、话术放 `src/plugins/_shared/`，那里没有清单故不会被当作插件加载。
+2. 要常驻后台的，`spec` 里带 `backgrounds`。
    - 元素为无参协程函数，随 Bot 服务起停：轮询开始即拉起，停服即取消。
    - 协程内抛出的异常只记日志。
 3. 目录内放 `plugin.toml`（模板 `assets/plugin.example.toml`）：
