@@ -83,6 +83,7 @@
 
 ## 📖 开发与维护<a id="development"></a>
 
+- 🤖 **先用规范喂工具**：动手写码或改文档前，把 [`docs/coding-style.md`](docs/coding-style.md)、[`docs/development.md`](docs/development.md) 交给 AI 编码工具（或写进项目规则文件），改完按 [`docs/style-checker.md`](docs/style-checker.md) 自查。
 - 🧭 **开发手册**（环境搭建、新增插件、发布流程）：[`docs/development.md`](docs/development.md)，代码规范：[`docs/coding-style.md`](docs/coding-style.md)，检查工具与回归用例：[`docs/style-checker.md`](docs/style-checker.md)、[`docs/testing.md`](docs/testing.md)
 - 🚀 **发布工作流与打包**：[`docs/release-workflow.md`](docs/release-workflow.md)、[`docs/packaging.md`](docs/packaging.md)，commit 模板 [`.gitmessage`](.gitmessage)
 - 📚 **工程经验**（实测踩坑与验证方法）：[`docs/lessons/README.md`](docs/lessons/README.md)
