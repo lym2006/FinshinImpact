@@ -17,6 +17,7 @@ import asyncio
 import sys
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "src"))
@@ -357,6 +358,7 @@ class TestStopPollingIsAwaited(unittest.IsolatedAsyncioTestCase):
     """回归点 6
 
     - 适配器 stop 是协程，必须被 await
+    - 停服只等引擎收尾，放行退出的旗不在这里挂
     """
 
     async def test_stop_awaits_stop_polling(self) -> None:
@@ -389,6 +391,8 @@ class TestStopPollingIsAwaited(unittest.IsolatedAsyncioTestCase):
                 return True
 
         service._thread = _FakeThread()  # type: ignore[assignment]
+        service._idle_event.set()  # 引擎线程已收尾
+        gui_bridge.shutdown_completed_event.clear()
 
         service.stop()
         for _ in range(100):
@@ -398,7 +402,33 @@ class TestStopPollingIsAwaited(unittest.IsolatedAsyncioTestCase):
             adapter.stop_called.is_set(),
             "适配器 stop 协程必须被真正 await",
         )
-        self.assertTrue(gui_bridge.shutdown_completed_event.is_set())
+        self.assertFalse(
+            gui_bridge.shutdown_completed_event.is_set(),
+            "停服不等收尾就放行退出",
+        )
+
+    async def test_polling_exit_sets_idle_flag(self) -> None:
+        """轮询协程退出即挂上收尾完成旗"""
+
+        class _FakeSession:
+            async def close(self) -> None:
+                pass
+
+        class _FakeAdapter:
+            bot = SimpleNamespace(session=_FakeSession())
+
+            async def start(self) -> None:
+                raise RuntimeError("非链路故障")
+
+            async def stop(self) -> None:
+                pass
+
+        service = BotService(_FakeAdapter())  # type: ignore[arg-type]
+
+        with self.assertRaises(RuntimeError):
+            await service._polling_task()
+
+        self.assertTrue(service._idle_event.is_set(), "收尾没挂上完成旗")
 
 
 class _FlakyAdapter:
