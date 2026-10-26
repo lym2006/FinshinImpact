@@ -21,6 +21,7 @@ from ...messages import BotMessage
 from ..config import ai_config
 from ..core import (
     AIClient,
+    StreamUsage,
     active_tasks,
     purge_history,
     read_session,
@@ -67,16 +68,17 @@ def _save_conversation_record(
 
 
 async def _handle_ai_message(
-    msg: list[dict[str, str]],
+    msg: list[dict[str, str]], usage: StreamUsage
 ) -> AsyncGenerator[tuple[Literal["final", "error"], Any], None]:
     """处理 AI 流式数据
 
     - 产出 (事件类型, 数据)
+    - 端点回的 token 读数随流写入读数容器
     """
     current_msg = ""
 
     try:
-        async for delta in AIClient.stream_chat(msg):
+        async for delta in AIClient.stream_chat(msg, usage):
             # 处理正文内容
             if (content := delta.get("content")) is not None:
                 if content.startswith("\n\n"):
@@ -87,20 +89,26 @@ async def _handle_ai_message(
         yield "error", e
 
 
-async def _collect_reply(turns: list[dict[str, str]]) -> tuple[str, bool]:
+async def _collect_reply(
+    turns: list[dict[str, str]], key: SessionKey, tokens: int
+) -> tuple[str, bool]:
     """收全一轮应答
 
     - 交出正文与是否出错
+    - 端点报的输入 token 数与字符估并排记一行，裁窗判据照旧走字符估
     """
     final_msg = ""
     has_error = False
-    async for event_type, data in _handle_ai_message(turns):
+    usage = StreamUsage()
+    async for event_type, data in _handle_ai_message(turns, usage):
         match event_type:
             case "final":
                 final_msg = data
             case "error":
                 _logger.send_error("流式处理错误", data)
                 has_error = True
+    if usage.prompt_tokens is not None:
+        _logger.info(f"{key} 上下文估算 {tokens}，端点报 {usage.prompt_tokens}")
     return final_msg, has_error
 
 
@@ -169,7 +177,7 @@ async def worker_loop(ctx: HandlerContext) -> None:
     )
 
     try:
-        final_msg, has_error = await _collect_reply(msg)
+        final_msg, has_error = await _collect_reply(msg, session_key, tokens)
         if has_error or not final_msg:
             await ctx.reply(BotMessage.AI_UNAVAILABLE)
             return
