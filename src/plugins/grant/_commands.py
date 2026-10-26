@@ -3,6 +3,7 @@
 
 - /grant：主人授权某个 id 使用管理命令
 - /ungrant：主人撤销授权
+- /admin：主人查看授权名单，群内只报条数，明细只在私聊给出
 - 不带 id 时挂起待输入，下一条只认发起人自己发来的 id
 - 这一轮没办成不终止，提示问题接着等，直到发对或发 -1 取消
 """
@@ -13,7 +14,7 @@ from aiogram import Router
 from aiogram.filters import Filter
 from aiogram.types import Message
 
-from core.domain import CommandRole, StepInput
+from core.domain import ChatScope, CommandRole, StepInput
 from core.domain.ids import KEY_SEP, PrincipalKey, UserKey
 from core.dto import PrincipalDTO
 from services.context import HandlerContext
@@ -21,7 +22,7 @@ from utils import get_logger
 
 from .._shared.access import require_role
 from .._shared.filters import CommandFilter
-from .._shared.grants import add_admin, remove_admin
+from .._shared.grants import add_admin, list_admins, remove_admin
 from .._shared.messages import BotMessage
 
 _logger = get_logger("Plg.Grant")
@@ -140,6 +141,33 @@ async def add_grant(raw: Message, ctx: HandlerContext) -> None:
 async def drop_grant(raw: Message, ctx: HandlerContext) -> None:
     """撤销授权"""
     await _take_command(ctx, _GrantStep.DROP, BotMessage.UNGRANT_USAGE)
+
+
+@router.message(CommandFilter("admin"))
+@require_role(CommandRole.OWNER)
+async def show_admins(raw: Message, ctx: HandlerContext) -> None:
+    """查看授权名单
+
+    - 私聊出逐条明细，其余场景只回条数
+    """
+    try:
+        keys = await list_admins()
+    except Exception as e:
+        _logger.send_error("授权名单读取失败", e)
+        await ctx.answer(BotMessage.ADMIN_READ_FAILED)
+        return
+
+    if not keys:
+        await ctx.answer(BotMessage.ADMIN_EMPTY)
+        return
+    if ctx.event.scope != ChatScope.PRIVATE:
+        await ctx.answer(BotMessage.ADMIN_COUNT.format(count=len(keys)))
+        return
+    await ctx.answer(
+        BotMessage.ADMIN_LIST.format(
+            count=len(keys), ids="\n".join(f"- {key}" for key in keys)
+        )
+    )
 
 
 @router.message(_AwaitTarget())

@@ -19,3 +19,8 @@ flags = []
 cmd = "ungrant"
 desc = "撤销该 id 管理员权限（仅主人）"
 flags = []
+
+[[help.commands]]
+cmd = "admin"
+desc = "查看授权名单（仅主人）"
+flags = []

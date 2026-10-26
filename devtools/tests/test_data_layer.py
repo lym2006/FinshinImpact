@@ -571,6 +571,20 @@ class TestGrant(_RealDb):
         )
         self.assertTrue(await self.repos.grant.contains(live))
 
+    async def test_list_active_skips_expired_and_revoked(self) -> None:
+        """未到期的按授权先后列出，过期与已撤销的不出现"""
+        principal = _principal()
+        forever = UserKey("tg.111")
+        timed = UserKey("tg.222")
+        await self.repos.grant.grant(forever, principal.key)
+        await self.repos.grant.grant(timed, principal.key, expires_at=9e18)
+        await self.repos.grant.grant(UserKey("tg.333"), principal.key, expires_at=1.0)
+        dropped = UserKey("tg.444")
+        await self.repos.grant.grant(dropped, principal.key)
+        await self.repos.grant.revoke(dropped)
+
+        self.assertEqual((forever, timed), await self.repos.grant.list_active())
+
 
 class TestMedia(_RealDb):
     """媒体索引同键收敛与按容器清除"""
