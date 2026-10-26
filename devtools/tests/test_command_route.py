@@ -41,6 +41,8 @@ from adapters.telegram._normalize import (  # noqa: E402
     NormalizeMiddleware,
     normalize_update,
 )
+from adapters.telegram.router_bridge import build_router  # noqa: E402
+from core.domain import ContentKind  # noqa: E402
 from core.dto import HelpCommandDTO, MsgReferenceDTO, OutboundPayloadDTO  # noqa: E402
 from plugins._shared.filters import CommandFilter  # noqa: E402
 from plugins._shared.messages import BotMessage  # noqa: E402
@@ -77,6 +79,7 @@ class _RecordingInteraction:
 
     def __init__(self) -> None:
         self.sent: list[str] = []
+        self.payloads: list[OutboundPayloadDTO] = []
 
     async def send_message(
         self,
@@ -85,6 +88,7 @@ class _RecordingInteraction:
         reply_ref: MsgReferenceDTO | None = None,
     ) -> MsgReferenceDTO | None:
         self.sent.append(payload.text)
+        self.payloads.append(payload)
         return None
 
     def mention_fragment(self, principal: Any) -> str:
@@ -126,10 +130,7 @@ class _VerdictMixin:
         """回传（接管回执, 命中单命令帮助）"""
         message = _message(chat=chat, text=text)
         ctx = _ctx(message)
-        return (
-            await self.reject(raw=message, ctx=ctx),
-            await self.keyword(raw=message, ctx=ctx),
-        )
+        return (await self.reject(ctx), await self.keyword(ctx))
 
 
 class TestHelpCommandReject(_VerdictMixin, unittest.IsolatedAsyncioTestCase):
@@ -139,8 +140,8 @@ class TestHelpCommandReject(_VerdictMixin, unittest.IsolatedAsyncioTestCase):
         patcher = patch.object(_commands, "help_list", _MENU)
         patcher.start()
         self.addCleanup(patcher.stop)
-        self.reject = _commands._CommandReject()
-        self.keyword = _commands._KeywordFilter()
+        self.reject = _commands._is_illegal_command
+        self.keyword = _commands._is_single_help
 
     async def test_unknown_name_taken(self) -> None:
         rejected, _ = await self._verdict("/nope")
@@ -213,11 +214,6 @@ class TestHelpCommandReject(_VerdictMixin, unittest.IsolatedAsyncioTestCase):
         self.assertTrue(rejected)
         self.assertFalse(listed)
 
-    async def test_missing_ctx_rejects_all(self) -> None:
-        message = _message(chat=_PRIVATE, text="/nope")
-        self.assertFalse(await self.reject(raw=message))
-        self.assertFalse(await self.keyword(raw=message))
-
 
 class TestArgsAllowedCommand(_VerdictMixin, unittest.IsolatedAsyncioTestCase):
     """认位置参数的命令放行给业务侧"""
@@ -227,8 +223,8 @@ class TestArgsAllowedCommand(_VerdictMixin, unittest.IsolatedAsyncioTestCase):
         patcher = patch.object(_commands, "help_list", menu)
         patcher.start()
         self.addCleanup(patcher.stop)
-        self.reject = _commands._CommandReject()
-        self.keyword = _commands._KeywordFilter()
+        self.reject = _commands._is_illegal_command
+        self.keyword = _commands._is_single_help
 
     async def test_grant_with_id_yields_in_both_scopes(self) -> None:
         """私聊与群聊都放行给授权命令"""
@@ -264,8 +260,8 @@ class TestCommandFlagSpec(_VerdictMixin, unittest.IsolatedAsyncioTestCase):
             patcher = patch.object(_commands, name, value)
             patcher.start()
             self.addCleanup(patcher.stop)
-        self.reject = _commands._CommandReject()
-        self.keyword = _commands._KeywordFilter()
+        self.reject = _commands._is_illegal_command
+        self.keyword = _commands._is_single_help
 
     async def test_help_flag_lists(self) -> None:
         rejected, listed = await self._verdict("/md -h")
@@ -396,9 +392,14 @@ class TestCtxReachesHandlers(unittest.IsolatedAsyncioTestCase):
     """归一上下文经完整分发链路注入"""
 
     def setUp(self) -> None:
-        patcher = patch.object(_commands, "help_list", _MENU)
-        patcher.start()
-        self.addCleanup(patcher.stop)
+        for name, value in (
+            ("help_list", _MENU),
+            ("generate_image", lambda: Path("help.png")),
+            ("resolve_single_help", lambda head: f"单命令:{head}"),
+        ):
+            patcher = patch.object(_commands, name, value)
+            patcher.start()
+            self.addCleanup(patcher.stop)
         self.interaction = _RecordingInteraction()
         self.ran: list[str] = []
         self.dispatcher = Dispatcher()
@@ -406,10 +407,8 @@ class TestCtxReachesHandlers(unittest.IsolatedAsyncioTestCase):
             NormalizeMiddleware(self.interaction, bot=_FakeBot())  # type: ignore[arg-type]
         )
 
-        # 模块级 router 只能挂一处，此处按原样重挂回执路由
-        router = Router()
-        router.message(_commands._CommandReject())(_commands.command_check)
-        self.dispatcher.include_router(router)
+        # 帮助插件按清单编译成引擎对象，与另一只业务路由同台
+        self.dispatcher.include_router(build_router(_commands.spec))
         command_router = Router()
 
         async def run_md(raw: Message, *, ctx: HandlerContext) -> None:
@@ -457,8 +456,17 @@ class TestCtxReachesHandlers(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(await self._answer("/md", chat=_GROUP), [])
         self.assertEqual(self.ran, ["md"])
 
-    async def test_menu_command_silent_in_this_router(self) -> None:
-        self.assertEqual(await self._answer("/help"), [])
+    async def test_help_flag_takes_single_help(self) -> None:
+        """带 -h 让给单命令帮助，命令侧拿不到"""
+        self.assertEqual(await self._answer("/md -h"), ["单命令:md"])
+        self.assertEqual(self.ran, [])
+
+    async def test_menu_command_sends_photo(self) -> None:
+        """裸 /help 出帮助图"""
+        await self._answer("/help")
+        payload = self.interaction.payloads[-1]
+        self.assertEqual(payload.kind, ContentKind.PHOTO)
+        self.assertTrue(str(payload.local_path).endswith("help.png"))
 
     async def test_plain_text_silent(self) -> None:
         self.assertEqual(await self._answer("随便聊聊"), [])
