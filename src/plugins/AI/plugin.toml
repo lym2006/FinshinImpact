@@ -12,20 +12,10 @@ note = "独立会话和思考过程，私聊要管理员以上"
 
 [[help.commands]]
 cmd = "history"
-desc = "显示历史记录（管理员以上）"
+desc = "显示历史记录"
 flags = []
 
 [[help.commands]]
 cmd = "clear"
-desc = "清空记忆（管理员以上）"
-flags = []
-
-[[help.commands]]
-cmd = "grant"
-desc = "授予该 id 管理员权限（只主人）"
-flags = []
-
-[[help.commands]]
-cmd = "ungrant"
-desc = "撤销该 id 管理员权限（只主人）"
+desc = "清空记忆"
 flags = []

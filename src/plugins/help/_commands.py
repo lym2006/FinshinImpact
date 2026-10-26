@@ -1,4 +1,4 @@
-# src/plugins/help/_help.py
+# src/plugins/help/_commands.py
 """帮助命令
 
 - /help：查询帮助（图片渲染）
@@ -16,7 +16,7 @@ from core.domain import ChatScope, CommandFlag, ContentKind
 from core.dto import CommandDTO, OutboundPayloadDTO
 from services.context import HandlerContext
 
-from ..messages import BotMessage
+from .._shared.messages import BotMessage
 from ._services import (
     command_specs,
     generate_image,
