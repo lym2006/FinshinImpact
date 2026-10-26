@@ -4,15 +4,14 @@
 - /help：查询帮助（图片渲染）
 - /命令 -h：单命令帮助查询
 - 未知命令与非法形态：私聊回执，群聊与频道静默无视
+- 清单顺序即匹配优先级，回执判定排最前才压得住命令侧
 """
 
 import asyncio
 
-from aiogram import Router
-from aiogram.filters import Filter
 from aiogram.types import Message
 
-from core.domain import ChatScope, CommandFlag, ContentKind
+from core.domain import ChatScope, CommandFlag, ContentKind, PluginRoute, PluginSpec
 from core.dto import CommandDTO, OutboundPayloadDTO
 from services.context import HandlerContext
 
@@ -23,8 +22,6 @@ from ._services import (
     help_list,
     resolve_single_help,
 )
-
-router = Router()
 
 # 内部常量配置
 _HELP_MENU = "help"  # 帮助菜单命令名
@@ -40,8 +37,8 @@ def _is_stray(command: CommandDTO) -> bool:
     - 同一 flag 重复算多余
     - 命令行只认开关，名单里的命令才收位置参数
     """
-    spec = command_specs.get(command.head)
-    declared = spec.flags if spec is not None else ()
+    entry = command_specs.get(command.head)
+    declared = entry.flags if entry is not None else ()
     allowed: tuple[str, ...] = (CommandFlag.HELP, *(flag for flag, _ in declared))
     flags = command.flags
     if len(set(flags)) != len(flags):
@@ -54,60 +51,45 @@ def _is_stray(command: CommandDTO) -> bool:
     return bool(command.args) and command.head not in _ARGS_ALLOWED
 
 
-class _CommandReject(Filter):
-    """筛选需要拦截的非法命令
+async def _is_illegal_command(ctx: HandlerContext) -> bool:
+    """判定这条命令要拦截回执
 
     - 私聊里形态非法、菜单外命令名与清单没认的输入都回执
     - 群聊与频道只吞掉菜单内命令的多余输入，命令侧拿不到
     """
-
-    async def __call__(self, raw: Message, ctx: HandlerContext | None = None) -> bool:
-        """判定是否接管"""
-        if ctx is None:
-            return False
-        command = ctx.event.command
-        listed = command.matched and command.head in help_list
-        if ctx.event.scope != ChatScope.PRIVATE:
-            return listed and _is_stray(command)
-        return command.format_error or (
-            command.matched and (not listed or _is_stray(command))
-        )
+    command = ctx.event.command
+    listed = command.matched and command.head in help_list
+    if ctx.event.scope != ChatScope.PRIVATE:
+        return listed and _is_stray(command)
+    return command.format_error or (
+        command.matched and (not listed or _is_stray(command))
+    )
 
 
-class _KeywordFilter(Filter):
-    """筛选单命令帮助请求
+async def _is_single_help(ctx: HandlerContext) -> bool:
+    """判定单命令帮助请求
 
     - 命中菜单内命令名且 flags 里有 -h
     - 清单没认的输入不接管，群聊里连同回执一并静默
     """
-
-    async def __call__(self, raw: Message, ctx: HandlerContext | None = None) -> bool:
-        """判定是否接管"""
-        if ctx is None:
-            return False
-        command = ctx.event.command
-        listed = command.matched and command.head in help_list
-        has_help = CommandFlag.HELP in command.flags
-        return listed and has_help and not _is_stray(command)
+    command = ctx.event.command
+    listed = command.matched and command.head in help_list
+    has_help = CommandFlag.HELP in command.flags
+    return listed and has_help and not _is_stray(command)
 
 
-class _MenuFilter(Filter):
-    """筛选帮助菜单请求
+async def _is_menu_request(ctx: HandlerContext) -> bool:
+    """判定帮助菜单请求
 
     - 裸 /help，不带 flag 与参数
     """
-
-    async def __call__(self, raw: Message, ctx: HandlerContext | None = None) -> bool:
-        """判定是否接管"""
-        if ctx is None:
-            return False
-        command = ctx.event.command
-        return (
-            command.matched
-            and command.head == _HELP_MENU
-            and not command.flags
-            and not command.args
-        )
+    command = ctx.event.command
+    return (
+        command.matched
+        and command.head == _HELP_MENU
+        and not command.flags
+        and not command.args
+    )
 
 
 def _reject_text(command: CommandDTO) -> str:
@@ -117,8 +99,7 @@ def _reject_text(command: CommandDTO) -> str:
     return BotMessage.CMD_NOT_FOUND
 
 
-@router.message(_CommandReject())
-async def command_check(raw: Message, ctx: HandlerContext) -> None:
+async def _reject_command(raw: Message, ctx: HandlerContext) -> None:
     """拦截命令形态问题
 
     - 私聊回执，群聊与频道静默无视
@@ -128,15 +109,22 @@ async def command_check(raw: Message, ctx: HandlerContext) -> None:
     await ctx.answer(_reject_text(ctx.event.command))
 
 
-@router.message(_KeywordFilter())
-async def command_help(raw: Message, ctx: HandlerContext) -> None:
+async def _show_single_help(raw: Message, ctx: HandlerContext) -> None:
     """发送单个命令的帮助说明"""
     await ctx.answer(resolve_single_help(ctx.event.command.head))
 
 
-@router.message(_MenuFilter())
-async def show_help_list(raw: Message, ctx: HandlerContext) -> None:
+async def _show_menu(raw: Message, ctx: HandlerContext) -> None:
     """以图片形式发送帮助菜单"""
     # 渲染可能触发绘制，放线程池防卡事件循环
     path = await asyncio.to_thread(generate_image)
     await ctx.answer(OutboundPayloadDTO(kind=ContentKind.PHOTO, local_path=str(path)))
+
+
+spec = PluginSpec(
+    routes=(
+        PluginRoute(_is_illegal_command, _reject_command),
+        PluginRoute(_is_single_help, _show_single_help),
+        PluginRoute(_is_menu_request, _show_menu),
+    )
+)

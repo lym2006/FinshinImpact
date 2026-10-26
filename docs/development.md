@@ -27,9 +27,11 @@
 
 ## 新增插件（清单驱动流程）
 
-1. 建目录 `src/plugins/<Name>/`，`__init__.py` 导出 `router`。
+1. 建目录 `src/plugins/<Name>/`，`__init__.py` 导出 `spec` 或 `router`。
+   - `spec` 交一份按顺序判定的路由清单，谓词只吃归一后的处理上下文，装配时由平台侧编成引擎对象。
+   - `router` 直接交引擎原生路由，判定逻辑得写在过滤器里。
    - 要跨插件共用的守卫、过滤器、话术放 `src/plugins/_shared/`，那里没有清单故不会被当作插件加载。
-2. 要常驻后台的，`__init__.py` 再导出 `backgrounds`。
+2. 要常驻后台的，`spec` 里带 `backgrounds`，走 `router` 的再导出同名属性。
    - 元素为无参协程函数，随 Bot 服务起停：轮询开始即拉起，停服即取消。
    - 协程内抛出的异常只记日志。
 3. 目录内放 `plugin.toml`（模板 `assets/plugin.example.toml`）：
@@ -42,7 +44,7 @@
    - 命令自己缺参时的补救流程归命令侧实现。
 7. 命令要分步等下一条输入时，中止用的保留串取 `core.domain` 的 `StepInput.STOP`，别在插件里另写一份。
 8. 对话与命令的权限档一律标在插件代码里，不进 `plugin.toml`。
-   - 命令挂 `require_role(CommandRole.X)`，场景门槛写成过滤器判 `role_of`。
+   - 命令挂 `require_role(CommandRole.X)`，场景门槛写进判定函数读 `role_of`。
    - 清单里只能存枚举串，读侧还要映射回档位，等于把一处判定拆成两处。
 
 装库链路：
