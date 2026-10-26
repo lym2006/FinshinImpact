@@ -1,0 +1,21 @@
+name = "grant"
+title = "权限授权"
+summary = "管理命令的授权名单"
+core = true
+order = 10  # 常规档：与新增插件默认同值
+deps = []
+assets = []
+
+[[help]]
+section = "授权部分"
+note = "授权与撤销只有主人能使"
+
+[[help.commands]]
+cmd = "grant"
+desc = "授予该 id 管理员权限（仅主人）"
+flags = []
+
+[[help.commands]]
+cmd = "ungrant"
+desc = "撤销该 id 管理员权限（仅主人）"
+flags = []

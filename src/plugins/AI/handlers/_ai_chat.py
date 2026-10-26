@@ -13,9 +13,10 @@ from core.domain import ChatScope, CommandRole
 from services.context import HandlerContext
 from utils import get_logger
 
-from ...messages import BotMessage
+from ..._shared.access import role_of
+from ..._shared.messages import BotMessage
 from ..config import ai_config
-from ..core import role_of, session_guard
+from ..core import session_guard
 from ..services import handle_ai_chat
 
 ai_chat = Router()

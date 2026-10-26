@@ -67,7 +67,6 @@ class _DynamicAIConfig:
             "group_triggers": (ConfigKey.TRIGGERS.path(ConfigSection.CHORE), list),
             "keep_seconds": (ConfigKey.RECORD_KEEP.path(ConfigSection.DATA), float),
             "waiting_time": (ConfigKey.WAITING.path(ConfigSection.DATA), float),
-            "owner": (ConfigKey.OWNER.path(ConfigSection.CHORE), str),
             "init": (ConfigKey.OWNER.path(ConfigSection.CHORE), str),
         }
 

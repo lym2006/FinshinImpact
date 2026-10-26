@@ -1,4 +1,4 @@
-# src/plugins/filters.py
+# src/plugins/_shared/filters.py
 """命令过滤器
 
 - 按归一事件的命令头匹配路由

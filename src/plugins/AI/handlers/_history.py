@@ -15,10 +15,11 @@ from core.domain.ids import SessionKey
 from core.dto import OutboundPayloadDTO
 from services.context import HandlerContext
 
-from ...filters import CommandFilter
-from ...messages import BotMessage
+from ..._shared.access import require_role
+from ..._shared.filters import CommandFilter
+from ..._shared.messages import BotMessage
 from ..config import ai_config
-from ..core import clear_session, require_role, session_guard
+from ..core import clear_session, session_guard
 from ..utils import make_session_key
 
 history = Router()

@@ -6,7 +6,7 @@
 
 from aiogram import Router
 
-from . import _ai_chat, _grant, _history
+from . import _ai_chat, _history
 
 __all__ = ["get_router"]
 
@@ -17,7 +17,6 @@ def get_router() -> Router:
 
     # 子路由顺序即优先级，ai_chat 必须最后
     routers = [
-        _grant.grant,
         _history.history,
         _ai_chat.ai_chat,
     ]
