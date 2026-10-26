@@ -3,6 +3,8 @@
 
 - 同群两名成员共用一串队列与一把锁
 - 不同容器各占一串
+- 停服收尾作废三本内存账并收掉在途协程
+- 收尾后同一容器再入队能起重启新的监控循环
 """
 
 import asyncio
@@ -25,8 +27,14 @@ from core.dto import (  # noqa: E402
     MsgReferenceDTO,
     PrincipalDTO,
 )
-from plugins.AI.core import session_guard, session_states, task_queues  # noqa: E402
-from plugins.AI.services import _ai_chat  # noqa: E402
+from plugins.AI.core import (  # noqa: E402
+    active_tasks,
+    session_guard,
+    session_states,
+    task_queues,
+)
+from plugins.AI.services import _ai_chat, _monitor  # noqa: E402
+from plugins.AI.state import session_locks  # noqa: E402
 
 
 def _event(user: str, scope: ChatScope) -> InboundEventDTO:
@@ -62,6 +70,19 @@ async def _touch(*, ctx: _Ctx) -> None:
 async def _enqueue(*, ctx: _Ctx) -> None:
     """走过会话守卫的入队处理"""
     await _ai_chat.handle_ai_chat(ctx)
+
+
+async def _no_purge(*_args: object) -> int:
+    """清理路径打桩，收尾用例不碰库与磁盘"""
+    return 0
+
+
+async def _busy_group() -> SessionKey:
+    """造出一串正在应答中的群会话"""
+    await _touch(ctx=_Ctx(_event("111", ChatScope.GROUP)))
+    key = SessionKey("tg.g100123")
+    session_states[key].is_active = True
+    return key
 
 
 class TestContainerQueue(unittest.TestCase):
@@ -105,6 +126,69 @@ class TestContainerQueue(unittest.TestCase):
 
         self.assertEqual(started, ["tg.g100123"])
         self.assertEqual(task_queues[SessionKey("tg.g100123")].size, 2)
+
+
+class TestShutdownRelease(unittest.TestCase):
+    def setUp(self) -> None:
+        session_states.clear()
+        task_queues.clear()
+        session_locks.clear()
+        active_tasks.clear()
+
+    def test_teardown_clears_memory_and_cancels_inflight(self) -> None:
+        """停服收尾抹平内存态，在途协程收到取消"""
+        key = asyncio.run(_busy_group())
+        session_locks[key]
+        box: dict[str, asyncio.Task] = {}
+
+        async def _run() -> None:
+            inflight = asyncio.create_task(asyncio.sleep(30))
+            active_tasks.add(inflight)
+            box["inflight"] = inflight
+
+            cleaner = asyncio.create_task(_monitor.cleanup_loop())
+            await asyncio.sleep(0)
+            cleaner.cancel()
+            await asyncio.gather(cleaner, return_exceptions=True)
+
+        with (
+            patch.object(_monitor, "_purge_records", lambda _deadline: ()),
+            patch.object(_monitor, "purge_sessions", _no_purge),
+            patch.object(_monitor, "purge_idle_sessions", _no_purge),
+        ):
+            asyncio.run(_run())
+
+        self.assertEqual(session_states, {})
+        self.assertEqual(task_queues, {})
+        self.assertEqual(len(session_locks), 0)
+        self.assertEqual(active_tasks, set())
+        self.assertTrue(box["inflight"].cancelled())
+
+    def test_monitor_restarts_after_teardown(self) -> None:
+        """收尾后同串容器再入队，监控循环重新起住"""
+        started: list[str] = []
+
+        async def _fake_loop(key: SessionKey) -> None:
+            started.append(key)
+
+        async def _run() -> None:
+            await _busy_group()
+            cleaner = asyncio.create_task(_monitor.cleanup_loop())
+            await asyncio.sleep(0)
+            cleaner.cancel()
+            await asyncio.gather(cleaner, return_exceptions=True)
+
+            await _enqueue(ctx=_Ctx(_event("111", ChatScope.GROUP)))
+
+        with (
+            patch.object(_ai_chat, "monitor_loop", _fake_loop),
+            patch.object(_monitor, "_purge_records", lambda _deadline: ()),
+            patch.object(_monitor, "purge_sessions", _no_purge),
+            patch.object(_monitor, "purge_idle_sessions", _no_purge),
+        ):
+            asyncio.run(_run())
+
+        self.assertEqual(started, ["tg.g100123"])
 
 
 if __name__ == "__main__":
