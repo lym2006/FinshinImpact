@@ -195,7 +195,7 @@
 - 弹窗文案高度随行数自适应撑开，不靠空首行土办法。
 - 文案收敛：
   - `GUI` 可见文案收敛进 `skin/messages/`，禁止 f-string 裸写业务话术。
-  - `Bot` 对话话术收敛进 `src/plugins/messages.py`（`BotMessage`），插件间直连引用，禁止内联裸写。
+  - `Bot` 对话话术收敛进 `src/plugins/_shared/messages.py`（`BotMessage`），插件间直连引用，禁止内联裸写。
   - 运行日志不属对话文案，不收敛，就地内联保持可 grep。
   - 异常文案模板在同文件就近写映射表。
   - `theme` 令牌只代理引用、不持有话术字面量。

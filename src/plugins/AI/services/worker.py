@@ -17,7 +17,7 @@ from exceptions import DomainError, MessageVanishedError
 from services.context import HandlerContext
 from utils import get_logger
 
-from ...messages import BotMessage
+from ..._shared.messages import BotMessage
 from ..config import ai_config
 from ..core import (
     AIClient,

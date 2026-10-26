@@ -21,8 +21,8 @@ set_profile("tg.000000")
 
 from core.domain import HelpKey  # noqa: E402
 from core.dto import HelpCommandDTO  # noqa: E402
+from plugins._shared.messages import BotMessage  # noqa: E402
 from plugins.help import _services  # noqa: E402
-from plugins.messages import BotMessage  # noqa: E402
 from utils.plugin import _manifest  # noqa: E402
 
 

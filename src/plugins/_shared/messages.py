@@ -1,4 +1,4 @@
-# src/plugins/messages.py
+# src/plugins/_shared/messages.py
 """用户文案
 
 - 定义 Telegram 固定话术

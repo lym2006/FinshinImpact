@@ -42,9 +42,9 @@ from adapters.telegram._normalize import (  # noqa: E402
     normalize_update,
 )
 from core.dto import HelpCommandDTO, MsgReferenceDTO, OutboundPayloadDTO  # noqa: E402
-from plugins.filters import CommandFilter  # noqa: E402
-from plugins.help import _help  # noqa: E402
-from plugins.messages import BotMessage  # noqa: E402
+from plugins._shared.filters import CommandFilter  # noqa: E402
+from plugins._shared.messages import BotMessage  # noqa: E402
+from plugins.help import _commands  # noqa: E402
 from services.context import HandlerContext  # noqa: E402
 
 _GROUP = Chat(id=-100123, type="supergroup", title="测试群")
@@ -136,11 +136,11 @@ class TestHelpCommandReject(_VerdictMixin, unittest.IsolatedAsyncioTestCase):
     """帮助插件的形态回执判定"""
 
     def setUp(self) -> None:
-        patcher = patch.object(_help, "help_list", _MENU)
+        patcher = patch.object(_commands, "help_list", _MENU)
         patcher.start()
         self.addCleanup(patcher.stop)
-        self.reject = _help._CommandReject()
-        self.keyword = _help._KeywordFilter()
+        self.reject = _commands._CommandReject()
+        self.keyword = _commands._KeywordFilter()
 
     async def test_unknown_name_taken(self) -> None:
         rejected, _ = await self._verdict("/nope")
@@ -224,11 +224,11 @@ class TestArgsAllowedCommand(_VerdictMixin, unittest.IsolatedAsyncioTestCase):
 
     def setUp(self) -> None:
         menu = {**_MENU, "grant": "主人授权", "clear": "清记忆"}
-        patcher = patch.object(_help, "help_list", menu)
+        patcher = patch.object(_commands, "help_list", menu)
         patcher.start()
         self.addCleanup(patcher.stop)
-        self.reject = _help._CommandReject()
-        self.keyword = _help._KeywordFilter()
+        self.reject = _commands._CommandReject()
+        self.keyword = _commands._KeywordFilter()
 
     async def test_grant_with_id_yields_in_both_scopes(self) -> None:
         """私聊与群聊都放行给授权命令"""
@@ -261,11 +261,11 @@ class TestCommandFlagSpec(_VerdictMixin, unittest.IsolatedAsyncioTestCase):
             "history": HelpCommandDTO(cmd="history", desc="显示历史记录"),
         }
         for name, value in (("help_list", _MENU), ("command_specs", specs)):
-            patcher = patch.object(_help, name, value)
+            patcher = patch.object(_commands, name, value)
             patcher.start()
             self.addCleanup(patcher.stop)
-        self.reject = _help._CommandReject()
-        self.keyword = _help._KeywordFilter()
+        self.reject = _commands._CommandReject()
+        self.keyword = _commands._KeywordFilter()
 
     async def test_help_flag_lists(self) -> None:
         rejected, listed = await self._verdict("/md -h")
@@ -396,7 +396,7 @@ class TestCtxReachesHandlers(unittest.IsolatedAsyncioTestCase):
     """归一上下文经完整分发链路注入"""
 
     def setUp(self) -> None:
-        patcher = patch.object(_help, "help_list", _MENU)
+        patcher = patch.object(_commands, "help_list", _MENU)
         patcher.start()
         self.addCleanup(patcher.stop)
         self.interaction = _RecordingInteraction()
@@ -408,7 +408,7 @@ class TestCtxReachesHandlers(unittest.IsolatedAsyncioTestCase):
 
         # 模块级 router 只能挂一处，此处按原样重挂回执路由
         router = Router()
-        router.message(_help._CommandReject())(_help.command_check)
+        router.message(_commands._CommandReject())(_commands.command_check)
         self.dispatcher.include_router(router)
         command_router = Router()
 

@@ -1,4 +1,4 @@
-# src/plugins/AI/core/_grants.py
+# src/plugins/_shared/grants.py
 """命令授权落库
 
 - 按用户二段键读写管理员名单

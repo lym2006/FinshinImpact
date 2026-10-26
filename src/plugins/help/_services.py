@@ -19,7 +19,7 @@ from utils import get_logger
 from utils.paths import HELP_IMAGE, PROFILE_DIR
 from utils.plugin import enabled_manifests
 
-from ..messages import BotMessage
+from .._shared.messages import BotMessage
 
 # 菜单行三元组：行类型、行文本、命令清单项（非命令行留空）
 _MenuRow: TypeAlias = tuple[str, str, HelpCommandDTO | None]

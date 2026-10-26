@@ -1,4 +1,4 @@
-# src/plugins/AI/handlers/_grant.py
+# src/plugins/grant/_commands.py
 """授权命令
 
 - /grant：主人授权某个 id 使用管理命令
@@ -19,13 +19,14 @@ from core.dto import PrincipalDTO
 from services.context import HandlerContext
 from utils import get_logger
 
-from ...filters import CommandFilter
-from ...messages import BotMessage
-from ..core import add_admin, remove_admin, require_role
+from .._shared.access import require_role
+from .._shared.filters import CommandFilter
+from .._shared.grants import add_admin, remove_admin
+from .._shared.messages import BotMessage
 
-_logger = get_logger("Plg.AI.Grant")
+_logger = get_logger("Plg.Grant")
 
-grant = Router()
+router = Router()
 
 
 class _GrantStep(StrEnum):
@@ -127,21 +128,21 @@ async def _take_command(ctx: HandlerContext, step: _GrantStep, usage: str) -> No
     await ctx.answer(usage)
 
 
-@grant.message(CommandFilter("grant"))
+@router.message(CommandFilter("grant"))
 @require_role(CommandRole.OWNER)
 async def add_grant(raw: Message, ctx: HandlerContext) -> None:
     """授权用户"""
     await _take_command(ctx, _GrantStep.ADD, BotMessage.GRANT_USAGE)
 
 
-@grant.message(CommandFilter("ungrant"))
+@router.message(CommandFilter("ungrant"))
 @require_role(CommandRole.OWNER)
 async def drop_grant(raw: Message, ctx: HandlerContext) -> None:
     """撤销授权"""
     await _take_command(ctx, _GrantStep.DROP, BotMessage.UNGRANT_USAGE)
 
 
-@grant.message(_AwaitTarget())
+@router.message(_AwaitTarget())
 @require_role(CommandRole.OWNER)
 async def finish_grant(raw: Message, ctx: HandlerContext) -> None:
     """按待输入流程认目标"""
