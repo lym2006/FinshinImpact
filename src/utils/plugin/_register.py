@@ -3,7 +3,7 @@
 
 - 按清单与实例启用集决定加载序列
 - 实现路由注册、常驻协程收集与逐项结果上报
-- 新旧两套契约并认，同只插件两套都交时按新契约走
+- 插件只交路由清单，缺 spec 记失败
 """
 
 import importlib
@@ -51,30 +51,16 @@ def register_plugins(
         try:
             # 动态导入插件模块
             module = importlib.import_module(f"{PLUGINS_PKG}.{plugin_name}")
-            spec = getattr(module, "spec", None)
+            spec = cast(PluginSpec | None, getattr(module, "spec", None))
 
-            if spec is not None:
-                declared = _checked_backgrounds(spec.backgrounds)
-                router = build_router(spec)
-            else:
-                declared = _checked_backgrounds(getattr(module, "backgrounds", ()))
-                router = getattr(module, "router", None)
-
-                # 旧契约的 Router 是模块级单只，摘掉父引用才允许换 Dispatcher 重挂
-                if router is not None:
-                    router._parent_router = None
-
-            if router is None:
+            if spec is None:
                 report.append(
-                    (
-                        plugin_name,
-                        False,
-                        "缺少 router 或 spec 属性（检查 __init__.py）",
-                    )
+                    (plugin_name, False, "缺少 spec 属性（检查 __init__.py）")
                 )
                 continue
 
-            dispatcher.include_router(router)
+            declared = _checked_backgrounds(spec.backgrounds)
+            dispatcher.include_router(build_router(spec))
             backgrounds.extend(declared)
             report.append((plugin_name, True, ""))
             success_count += 1
