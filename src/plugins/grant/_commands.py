@@ -10,24 +10,20 @@
 
 from enum import StrEnum
 
-from aiogram import Router
-from aiogram.filters import Filter
 from aiogram.types import Message
 
-from core.domain import ChatScope, CommandRole, StepInput
+from core.domain import ChatScope, CommandRole, PluginRoute, PluginSpec, StepInput
 from core.domain.ids import KEY_SEP, PrincipalKey, UserKey
 from core.dto import PrincipalDTO
 from services.context import HandlerContext
 from utils import get_logger
 
 from .._shared.access import require_role
-from .._shared.filters import CommandFilter
+from .._shared.filters import CommandMatch
 from .._shared.grants import add_admin, list_admins, remove_admin
 from .._shared.messages import BotMessage
 
 _logger = get_logger("Plg.Grant")
-
-router = Router()
 
 
 class _GrantStep(StrEnum):
@@ -41,23 +37,18 @@ class _GrantStep(StrEnum):
 _pending: dict[PrincipalKey, _GrantStep] = {}
 
 
-class _AwaitTarget(Filter):
+async def _awaits_target(ctx: HandlerContext) -> bool:
     """认待输入流程发来的目标
 
     - 只认发起流程的那个人，命令与图片不接
     """
-
-    async def __call__(self, raw: Message, ctx: HandlerContext | None = None) -> bool:
-        """判定是否接管这条消息"""
-        if ctx is None:
-            return False
-        event = ctx.event
-        command = event.command
-        if command.matched or command.format_error:
-            return False
-        if event.content.media or not event.content.text:
-            return False
-        return _pending.get(event.principal.key) is not None
+    event = ctx.event
+    command = event.command
+    if command.matched or command.format_error:
+        return False
+    if event.content.media or not event.content.text:
+        return False
+    return _pending.get(event.principal.key) is not None
 
 
 def _target_key(principal: PrincipalDTO, raw_id: str) -> UserKey:
@@ -129,23 +120,20 @@ async def _take_command(ctx: HandlerContext, step: _GrantStep, usage: str) -> No
     await ctx.answer(usage)
 
 
-@router.message(CommandFilter("grant"))
 @require_role(CommandRole.OWNER)
-async def add_grant(raw: Message, ctx: HandlerContext) -> None:
+async def _add_grant(raw: Message, ctx: HandlerContext) -> None:
     """授权用户"""
     await _take_command(ctx, _GrantStep.ADD, BotMessage.GRANT_USAGE)
 
 
-@router.message(CommandFilter("ungrant"))
 @require_role(CommandRole.OWNER)
-async def drop_grant(raw: Message, ctx: HandlerContext) -> None:
+async def _drop_grant(raw: Message, ctx: HandlerContext) -> None:
     """撤销授权"""
     await _take_command(ctx, _GrantStep.DROP, BotMessage.UNGRANT_USAGE)
 
 
-@router.message(CommandFilter("admin"))
 @require_role(CommandRole.OWNER)
-async def show_admins(raw: Message, ctx: HandlerContext) -> None:
+async def _show_admins(raw: Message, ctx: HandlerContext) -> None:
     """查看授权名单
 
     - 私聊出逐条明细，其余场景只回条数
@@ -170,9 +158,8 @@ async def show_admins(raw: Message, ctx: HandlerContext) -> None:
     )
 
 
-@router.message(_AwaitTarget())
 @require_role(CommandRole.OWNER)
-async def finish_grant(raw: Message, ctx: HandlerContext) -> None:
+async def _finish_grant(raw: Message, ctx: HandlerContext) -> None:
     """按待输入流程认目标"""
     key = ctx.event.principal.key
     step = _pending[key]
@@ -188,3 +175,13 @@ async def finish_grant(raw: Message, ctx: HandlerContext) -> None:
 
     if await _apply(ctx, step, target):
         _pending.pop(key, None)
+
+
+spec = PluginSpec(
+    routes=(
+        PluginRoute(CommandMatch("grant"), _add_grant),
+        PluginRoute(CommandMatch("ungrant"), _drop_grant),
+        PluginRoute(CommandMatch("admin"), _show_admins),
+        PluginRoute(_awaits_target, _finish_grant),
+    )
+)

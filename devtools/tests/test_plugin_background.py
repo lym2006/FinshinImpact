@@ -263,10 +263,10 @@ class TestAIPluginDeclares(unittest.TestCase):
 
     def test_cleanup_loop_is_declared(self) -> None:
         """AI 插件把过期清理协程交进契约"""
-        from plugins.AI import backgrounds
+        from plugins.AI import spec
         from plugins.AI.services import cleanup_loop
 
-        self.assertEqual(backgrounds, (cleanup_loop,))
+        self.assertEqual(spec.backgrounds, (cleanup_loop,))
 
 
 if __name__ == "__main__":
