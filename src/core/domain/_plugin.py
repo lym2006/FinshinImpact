@@ -8,7 +8,7 @@
 - 定义插件路由清单与常驻协程的签名
 """
 
-from collections.abc import Callable, Coroutine
+from collections.abc import Awaitable, Callable, Coroutine
 from dataclasses import dataclass
 from enum import IntEnum, StrEnum
 from typing import Any
@@ -19,10 +19,10 @@ PLUGINS_PKG = "plugins"  # 插件树顶层包名，find_spec 与动态导入路�
 PluginBackground = Callable[[], Coroutine[Any, Any, None]]
 
 # 路由谓词，只吃归一后的处理上下文，返回是否接管这条事件
-PluginPredicate = Callable[..., Coroutine[Any, Any, bool]]
+PluginPredicate = Callable[..., Awaitable[bool]]
 
 # 路由处理函数，首位按位置收原始事件，ctx 按名注入
-_PluginHandler = Callable[..., Coroutine[Any, Any, None]]
+_PluginHandler = Callable[..., Awaitable[None]]
 
 
 @dataclass(frozen=True, slots=True)

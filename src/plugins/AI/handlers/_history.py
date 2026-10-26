@@ -7,32 +7,28 @@
 
 from pathlib import Path
 
-from aiogram import Router
 from aiogram.types import Message
 
-from core.domain import CommandRole, ContentKind
+from core.domain import CommandRole, ContentKind, PluginRoute
 from core.domain.ids import SessionKey
 from core.dto import OutboundPayloadDTO
 from services.context import HandlerContext
 
 from ..._shared.access import require_role
-from ..._shared.filters import CommandFilter
+from ..._shared.filters import CommandMatch
 from ..._shared.messages import BotMessage
 from ..config import ai_config
 from ..core import clear_session, session_guard
 from ..utils import make_session_key
-
-history = Router()
 
 
 def _get_file_path(key: SessionKey) -> Path:
     return ai_config.record_dir / f"{key}.md"
 
 
-@history.message(CommandFilter("history"))
 @require_role(CommandRole.ADMIN)
 @session_guard
-async def show_history(raw: Message, ctx: HandlerContext) -> None:
+async def _show_history(raw: Message, ctx: HandlerContext) -> None:
     """发送历史记录"""
     file_path = _get_file_path(make_session_key(ctx.event.principal))
 
@@ -50,12 +46,17 @@ async def show_history(raw: Message, ctx: HandlerContext) -> None:
     )
 
 
-@history.message(CommandFilter("clear"))
 @require_role(CommandRole.ADMIN)
 @session_guard
-async def clear_history(raw: Message, ctx: HandlerContext) -> None:
+async def _clear_history(raw: Message, ctx: HandlerContext) -> None:
     """清除记忆"""
     key = make_session_key(ctx.event.principal)
     await clear_session(key)
     _get_file_path(key).unlink(missing_ok=True)
     await ctx.answer(BotMessage.HISTORY_MEMORY_CLEARED)
+
+
+routes = (
+    PluginRoute(CommandMatch("history"), _show_history),
+    PluginRoute(CommandMatch("clear"), _clear_history),
+)

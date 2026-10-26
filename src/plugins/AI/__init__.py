@@ -5,15 +5,15 @@
 - 声明随 Bot 起停的过期记录清理协程
 """
 
-from .handlers import get_router
+from core.domain import PluginSpec
+
+from .handlers import get_routes
 from .services import cleanup_loop
 
 # 插件契约
-router = get_router()
-backgrounds = (cleanup_loop,)
+spec = PluginSpec(routes=get_routes(), backgrounds=(cleanup_loop,))
 
 __all__ = [
     # 插件契约
-    "router",
-    "backgrounds",
+    "spec",
 ]

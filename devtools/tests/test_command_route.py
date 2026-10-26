@@ -27,7 +27,7 @@ _AI_SEED = {
 with patch.object(config_manager, "get", lambda path, _type: _AI_SEED[path]):
     from plugins.AI.handlers import _ai_chat  # noqa: E402
 
-from aiogram import Dispatcher, Router  # noqa: E402
+from aiogram import Dispatcher  # noqa: E402
 from aiogram.types import (  # noqa: E402
     Chat,
     Message,
@@ -42,9 +42,9 @@ from adapters.telegram._normalize import (  # noqa: E402
     normalize_update,
 )
 from adapters.telegram.router_bridge import build_router  # noqa: E402
-from core.domain import ContentKind  # noqa: E402
+from core.domain import ContentKind, PluginRoute, PluginSpec  # noqa: E402
 from core.dto import HelpCommandDTO, MsgReferenceDTO, OutboundPayloadDTO  # noqa: E402
-from plugins._shared.filters import CommandFilter  # noqa: E402
+from plugins._shared.filters import CommandMatch  # noqa: E402
 from plugins._shared.messages import BotMessage  # noqa: E402
 from plugins.help import _commands  # noqa: E402
 from services.context import HandlerContext  # noqa: E402
@@ -313,12 +313,12 @@ class TestCommandFlagSpec(_VerdictMixin, unittest.IsolatedAsyncioTestCase):
         self.assertTrue(listed)
 
 
-class TestCommandFilterYield(unittest.IsolatedAsyncioTestCase):
-    """命令过滤器的头匹配与 -h 让行"""
+class TestCommandMatchYield(unittest.IsolatedAsyncioTestCase):
+    """命令谓词的头匹配与 -h 让行"""
 
     async def _hit(self, name: str, text: str) -> bool:
         message = _message(chat=_PRIVATE, text=text)
-        return await CommandFilter(name)(message, ctx=_ctx(message))
+        return await CommandMatch(name)(_ctx(message))
 
     async def test_head_match_takes(self) -> None:
         self.assertTrue(await self._hit("md", "/md"))
@@ -332,9 +332,6 @@ class TestCommandFilterYield(unittest.IsolatedAsyncioTestCase):
     async def test_other_head_yields(self) -> None:
         self.assertFalse(await self._hit("md", "/history"))
 
-    async def test_missing_ctx_yields(self) -> None:
-        self.assertFalse(await CommandFilter("md")(_message(text="/md")))
-
 
 class TestAiTriggerLadder(unittest.IsolatedAsyncioTestCase):
     """AI 触发优先级"""
@@ -343,10 +340,10 @@ class TestAiTriggerLadder(unittest.IsolatedAsyncioTestCase):
         patcher = patch.object(_ai_chat, "ai_config", _StubAIConfig())
         patcher.start()
         self.addCleanup(patcher.stop)
-        self.filter = _ai_chat._ChatFilter()
+        self.predicate = _ai_chat._triggers_chat
 
     async def _hit(self, message: Message) -> bool:
-        return await self.filter(raw=message, ctx=_ctx(message))
+        return await self.predicate(_ctx(message))
 
     async def test_command_yields(self) -> None:
         self.assertFalse(await self._hit(_message(text="/help")))
@@ -384,9 +381,6 @@ class TestAiTriggerLadder(unittest.IsolatedAsyncioTestCase):
             )
         )
 
-    async def test_missing_ctx_ignored(self) -> None:
-        self.assertFalse(await self.filter(raw=_message(text="随便聊聊")))
-
 
 class TestCtxReachesHandlers(unittest.IsolatedAsyncioTestCase):
     """归一上下文经完整分发链路注入"""
@@ -409,13 +403,12 @@ class TestCtxReachesHandlers(unittest.IsolatedAsyncioTestCase):
 
         # 帮助插件按清单编译成引擎对象，与另一只业务路由同台
         self.dispatcher.include_router(build_router(_commands.spec))
-        command_router = Router()
 
         async def run_md(raw: Message, *, ctx: HandlerContext) -> None:
             self.ran.append("md")
 
-        command_router.message(CommandFilter("md"))(run_md)
-        self.dispatcher.include_router(command_router)
+        other = PluginSpec(routes=(PluginRoute(CommandMatch("md"), run_md),))
+        self.dispatcher.include_router(build_router(other))
 
     async def _answer(self, text: str, chat: Chat = _PRIVATE) -> list[str]:
         """跑一条消息并回传外发文本"""

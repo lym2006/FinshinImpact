@@ -4,6 +4,6 @@
 - /grant 与 /ungrant：管理命令的授权名单
 """
 
-from ._commands import router
+from ._commands import spec
 
-__all__ = ["router"]
+__all__ = ["spec"]
