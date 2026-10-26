@@ -144,5 +144,12 @@ class GrantRepository(ABC):
         """
 
     @abstractmethod
+    async def list_active(self) -> tuple[UserKey, ...]:
+        """列出未到期的授权
+
+        - 按授权先后升序
+        """
+
+    @abstractmethod
     async def contains(self, user_key: UserKey) -> bool:
         """判定是否命中"""

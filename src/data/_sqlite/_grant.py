@@ -50,6 +50,20 @@ class SqliteGrantRepository(GrantRepository):
         await self._conn.commit()
         return existed
 
+    async def list_active(self) -> tuple[UserKey, ...]:
+        """列出未到期的授权
+
+        - 按授权先后升序，同一时刻进来的按写入先后补排
+        """
+        async with self._conn.execute(
+            "SELECT user_key FROM grant"
+            " WHERE expires_at IS NULL OR expires_at > ?"
+            " ORDER BY created_at, rowid",
+            (time.time(),),
+        ) as cursor:
+            rows = await cursor.fetchall()
+        return tuple(UserKey(row[0]) for row in rows)
+
     async def contains(self, user_key: UserKey) -> bool:
         """判定是否命中
 

@@ -31,6 +31,10 @@ class BotMessage:
     GRANT_EXISTS = "{id} 已在授权名单，请重试，或发 -1 取消"
     UNGRANT_REMOVED = "已撤销授权 {id}"
     UNGRANT_MISSING = "{id} 不在授权名单，请重试，或发 -1 取消"
+    ADMIN_COUNT = "授权名单共 {count} 人"
+    ADMIN_LIST = "授权名单共 {count} 人：\n{ids}"
+    ADMIN_EMPTY = "授权名单为空"
+    ADMIN_READ_FAILED = "名单读取失败，稍后再试"
 
     # 历史记录
     HISTORY_EMPTY = "暂无历史记录"
