@@ -14,7 +14,13 @@ from exceptions import MessageVanishedError
 from utils import get_logger
 
 from ..config import ai_config
-from ..core import purge_idle_sessions, purge_sessions, session_states, task_queues
+from ..core import (
+    active_tasks,
+    purge_idle_sessions,
+    purge_sessions,
+    session_states,
+    task_queues,
+)
 from ..state import session_locks
 from .worker import worker_loop
 
@@ -82,33 +88,53 @@ def _purge_records(deadline: float) -> tuple[SessionKey, ...]:
     return tuple(expired)
 
 
+async def _release_inflight() -> None:
+    """作废会话内存态并收掉在途协程"""
+    # 活跃标记留在账上，下轮新消息只入队不起监控，那一路容器从此不应答
+    session_states.clear()
+    task_queues.clear()
+    session_locks.clear()
+
+    # 队列项揣着停机前那套引擎的连接句柄，新引擎接着答它必撞错
+    tasks = list(active_tasks)
+    active_tasks.clear()
+    for task in tasks:
+        task.cancel()
+    if tasks:
+        await asyncio.gather(*tasks, return_exceptions=True)
+
+
 async def cleanup_loop() -> NoReturn:
     """后台清理闲置记录
 
     - 内存会话按最后活跃时间清，记录按文件时间清，库内上下文按最后问答时间清
     - 记录一到期即连带清掉同键上下文，两边不分叉
     - 重启后留下的记录与上下文照样扫得到
+    - 收到停服取消时先作废内存态，再收在途问答与压缩
     """
-    while True:
-        deadline = time.time() - ai_config.keep_seconds
+    try:
+        while True:
+            deadline = time.time() - ai_config.keep_seconds
 
-        # list() 快照防遍历途中改字典大小，任务非空或正在应答的容器不动
-        idle_keys = [
-            key
-            for key, state in list(session_states.items())
-            if state.last_active < deadline
-            and not state.is_active
-            and task_queues[key].size == 0
-        ]
-        for key in idle_keys:
-            session_states.pop(key, None)
-            task_queues.pop(key, None)
-            _logger.info(f"清理闲置会话: {key}")
+            # list() 快照防遍历途中改字典大小，任务非空或正在应答的容器不动
+            idle_keys = [
+                key
+                for key, state in list(session_states.items())
+                if state.last_active < deadline
+                and not state.is_active
+                and task_queues[key].size == 0
+            ]
+            for key in idle_keys:
+                session_states.pop(key, None)
+                task_queues.pop(key, None)
+                _logger.info(f"清理闲置会话: {key}")
 
-        purged = await purge_sessions(_purge_records(deadline))
-        purged += await purge_idle_sessions(deadline)
-        if purged:
-            _logger.info(f"清理过期上下文: {purged} 串")
+            purged = await purge_sessions(_purge_records(deadline))
+            purged += await purge_idle_sessions(deadline)
+            if purged:
+                _logger.info(f"清理过期上下文: {purged} 串")
 
-        # 扫完再睡，启动即扫一遍重启前攒下的记录
-        await asyncio.sleep(ai_config.waiting_time)
+            # 扫完再睡，启动即扫一遍重启前攒下的记录
+            await asyncio.sleep(ai_config.waiting_time)
+    finally:
+        await _release_inflight()
