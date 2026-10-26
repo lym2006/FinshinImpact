@@ -56,6 +56,7 @@ class ServiceManager(BaseManager):
         - aiogram 重依赖此刻才入场，主窗启动不受其拖累
         """
         from adapters.telegram.adapter import TelegramAdapter
+        from adapters.telegram.router_bridge import build_router
         from utils.middleware import LoggingMiddleware
         from utils.plugin import register_plugins
 
@@ -65,7 +66,7 @@ class ServiceManager(BaseManager):
 
         # 注册中间件和路由
         dispatcher.update.outer_middleware(LoggingMiddleware())
-        report, backgrounds = register_plugins(dispatcher)
+        report, backgrounds = register_plugins(dispatcher, build_router)
         total = len(report)
         self.logger.info(EngineMessage.PLUGINS_DONE.format(n=total))
         for index, (name, ok, reason) in enumerate(report, 1):

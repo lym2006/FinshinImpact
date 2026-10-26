@@ -3,13 +3,14 @@
 
 - 按清单与实例启用集决定加载序列
 - 实现路由注册、常驻协程收集与逐项结果上报
+- 新旧两套契约并认，同只插件两套都交时按新契约走
 """
 
 import importlib
-from types import ModuleType
+from collections.abc import Callable
 from typing import TYPE_CHECKING, cast
 
-from core.domain import PLUGINS_PKG, PluginBackground, PluginFileName
+from core.domain import PLUGINS_PKG, PluginBackground, PluginFileName, PluginSpec
 from core.dto import PluginManifestDTO
 from exceptions import PluginsMissingError
 
@@ -17,7 +18,7 @@ from ..paths import PROFILE_DIR
 from ._manifest import enabled_manifests
 
 if TYPE_CHECKING:
-    from aiogram import Dispatcher
+    from aiogram import Dispatcher, Router
 
 # 逐项报告：(插件名, 是否成功, 失败原因)
 _PluginReport = list[tuple[str, bool, str]]
@@ -25,10 +26,17 @@ _PluginReport = list[tuple[str, bool, str]]
 # 注册结果：逐项报告与待启动的常驻协程
 _RegisterResult = tuple[_PluginReport, tuple[PluginBackground, ...]]
 
+# 平台侧的清单编译器，注册表只按契约交还对象，不认它的构造
+_RouteBuilder = Callable[[PluginSpec], "Router"]
 
-def register_plugins(dispatcher: "Dispatcher") -> _RegisterResult:
+
+def register_plugins(
+    dispatcher: "Dispatcher",
+    build_router: _RouteBuilder,
+) -> _RegisterResult:
     """按启用序列注册插件
 
+    - build_router 由平台侧注入，把 PluginSpec 编成引擎要挂的对象
     - 返回逐项报告与全部插件声明的常驻协程
     - 未启用的插件不进报告
     - core 插件加载失败直接上抛，可选插件失败仅记原因
@@ -43,22 +51,29 @@ def register_plugins(dispatcher: "Dispatcher") -> _RegisterResult:
         try:
             # 动态导入插件模块
             module = importlib.import_module(f"{PLUGINS_PKG}.{plugin_name}")
-            declared = _collect_backgrounds(module)
+            spec = getattr(module, "spec", None)
 
-            # 检查插件是否导出了标准的 router 对象
-            router = getattr(module, "router", None)
+            if spec is not None:
+                declared = _checked_backgrounds(spec.backgrounds)
+                router = build_router(spec)
+            else:
+                declared = _checked_backgrounds(getattr(module, "backgrounds", ()))
+                router = getattr(module, "router", None)
+
+                # 旧契约的 Router 是模块级单只，摘掉父引用才允许换 Dispatcher 重挂
+                if router is not None:
+                    router._parent_router = None
+
             if router is None:
                 report.append(
                     (
                         plugin_name,
                         False,
-                        "缺少 router 属性（检查 __init__.py）",
+                        "缺少 router 或 spec 属性（检查 __init__.py）",
                     )
                 )
                 continue
 
-            # 清除旧的父路由引用，允许重新附加到新 Dispatcher
-            router._parent_router = None
             dispatcher.include_router(router)
             backgrounds.extend(declared)
             report.append((plugin_name, True, ""))
@@ -86,13 +101,12 @@ def register_plugins(dispatcher: "Dispatcher") -> _RegisterResult:
     return report, tuple(backgrounds)
 
 
-def _collect_backgrounds(module: ModuleType) -> tuple[PluginBackground, ...]:
-    """取出插件声明的常驻协程
+def _checked_backgrounds(declared: object) -> tuple[PluginBackground, ...]:
+    """校验插件声明的常驻协程
 
-    - 未声明的插件交空序列
+    - 非列表或元组即判形态非法
     - 非可调用成员直接丢弃
     """
-    declared = getattr(module, "backgrounds", ())
     if not isinstance(declared, (list, tuple)):
         raise TypeError("backgrounds 必须是可调用对象的列表或元组")
     return tuple(cast(PluginBackground, hook) for hook in declared if callable(hook))

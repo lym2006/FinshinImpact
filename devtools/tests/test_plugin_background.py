@@ -9,6 +9,7 @@
 - 回归点 4：轮询退出即拉起并取消常驻协程
 - 回归点 5：协程抛错只记录，不穿透引擎线程
 - 回归点 6：AI 插件把清理协程交进契约
+- 回归点 7：注册表新旧两套契约并认，spec 走注入的编译器
 """
 
 import asyncio
@@ -26,11 +27,22 @@ set_profile("tg.000000")
 
 from bot import _service as service_module  # noqa: E402
 from bot._service import BotService  # noqa: E402
+from core.domain import PluginRoute, PluginSpec  # noqa: E402
 from utils.plugin import _register  # noqa: E402
 
 
 async def _noop() -> None:
     """占位常驻协程"""
+    await asyncio.sleep(0)
+
+
+async def _never(ctx: object) -> bool:
+    """占位谓词，什么都不接管"""
+    return False
+
+
+async def _handle(raw: object, ctx: object) -> None:
+    """占位处理函数"""
     await asyncio.sleep(0)
 
 
@@ -58,9 +70,14 @@ def _register_modules(modules: dict[str, object], names: list[str]):
         patch.object(_register, "_resolve_plugins", lambda: manifests),
         patch.object(_register.importlib, "import_module", fake_import),
     ):
-        result = _register.register_plugins(dispatcher)  # type: ignore[arg-type]
+        result = _register.register_plugins(dispatcher, _compile)  # type: ignore[arg-type]
 
     return result, dispatcher.routers
+
+
+def _compile(spec: object) -> SimpleNamespace:
+    """假编译器：把清单原样裹进一只待挂对象"""
+    return SimpleNamespace(compiled=spec)
 
 
 def _plugin(**attrs: object) -> SimpleNamespace:
@@ -123,6 +140,56 @@ class TestCollectBackgrounds(unittest.TestCase):
 
         self.assertEqual(hooks, ())
         self.assertEqual(report, [("help", True, "")])
+
+
+class TestSpecContract(unittest.TestCase):
+    """回归点 7：新旧两套契约并认"""
+
+    def test_spec_compiled_and_hooks_from_spec(self) -> None:
+        """只交 spec 的插件走注入的编译器，协程取自清单"""
+        spec = PluginSpec(routes=(PluginRoute(_never, _handle),), backgrounds=(_noop,))
+        modules = {"AI": SimpleNamespace(spec=spec)}
+
+        (report, hooks), routers = _register_modules(modules, ["AI"])
+
+        self.assertEqual(report, [("AI", True, "")])
+        self.assertEqual(hooks, (_noop,))
+        self.assertEqual(routers[0].compiled, spec)
+
+    def test_spec_wins_over_legacy_router(self) -> None:
+        """两套都交时按新契约走，旧 Router 不进注册表"""
+        spec = PluginSpec()
+        modules = {"AI": SimpleNamespace(spec=spec, router=object())}
+
+        (_, _), routers = _register_modules(modules, ["AI"])
+
+        self.assertEqual(routers[0].compiled, spec)
+
+    def test_missing_both_reports_reason(self) -> None:
+        """router 与 spec 都没有才记失败，原因点名两套契约"""
+        modules = {"bad": SimpleNamespace(), "good": _plugin()}
+
+        (report, hooks), routers = _register_modules(modules, ["bad", "good"])
+
+        self.assertFalse(report[0][1])
+        self.assertIn("缺少 router 或 spec", report[0][2])
+        self.assertTrue(report[1][1])
+        self.assertEqual(hooks, ())
+        self.assertEqual(len(routers), 1)
+
+    def test_spec_backgrounds_shape_checked(self) -> None:
+        """清单里的 backgrounds 形态不对同样记失败"""
+        modules = {
+            "bad": SimpleNamespace(spec=PluginSpec(backgrounds=_noop)),
+            "good": SimpleNamespace(spec=PluginSpec(backgrounds=(_noop,))),
+        }
+
+        (report, hooks), routers = _register_modules(modules, ["bad", "good"])
+
+        self.assertFalse(report[0][1])
+        self.assertTrue(report[1][1])
+        self.assertEqual(hooks, (_noop,))
+        self.assertEqual(len(routers), 1)
 
 
 class _FakeSession:
