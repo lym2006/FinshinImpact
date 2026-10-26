@@ -26,20 +26,6 @@ python -m pytest devtools/tests/test_grant_access.py -v
 - 真库用例每例自开临时库，收尾合并 WAL 再删目录，例与例不共享状态。
 - 网络一律打桩，只验编排，不发真请求。
 
-## 不套生产口径
-
-三处豁免各有落点，免的都是风格，不免「跑得过」：
-
-- 规范扫描器把名为 `tests` 的目录列进跳过名单（`devtools/_style_checks/_common.py`），桩函数缺类型注解都不算违规。
-  - 跨包取私有模块由 devtools 整树豁免（`_s5d_access`），用例直连内部实现不算越界，也不把内部符号算成公共名。
-- 类型检查在 `pyproject.toml` 的 `[tool.pyright]` 里分两层。
-  - `exclude` 让闸门跳过本目录。
-  - 编辑器单开用例时 `exclude` 拦不住分析，另按目录配一套环境——`extraPaths` 补 `src` 与 `devtools`。
-  - 只关掉假件那两类 `reportArgumentType` 与 `reportAttributeAccessIssue`，其余照报。
-- ruff 在 `ruff.toml` 里对本目录关掉 docstring 一组规则，测试函数名即文档。
-
-ruff 的其余规则照查，pytest 照跑，改名或漏文件都过不了闸门。
-
 ## 加用例的判据
 
 - 改 `src` 行为就配一条回归，写得出一句「这条红了说明什么」才动手。
@@ -47,4 +33,15 @@ ruff 的其余规则照查，pytest 照跑，改名或漏文件都过不了闸�
 - 同一分支的多种入参用 `subTest` 铺在一个用例里，别为每档复制一遍断言。
 - `test_style_checker_meta.py` 查的是扫描器自己。
   - 十二个分节各备一份必违规样本，判据脱节即红。
-  - 豁免清单留了不再命中的条目也红。给扫描器加分节要连着补样本。
+  - 豁免清单留了不再命中的条目也红。
+
+## 用例放宽的三处
+
+风格上免三处，跑得过这条没免：ruff 其余规则照查，pytest 照跑，改名或漏文件照样红。
+
+- 规范扫描器：`tests` 目录整体跳过，devtools 整树允许直连 src 的内部实现。机制与理由见 [style-checker.md](style-checker.md)。
+- 类型检查（pyright）在 `pyproject.toml` 的 `[tool.pyright]` 里管两层。
+  - `exclude` 让闸门跳过本目录。
+  - 编辑器单开一个用例文件时 `exclude` 拦不住分析，所以另按目录配一套环境：`extraPaths` 补 `src` 与 `devtools`（用例运行时自己挂路径，静态层不补就整片报缺导入）。
+  - 只关掉假件引起的两类报错（`reportArgumentType` 与 `reportAttributeAccessIssue`），其余照报。
+- ruff 在 `ruff.toml` 里对本目录关掉 docstring 一组规则，测试函数名即文档。

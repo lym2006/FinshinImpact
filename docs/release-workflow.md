@@ -1,6 +1,7 @@
 # 发布工作流
 
-覆盖一次版本从改码到上线的四件套：CHANGELOG → commit → tag → release。
+日常改动跑绿就 commit，本地攒着不 push，未 push 的段随便 rebase 整历史。
+四件套（CHANGELOG → commit → tag → release）是写完之后的定稿步骤，只在发布日按序走一遍。
 
 ## 总流程（发布日按序执行）
 
@@ -27,15 +28,15 @@ $env:PYTHONUTF8 = 1; $env:PYTHONPATH = "src"
 ```
 
 - 绿的标准：ruff 两项通过，pyright 0 errors，契约 0 broken，扫描器 0 硬性，pytest 全过。
-- `.venv\Scripts\pyright.exe` 会联网拉 nodeenv 失败，必须用外部 node 跑随包 dist，`node` 可换成任意 node 等价可执行文件。
-- 扫描器的待核条数与上一轮比对，只许减不许增。基线取登记完豁免清单后的读数，预留待接的项照样报待核，不算新增。
-- 三棵 Python 树（`src`、`packaging`、`devtools`）全进扫描目标，漏一棵就有照不到的硬性。分节与豁免见 [style-checker.md](style-checker.md)。
+- `node` 是跑 JavaScript 的解释器，pyright 本体是 JS 写的，随 pip 包只发来 JS 文件。`.venv\Scripts\pyright.exe` 会先联网装一个 nodeenv 环境，断网即失败，所以改用本机已有的 node 直接跑那些 JS。`node` 可换成任意 node 等价可执行文件，Qoder 自带的那份就行。
+- 这五条由交付 skill 的闸门脚本一次跑齐，日常不用手敲；手敲只在脚本本身出问题时需要。
+- 各步判据不在这里重复：扫描器的分节、待核基线与豁免见 [style-checker.md](style-checker.md)，用例口径见 [testing.md](testing.md)，构建与发布物见 [packaging.md](packaging.md)。
 
-## 开发分支攒改动
+## 日常与定稿
 
-- 一轮改动四件套全绿即分组 commit，本地攒着不 push，半成品不入库。
-- 攒够一批、发布前统一理历史：`rebase -i` squash 并主题、reword 修措辞，只在未 push 的本地提交上做。
-- 理完必验 `git diff 理前位置 HEAD` 为空，内容零变化才并回 main，并回用 merge 保追溯。
+- 一轮改动五项闸门全绿即分组 commit，本地攒着不 push，半成品不入库。
+- 未 push 期间随便整历史：改动按行折回它原来那笔（`git commit --fixup` 配 `rebase --autosquash`）、同主题并笔、reword 修措辞，不留「先写后改」的碎笔。
+- 整完必验 `git diff 整备前位置 HEAD` 为空，内容零变化才算整对。已 push 的笔不改写。
 - push、tag 只在发布日动。
 
 ## CHANGELOG
