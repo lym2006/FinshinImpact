@@ -18,6 +18,9 @@ from ._plugin import (
     ManifestKey,
     PluginBackground,
     PluginFileName,
+    PluginPredicate,
+    PluginRoute,
+    PluginSpec,
     StateKey,
 )
 from ._role import ChatRole, CommandRole
@@ -44,6 +47,9 @@ __all__ = [
     # 插件
     "PLUGINS_PKG",
     "PluginBackground",
+    "PluginPredicate",
+    "PluginRoute",
+    "PluginSpec",
     "CommandPriority",
     "PluginFileName",
     "ManifestKey",
