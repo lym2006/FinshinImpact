@@ -6,7 +6,7 @@
 
 from abc import ABC, abstractmethod
 
-from ..domain.ids import PrincipalKey, SessionKey, TaskId, UserKey
+from ..domain.ids import PrincipalKey, SessionKey, TaskId, UserId
 from ..dto import (
     MediaEntryDTO,
     MsgReferenceDTO,
@@ -120,13 +120,13 @@ class GrantRepository(ABC):
     """命令授权仓储
 
     - owner 名单在 config，不进本表
-    - user_key 为 platform.user 二段键，不含 container
+    - 键为用户在本平台的 id，库随实例分开
     """
 
     @abstractmethod
     async def grant(
         self,
-        user_key: UserKey,
+        user: UserId,
         granted_by: PrincipalKey,
         expires_at: float | None = None,
     ) -> bool:
@@ -137,19 +137,19 @@ class GrantRepository(ABC):
         """
 
     @abstractmethod
-    async def revoke(self, user_key: UserKey) -> bool:
+    async def revoke(self, user: UserId) -> bool:
         """撤销权限
 
         - 返回是否存在
         """
 
     @abstractmethod
-    async def list_active(self) -> tuple[UserKey, ...]:
+    async def list_active(self) -> tuple[UserId, ...]:
         """列出未到期的授权
 
         - 按授权先后升序
         """
 
     @abstractmethod
-    async def contains(self, user_key: UserKey) -> bool:
+    async def contains(self, user: UserId) -> bool:
         """判定是否命中"""
