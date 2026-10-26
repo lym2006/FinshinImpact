@@ -13,8 +13,7 @@ from enum import StrEnum
 from aiogram.types import Message
 
 from core.domain import ChatScope, CommandRole, PluginRoute, PluginSpec, StepInput
-from core.domain.ids import KEY_SEP, PrincipalKey, UserKey
-from core.dto import PrincipalDTO
+from core.domain.ids import PrincipalKey, UserId
 from services.context import HandlerContext
 from utils import get_logger
 
@@ -51,11 +50,6 @@ async def _awaits_target(ctx: HandlerContext) -> bool:
     return _pending.get(event.principal.key) is not None
 
 
-def _target_key(principal: PrincipalDTO, raw_id: str) -> UserKey:
-    """按发起者的平台拼出被授权用户的二段键"""
-    return UserKey(f"{principal.platform}{KEY_SEP}{raw_id}")
-
-
 def _is_id(text: str) -> bool:
     """判定输入是不是一条用户 id
 
@@ -71,13 +65,13 @@ async def _apply(ctx: HandlerContext, step: _GrantStep, raw_id: str) -> bool:
     - 重复授权、撤销不在名单里的与写库抛错都交回假，接着等重发
     """
     principal = ctx.event.principal
-    key = _target_key(principal, raw_id)
+    target = UserId(raw_id)
     try:
         if step == _GrantStep.ADD:
-            done = await add_admin(key, principal.key)
+            done = await add_admin(target, principal.key)
             text = BotMessage.GRANT_ADDED if done else BotMessage.GRANT_EXISTS
         else:
-            done = await remove_admin(key)
+            done = await remove_admin(target)
             text = BotMessage.UNGRANT_REMOVED if done else BotMessage.UNGRANT_MISSING
     except Exception as e:
         _logger.send_error("授权名单写入失败", e)

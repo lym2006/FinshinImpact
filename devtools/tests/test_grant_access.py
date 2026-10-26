@@ -3,7 +3,7 @@
 
 - 主人与被授权用户能用 /history 与 /clear
 - 普通用户只收到无权限提示
-- /grant 与 /ungrant 只主人能使，键按平台二段记
+- /grant 与 /ungrant 只主人能使，键即用户在本平台的 id
 - 带 id 一步办完，不带 id 分步等下一条正文，只认发起人自己
 - 待输入发 -1 即取消，非 id 的输入只重新问
 """
@@ -22,7 +22,7 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
-from core.domain import ChatScope, Platform  # noqa: E402
+from core.domain import ChatScope, CommandRole, Platform  # noqa: E402
 from core.domain.ids import (  # noqa: E402
     ContainerKey,
     MessageId,
@@ -75,17 +75,17 @@ class _FakeRepo:
     def __init__(self) -> None:
         self.rows: dict[str, str] = {}
 
-    async def grant(self, user_key: str, granted_by: str, expires_at=None) -> bool:
-        if user_key in self.rows:
+    async def grant(self, user: str, granted_by: str, expires_at=None) -> bool:
+        if user in self.rows:
             return False
-        self.rows[user_key] = granted_by
+        self.rows[user] = granted_by
         return True
 
-    async def revoke(self, user_key: str) -> bool:
-        return self.rows.pop(user_key, None) is not None
+    async def revoke(self, user: str) -> bool:
+        return self.rows.pop(user, None) is not None
 
-    async def contains(self, user_key: str) -> bool:
-        return user_key in self.rows
+    async def contains(self, user: str) -> bool:
+        return user in self.rows
 
     async def list_active(self) -> tuple[str, ...]:
         return tuple(self.rows)
@@ -171,7 +171,7 @@ class AccessCase(unittest.TestCase):
             self.addCleanup(patcher.stop)
 
     async def _grant_user(self, target: str) -> None:
-        await grants.add_admin(f"tg.{target}", "tg.g100123.456")
+        await grants.add_admin(target, "tg.g100123.456")
 
     def _take(self, user_id: str, text: str) -> bool:
         """判定待输入过滤器是否接管这条正文"""
@@ -254,7 +254,7 @@ class TestGrantCommands(AccessCase):
         ctx, port = _grant_ctx("456", ("12345",))
         asyncio.run(_commands._add_grant(raw=None, ctx=ctx))
 
-        self.assertEqual(self.repo.rows, {"tg.12345": "tg.g100123.456"})
+        self.assertEqual(self.repo.rows, {"12345": "tg.g100123.456"})
         self.assertEqual(port.sent, [BotMessage.GRANT_ADDED.format(id="12345")])
 
     def test_repeat_grant_keeps_record(self) -> None:
@@ -291,7 +291,7 @@ class TestGrantCommands(AccessCase):
         asyncio.run(_commands._add_grant(raw=None, ctx=ctx))
 
         self.assertEqual(port.sent, [BotMessage.CMD_NO_PERMISSION])
-        self.assertEqual(self.repo.rows, {"tg.999": "tg.g100123.456"})
+        self.assertEqual(self.repo.rows, {"999": "tg.g100123.456"})
 
     def test_owner_revokes(self) -> None:
         """主人撤销后名单里没了"""
@@ -357,7 +357,7 @@ class TestGrantStepwise(AccessCase):
 
         self.assertEqual(asked, [BotMessage.GRANT_ASK_TARGET])
         self.assertEqual(replied, [BotMessage.GRANT_ADDED.format(id="12345")])
-        self.assertEqual(self.repo.rows, {"tg.12345": "tg.g100123.456"})
+        self.assertEqual(self.repo.rows, {"12345": "tg.g100123.456"})
         self.assertEqual(self.pending, {})
 
     def test_only_initiator_is_taken(self) -> None:
@@ -506,13 +506,13 @@ class TestAdminView(AccessCase):
         return port.sent
 
     def test_private_lists_each_key(self) -> None:
-        """私聊逐条列出二段键"""
+        """私聊逐条列出用户 id"""
         asyncio.run(self._grant_user("777"))
         asyncio.run(self._grant_user("888"))
 
         self.assertEqual(
             self._ask(),
-            [BotMessage.ADMIN_LIST.format(count=2, ids="- tg.777\n- tg.888")],
+            [BotMessage.ADMIN_LIST.format(count=2, ids="- 777\n- 888")],
         )
 
     def test_group_reports_count_only(self) -> None:
@@ -535,16 +535,23 @@ class TestAdminView(AccessCase):
         self.assertEqual(self._ask("999"), [BotMessage.CMD_NO_PERMISSION])
 
 
-class TestUserKey(unittest.TestCase):
-    """授权用的二段键"""
+class TestGrantKey(AccessCase):
+    """授权键按用户 id 记"""
 
-    def test_user_key_drops_container(self) -> None:
-        """二段键不含容器段"""
-        principal = PrincipalDTO(
-            platform=Platform.TELEGRAM, container=_CONTAINER, user=UserId("456")
+    def test_same_user_in_other_container_is_admin(self) -> None:
+        """换个群照样算同一个人"""
+        asyncio.run(self._grant_user("789"))
+        other = PrincipalDTO(
+            platform=Platform.TELEGRAM,
+            container=ContainerKey("g200456"),
+            user=UserId("789"),
         )
-        self.assertEqual(principal.user_key, "tg.456")
-        self.assertEqual(principal.key, "tg.g100123.456")
+        self.assertEqual(asyncio.run(access.role_of(other)), CommandRole.ADMIN)
+
+    def test_row_key_is_bare_id(self) -> None:
+        """落库的键不带平台段"""
+        asyncio.run(self._grant_user("789"))
+        self.assertEqual(list(self.repo.rows), ["789"])
 
 
 if __name__ == "__main__":
