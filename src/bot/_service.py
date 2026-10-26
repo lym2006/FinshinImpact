@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING
 
 from core.domain import PluginBackground
 from skin.messages import EngineMessage
-from ui import gui_bridge
 from utils import get_logger, register_lifecycle, unregister_lifecycle
 from utils.network import link_report
 
@@ -23,6 +22,8 @@ if TYPE_CHECKING:
 # 引擎线程握手
 _LOOP_READY_TIMEOUT = 5.0  # 等事件循环线程就绪最多 5 秒
 _POLL_RETRY_DELAY = 3.0  # 起轮询撞上链路故障后的退避秒数
+_BACKGROUND_STOP_TIMEOUT = 2.0  # 等插件常驻协程收拢最多 2 秒
+_IDLE_WAIT_TIMEOUT = 3.0  # 等引擎收尾跑完最多 3 秒
 
 _logger = get_logger("Service")
 
@@ -40,6 +41,7 @@ class BotService:
         self._loop: asyncio.AbstractEventLoop | None = None
         self._thread: threading.Thread | None = None
         self._stop_event = threading.Event()
+        self._idle_event = threading.Event()
 
     @property
     def is_running(self) -> bool:
@@ -59,6 +61,7 @@ class BotService:
 
         _logger.info(EngineMessage.STARTING)
         self._stop_event.clear()
+        self._idle_event.clear()
         ready = threading.Event()
         self._thread = threading.Thread(
             target=self._run_loop, args=(ready,), name="BotService", daemon=True
@@ -72,8 +75,12 @@ class BotService:
         _logger.debug("引擎线程已运行")
 
     def stop(self) -> None:
-        """停止轮询并关闭循环"""
+        """停止轮询并等引擎收尾
+
+        - 取消与收拢都跑在引擎线程，本线程限时等它挂上收尾完成旗
+        """
         if not self._thread or not self._thread.is_alive():
+            self._idle_event.set()
             return
 
         _logger.debug("正在收尾资源...")
@@ -89,7 +96,8 @@ class BotService:
             except RuntimeError:
                 pass
 
-        gui_bridge.shutdown_completed_event.set()
+        if not self._idle_event.wait(timeout=_IDLE_WAIT_TIMEOUT):
+            _logger.error(f"引擎收尾未在 {_IDLE_WAIT_TIMEOUT} 秒内完成")
         _logger.debug("服务已停止")
 
     def _run_loop(self, ready: threading.Event) -> None:
@@ -139,18 +147,26 @@ class BotService:
                 _logger.send_error("关闭 Session 失败", e)
             unregister_lifecycle(self._adapter.bot.session.close, "hook_async")
             unregister_lifecycle(self._thread, "thread")
+            self._idle_event.set()
 
     async def _stop_backgrounds(self, tasks: list[asyncio.Task]) -> None:
         """收掉插件常驻协程
 
-        - 取消后等一轮，穿透出来的异常按原样记录，不外抛
+        - 取消后限时等待，超时即放行，穿透出来的异常按原样记录，不外抛
         """
+        if not tasks:
+            return
         for task in tasks:
             task.cancel()
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-        for result in results:
-            if isinstance(result, Exception):
-                _logger.send_error("插件后台协程出错", result)
+        _, pending = await asyncio.wait(tasks, timeout=_BACKGROUND_STOP_TIMEOUT)
+        if pending:
+            _logger.error(f"插件后台协程未在 {_BACKGROUND_STOP_TIMEOUT} 秒内收拢")
+        for task in tasks:
+            if task.cancelled() or not task.done():
+                continue
+            error = task.exception()
+            if isinstance(error, Exception):
+                _logger.send_error("插件后台协程出错", error)
 
     async def _start_polling(self) -> None:
         """启动轮询任务
