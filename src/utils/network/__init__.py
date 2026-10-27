@@ -2,7 +2,7 @@
 """网络栈门面
 
 - 代发 HTTP 客户端、SSL 会话、链路状态、系统代理与探测协议键符号
-- 底层实现分列 _client/_session/_link/probe/proxy，校验与诊断编排在 utils.check
+- 底层实现分列 _client/_session/_link/probe/proxy，平台无关的校验编排在 utils.check
 - 会话类继承 aiogram，经模块 __getattr__ 延迟代发，门面导入不拖引擎入场
 """
 

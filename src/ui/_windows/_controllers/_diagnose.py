@@ -6,6 +6,8 @@
 """
 
 import asyncio
+from collections.abc import Callable, Coroutine
+from typing import Any
 
 from PySide6.QtCore import QThread, Signal
 from PySide6.QtWidgets import QDialog, QWidget
@@ -14,7 +16,6 @@ from core.domain import ConfigKey, ConfigSection, FieldKey
 from skin.messages import CheckMessage
 from system.profile_env import get_profile, read_token
 from utils import config_manager
-from utils.check import diagnose_flow
 from utils.network import FrameKey, RowId, RowStatus, verify_skeleton
 
 from ..._bridge import gui_bridge
@@ -22,6 +23,12 @@ from ..._dialogs import Round, current_check_window, open_check_window
 from ._base import BaseController
 
 _orphans: set["_DiagnoseWorker"] = set()  # 关窗放行的线程暂养于此，finished 后自弃
+
+# 一轮诊断收配置代理与 token，逐帧回调，按停止判定中止
+DiagnoseFlow = Callable[
+    [str, str, Callable[[dict], None] | None, Callable[[], bool] | None],
+    Coroutine[Any, Any, None],
+]
 
 
 class _DiagnoseWorker(QThread):
@@ -33,11 +40,16 @@ class _DiagnoseWorker(QThread):
     row_update = Signal(dict)  # 逐行点亮
 
     def __init__(
-        self, configured_proxy: str, token: str, parent: QWidget | None = None
+        self,
+        configured_proxy: str,
+        token: str,
+        flow: DiagnoseFlow,
+        parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self._proxy = configured_proxy
         self._token = token
+        self._flow = flow
 
     def run(self) -> None:
         """诊断线程主循环
@@ -47,11 +59,11 @@ class _DiagnoseWorker(QThread):
         """
         try:
             asyncio.run(
-                diagnose_flow(
+                self._flow(
                     self._proxy,
-                    token=self._token,
-                    emit=self.row_update.emit,
-                    stop_check=self.isInterruptionRequested,
+                    self._token,
+                    self.row_update.emit,
+                    self.isInterruptionRequested,
                 )
             )
         except Exception as e:  # 诊断自身异常也变成一行结果
@@ -70,8 +82,9 @@ class DiagnoseController(BaseController):
     LOGGER_NAME = "GUI.Diagnose"
     BTN_KEY = "diagnose"
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args, flow: DiagnoseFlow, **kwargs) -> None:
         super().__init__(*args, **kwargs)
+        self._flow = flow
 
         # 启动校验结论闩锁：未出结论前拒点诊断防误判半新配置
         self._startup_settled: bool = False
@@ -125,7 +138,7 @@ class DiagnoseController(BaseController):
         """
         if any(w.isRunning() for w in self._workers):
             return
-        worker = _DiagnoseWorker(configured, token, parent=win)
+        worker = _DiagnoseWorker(configured, token, self._flow, parent=win)
         worker.row_update.connect(lambda f: self._on_frame(f))
         worker.finished.connect(lambda w=worker: self._workers.discard(w))
         self._workers.add(worker)

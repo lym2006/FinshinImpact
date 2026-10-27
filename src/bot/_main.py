@@ -12,6 +12,8 @@ from collections.abc import Callable
 from concurrent.futures import Future
 from typing import cast
 
+from adapters.telegram.diagnose import diagnose_flow
+from adapters.telegram.probe import preload_engine
 from skin.messages import CheckMessage
 from skin.theme import WINDOW
 from system.profile_env import get_profile
@@ -25,7 +27,6 @@ from ui import (
     gui_bridge,
 )
 from utils import get_logger
-from utils.check import preload_engine
 from utils.lifecycle import shutdown_all
 
 from ._managers import BotManager
@@ -59,7 +60,7 @@ class Main:
             # 引擎重依赖已由引导层后台线程预热，此处命中模块缓存
             preload_engine()
 
-            window, instances = create_gui()
+            window, instances = create_gui(diagnose_flow)
 
             # 多实例任务栏区分：标题带身份码，无身份码维持原标题
             profile = get_profile()

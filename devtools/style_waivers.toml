@@ -13,7 +13,7 @@ reason = "迁移脚本由 runner 按属性反射调用，导入图查不到消�
 
 [[waiver]]
 section = "命名与门面导出"
-path = "src/utils/check/_connectivity.py"
+path = "src/adapters/telegram/probe.py"
 match = "get_me"
 reason = "探测接缝函数，用例按同名关键字替换实现，不经 import 消费"
 
