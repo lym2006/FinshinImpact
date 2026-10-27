@@ -36,18 +36,21 @@ class InitializationManager(BaseManager):
         self.logger.info("正在创建路径...")
         init_project_files()
 
-    def sync_persona(self) -> None:
+    def sync_persona(self) -> bool:
         """人设模板对账
 
         - 先清正文缓存，正文按磁盘当前内容重新组装
+        - 返回正文是否自动换过新版
         """
         reset_persona_cache()
         result = sync_persona_template()
         if result == PersonaSync.UPDATED:
             self.logger.info("实例人设从未改动，已更新为最新默认人设")
-        elif result == PersonaSync.NOTIFY:
+            return True
+        if result == PersonaSync.NOTIFY:
             self.logger.info("默认人设有更新，弹窗询问是否覆盖")
             gui_bridge.request_persona_update.emit()
+        return False
 
     async def _migrate_database(self) -> None:
         """补做迁移并拒绝读不懂的库结构

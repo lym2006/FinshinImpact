@@ -33,6 +33,12 @@ class MiscMessage:
     PERSONA_APPLIED = "已用最新默认人设覆盖你实例的人设文件"
     PERSONA_APPLY_FAIL = "人设文件覆盖失败，文件可能被占用或没有写入权限"
 
+    # 用：bot/_managers 启动对账判为从未改动并自动换新版时的提示
+    PERSONA_AUTO_APPLIED = (
+        "内置默认人设已更新，你的副本从未改动，已自动换成新版\n"
+        "全部对话历史与落盘记录已清空"
+    )
+
     # 用：ui/_windows/_assembly.py 主窗口工具栏（文案, 按钮键）
     TOOLBAR_BUTTONS: list[tuple[str, str]] = [
         ("修改配置", "settings"),

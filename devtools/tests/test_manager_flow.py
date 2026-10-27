@@ -9,8 +9,9 @@
 - 回归点 4：未预期异常经 catch_all 路由致命信号，不杀进程
 - 回归点 5：信号彼此隔离，杜绝历史串扰事故
 - 回归点 6：stop_polling 协程必须被 await
-- 回归点 7：token 致命错弹窗，proxy 连带待复查不误退
+- 回归点 7：token 报错一律走致命通知退出，不弹配置向导
 - 回归点 8：起轮询撞链路故障退避重试，非链路异常仍外抛
+- 回归点 9：人设正文或主人变更后立即清掉会话与落盘记录
 """
 
 import asyncio
@@ -29,7 +30,7 @@ set_profile("tg.000000")
 from aiogram.exceptions import TelegramNetworkError  # noqa: E402
 from aiogram.methods import GetMe  # noqa: E402
 
-from bot._managers import BotManager  # noqa: E402
+from bot._managers import BotManager, _apply  # noqa: E402
 from bot._service import BotService  # noqa: E402
 from core.domain import FieldKey  # noqa: E402
 from ui import gui_bridge  # noqa: E402
@@ -252,8 +253,11 @@ class TestTokenFatal(ManagerFlowTestBase):
         finally:
             disconnect()
 
-    async def test_proxy_error_with_token_pending_goes_to_setup(self) -> None:
-        """proxy 不通连带 token 待复查 → 走向导，不误退"""
+    async def test_token_error_is_fatal_whatever_it_carries(self) -> None:
+        """token 报错即致命，连带代理错也不走向导
+
+        - 代理不通时那行待复查标注由聚合侧抹掉，进到这里即真测到过
+        """
         notices, disconnect = await self._capture_notices()
         try:
             sm = self.manager._settings_manager
@@ -268,10 +272,86 @@ class TestTokenFatal(ManagerFlowTestBase):
             with patch.object(sm, "verify_connectivity", new=_proxy_fail):
                 await self.manager._applier.apply_config()
 
-            self.assertEqual(len(notices), 0, "代理故障不得误触致命退出")
-            self.assertEqual(len(self.force_events), 1, "代理故障应走向导")
+            self.assertEqual(len(notices), 1, "token 错一律走致命退出")
+            self.assertEqual(len(self.force_events), 0, "致命退出不再弹向导")
         finally:
             disconnect()
+
+
+class TestIdentityReset(ManagerFlowTestBase):
+    """回归点 9
+
+    - 校验通过时按对话身份决定要不要清历史
+    - 没有清理入口的那轮不落基准，下一轮补上
+    """
+
+    def _stage(
+        self, text: dict, owner: dict, with_reset: bool = True
+    ) -> tuple[list[int], object]:
+        """把正文、主人与清理入口换成可控值，交出调用记录与清理桩"""
+        calls: list[int] = []
+
+        async def _reset() -> None:
+            calls.append(1)
+
+        for patcher in (
+            patch.object(
+                self.manager._service_manager,
+                "_history_resets",
+                (_reset,) if with_reset else (),
+            ),
+            patch.object(_apply, "applied_persona_text", lambda: text["v"]),
+            patch.object(
+                _apply.config_manager,
+                "get_all",
+                lambda: {"chore": {"owner": owner["v"]}},
+            ),
+        ):
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        return calls, _reset
+
+    async def test_persona_body_change_clears_once(self) -> None:
+        """正文换版即清，同一版再保存不重复清"""
+        text, owner = {"v": "旧正文"}, {"v": "456"}
+        calls, _ = self._stage(text, owner)
+
+        await self.manager._applier.apply_config()
+        self.assertEqual(calls, [], "首次应用只记基准")
+
+        text["v"] = "新正文"
+        await self.manager._applier.apply_config()
+        self.assertEqual(calls, [1], "正文换版应清一次")
+
+        await self.manager._applier.apply_config()
+        self.assertEqual(calls, [1], "正文没再动不该重复清")
+
+    async def test_owner_change_clears_even_with_same_body(self) -> None:
+        """主人换了即便正文一字不动也清"""
+        text, owner = {"v": "同一正文"}, {"v": "456"}
+        calls, _ = self._stage(text, owner)
+
+        await self.manager._applier.apply_config()
+        owner["v"] = "789"
+        await self.manager._applier.apply_config()
+
+        self.assertEqual(calls, [1], "主人变更应清一次")
+
+    async def test_missing_entry_retries_next_round(self) -> None:
+        """插件没交清理入口时不落基准，下一轮接着清"""
+        text, owner = {"v": "旧正文"}, {"v": "456"}
+        calls, reset = self._stage(text, owner, with_reset=False)
+        applier = self.manager._applier
+
+        await applier.apply_config()
+        text["v"] = "新正文"
+        await applier.apply_config()
+        self.assertEqual(calls, [], "没有入口不该假装清过")
+
+        with patch.object(self.manager._service_manager, "_history_resets", (reset,)):
+            await applier.apply_config()
+
+        self.assertEqual(calls, [1], "入口到位即补上这次清理")
 
 
 class TestFatalRouting(ManagerFlowTestBase):
