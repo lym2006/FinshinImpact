@@ -302,6 +302,34 @@ class TestReply(unittest.TestCase):
         event = _event(_update(text="?", reply_to_message=quoted))
         self.assertEqual(event.reply_text, "图说")
 
+    def test_reply_media_without_caption_marked(self) -> None:
+        """被引用的图片没附文时给种类占位"""
+        photo = PhotoSize(file_id="p", file_unique_id="u", width=1, height=1)
+        quoted = Message(
+            message_id=4,
+            date=datetime(2026, 10, 16, 11, 0),
+            chat=_GROUP,
+            from_user=_USER,
+            photo=[photo],
+        )
+        event = _event(_update(text="这啥", reply_to_message=quoted))
+        self.assertEqual(event.reply_text, "[图片]")
+
+    def test_reply_unknown_media_marked(self) -> None:
+        """未收录种类按媒体占位，引用块禁交空串"""
+        live = LivePhoto(
+            file_id="l", file_unique_id="lu", width=1, height=1, duration=2
+        )
+        quoted = Message(
+            message_id=5,
+            date=datetime(2026, 10, 16, 11, 0),
+            chat=_GROUP,
+            from_user=_USER,
+            live_photo=live,
+        )
+        event = _event(_update(text="这啥", reply_to_message=quoted))
+        self.assertEqual(event.reply_text, "[媒体]")
+
     def test_without_reply(self) -> None:
         event = _event(_update(text="你好"))
         self.assertIsNone(event.reply_ref)
