@@ -7,6 +7,8 @@
 
 import asyncio
 
+from skin.messages import MiscMessage
+from ui import gui_bridge
 from utils import get_logger
 
 from ..error_guard import error_guard
@@ -47,7 +49,8 @@ class BotManager:
         await self._applier.apply_config()
 
         # 勾选态已进内存，人设对账据此决定要不要打扰用户
-        self._initializer.sync_persona()
+        if self._initializer.sync_persona() and await self._applier.reset_identity():
+            gui_bridge.request_notice.emit(MiscMessage.PERSONA_AUTO_APPLIED, False)
 
     def on_config_candidate(self) -> None:
         """候选配置待验回调"""

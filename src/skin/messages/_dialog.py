@@ -14,6 +14,7 @@ class DialogMessage:
     SETUP_TIP = "检测到配置有误，请修正后继续"
     SETUP_HINT = "留意带 ⚠ 的标签页，标题标红的即为出错字段"
     SETUP_VERIFIED_OK = "配置已验证通过"
+    SETUP_HISTORY_RESET = "人设或主人已变更，全部对话历史与落盘记录已清空"
     SETUP_RESET = "恢复默认"
     SETUP_RESET_ICON = "↺"
 
@@ -64,9 +65,6 @@ class DialogMessage:
     # 用：theme NoticeDialogTheme 人设对账弹窗字段
     PERSONA_APPLY = "用默认人设覆盖"
     PERSONA_KEEP = "保留我的人设"
-
-    # 用：配置面板仅人设正文变化时的保存提示
-    PERSONA_RELOADED = "人设正文已按文件刷新"
 
     # 用：theme ReleaseNotesDialogTheme 文案字段
     RELEASE_NOTES_TITLE = "版本变化"
