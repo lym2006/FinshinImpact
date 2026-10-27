@@ -36,11 +36,8 @@ from aiogram.types import (  # noqa: E402
     User,
 )
 
-from adapters.telegram._normalize import (  # noqa: E402
-    BotIdentity,
-    NormalizeMiddleware,
-    normalize_update,
-)
+from adapters.telegram._event import BotIdentity, normalize_update  # noqa: E402
+from adapters.telegram._normalize import NormalizeMiddleware  # noqa: E402
 from adapters.telegram.router_bridge import build_router  # noqa: E402
 from core.domain import ContentKind, PluginRoute, PluginSpec  # noqa: E402
 from core.dto import HelpCommandDTO, MsgReferenceDTO, OutboundPayloadDTO  # noqa: E402

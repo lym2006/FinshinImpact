@@ -7,6 +7,7 @@
 from dataclasses import dataclass
 
 from ..domain import ContentKind
+from ..domain.ids import MessageId
 from ._identity import MsgReferenceDTO
 
 
@@ -29,9 +30,12 @@ class MediaEntryDTO:
     """媒体索引条目
 
     - 与 media_asset 表对应
+    - 相册按张给 id 与附文，单条消息只有一项
     """
 
     kind: ContentKind
     local_path: str
     slot: int = 0  # 同消息内多个媒体的序号
     size_bytes: int = 0
+    message_id: MessageId = MessageId("")  # 该张所在消息 id，外发定位用
+    caption: str = ""  # 该张自带附文

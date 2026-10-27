@@ -2,8 +2,10 @@
 """事件归一样例测试
 
 - 覆盖作用域、内容种类、命令解析、点名与引用归属、中间件放行
+- 覆盖相册并组的锚点选取、逐张留档与整组一次性放行
 """
 
+import asyncio
 import sys
 import unittest
 from datetime import datetime
@@ -31,11 +33,13 @@ from aiogram.types import (  # noqa: E402
 )
 
 from adapters.telegram import _normalize as normalize_mod  # noqa: E402
-from adapters.telegram._normalize import (  # noqa: E402
+from adapters.telegram._album import AlbumCollector  # noqa: E402
+from adapters.telegram._event import (  # noqa: E402
     BotIdentity,
-    NormalizeMiddleware,
+    normalize_album,
     normalize_update,
 )
+from adapters.telegram._normalize import NormalizeMiddleware  # noqa: E402
 from core.domain import ChatScope, ContentKind  # noqa: E402
 
 _GROUP = Chat(id=-100123, type="supergroup", title="测试群")
@@ -44,6 +48,16 @@ _USER = User(id=456, is_bot=False, first_name="三", last_name="张")
 _BOT = User(id=777, is_bot=True, first_name="机器人", username="MyBot")
 _IDENTITY = BotIdentity(user_id="777", username="MyBot")
 _NO_IDENTITY = BotIdentity()
+
+
+async def _dispatch_pass() -> None:
+    """走完一轮派发
+
+    - 已排队的其余条目任务先跑完，收口回调排在它们之后，整组才并成一条
+    - 再多让两轮，收口起的协程跑到放行结束
+    """
+    for _ in range(3):
+        await asyncio.sleep(0)
 
 
 class _FakeBot:
@@ -73,6 +87,20 @@ def _event(update: Update, identity: BotIdentity = _NO_IDENTITY) -> Any:
     event = normalize_update(update, identity=identity)
     assert event is not None
     return event
+
+
+def _album_message(message_id: int, caption: str | None = None) -> Message:
+    """构造一条相册内消息"""
+    photo = PhotoSize(file_id="p", file_unique_id="u", width=1, height=1)
+    return Message(
+        message_id=message_id,
+        date=datetime(2026, 10, 16, 12, 0),
+        chat=_GROUP,
+        from_user=_USER,
+        photo=[photo],
+        caption=caption,
+        media_group_id="g-1",
+    )
 
 
 class TestScopeAndContent(unittest.TestCase):
@@ -331,6 +359,95 @@ class TestNormalizeMiddleware(unittest.IsolatedAsyncioTestCase):
         ):
             seen = await self._run(_update(text="你好"))
         self.assertEqual(seen, {})
+
+
+class TestAlbumMerge(unittest.TestCase):
+    """相册并组"""
+
+    def test_anchor_first_item(self) -> None:
+        """锚点与正文取最小消息 id 的那条"""
+        event = normalize_album(
+            [_album_message(12), _album_message(10, "图集"), _album_message(11, "次张")]
+        )
+        assert event is not None
+        self.assertEqual(event.ref.message_id, "10")
+        self.assertEqual(event.content.text, "图集")
+        self.assertEqual(event.content.media[0].caption, "图集")
+        self.assertEqual(event.display_name, "三 张")
+
+    def test_every_item_keeps_id_and_caption(self) -> None:
+        """逐张留消息 id 与自带附文，缺附文填空串"""
+        event = normalize_album([_album_message(10, "图集"), _album_message(11)])
+        assert event is not None
+        media = event.content.media
+        self.assertEqual([m.slot for m in media], [0, 1])
+        self.assertEqual([m.message_id for m in media], ["10", "11"])
+        self.assertEqual([m.caption for m in media], ["图集", ""])
+        self.assertEqual(
+            [m.kind for m in media], [ContentKind.PHOTO, ContentKind.PHOTO]
+        )
+
+    def test_caption_not_parsed_as_command(self) -> None:
+        """附文里的斜杠头不当命令"""
+        event = normalize_album([_album_message(10, "/help")])
+        assert event is not None
+        self.assertFalse(event.command.matched)
+        self.assertFalse(event.command.format_error)
+
+    def test_empty_group(self) -> None:
+        self.assertIsNone(normalize_album([]))
+
+
+class TestAlbumMiddleware(unittest.IsolatedAsyncioTestCase):
+    """相册条的中间件放行"""
+
+    def setUp(self) -> None:
+        self.seen: dict[str, Any] = {}
+        self.events: list[Any] = []
+
+    async def _next(self, evt: Any, data: dict[str, Any]) -> str:
+        """下游收口，记下放行用的事件与 data"""
+        self.seen.update(data)
+        self.events.append(evt)
+        return "passed"
+
+    def _middleware(self) -> NormalizeMiddleware:
+        """建中间件，收口由派发驱动"""
+        middleware = NormalizeMiddleware(None, bot=_FakeBot())  # type: ignore[arg-type]
+        middleware._albums = AlbumCollector(middleware._flush_album)
+        return middleware
+
+    async def test_single_item_held_back(self) -> None:
+        """首条不单独放行"""
+        middleware = self._middleware()
+        result = await middleware(self._next, _update(media_group_id="g1"), {})
+        self.assertIsNone(result)
+        self.assertEqual(self.seen, {})
+        self.assertEqual(self.events, [])
+
+    async def test_group_delivered_once(self) -> None:
+        """整组一次派发只走一次事件链"""
+        middleware = self._middleware()
+        await middleware(self._next, _update(message_id=10, media_group_id="g1"), {})
+        await middleware(self._next, _update(message_id=11, media_group_id="g1"), {})
+        await _dispatch_pass()
+
+        self.assertEqual(len(self.events), 1)
+        assert self.events[0].message is not None
+        self.assertEqual(self.events[0].message.message_id, 11)
+        event = self.seen["ctx"].event
+        self.assertEqual([m.message_id for m in event.content.media], ["10", "11"])
+        self.assertEqual(event.ref.message_id, "10")
+
+    async def test_dropped_group_never_delivered(self) -> None:
+        """弃组后不放行"""
+        middleware = self._middleware()
+        await middleware(self._next, _update(media_group_id="g1"), {})
+        middleware.drop_albums()
+        await _dispatch_pass()
+
+        self.assertEqual(self.events, [])
+        self.assertEqual(self.seen, {})
 
 
 if __name__ == "__main__":

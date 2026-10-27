@@ -30,9 +30,8 @@ class TelegramAdapter(BaseAdapter):
         self._bot = Bot(token=token, session=SSLUnverifiedSession(proxy=proxy))
         self._dispatcher = Dispatcher()
         self._interaction = TelegramInteractionPort(self._bot)
-        self._dispatcher.update.outer_middleware(
-            NormalizeMiddleware(self._interaction, self._bot)
-        )
+        self._normalizer = NormalizeMiddleware(self._interaction, self._bot)
+        self._dispatcher.update.outer_middleware(self._normalizer)
 
     @property
     def platform(self) -> Platform:
@@ -59,5 +58,9 @@ class TelegramAdapter(BaseAdapter):
         await self._dispatcher.start_polling(self._bot)
 
     async def stop(self) -> None:
-        """停止并释放连接"""
+        """停止并释放连接
+
+        - 轮询停了再弃在途相册，放行链不带进下次启动
+        """
         await self._dispatcher.stop_polling()
+        self._normalizer.drop_albums()
