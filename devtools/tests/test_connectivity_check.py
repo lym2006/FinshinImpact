@@ -6,6 +6,7 @@
 - _check_config 聚合 proxy 与 token 双探测，两坏同时报
 - token 纯格式校验，坏 token 不联网即标记
 - verify_connectivity 覆盖三步通道解析与错误聚合
+- 网络轮只在参数变化或上次报错时起，其余只跑本地
 """
 
 import asyncio
@@ -428,6 +429,70 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(await mgr.verify_connectivity())
 
         self.assertEqual(probes, [], "token 变动不该起联网轮")
+
+    async def test_last_round_errors_force_network_retest(self) -> None:
+        """上次有报错即作废免测
+
+        - 网络参数没变也要联网重测
+        """
+        from bot._managers._settings import SettingsManager
+
+        mgr = SettingsManager(lambda: ("tok", ""))
+        probes: list[str] = []
+
+        async def alive(token: str, proxy: str) -> dict:
+            probes.append(proxy)
+            return {}
+
+        mod = sys.modules["bot._managers._settings"]
+        with self._patches(mod, alive, types={"temperature": "类型应为 float"}):
+            self.assertFalse(await mgr.verify_connectivity())
+            self.assertTrue(probes, "首轮应联网探测")
+            self.assertIsNotNone(mgr.resolved_proxy, "直连通了应记下生效通道")
+            probes.clear()
+            self.assertFalse(await mgr.verify_connectivity())
+
+        self.assertTrue(probes, "上次报过错就不该免测")
+
+    async def test_timeout_change_starts_network_round(self) -> None:
+        """只改超时也算网络参数变化
+
+        - 起联网轮并发整表帧，等待窗随之打开
+        """
+        from unittest.mock import MagicMock
+
+        from bot._managers._settings import SettingsManager
+        from utils.network import FrameKey
+
+        mgr = SettingsManager(lambda: ("tok", "http://127.0.0.1:7890"))
+        timeout = {"v": 30.0}
+        probes: list[str] = []
+        frames: list[dict] = []
+
+        async def alive(token: str, proxy: str) -> dict:
+            probes.append(proxy)
+            return {}
+
+        bridge = MagicMock()
+        bridge.verify_progress.emit.side_effect = frames.append
+
+        mod = sys.modules["bot._managers._settings"]
+        with (
+            self._patches(mod, alive),
+            patch.object(mod.config_manager, "get", lambda path, typ: timeout["v"]),
+            patch.object(mod, "gui_bridge", bridge),
+        ):
+            self.assertTrue(await mgr.verify_connectivity())
+            probes.clear()
+            frames.clear()
+            timeout["v"] = 15.0
+            self.assertTrue(await mgr.verify_connectivity())
+
+        self.assertEqual(probes[0], "http://127.0.0.1:7890", "改超时后应联网重测")
+        self.assertTrue(
+            [f for f in frames if FrameKey.ROWS in f],
+            "联网轮要发整表帧供等待窗渲染",
+        )
 
     async def test_port_scan_parallel_first_in_order_wins(self) -> None:
         """端口复测并发化

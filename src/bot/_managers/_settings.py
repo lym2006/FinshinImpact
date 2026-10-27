@@ -79,7 +79,7 @@ class SettingsManager(BaseManager):
     async def verify_connectivity(self) -> bool:
         """按字段变化分流的连通校验
 
-        - 网络参数全未变且已连通过时只跑本地校验
+        - 网络参数全未变且上次没报错时只跑本地校验
         - 通过则记录生效通道
         - 单路模式只测选定通道，缺席不发探测
         - 自动模式全挂先原地重检一轮再报失败
@@ -93,7 +93,11 @@ class SettingsManager(BaseManager):
         self._net_state = state
         configured, mode, _ = state
 
-        if state == prev_state and self.resolved_proxy is not None:
+        if (
+            state == prev_state
+            and self.resolved_proxy is not None
+            and not self.last_errors
+        ):
             return self._local_round(schema, t0)
 
         detected = detect_system_proxy()
