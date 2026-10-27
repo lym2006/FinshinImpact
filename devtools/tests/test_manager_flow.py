@@ -31,8 +31,8 @@ from aiogram.methods import GetMe  # noqa: E402
 
 from bot._managers import BotManager  # noqa: E402
 from bot._service import BotService  # noqa: E402
+from core.domain import FieldKey  # noqa: E402
 from ui import gui_bridge  # noqa: E402
-from utils.check import TelegramFieldKey  # noqa: E402
 
 
 class ManagerFlowTestBase(unittest.IsolatedAsyncioTestCase):
@@ -81,7 +81,7 @@ class ManagerFlowTestBase(unittest.IsolatedAsyncioTestCase):
             self.verify_calls += 1
             ok = self.verify_results.pop(0) if self.verify_results else True
             if not ok:
-                sm.last_errors = {TelegramFieldKey.PROXY: "代理不通"}
+                sm.last_errors = {FieldKey.PROXY: "代理不通"}
             return ok
 
         async def _count_start() -> None:
@@ -114,9 +114,7 @@ class TestApplyConfig(ManagerFlowTestBase):
         await self.manager._applier.apply_config()
 
         self.assertEqual(len(self.force_events), 1, "失败应弹出一次向导")
-        self.assertIn(
-            TelegramFieldKey.PROXY, self.force_events[0], "向导应携带字段错误"
-        )
+        self.assertIn(FieldKey.PROXY, self.force_events[0], "向导应携带字段错误")
         self.assertEqual(self.service_starts["n"], 0, "失败时不得启动服务")
 
         # 用户保存 → 重入校验
@@ -241,7 +239,7 @@ class TestTokenFatal(ManagerFlowTestBase):
             sm = self.manager._settings_manager
 
             async def _token_fail() -> bool:
-                sm.last_errors = {TelegramFieldKey.TOKEN: "Token 无效"}
+                sm.last_errors = {FieldKey.TOKEN: "Token 无效"}
                 return False
 
             with patch.object(sm, "verify_connectivity", new=_token_fail):
@@ -262,8 +260,8 @@ class TestTokenFatal(ManagerFlowTestBase):
 
             async def _proxy_fail() -> bool:
                 sm.last_errors = {
-                    TelegramFieldKey.PROXY: "代理不通",
-                    TelegramFieldKey.TOKEN: "暂未检测",
+                    FieldKey.PROXY: "代理不通",
+                    FieldKey.TOKEN: "暂未检测",
                 }
                 return False
 

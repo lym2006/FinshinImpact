@@ -7,6 +7,7 @@
 from ._command import CommandFlag, StepInput
 from ._container import make_container
 from ._content import ContentKind
+from ._fields import FieldKey
 from ._platform import ChatScope, Platform, make_profile_code, platform_of_profile
 from ._plugin import (
     MANIFEST_FIELDS,
@@ -70,6 +71,8 @@ __all__ = [
     "TaskKind",
     "TaskStatus",
     "TaskPriority",
+    # 探测字段键
+    "FieldKey",
     # 配置结构
     "ConfigValue",
     "ConfigSection",

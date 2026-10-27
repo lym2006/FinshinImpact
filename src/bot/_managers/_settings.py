@@ -9,13 +9,12 @@ import time
 from collections.abc import Awaitable, Callable
 from typing import cast
 
-from core.domain import ConfigKey, ConfigSection, ProxyMode
+from core.domain import ConfigKey, ConfigSection, FieldKey, ProxyMode
 from skin.messages import CheckMessage
 from ui import gui_bridge
 from utils import config_manager
 from utils.check import (
     ChannelOutcome,
-    TelegramFieldKey,
     attempt_channel,
     local_row,
     run_channels,
@@ -139,7 +138,7 @@ class SettingsManager(BaseManager):
             # 复测用的正是刚判失败那条通道：同地址重探即通属抖动，不推荐重填
             outcome.passed = True
             outcome.resolved = configured
-            net_errors.pop(TelegramFieldKey.PROXY, None)
+            net_errors.pop(FieldKey.PROXY, None)
 
         self._settle(outcome.resolved, configured, mode == ProxyMode.AUTO)
         self.last_errors = {**net_errors, **type_errors}
@@ -231,17 +230,15 @@ class SettingsManager(BaseManager):
         - 仅直连单候选时保留原始错误，多候选聚合为一句引导
         """
         errors = dict(outcome.errors)
-        if outcome.resolved is None and TelegramFieldKey.PROXY in errors:
+        if outcome.resolved is None and FieldKey.PROXY in errors:
             base = (
-                CheckMessage.ALL_FAIL
-                if len(channels) > 1
-                else errors[TelegramFieldKey.PROXY]
+                CheckMessage.ALL_FAIL if len(channels) > 1 else errors[FieldKey.PROXY]
             )
             if port_hint:
                 base += f"\n{CheckMessage.PORT_HOVER.format(url=port_hint)}"
             elif len(channels) > 1:
                 base += f"\n{CheckMessage.DIAGNOSE}"
-            errors = {TelegramFieldKey.PROXY: base}
+            errors = {FieldKey.PROXY: base}
         return errors
 
     def _settle(self, resolved: str | None, configured: str, warn_stale: bool) -> None:

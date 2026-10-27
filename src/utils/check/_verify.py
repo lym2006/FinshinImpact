@@ -9,12 +9,11 @@ import asyncio
 from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass, field
 
-from core.domain import ConfigKey
+from core.domain import ConfigKey, FieldKey
 from skin.messages import CheckMessage
 
 from ..config import AppConfigData, AppSchema, validate_types
 from ..network import Channel, RowId, RowStatus
-from ._fields import TelegramFieldKey
 
 # 探针展示句留空时由核心按"称谓：可达/不可用"拼装，缺席句等特例显式覆盖
 _ProbeCallback = Callable[[Channel], Awaitable[tuple[str | None, dict[str, str], str]]]
@@ -54,10 +53,10 @@ async def _probe_safe(ch: Channel, probe: _ProbeCallback) -> _Verdict:
         return (
             False,
             None,
-            {TelegramFieldKey.PROXY: CheckMessage.SELF_CRASH.format(err=e)},
+            {FieldKey.PROXY: CheckMessage.SELF_CRASH.format(err=e)},
             "",
         )
-    ok = resolved is not None or bool(errors and TelegramFieldKey.PROXY not in errors)
+    ok = resolved is not None or bool(errors and FieldKey.PROXY not in errors)
     return ok, resolved, errors, detail
 
 

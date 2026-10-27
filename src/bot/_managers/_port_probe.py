@@ -7,9 +7,10 @@
 
 import asyncio
 
+from core.domain import FieldKey
 from skin.messages import CheckMessage
 from ui import gui_bridge
-from utils.check import ChannelOutcome, TelegramFieldKey, attempt_channel
+from utils.check import ChannelOutcome, attempt_channel
 from utils.network import RowId, RowStatus, scan_proxy_ports
 
 
@@ -30,7 +31,7 @@ async def verify_port_row(outcome: ChannelOutcome, token: str) -> str:
         )
         return ""
 
-    if TelegramFieldKey.PROXY not in outcome.errors:
+    if FieldKey.PROXY not in outcome.errors:
         return ""
 
     gui_bridge.verify_progress.emit(
