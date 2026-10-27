@@ -79,7 +79,7 @@ async def _probe_proxy(proxy: str) -> None:
 
     - 构造期异常须映射为业务异常，防上层误判致命
     """
-    from utils.network import SSLUnverifiedSession
+    from .session import SSLUnverifiedSession
 
     try:
         SSLUnverifiedSession(proxy=proxy)
@@ -94,7 +94,7 @@ async def get_me(token: str, proxy: str) -> None:
     """
     from aiogram import Bot
 
-    from utils.network import SSLUnverifiedSession
+    from .session import SSLUnverifiedSession
 
     bot: Bot | None = None
     try:
@@ -131,7 +131,7 @@ def preload_engine() -> None:
     # aiogram 经 PEP 562 懒加载，首触约 5 秒同步导入会饿死 wait_for 与界面倒计时
     from aiogram import Bot as _Bot  # noqa: F401
 
-    from utils.network import SSLUnverifiedSession as _Session  # noqa: F401
+    from .session import SSLUnverifiedSession as _Session  # noqa: F401
 
 
 async def _check_config(

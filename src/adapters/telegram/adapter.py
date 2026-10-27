@@ -25,7 +25,7 @@ class TelegramAdapter(BaseAdapter):
     def __init__(self, token: str, *, proxy: str | None = None) -> None:
         from aiogram import Bot, Dispatcher
 
-        from utils.network import SSLUnverifiedSession
+        from .session import SSLUnverifiedSession
 
         self._bot = Bot(token=token, session=SSLUnverifiedSession(proxy=proxy))
         self._dispatcher = Dispatcher()

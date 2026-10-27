@@ -173,7 +173,7 @@ class BotService:
 
         - 链路故障时退避重试到连上或收到停服，非链路异常外抛
         """
-        from utils.network import is_link_failure
+        from adapters.telegram.session import is_link_failure
 
         _logger.info(EngineMessage.POLLING_START)
         try:
