@@ -12,6 +12,7 @@ from collections.abc import Awaitable, Callable
 import aiohttp_socks
 from aiohttp import ClientOSError
 
+from core.domain import FieldKey
 from exceptions import (
     ConnectivityError,
     DirectTimeoutError,
@@ -26,7 +27,6 @@ from exceptions import (
 from skin.messages import CheckMessage, ConfigMessage
 
 from ..network.probe import probe_budget
-from ._fields import TelegramFieldKey
 
 # 构造期异常消息 → 配置键的解析规则
 _SCHEME_RE = re.compile(r"Invalid scheme component:\s*(.*)", re.IGNORECASE)
@@ -155,25 +155,25 @@ async def _check_config(
         proxy_text = _err_text(e)
 
     if proxy_text:
-        errors[TelegramFieldKey.PROXY] = proxy_text
+        errors[FieldKey.PROXY] = proxy_text
 
         # 代理坏时请求出不了本机，getMe 结果无意义：标暂未检测而非无效
-        errors[TelegramFieldKey.TOKEN] = CheckMessage.TOKEN_PENDING.format(
+        errors[FieldKey.TOKEN] = CheckMessage.TOKEN_PENDING.format(
             mark=ConfigMessage.PENDING_MARK
         )
         return errors
 
     if not _is_token_wellformed(token):
-        errors[TelegramFieldKey.TOKEN] = CheckMessage.TOKEN_BAD_FORMAT
+        errors[FieldKey.TOKEN] = CheckMessage.TOKEN_BAD_FORMAT
         return errors
 
     try:
         await get_me(token, proxy)
     except TokenError as e:
-        errors[TelegramFieldKey.TOKEN] = _err_text(e)
+        errors[FieldKey.TOKEN] = _err_text(e)
     except ConnectivityError as e:
         # getMe 阶段才暴露的网络问题归到 proxy
-        errors[TelegramFieldKey.PROXY] = _err_text(e)
+        errors[FieldKey.PROXY] = _err_text(e)
 
     return errors
 
@@ -192,7 +192,7 @@ async def attempt_channel(token: str, proxy: str) -> tuple[str | None, dict[str,
             _check_config(token, proxy), timeout=probe_budget(proxy)
         )
     except TimeoutError:
-        errors = {TelegramFieldKey.PROXY: CheckMessage.TIMEOUT}
+        errors = {FieldKey.PROXY: CheckMessage.TIMEOUT}
     if not errors:
         return proxy, {}
     return None, errors

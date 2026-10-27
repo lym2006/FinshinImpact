@@ -18,8 +18,8 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
+from core.domain import FieldKey  # noqa: E402
 from utils.check import (  # noqa: E402
-    TelegramFieldKey,
     _diagnose,
 )
 from utils.network import FrameKey, RowId, RowStatus  # noqa: E402
@@ -37,7 +37,7 @@ def _probe(passes: Callable[[str, int], bool]):
         calls[proxy] = calls.get(proxy, 0) + 1
         if passes(proxy, calls[proxy]):
             return proxy, {}
-        return None, {TelegramFieldKey.PROXY: "无法连接到代理服务器"}
+        return None, {FieldKey.PROXY: "无法连接到代理服务器"}
 
     return fake
 
