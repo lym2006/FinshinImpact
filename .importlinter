@@ -51,6 +51,15 @@ forbidden_modules =
     PySide6
 allow_indirect_imports = True
 
+# 引擎侧的会话类与中间件基类归适配层，utils 只留平台无关件
+[importlinter:contract:utils-engine-free]
+name = utils free of the engine package
+type = forbidden
+source_modules =
+    utils
+forbidden_modules =
+    aiogram
+
 [importlinter:contract:data-adapters-isolation]
 name = data and adapters isolation
 type = forbidden

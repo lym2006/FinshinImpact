@@ -8,17 +8,20 @@
 
 import importlib
 from collections.abc import Callable
-from typing import TYPE_CHECKING, cast
+from typing import Any, cast
 
-from core.domain import PLUGINS_PKG, PluginBackground, PluginFileName, PluginSpec
+from core.domain import (
+    PLUGINS_PKG,
+    PluginBackground,
+    PluginFileName,
+    PluginSpec,
+    RouteSink,
+)
 from core.dto import PluginManifestDTO
 from exceptions import PluginsMissingError
 
 from ..paths import PROFILE_DIR
 from ._manifest import enabled_manifests
-
-if TYPE_CHECKING:
-    from aiogram import Dispatcher, Router
 
 # 逐项报告：(插件名, 是否成功, 失败原因)
 _PluginReport = list[tuple[str, bool, str]]
@@ -27,15 +30,16 @@ _PluginReport = list[tuple[str, bool, str]]
 _RegisterResult = tuple[_PluginReport, tuple[PluginBackground, ...]]
 
 # 平台侧的清单编译器，注册表只按契约交还对象，不认它的构造
-_RouteBuilder = Callable[[PluginSpec], "Router"]
+_RouteBuilder = Callable[[PluginSpec], Any]
 
 
 def register_plugins(
-    dispatcher: "Dispatcher",
+    sink: RouteSink,
     build_router: _RouteBuilder,
 ) -> _RegisterResult:
     """按启用序列注册插件
 
+    - sink 只被要求提供挂载路由这一个方法
     - build_router 由平台侧注入，把 PluginSpec 编成引擎要挂的对象
     - 返回逐项报告与全部插件声明的常驻协程
     - 未启用的插件不进报告
@@ -60,7 +64,7 @@ def register_plugins(
                 continue
 
             declared = _checked_backgrounds(spec.backgrounds)
-            dispatcher.include_router(build_router(spec))
+            sink.include_router(build_router(spec))
             backgrounds.extend(declared)
             report.append((plugin_name, True, ""))
             success_count += 1

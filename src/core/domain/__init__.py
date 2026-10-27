@@ -22,6 +22,7 @@ from ._plugin import (
     PluginPredicate,
     PluginRoute,
     PluginSpec,
+    RouteSink,
     StateKey,
 )
 from ._role import ChatRole, CommandRole
@@ -59,6 +60,7 @@ __all__ = [
     "ORDER_TIERS",
     "HelpKey",
     "StateKey",
+    "RouteSink",
     # 内容与角色
     "ContentKind",
     "ChatRole",
