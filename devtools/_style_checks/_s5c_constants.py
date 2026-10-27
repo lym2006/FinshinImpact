@@ -4,6 +4,7 @@
 - 无人导入且未进 __all__ 的大写常量应加 `_` 前缀
 - 模块级私有变量应加 `_` 前缀或收进命名空间类
 - getattr 动态消费名视同消费者
+- 大写与小写蛇形两档样式由本档认领，驼峰别名归 _s5_naming
 """
 
 from __future__ import annotations
@@ -20,6 +21,26 @@ if TYPE_CHECKING:
 # 常量命名样式
 _UPPER_CONST_RE = re.compile(r"^_?[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$")
 _SNAKE_VAR_RE = re.compile(r"^_?[a-z][a-z0-9]*(_[a-z0-9]+)*$")
+
+# 类型构造器名，这类赋值的私有性由消费方决定，样式档不判
+_TYPE_CONSTRUCTORS = frozenset({"TypeVar", "NewType", "ParamSpec", "TypeAliasType"})
+
+
+def owns_style(name: str) -> bool:
+    """这个名字的样式是否归本档判
+
+    - 大写常量与小写蛇形两档在此认领
+    """
+    return bool(_UPPER_CONST_RE.match(name) or _SNAKE_VAR_RE.match(name))
+
+
+def is_type_constructor(value: ast.expr | None) -> bool:
+    """赋值右侧是否为类型构造调用"""
+    if not isinstance(value, ast.Call):
+        return False
+    func = value.func
+    name = func.id if isinstance(func, ast.Name) else getattr(func, "attr", "")
+    return name in _TYPE_CONSTRUCTORS
 
 
 def check_constants(
@@ -44,7 +65,10 @@ def check_constants(
             name = t.id
             if name.startswith("__") or name == "__all__":
                 continue
-            if _is_type_var(node):
+            value = (
+                node.value if isinstance(node, (ast.Assign, ast.AnnAssign)) else None
+            )
+            if is_type_constructor(value):
                 continue
             if _UPPER_CONST_RE.match(name):
                 if (
@@ -77,16 +101,6 @@ def check_constants(
                         ),
                     )
     return findings
-
-
-def _is_type_var(node: ast.stmt) -> bool:
-    """赋值右侧是否为 TypeVar/NewVar/ParamSpec 构造"""
-    value = node.value if isinstance(node, (ast.Assign, ast.AnnAssign)) else None
-    if not isinstance(value, ast.Call):
-        return False
-    func = value.func
-    name = func.id if isinstance(func, ast.Name) else getattr(func, "attr", "")
-    return name in {"TypeVar", "NewType", "ParamSpec", "TypeAliasType"}
 
 
 def _f(file: FileData, line: int, message: str, hard: bool) -> Finding:

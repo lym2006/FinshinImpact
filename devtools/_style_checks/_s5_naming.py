@@ -4,6 +4,7 @@
 - 仅被自家包门面导入的子模块应带 `_` 前缀
 - `_` 前缀模块被包外直接导入提示转正
 - 被其他模块导入的符号禁 `_` 前缀，无任何消费者建议加
+- 模块级别名与函数、类同进候选集，样式归属见 _s5c_constants
 - 消费者只算 src 侧调用，devtools 直连内部实现不属业务消费，其引用不给公共名转正
 - 模块级常量细则委托 _s5c_constants
 - 命名风格细则委托 _s5b_naming_style
@@ -16,7 +17,7 @@ from typing import TYPE_CHECKING
 
 from ._common import Finding, ImportGraph, all_names
 from ._s5b_naming_style import check_style
-from ._s5c_constants import check_constants
+from ._s5c_constants import check_constants, is_type_constructor, owns_style
 
 if TYPE_CHECKING:
     from ._common import FileData
@@ -187,12 +188,40 @@ def _has_registration_decorator(file: FileData, name: str) -> bool:
 
 
 def _def_defs(file: FileData) -> dict[str, int]:
-    """模块级函数与类名到行号"""
-    return {
+    """模块级函数、类与别名的名字到行号"""
+    defs = {
         node.name: node.lineno
         for node in file.tree.body
         if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef)
     }
+    defs.update(_alias_defs(file))
+    return defs
+
+
+def _alias_defs(file: FileData) -> dict[str, int]:
+    """模块级别名的名字到行号
+
+    - 大写与小写蛇形两档由 _s5c_constants 认领，这里只收大写开头的别名
+    - 右侧是类型构造调用的不收，标识类型集中定义处按设计公开
+    """
+    defs: dict[str, int] = {}
+    for node in file.tree.body:
+        if isinstance(node, ast.Assign):
+            targets, value = node.targets, node.value
+        elif isinstance(node, ast.AnnAssign):
+            targets, value = [node.target], node.value
+        else:
+            continue
+        if value is None or is_type_constructor(value):
+            continue
+        for target in targets:
+            if not isinstance(target, ast.Name):
+                continue
+            name = target.id
+            if name.startswith("_") or not name[0].isupper() or owns_style(name):
+                continue
+            defs.setdefault(name, node.lineno)
+    return defs
 
 
 def _main_entry_names(file: FileData) -> set[str]:

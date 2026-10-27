@@ -4,6 +4,7 @@
 - 十二个分节各备一份故意违规的样本，防判据空转与包路径搬家后静默失效
 - 违规条目的分节名必须在 SECTIONS 内，防字面量改写错位
 - 回调形参四条判据各命中一次，业务协程与已合规写法不误报
+- 模块级别名按消费者定私有性，类型构造与被他模块取用的别名不判
 - 豁免清单只罩待核，条目须可解析且每条都在命中，失效即红
 - devtools 树可直连私有模块：不报越界，其引用不把 src 公共名算成对外
 """
@@ -277,6 +278,53 @@ class TestCallbackParams(unittest.TestCase):
         self.assertEqual(
             _scan([("src/plugins/_probe_cb.py", source)]).get("回调形参", []), []
         )
+
+
+class TestAliasPrivacy(unittest.TestCase):
+    """模块级别名按消费者定私有性"""
+
+    def _naming(self, samples: list[tuple[str, str]]) -> list[str]:
+        """取命名分节的条目文本"""
+        return _scan(samples).get("命名与门面导出", [])
+
+    def test_unused_alias_flagged(self) -> None:
+        """无人导入的别名提示加前缀"""
+        rel = "src/ui/_probe_alias.py"
+        found = self._naming([(rel, _skeleton(rel) + "HolderName = tuple[str, str]\n")])
+        self.assertTrue(any("HolderName" in text for text in found), found)
+
+    def test_imported_alias_passes(self) -> None:
+        """被他模块导入的别名算对外，不报"""
+        holder = "src/ui/_probe_holder.py"
+        user = "src/ui/_probe_user.py"
+        found = self._naming(
+            [
+                (holder, _skeleton(holder) + "WidgetSet = dict[str, str]\n"),
+                (
+                    user,
+                    _skeleton(user)
+                    + "from ._probe_holder import WidgetSet\n\n_USE = WidgetSet\n",
+                ),
+            ]
+        )
+        self.assertFalse(any("WidgetSet" in text for text in found), found)
+
+    def test_type_constructor_exempt(self) -> None:
+        """类型构造的别名不判，标识类型集中定义处按设计公开"""
+        rel = "src/ui/_probe_newtype.py"
+        source = (
+            _skeleton(rel)
+            + "from typing import NewType\n\nSlotId = NewType('SlotId', str)\n"
+        )
+        self.assertFalse(
+            any("SlotId" in text for text in self._naming([(rel, source)]))
+        )
+
+    def test_styled_assignment_not_duplicated(self) -> None:
+        """大写常量档归 _s5c_constants，别名档不重复报同一条"""
+        rel = "src/ui/_probe_styled.py"
+        found = self._naming([(rel, _skeleton(rel) + "WIDGET_SET = 1\n")])
+        self.assertEqual(len([text for text in found if "WIDGET_SET" in text]), 1)
 
 
 class TestWaiverFile(unittest.TestCase):
