@@ -6,12 +6,13 @@
 - 定义插件数据契约的键名词表
 - 定义插件清单标量字段的类型、必填与默认
 - 定义插件路由清单与常驻协程的签名
+- 定义平台侧的路由挂载口
 """
 
 from collections.abc import Awaitable, Callable, Coroutine
 from dataclasses import dataclass
 from enum import IntEnum, StrEnum
-from typing import Any
+from typing import Any, Protocol
 
 PLUGINS_PKG = "plugins"  # 插件树顶层包名，find_spec 与动态导入路径共用同值
 
@@ -46,6 +47,16 @@ class PluginSpec:
 
     routes: tuple[PluginRoute, ...] = ()
     backgrounds: tuple[PluginBackground, ...] = ()
+
+
+class RouteSink(Protocol):
+    """平台引擎的路由挂载口
+
+    - 注册表只交还编好的路由对象，不认它的类型与构造
+    """
+
+    def include_router(self, router: Any) -> Any:
+        """挂上一份路由"""
 
 
 class CommandPriority(IntEnum):
