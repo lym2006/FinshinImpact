@@ -25,16 +25,16 @@ from utils.config.models import ConfigValue, FieldSchema
 from ..._primitives import make_button
 from ._list_widget import ConfigListWidget
 
-InputWidget: TypeAlias = (
+_InputWidget: TypeAlias = (
     ConfigListWidget | QLineEdit | QTextEdit | QCheckBox | QComboBox
 )
-Inputs: TypeAlias = dict[str, InputWidget]
+Inputs: TypeAlias = dict[str, _InputWidget]
 
 # Qt 布局四边
 _MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
 
 
-def _value_signal(widget: InputWidget) -> SignalInstance | None:
+def _value_signal(widget: _InputWidget) -> SignalInstance | None:
     """取控件的值变化信号源
 
     - 列表控件的变更信号属私有实现，不回挂
