@@ -5,7 +5,7 @@
 - 定义插件相关文件名词表
 - 定义插件数据契约的键名词表
 - 定义插件清单标量字段的类型、必填与默认
-- 定义插件路由清单与常驻协程的签名
+- 定义插件路由清单、常驻协程与历史清理协程的签名
 - 定义平台侧的路由挂载口
 """
 
@@ -18,6 +18,9 @@ PLUGINS_PKG = "plugins"  # 插件树顶层包名，find_spec 与动态导入路�
 
 # 插件声明的无参常驻协程，随 Bot 服务起停
 PluginBackground = Callable[[], Coroutine[Any, Any, None]]
+
+# 插件声明的无参历史清理协程，平台判定身份变更后调用
+PluginReset = Callable[[], Coroutine[Any, Any, None]]
 
 # 路由谓词，只吃归一后的处理上下文，返回是否接管这条事件
 PluginPredicate = Callable[..., Awaitable[bool]]
@@ -43,10 +46,12 @@ class PluginSpec:
 
     - routes 的顺序即匹配优先级
     - backgrounds 随 Bot 服务起停
+    - history_reset 交出本插件的对话历史清理入口，不涉历史的插件留空
     """
 
     routes: tuple[PluginRoute, ...] = ()
     backgrounds: tuple[PluginBackground, ...] = ()
+    history_reset: PluginReset | None = None
 
 
 class RouteSink(Protocol):

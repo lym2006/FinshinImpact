@@ -3,12 +3,12 @@
 
 - stdlib unittest，打桩导入与注册序列，不触网
 - 运行：python -m unittest tests.test_plugin_background -v
-- 回归点 1：注册表把插件声明的协程随报告一起交出
+- 回归点 1：注册表把插件声明的协程与历史清理入口随报告一起交出
 - 回归点 2：路由缺失或声明形态不对的插件不交出协程
 - 回归点 3：非 callable 成员丢弃
 - 回归点 4：轮询退出即拉起并取消常驻协程
 - 回归点 5：协程抛错只记录，不穿透引擎线程
-- 回归点 6：AI 插件把清理协程交进契约
+- 回归点 6：AI 插件把清理协程与会话清理入口交进契约
 - 回归点 7：注册表只认路由清单，清单交给注入的编译器组装
 """
 
@@ -57,7 +57,7 @@ class _FakeDispatcher:
 def _register_modules(modules: dict[str, object], names: list[str]):
     """按假插件表跑一轮注册
 
-    - 返回 (报告, 协程) 与收到的路由
+    - 返回 (报告, 协程, 清理入口) 与收到的路由
     """
 
     def fake_import(full: str) -> object:
@@ -91,11 +91,12 @@ class TestCollectBackgrounds(unittest.TestCase):
 
     def test_declared_hooks_returned_with_report(self) -> None:
         """声明了常驻协程的插件交出协程并进成功报告"""
-        modules = {"AI": _plugin(backgrounds=(_noop,))}
+        modules = {"AI": _plugin(backgrounds=(_noop,), history_reset=_noop)}
 
-        (report, hooks), routers = _register_modules(modules, ["AI"])
+        (report, hooks, resets), routers = _register_modules(modules, ["AI"])
 
         self.assertEqual(hooks, (_noop,))
+        self.assertEqual(resets, (_noop,))
         self.assertEqual(report, [("AI", True, "")])
         self.assertEqual(len(routers), 1)
         self.assertEqual(len(routers[0].compiled.routes), 1)
@@ -104,9 +105,10 @@ class TestCollectBackgrounds(unittest.TestCase):
         """缺清单的插件记失败且不交出协程"""
         modules = {"AI": SimpleNamespace(backgrounds=(_noop,)), "help": _plugin()}
 
-        (report, hooks), routers = _register_modules(modules, ["AI", "help"])
+        (report, hooks, resets), routers = _register_modules(modules, ["AI", "help"])
 
         self.assertEqual(hooks, ())
+        self.assertEqual(resets, (), "缺清单的插件不该交出清理入口")
         self.assertEqual(len(routers), 1)
         self.assertFalse(report[0][1])
         self.assertIn("缺少 spec 属性", report[0][2])
@@ -116,20 +118,22 @@ class TestCollectBackgrounds(unittest.TestCase):
         """只交 router 的插件记加载失败"""
         modules = {"bad": SimpleNamespace(router=object()), "good": _plugin()}
 
-        (report, hooks), routers = _register_modules(modules, ["bad", "good"])
+        (report, hooks, resets), routers = _register_modules(modules, ["bad", "good"])
 
         self.assertFalse(report[0][1])
         self.assertTrue(report[1][1])
         self.assertEqual(hooks, ())
+        self.assertEqual(resets, ())
         self.assertEqual(len(routers), 1)
 
     def test_non_callable_member_dropped(self) -> None:
         """声明里混进非 callable 只丢该成员"""
         modules = {"AI": _plugin(backgrounds=(_noop, "拼错了"))}
 
-        (_, hooks), _ = _register_modules(modules, ["AI"])
+        (_, hooks, resets), _ = _register_modules(modules, ["AI"])
 
         self.assertEqual(hooks, (_noop,))
+        self.assertEqual(resets, ())
 
     def test_bad_shape_reported_and_excluded(self) -> None:
         """backgrounds 不是列表或元组即记失败，协程不收"""
@@ -138,9 +142,10 @@ class TestCollectBackgrounds(unittest.TestCase):
             "good": _plugin(backgrounds=(_noop,)),
         }
 
-        (report, hooks), routers = _register_modules(modules, ["bad", "good"])
+        (report, hooks, resets), routers = _register_modules(modules, ["bad", "good"])
 
         self.assertEqual(hooks, (_noop,))
+        self.assertEqual(resets, ())
         self.assertEqual(len(routers), 1)
         self.assertEqual([row[0] for row in report], ["bad", "good"])
         self.assertFalse(report[0][1])
@@ -150,9 +155,10 @@ class TestCollectBackgrounds(unittest.TestCase):
         """未声明常驻协程的插件照常注册，协程为空"""
         modules = {"help": _plugin()}
 
-        (report, hooks), _ = _register_modules(modules, ["help"])
+        (report, hooks, resets), _ = _register_modules(modules, ["help"])
 
         self.assertEqual(hooks, ())
+        self.assertEqual(resets, ())
         self.assertEqual(report, [("help", True, "")])
 
 
@@ -226,11 +232,13 @@ class TestAIPluginDeclares(unittest.TestCase):
     """回归点 6"""
 
     def test_cleanup_loop_is_declared(self) -> None:
-        """AI 插件把过期清理协程交进契约"""
+        """AI 插件把过期清理协程与会话清理入口交进契约"""
         from plugins.AI import spec
+        from plugins.AI.core import purge_history
         from plugins.AI.services import cleanup_loop
 
         self.assertEqual(spec.backgrounds, (cleanup_loop,))
+        self.assertIs(spec.history_reset, purge_history)
 
 
 if __name__ == "__main__":
