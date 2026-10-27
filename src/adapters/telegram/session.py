@@ -1,4 +1,4 @@
-# src/utils/network/_session.py
+# src/adapters/telegram/session.py
 """SSL 会话
 
 - 提供代理兼容且免验证的会话
@@ -15,7 +15,7 @@ from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.exceptions import TelegramNetworkError
 from aiogram.methods.base import TelegramMethod, TelegramType
 
-from ._link import link_report
+from utils.network import link_report
 
 # 链路层异常族：服务端有回应即不在其内
 _LINK_ERRORS: tuple[type[BaseException], ...] = (
