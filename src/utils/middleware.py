@@ -7,9 +7,6 @@
 from collections.abc import Awaitable, Callable
 from typing import Any
 
-from aiogram import BaseMiddleware
-from aiogram.types import TelegramObject
-
 from core.domain import ChatScope, ContentKind
 from core.dto import ContentDTO, InboundEventDTO
 from services.context import HandlerContext
@@ -91,22 +88,21 @@ def _content_segments(content: ContentDTO) -> list[str]:
     return segments
 
 
-class LoggingMiddleware(BaseMiddleware):
+class LoggingMiddleware:
     """访问日志中间件
 
     - 读归一化中间件写入的上下文，整组相册只点一次
+    - 不继承引擎基类，只按 handler、event、data 三参被调用
     """
 
     def __init__(self) -> None:
-        super().__init__()
-
         # 使用专属子 Logger，便于在日志中区分中间件产生的记录
         self._logger = get_logger("Middleware")
 
     async def __call__(
         self,
-        handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
-        event: TelegramObject,
+        handler: Callable[..., Awaitable[Any]],
+        event: object,
         data: dict[str, Any],
     ) -> Any:
         """记录访问并放行"""
