@@ -1,4 +1,4 @@
-# src/utils/check/_connectivity.py
+# src/adapters/telegram/probe.py
 """连接性探测
 
 - 代理与 Token 两级探测，校验轮与诊断轮共用
@@ -25,8 +25,7 @@ from exceptions import (
     TokenError,
 )
 from skin.messages import CheckMessage, ConfigMessage
-
-from ..network.probe import probe_budget
+from utils.network.probe import probe_budget
 
 # 构造期异常消息 → 配置键的解析规则
 _SCHEME_RE = re.compile(r"Invalid scheme component:\s*(.*)", re.IGNORECASE)
@@ -80,7 +79,7 @@ async def _probe_proxy(proxy: str) -> None:
 
     - 构造期异常须映射为业务异常，防上层误判致命
     """
-    from ..network import SSLUnverifiedSession
+    from utils.network import SSLUnverifiedSession
 
     try:
         SSLUnverifiedSession(proxy=proxy)
@@ -95,7 +94,7 @@ async def get_me(token: str, proxy: str) -> None:
     """
     from aiogram import Bot
 
-    from ..network import SSLUnverifiedSession
+    from utils.network import SSLUnverifiedSession
 
     bot: Bot | None = None
     try:
@@ -132,7 +131,7 @@ def preload_engine() -> None:
     # aiogram 经 PEP 562 懒加载，首触约 5 秒同步导入会饿死 wait_for 与界面倒计时
     from aiogram import Bot as _Bot  # noqa: F401
 
-    from ..network import SSLUnverifiedSession as _Session  # noqa: F401
+    from utils.network import SSLUnverifiedSession as _Session  # noqa: F401
 
 
 async def _check_config(

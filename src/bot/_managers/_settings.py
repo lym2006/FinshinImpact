@@ -9,16 +9,12 @@ import time
 from collections.abc import Awaitable, Callable
 from typing import cast
 
+from adapters.telegram.probe import attempt_channel
 from core.domain import ConfigKey, ConfigSection, FieldKey, ProxyMode
 from skin.messages import CheckMessage
 from ui import gui_bridge
 from utils import config_manager
-from utils.check import (
-    ChannelOutcome,
-    attempt_channel,
-    local_row,
-    run_channels,
-)
+from utils.check import ChannelOutcome, local_row, run_channels
 from utils.config import (
     AppSchema,
     FieldErrors,

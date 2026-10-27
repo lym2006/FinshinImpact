@@ -9,7 +9,7 @@ class CheckMessage:
     - 轮专属文案按 VERIFY_ / ADVICE_ 前缀分组
     """
 
-    # 用：utils/network/probe.py 与 utils/check/_diagnose.py 两轮的表行名（界面与生成器共用）
+    # 用：utils/network/probe.py 与 adapters/telegram/diagnose.py 两轮的表行名（界面与生成器共用）
     ROW_CFG = "配置代理通道"
     ROW_SYS = "系统代理通道"
     ROW_DIRECT = "直连通道"

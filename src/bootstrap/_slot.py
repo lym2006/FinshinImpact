@@ -177,7 +177,7 @@ def _preload_engine_worker() -> None:
     finally:
         _UTILS_READY.set()
     try:
-        from utils.check import preload_engine
+        from adapters.telegram.probe import preload_engine
 
         preload_engine()
     except Exception:  # noqa: BLE001  预热失败交主线程兜底重导
