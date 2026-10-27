@@ -99,6 +99,32 @@ def _display_name(message: Message) -> str:
     return ""
 
 
+# 被引用消息无文字时的种类占位，引用块禁交空串
+_REPLY_KIND_LABELS = {
+    ContentKind.PHOTO: "图片",
+    ContentKind.DOCUMENT: "文档",
+    ContentKind.AUDIO: "音频",
+    ContentKind.ANIMATION: "动图",
+    ContentKind.VIDEO: "视频",
+}
+_REPLY_KIND_DEFAULT = "媒体"
+
+
+def _reply_text_of(reply: Message) -> str:
+    """取被引用消息的正文
+
+    - 正文与附文都空且种类可辨即交占位标记
+    - 被引用的是贴纸等未收录种类按媒体占位
+    """
+    text = reply.text or reply.caption
+    if text:
+        return text
+    kind = _kind_of(reply.content_type)
+    if kind == ContentKind.TEXT:
+        return ""
+    return f"[{_REPLY_KIND_LABELS.get(kind, _REPLY_KIND_DEFAULT)}]"
+
+
 def sender_id(message: Message) -> str:
     """取发言人 id
 
@@ -227,7 +253,7 @@ def _event_of(
         display_name=_display_name(message),
         command=command,
         reply_ref=build_ref(reply, container) if reply is not None else None,
-        reply_text=(reply.text or reply.caption or "") if reply is not None else "",
+        reply_text=_reply_text_of(reply) if reply is not None else "",
         reply_sender_id=sender_id(reply) if reply is not None else "",
         reply_sender_name=_display_name(reply) if reply is not None else "",
         reply_to_bot=_reply_to_bot(reply, identity),
