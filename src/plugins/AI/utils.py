@@ -8,9 +8,10 @@
 
 import time
 
-from core.domain import ChatRole, ChatScope
-from core.domain.ids import KEY_SEP, SessionKey, UserId
+from core.domain import ChatRole
+from core.domain.ids import KEY_SEP, SessionKey
 from core.dto import InboundEventDTO, MessageDTO, PrincipalDTO
+from utils.speaker import bot_quote_block, quote_block, speaker_mark
 
 # 会话窗口条数上限，含人设首行，条数只当兜底
 _MAX_CONTEXT_MESSAGES = 120
@@ -29,11 +30,7 @@ _OTHER_TOKENS_PER_CHAR = 0.3
 _HAN_LOW = "一"
 _HAN_HIGH = "鿿"
 
-# 发给模型的内部标记，格式与随包人设 §二 逐字一致，改一处必改另一处
-_GROUP_MARK = "[{name} | {id}]"
-_PRIVATE_MARK = "[{id}]"
-_GROUP_QUOTE = "（引用 [{name} | {id}]：{text}）"
-_PRIVATE_QUOTE = "（引用 [{id}]：{text}）"
+# 摘要轮的行首标记，格式与随包人设 §二 逐字一致，改一处必改另一处
 _SUMMARY_MARK = "[历史摘要] "
 
 
@@ -113,13 +110,13 @@ def estimate_window(window: _Rows, summary: str, prompt: str) -> int:
     return total + sum(estimate_tokens(message.content) for message in window)
 
 
-def render_history(rows: _Rows, scope: ChatScope) -> str:
+def render_history(rows: _Rows) -> str:
     """渲染交模型压缩的问答文本
 
     - 发言人标注逐字带上，名称与 id 的对应关系原样进压缩请求
     """
     return "\n".join(
-        _render_turn(message, scope)["content"]
+        _render_turn(message)["content"]
         for message in rows
         if message.role != ChatRole.SYSTEM
     )
@@ -130,7 +127,6 @@ def build_turns(
     persona: str,
     summary: str,
     history: tuple[MessageDTO, ...],
-    scope: ChatScope,
     thisinput: str,
 ) -> list[dict[str, str]]:
     """构建发给模型的消息列表
@@ -143,23 +139,21 @@ def build_turns(
         turns.append(build_message(ChatRole.SYSTEM, f"{_SUMMARY_MARK}{summary}"))
 
     turns.extend(
-        _render_turn(message, scope)
-        for message in history
-        if message.role != ChatRole.SYSTEM
+        _render_turn(message) for message in history if message.role != ChatRole.SYSTEM
     )
     turns.append(build_message(ChatRole.USER, thisinput))
     return turns
 
 
-def _render_turn(message: MessageDTO, scope: ChatScope) -> dict[str, str]:
+def _render_turn(message: MessageDTO) -> dict[str, str]:
     """构建单条历史轮
 
     - 发言人标注按库里两列现拼，AI 回复不带标注
     """
     if message.role == ChatRole.ASSISTANT:
         return build_message(message.role, message.content)
-    mark = _speaker_mark(scope, message.sender_id, message.sender_name)
-    return build_message(message.role, f"{mark} {message.content}")
+    mark = speaker_mark(message.sender_id, message.sender_name)
+    return build_message(message.role, f"{mark}{message.content}")
 
 
 def make_rows(event: InboundEventDTO, reply: str) -> tuple[MessageDTO, MessageDTO]:
@@ -185,8 +179,8 @@ def compose_user_text(event: InboundEventDTO) -> str:
 
     - 顺序为发言人标注、引用块、正文
     """
-    mark = _speaker_mark(event.scope, event.principal.user, event.display_name)
-    return f"{mark} {_compose_body(event)}"
+    mark = speaker_mark(event.principal.user, event.display_name)
+    return f"{mark}{_compose_body(event)}"
 
 
 def _compose_body(event: InboundEventDTO) -> str:
@@ -197,27 +191,13 @@ def _compose_body(event: InboundEventDTO) -> str:
     return f"{_quote_block(event)}{event.content.text}"
 
 
-def _speaker_mark(scope: ChatScope, sender_id: UserId, sender_name: str) -> str:
-    """拼发言人标注
-
-    - 名称缺位用 id 段填，格式仍是 [名称 | id]
-    """
-    if scope == ChatScope.PRIVATE:
-        return _PRIVATE_MARK.format(id=sender_id)
-    return _GROUP_MARK.format(name=sender_name or sender_id, id=sender_id)
-
-
 def _quote_block(event: InboundEventDTO) -> str:
     """拼引用块
 
-    - 无引用文字即整块省略
+    - 被引的是机器人自身即只写 assistant 位，不带 id
     """
     if not event.reply_text:
         return ""
-    if event.scope == ChatScope.PRIVATE:
-        return _PRIVATE_QUOTE.format(id=event.reply_sender_id, text=event.reply_text)
-    return _GROUP_QUOTE.format(
-        name=event.reply_sender_name or event.reply_sender_id,
-        id=event.reply_sender_id,
-        text=event.reply_text,
-    )
+    if event.reply_to_bot:
+        return bot_quote_block(event.reply_text)
+    return quote_block(event.reply_sender_id, event.reply_sender_name, event.reply_text)
