@@ -21,9 +21,9 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
+from core.domain import FieldKey  # noqa: E402
 from exceptions import ProxyAddressError, ProxySchemeError, TokenError  # noqa: E402
 from utils.check import (  # noqa: E402
-    TelegramFieldKey,
     _connectivity,
 )
 
@@ -118,7 +118,7 @@ class TestCheckConfig(unittest.IsolatedAsyncioTestCase):
             probe=self._ok_probe,
             get_me=bad_me,
         )
-        self.assertIn(TelegramFieldKey.TOKEN, errors)
+        self.assertIn(FieldKey.TOKEN, errors)
 
     async def test_bad_proxy_marks_both_with_skip_note(self) -> None:
         """代理坏时同时标记两字段且跳过 getMe"""
@@ -134,10 +134,8 @@ class TestCheckConfig(unittest.IsolatedAsyncioTestCase):
         errors = await _check_config(
             "123:abc", "aaa", probe=dead_probe, get_me=counting_me
         )
-        self.assertIn(TelegramFieldKey.PROXY, errors)
-        self.assertIn(
-            TelegramFieldKey.TOKEN, errors, "proxy 坏时 token 必须被标记为跳过"
-        )
+        self.assertIn(FieldKey.PROXY, errors)
+        self.assertIn(FieldKey.TOKEN, errors, "proxy 坏时 token 必须被标记为跳过")
         self.assertEqual(get_me_called["n"], 0, "proxy 已坏不得再浪费一次 getMe")
 
     async def test_format_invalid_token_no_network(self) -> None:
@@ -154,7 +152,7 @@ class TestCheckConfig(unittest.IsolatedAsyncioTestCase):
             probe=self._ok_probe,
             get_me=counting_me,
         )
-        self.assertIn(TelegramFieldKey.TOKEN, errors)
+        self.assertIn(FieldKey.TOKEN, errors)
         self.assertEqual(get_me_called["n"], 0, "格式非法的 token 应本地判定，不联网")
 
 

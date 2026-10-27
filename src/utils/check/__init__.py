@@ -3,18 +3,14 @@
 
 - 代发通道探测、并发调度、网络诊断与版本检查符号
 - 底层网络栈在 utils.network，编排实现分列 _connectivity/_verify/_diagnose/_version
-- 探测字段错误键单源定义在 _fields
 """
 
 from ._connectivity import attempt_channel, preload_engine
 from ._diagnose import diagnose_flow
-from ._fields import TelegramFieldKey
 from ._verify import ChannelOutcome, local_row, run_channels
 from ._version import ReleaseNote, check_updates, release_history
 
 __all__ = [
-    # 字段错误键
-    "TelegramFieldKey",
     # 单通道探测
     "attempt_channel",
     "preload_engine",

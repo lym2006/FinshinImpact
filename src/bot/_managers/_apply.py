@@ -7,12 +7,11 @@
 
 from typing import TYPE_CHECKING
 
-from core.domain import ConfigKey, ConfigSection
+from core.domain import ConfigKey, ConfigSection, FieldKey
 from skin.messages import CheckMessage
 from system.profile_env import get_profile, read_token
 from ui import gui_bridge
 from utils import config_manager
-from utils.check import TelegramFieldKey
 
 from ..error_guard import error_guard
 
@@ -105,7 +104,7 @@ class ConfigApplier:
         - proxy 已通而 token 仍错才是致命，token 已不在面板改不了
         - proxy 不通时 token 标为暂未检测，按代理故障走配置向导
         """
-        return TelegramFieldKey.TOKEN in errors and TelegramFieldKey.PROXY not in errors
+        return FieldKey.TOKEN in errors and FieldKey.PROXY not in errors
 
     def get_config_func(self) -> tuple[str, str]:
         """读取 Token 与生效 Proxy
