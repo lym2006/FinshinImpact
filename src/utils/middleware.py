@@ -5,28 +5,97 @@
 """
 
 from collections.abc import Awaitable, Callable
-from typing import Any, cast
+from typing import Any
 
 from aiogram import BaseMiddleware
-from aiogram.enums import ChatType, ContentType
-from aiogram.types import Message, TelegramObject, Update
+from aiogram.types import TelegramObject
+
+from core.domain import ChatScope, ContentKind
+from core.dto import ContentDTO, InboundEventDTO
+from services.context import HandlerContext
 
 from .logger import get_logger
+
+# 会话作用域与内容种类的中文标签，词表外按未知计
+_SCOPE_LABELS = {
+    ChatScope.PRIVATE: "私聊",
+    ChatScope.GROUP: "群组",
+    ChatScope.UNKNOWN: "未知",
+}
+_KIND_LABELS = {
+    ContentKind.TEXT: "文本",
+    ContentKind.PHOTO: "图片",
+    ContentKind.DOCUMENT: "文档",
+    ContentKind.AUDIO: "音频",
+    ContentKind.ANIMATION: "动图",
+    ContentKind.VIDEO: "视频",
+    ContentKind.UNKNOWN: "未知",
+}
+
+# 量词，图片按张计其余按条计
+_MEASURES = {ContentKind.PHOTO: "张"}
+_DEFAULT_MEASURE = "条"
+
+# 预览截断长度与省略号
+_PREVIEW_LIMIT = 60
+_CAPTION_LIMIT = 30
+_TRUNCATED = "..."
+
+# 归一事件缺席时的占位
+_LABEL_UNKNOWN = "未知"
+_ID_UNKNOWN = "未知"
+_NAME_UNKNOWN = "无名氏"
+_CHAT_UNKNOWN = "未知聊天"
+
+
+def _preview(text: str, limit: int) -> str:
+    """按上限截断预览"""
+    return text if len(text) <= limit else text[:limit] + _TRUNCATED
+
+
+def _reply_segment(inbound: InboundEventDTO) -> str:
+    """被引用消息的发言人与原文"""
+    if inbound.reply_ref is None:
+        return ""
+    sender_id = inbound.reply_sender_id or _ID_UNKNOWN
+    sender_name = inbound.reply_sender_name or _NAME_UNKNOWN
+    quoted = _preview(inbound.reply_text, _PREVIEW_LIMIT)
+    return f"引用 用户{sender_id}<{sender_name}>「{quoted}」"
+
+
+def _content_segments(content: ContentDTO) -> list[str]:
+    """张数与逐张附文各列一段
+
+    - 张数按媒体条目计，同图的多档分辨率只算一条目
+    - 正文取自首条附文，逐张仍按各自 id 单列
+    """
+    if not content.media:
+        text_label = _KIND_LABELS[ContentKind.TEXT]
+        preview = _preview(content.text, _PREVIEW_LIMIT)
+        return [f"[长度：{len(content.text)}] {text_label}：{preview}"]
+
+    counts: dict[ContentKind, int] = {}
+    for entry in content.media:
+        counts[entry.kind] = counts.get(entry.kind, 0) + 1
+
+    segments = [
+        f"{_KIND_LABELS.get(kind, _LABEL_UNKNOWN)}消息：{total}"
+        f"{_MEASURES.get(kind, _DEFAULT_MEASURE)}"
+        for kind, total in counts.items()
+    ]
+    segments.extend(
+        f"附文[{entry.message_id}]{_preview(entry.caption, _CAPTION_LIMIT)}"
+        for entry in content.media
+        if entry.caption
+    )
+    return segments
 
 
 class LoggingMiddleware(BaseMiddleware):
     """访问日志中间件
 
-    - 拦截更新事件，格式化输出访问日志
+    - 读归一化中间件写入的上下文，整组相册只点一次
     """
-
-    # 聊天类型中文映射（类级别常量，避免重复创建）
-    _CHAT_TYPE_LABELS: dict[ChatType, str] = {
-        ChatType.PRIVATE: "私聊",
-        ChatType.GROUP: "群组",
-        ChatType.SUPERGROUP: "超级群",
-        ChatType.CHANNEL: "频道",
-    }
 
     def __init__(self) -> None:
         super().__init__()
@@ -41,83 +110,29 @@ class LoggingMiddleware(BaseMiddleware):
         data: dict[str, Any],
     ) -> Any:
         """记录访问并放行"""
-        # 类型安全检查：仅处理标准的 Update 事件
-        if not isinstance(event, Update):
-            return await handler(event, data)
+        ctx = data.get("ctx")
+        if isinstance(ctx, HandlerContext):
+            try:
+                self._logger.info(self._build_log_entry(ctx.event))
+            except Exception as e:
+                # 日志构建失败只记自身异常，不影响事件放行
+                self._logger.send_error("访问日志构建失败", e)
 
-        event = cast(Update, event)
-
-        # 消息过滤：仅记录包含 Message 的事件（忽略回调、预检等）
-        if event.message is None:
-            return await handler(event, data)
-
-        # 构建日志条目并输出
-        try:
-            message = cast(Message, event.message)
-            log_entry = self._build_log_entry(message)
-            self._logger.info(log_entry)
-
-        except Exception as e:
-            # 记录中间件自身的异常
-            self._logger.send_error("LoggingMiddleware 执行出错", e)
-
-        # 无论日志记录是否成功，都放行事件给下游 Handler
         return await handler(event, data)
 
-    def _build_log_entry(self, message: Message) -> str:
+    def _build_log_entry(self, inbound: InboundEventDTO) -> str:
         """构建日志条目
 
-        - 形如：超级群[-100123]<测试群> | 用户123<张三> 发送[长度：5]文本：你好
+        - 形如：[tg] 群组[g100123]<测试群> | 用户456<张三> 发送 引用 用户123<李四>「在吗」 图片消息：2张
         """
-        chat = message.chat
-        user = message.from_user
-        sender_chat = message.sender_chat
+        scope = _SCOPE_LABELS.get(inbound.scope, _LABEL_UNKNOWN)
+        chat_name = inbound.container_name or _CHAT_UNKNOWN
+        sender_id = inbound.principal.user or _ID_UNKNOWN
+        sender_name = inbound.display_name or _NAME_UNKNOWN
+        segments = [_reply_segment(inbound), *_content_segments(inbound.content)]
+        body = " ".join(segment for segment in segments if segment)
 
-        # 群标题 → 个人名 → "未知聊天" 逐级兜底
-        chat_name = chat.title or chat.first_name or "未知聊天"
-
-        # 将 ChatType 枚举映射为中文标签
-        chat_label = self._CHAT_TYPE_LABELS.get(ChatType(chat.type), "未知")
-        chat_info = f"{chat_label}[{chat.id}]<{chat_name}>"
-
-        # 解析发送者信息
-        if user:
-            # 真实用户发送：优先全名，其次名，兜底为"无名氏"
-            user_name = user.full_name or user.first_name or "无名氏"
-            sender_info = f"用户{user.id}<{user_name}>"
-        elif sender_chat:
-            # 频道/匿名管理员发送
-            sender_name = sender_chat.title or "未知来源"
-            sender_info = f"匿名/频道[{sender_chat.id}]<{sender_name}>"
-        else:
-            sender_info = "系统/未知"  # 系统消息或未知来源
-
-        # 解析内容预览
-        content_type = message.content_type
-        reply_mark = " [回复]" if message.reply_to_message else ""
-
-        match content_type:
-            case ContentType.TEXT:
-                # 文本消息：截取前60个字符作为预览，并标注长度和是否为回复
-                text = message.text or ""
-                preview = (text[:60] + "...") if len(text) > 60 else text
-                content_preview = f"[长度：{len(text)}] 文本：{preview}"
-            case ContentType.DOCUMENT:
-                doc = message.document
-                detail = f"({name})" if doc and (name := doc.file_name) else ""
-                content_preview = f"文档消息：{detail}"
-            case ContentType.PHOTO:
-                content_preview = (
-                    f"图片消息：{len(message.photo) if message.photo else 0}张"
-                )
-            case ContentType.AUDIO:
-                content_preview = "音频消息"
-            case ContentType.VOICE:
-                content_preview = "语音消息"
-            case ContentType.ANIMATION:
-                content_preview = "动图消息"
-            case _:
-                content_preview = f"{content_type}消息"
-
-        # 组装最终日志
-        return f"{chat_info} | {sender_info} 发送{reply_mark}{content_preview}"
+        return (
+            f"[{inbound.ref.platform}] {scope}[{inbound.ref.container}]"
+            f"<{chat_name}> | 用户{sender_id}<{sender_name}> 发送 {body}"
+        )
