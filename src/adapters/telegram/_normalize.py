@@ -11,6 +11,7 @@ from aiogram import BaseMiddleware, Bot
 from aiogram.types import TelegramObject, Update
 
 from core.contracts import InteractionPort
+from core.domain.ids import UserId
 from services.context import HandlerContext
 from utils import get_logger
 
@@ -71,7 +72,7 @@ class NormalizeMiddleware(BaseMiddleware):
     async def _identity(self) -> BotIdentity:
         """取本机器人标识作点名与引用归属的基准"""
         me = await self._bot.me()
-        return BotIdentity(user_id=str(me.id), username=me.username or "")
+        return BotIdentity(user_id=UserId(str(me.id)), username=me.username or "")
 
     async def _flush_album(self, batch: AlbumBatch) -> None:
         """整组并成一条归一事件后沿末条的事件链放行"""

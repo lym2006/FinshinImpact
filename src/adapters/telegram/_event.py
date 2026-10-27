@@ -11,10 +11,10 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from aiogram.enums import ChatType, ContentType, MessageEntityType
-from aiogram.types import Message, Update
+from aiogram.types import Message, Update, User
 
 from core.domain import ChatScope, ContentKind, Platform, make_container
-from core.domain.ids import ContainerKey, MessageId, UserId
+from core.domain.ids import ChatId, ContainerKey, MessageId, UserId
 from core.dto import (
     CommandDTO,
     ContentDTO,
@@ -28,7 +28,7 @@ from core.dto import (
 _COMMAND_PREFIX = "/"
 _BOT_PREFIX = "@"
 _FLAG_PREFIX = "-"
-_ANONYMOUS_USER = "unknown"  # 匿名代发无 user 段时的占位值
+_ANONYMOUS_USER = UserId("unknown")  # 匿名代发无 user 段时的占位值
 
 # Telegram 侧命令名与 flag 的形状
 _COMMAND_NAME_RE = re.compile(r"[A-Za-z][A-Za-z0-9_]{0,31}")
@@ -42,7 +42,7 @@ class BotIdentity:
     - mention 与引用归属的比对基准
     """
 
-    user_id: str = ""
+    user_id: UserId = UserId("")
     username: str = ""
 
 
@@ -125,13 +125,17 @@ def _reply_text_of(reply: Message) -> str:
     return f"[{_REPLY_KIND_LABELS.get(kind, _REPLY_KIND_DEFAULT)}]"
 
 
-def sender_id(message: Message) -> str:
-    """取发言人 id
+def _user_id_of(user: User | None) -> UserId:
+    """取平台原始用户 id
 
-    - 匿名代发按占位 id 计，与主体键的 user 段同形
+    - 无 user 段按占位值计，与主体键的 user 段同形
     """
-    user = message.from_user
-    return str(user.id) if user is not None else _ANONYMOUS_USER
+    return UserId(str(user.id)) if user is not None else _ANONYMOUS_USER
+
+
+def sender_id(message: Message) -> UserId:
+    """取发言人 id"""
+    return _user_id_of(message.from_user)
 
 
 def build_ref(message: Message, container: ContainerKey) -> MsgReferenceDTO:
@@ -196,7 +200,7 @@ def _mentions_bot(message: Message, identity: BotIdentity) -> bool:
             case MessageEntityType.TEXT_MENTION:
                 user = entity.user
                 if user is not None and identity.user_id:
-                    if str(user.id) == identity.user_id:
+                    if _user_id_of(user) == identity.user_id:
                         return True
     return False
 
@@ -205,7 +209,7 @@ def _reply_to_bot(reply: Message | None, identity: BotIdentity) -> bool:
     """判定被引用消息是否本机器人发出"""
     if reply is None or reply.from_user is None or not identity.user_id:
         return False
-    return str(reply.from_user.id) == identity.user_id
+    return _user_id_of(reply.from_user) == identity.user_id
 
 
 def _entry_of(message: Message, kind: ContentKind, slot: int = 0) -> MediaEntryDTO:
@@ -237,7 +241,7 @@ def _event_of(
     """
     scope = _scope_of(message.chat.type)
     user_id = sender_id(message)
-    container = make_container(scope, str(message.chat.id), user_id)
+    container = make_container(scope, ChatId(str(message.chat.id)), user_id)
     reply = message.reply_to_message
 
     return InboundEventDTO(
@@ -245,7 +249,7 @@ def _event_of(
         principal=PrincipalDTO(
             platform=Platform.TELEGRAM,
             container=container,
-            user=UserId(user_id),
+            user=user_id,
         ),
         content=ContentDTO(text=text, media=media),
         scope=scope,
@@ -254,7 +258,7 @@ def _event_of(
         command=command,
         reply_ref=build_ref(reply, container) if reply is not None else None,
         reply_text=_reply_text_of(reply) if reply is not None else "",
-        reply_sender_id=sender_id(reply) if reply is not None else "",
+        reply_sender_id=sender_id(reply) if reply is not None else UserId(""),
         reply_sender_name=_display_name(reply) if reply is not None else "",
         reply_to_bot=_reply_to_bot(reply, identity),
         is_mention_bot=_mentions_bot(message, identity),
