@@ -9,7 +9,7 @@ from typing import cast
 
 from core.contracts import SessionRepository
 from core.domain import ChatRole, Platform
-from core.domain.ids import KEY_SEP, ContainerKey, SessionKey
+from core.domain.ids import KEY_SEP, ContainerKey, SessionKey, UserId
 from core.dto import MessageDTO, SessionDTO, SessionPatchDTO
 
 
@@ -148,7 +148,7 @@ class SqliteSessionRepository(SessionRepository):
                 role=ChatRole(row["role"]),
                 content=row["content"],
                 created_at=row["created_at"],
-                sender_id=row["sender_id"],
+                sender_id=UserId(row["sender_id"]),
                 sender_name=row["sender_name"],
             )
             for row in rows

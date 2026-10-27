@@ -18,6 +18,8 @@ PrincipalKey = NewType("PrincipalKey", str)  # PrincipalDTO.key
 ConfigPath = NewType("ConfigPath", str)  # 配置段.键
 
 # 平台原始标识
+ChatId = NewType("ChatId", str)
 UserId = NewType("UserId", str)
 MessageId = NewType("MessageId", str)
+MediaGroupId = NewType("MediaGroupId", str)  # Telegram 相册组标识
 TaskId = NewType("TaskId", str)  # f"{PrincipalDTO.key}.{TaskKind}"

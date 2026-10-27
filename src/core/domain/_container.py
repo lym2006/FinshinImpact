@@ -5,10 +5,10 @@
 """
 
 from ._platform import ChatScope
-from .ids import ContainerKey
+from .ids import ChatId, ContainerKey, UserId
 
 
-def make_container(scope: ChatScope, chat_id: str, user_id: str) -> ContainerKey:
+def make_container(scope: ChatScope, chat_id: ChatId, user_id: UserId) -> ContainerKey:
     """归一容器段
 
     - 群聊 g 前缀加 chat_id 绝对值
