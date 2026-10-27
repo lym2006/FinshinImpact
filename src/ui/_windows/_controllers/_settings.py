@@ -6,6 +6,7 @@
 - 校验轮驱动进程级唯一 CheckDialog，交 VerifyCoordinator 协调
 """
 
+from core.domain import ConfigKey, ConfigSection
 from exceptions import ConfigOutputError
 from skin.messages import CheckMessage
 from skin.theme import NOTICE_DIALOG, SETTINGS_DIALOG
@@ -57,6 +58,8 @@ class SettingsController(BaseController):
         # 配置就绪缓存：仅在 Qt 线程由信号回调更新，默认未就绪
         self._config_ready: bool = False
 
+        self._identity_changed: bool = False
+
         # 校验轮协调器：持有在途标志、待落盘候选与迟滞帧缓存
         self._verify = VerifyCoordinator(self)
 
@@ -100,7 +103,11 @@ class SettingsController(BaseController):
                 return
         if self._panel is not None:
             if was_pending or was_validating:
-                self._close_panel_verified()
+                self._close_panel_verified(
+                    SETTINGS_DIALOG.history_reset
+                    if self._identity_changed
+                    else SETTINGS_DIALOG.verified_ok
+                )
             else:
                 # 取消回退引发的重验轮：与本次编辑无关，解除忙碌即可
                 self._panel.set_busy(False)
@@ -209,16 +216,20 @@ class SettingsController(BaseController):
             config_manager.schema, config_manager.get_all(), new_config
         )
 
+        # 对话身份由人设正文与主人构成，动过任一项都要起一轮清历史，配置未就绪时不报清空
+        self._identity_changed = self._config_ready and (
+            persona_changed
+            or ConfigKey.OWNER in (changes.get(ConfigSection.CHORE) or {})
+        )
+
         # 向导态或有任何改动都要起校验轮，通道没变时 Manager 只跑本地校验
         in_setup = self._current_mode == ConfigMode.SETUP
         if not changes and not in_setup:
-            if persona_changed:
-                self.logger.info("人设正文已按文件刷新")
-                self._close_panel_verified(SETTINGS_DIALOG.persona_reloaded)
+            if not persona_changed:
+                NoticeDialog.notify(NOTICE_DIALOG.not_changed, parent=dialog)
+                self.logger.info("配置未修改")
                 return
-            NoticeDialog.notify(NOTICE_DIALOG.not_changed, parent=dialog)
-            self.logger.info("配置未修改")
-            return
+            self.logger.info("人设正文已按文件刷新")
         if not changes:
             if self._verify.validating:
                 return

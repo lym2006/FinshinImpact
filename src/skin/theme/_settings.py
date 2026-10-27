@@ -56,6 +56,7 @@ class SettingsDialogTheme:
 
     # 提示文案
     verified_ok: str = DialogMessage.SETUP_VERIFIED_OK
+    history_reset: str = DialogMessage.SETUP_HISTORY_RESET
 
     # 按钮文案
     cancel_text: str = DialogMessage.BTN_CANCEL
@@ -80,7 +81,6 @@ class SettingsDialogTheme:
     persona_unreadable: str = DialogMessage.SETUP_PERSONA_UNREADABLE
     persona_applied: str = DialogMessage.SETUP_PERSONA_APPLIED
     persona_pending: str = DialogMessage.SETUP_PERSONA_PENDING
-    persona_reloaded: str = DialogMessage.PERSONA_RELOADED
     persona_file_create_fail: str = DialogMessage.SETUP_PERSONA_FILE_CREATE_FAIL
     persona_open_text: str = DialogMessage.SETUP_PERSONA_OPEN
     persona_open_fail: str = DialogMessage.SETUP_PERSONA_OPEN_FAIL

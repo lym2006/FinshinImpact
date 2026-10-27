@@ -5,7 +5,8 @@
 - 副本内容等于戳所记的模板才自动换新，行尾转换不算改动
 - 从未改动判不出即弹一键覆盖窗，提示送达才记本版已提示
 - 一键覆盖落当前模板指纹并重置进程内人设缓存
-- 提示与自动换新在启动接线里分派弹窗与日志
+- 提示弹一键覆盖窗，自动换新只交回换新版标记
+- 总控接线换成新版且清成功才弹告知窗，清不成不弹
 - 对账排在配置进内存之后
 - 打开入口用的副本补建只在缺失时动手
 - 正文缓存按磁盘副本刷新，副本没变不报变化
@@ -28,6 +29,7 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
+from skin.messages import MiscMessage  # noqa: E402
 from utils import init_files, persona  # noqa: E402
 
 _V1 = "# 默认人设 v1\n"
@@ -305,22 +307,79 @@ class TestStartupWiring(unittest.TestCase):
         self.popup = self.stack.enter_context(
             patch.object(_initialization.gui_bridge, "request_persona_update")
         )
+        self.notice = self.stack.enter_context(
+            patch.object(_initialization.gui_bridge, "request_notice")
+        )
         self.manager = _initialization.InitializationManager()
 
     def test_notify_emits_persona_popup(self) -> None:
         """判为需用户定夺才弹一键覆盖窗"""
-        self.manager.sync_persona()
+        self.assertFalse(self.manager.sync_persona())
 
         self.result.assert_called_once_with()
         self.popup.emit.assert_called_once()
+        self.notice.emit.assert_not_called()
 
-    def test_updated_emits_nothing(self) -> None:
-        """自动换新只进日志，不打扰"""
+    def test_updated_returns_swap_flag_without_popup(self) -> None:
+        """自动换新只交回换新版标记，告知窗归总控接线"""
         self.result.return_value = init_files.PersonaSync.UPDATED
 
-        self.manager.sync_persona()
+        self.assertTrue(self.manager.sync_persona())
 
         self.popup.emit.assert_not_called()
+        self.notice.emit.assert_not_called()
+
+
+class TestStartupNotice(unittest.TestCase):
+    """总控按清理结果决定要不要弹告知窗"""
+
+    def _wire(self, swapped: bool, cleared: bool):
+        """拼出只关心人设与清理的总控，交出清理调用记录"""
+        from bot._managers import BotManager, _manager
+
+        calls: list[int] = []
+
+        async def _noop() -> None:
+            return None
+
+        async def _reset() -> bool:
+            calls.append(1)
+            return cleared
+
+        manager = BotManager.__new__(BotManager)
+        manager._initializer = SimpleNamespace(
+            execute=_noop, sync_persona=lambda: swapped
+        )
+        manager._applier = SimpleNamespace(apply_config=_noop, reset_identity=_reset)
+        notice = self.enterContext(patch.object(_manager.gui_bridge, "request_notice"))
+        return manager, calls, notice
+
+    def test_swapped_and_cleared_opens_notice(self) -> None:
+        """换成新版且清成功才弹告知"""
+        manager, calls, notice = self._wire(swapped=True, cleared=True)
+
+        asyncio.run(manager.start())
+
+        self.assertEqual(calls, [1])
+        notice.emit.assert_called_once_with(MiscMessage.PERSONA_AUTO_APPLIED, False)
+
+    def test_unswapped_stays_silent(self) -> None:
+        """没换新版就不清也不弹"""
+        manager, calls, notice = self._wire(swapped=False, cleared=True)
+
+        asyncio.run(manager.start())
+
+        self.assertEqual(calls, [])
+        notice.emit.assert_not_called()
+
+    def test_clear_failure_stays_silent(self) -> None:
+        """清理没办成就不弹，免得报假清空"""
+        manager, calls, notice = self._wire(swapped=True, cleared=False)
+
+        asyncio.run(manager.start())
+
+        self.assertEqual(calls, [1])
+        notice.emit.assert_not_called()
 
 
 class TestStartupOrder(unittest.TestCase):

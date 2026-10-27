@@ -2,7 +2,7 @@
 """配置应用
 
 - 校验当前配置并决定是否重启引擎
-- 持有候选轮标记、生效通道与运行参数指纹
+- 持有候选轮标记、生效通道、运行参数指纹与对话身份标记
 """
 
 from typing import TYPE_CHECKING
@@ -12,6 +12,7 @@ from skin.messages import CheckMessage
 from system.profile_env import get_profile, read_token
 from ui import gui_bridge
 from utils import config_manager
+from utils.persona import applied_persona_text
 
 from ..error_guard import error_guard
 
@@ -37,6 +38,9 @@ class ConfigApplier:
 
         # 三级解析出的生效通道，引擎与指纹均以此为准
         self._resolved_proxy: str | None = None
+
+        # 上次生效的对话身份：(主人 id, 生效正文)，任一项变化即清历史
+        self._last_identity: tuple[str, str] | None = None
 
     @error_guard("配置校验")
     async def apply_config(self) -> None:
@@ -71,6 +75,8 @@ class ConfigApplier:
         # 生效通道接引擎：配置不通时自动落到系统代理/直连
         self._resolved_proxy = host._settings_manager.resolved_proxy
 
+        await self._reset_stale_identity()
+
         # 配置已加载且验证通过（数据先就位，最后广播）
         gui_bridge.config_ready_changed.emit(True)
         try:
@@ -93,6 +99,40 @@ class ConfigApplier:
         self._last_applied = fingerprint
         host._logger.info("配置验证通过，服务运行中")
 
+    def _current_identity(self) -> tuple[str, str]:
+        """取当前对话身份
+
+        - 由主人 id 与生效正文两项构成
+        """
+        chore = config_manager.get_all().get(ConfigSection.CHORE, {})
+        return (str(chore.get(ConfigKey.OWNER, "")).strip(), applied_persona_text())
+
+    async def reset_identity(self) -> bool:
+        """清掉全部会话与落盘记录并把当前身份记成基准
+
+        - 清理入口由插件声明，本层只按身份变化调用
+        - 入口为空即不清也不落基准，下一轮或读取侧对账补上
+        """
+        resets = self._host._service_manager.history_resets
+        if not resets:
+            return False
+        for reset in resets:
+            await reset()
+        self._last_identity = self._current_identity()
+        self._host._logger.info("人设或主人已变更，全部对话历史与落盘记录已清空")
+        return True
+
+    async def _reset_stale_identity(self) -> None:
+        """人设正文或主人变更后立即清掉对话历史
+
+        - 首次应用只记基准，不动已有历史
+        """
+        identity = self._current_identity()
+        if self._last_identity is not None and self._last_identity != identity:
+            await self.reset_identity()
+            return
+        self._last_identity = identity
+
     def _request_setup(self, field_errors: dict[str, str] | None = None) -> None:
         """弹出强制配置向导"""
         self._host._logger.info("检测到配置有误，弹出配置向导...")
@@ -101,10 +141,9 @@ class ConfigApplier:
     def _is_token_fatal(self, errors: dict[str, str]) -> bool:
         """判定是否 token 致命错
 
-        - proxy 已通而 token 仍错才是致命，token 已不在面板改不了
-        - proxy 不通时 token 标为暂未检测，按代理故障走配置向导
+        - token 报错即致命：面板改不了 token，只会拦在配置向导里出不去
         """
-        return FieldKey.TOKEN in errors and FieldKey.PROXY not in errors
+        return FieldKey.TOKEN in errors
 
     def get_config_func(self) -> tuple[str, str]:
         """读取 Token 与生效 Proxy
