@@ -26,7 +26,7 @@ from aiohttp_socks import (  # noqa: E402
     ProxyTimeoutError,
 )
 
-from utils.network import is_link_failure  # noqa: E402
+from adapters.telegram.session import is_link_failure  # noqa: E402
 from utils.network._link import (  # noqa: E402
     _DOWN_THRESHOLD,
     _FAIL_LOG_EVERY,
@@ -215,7 +215,7 @@ class TestSessionLinkReporting(unittest.IsolatedAsyncioTestCase):
         from aiogram import Bot
         from aiogram.client.session.aiohttp import AiohttpSession
 
-        from utils.network import SSLUnverifiedSession
+        from adapters.telegram.session import SSLUnverifiedSession
 
         session = SSLUnverifiedSession(proxy=None, report_link=report_link)
         bot = Bot(token="123:abc", session=session)
