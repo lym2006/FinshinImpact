@@ -22,8 +22,7 @@ from ..core import (
     AIClient,
     StreamUsage,
     active_tasks,
-    purge_history,
-    read_session,
+    purge_stale,
     save_session,
 )
 from ..markdown import strip_model_marks
@@ -33,7 +32,6 @@ from ..utils import (
     estimate_window,
     make_rows,
     make_session_key,
-    matches_persona,
     open_window,
     split_rounds,
 )
@@ -149,15 +147,12 @@ async def worker_loop(ctx: HandlerContext) -> None:
         raise MessageVanishedError(ctx.event.ref)
 
     session_key = make_session_key(ctx.event.principal)
-    snapshot = await read_session(session_key)
 
     # 人设轮每轮按当前配置与磁盘正文重取，库里那行人设正文只当版本标记
     persona = ai_config.init[0]["content"]
 
     # 库里的人设版本对不上即换过人设或主人，所有人的记录连带库一起清
-    if snapshot.messages and not matches_persona(persona, snapshot.messages):
-        await purge_history()
-        snapshot = await read_session(session_key)
+    snapshot = await purge_stale(persona, session_key)
 
     window = open_window(persona, snapshot.messages)
     prompt = compose_user_text(ctx.event)

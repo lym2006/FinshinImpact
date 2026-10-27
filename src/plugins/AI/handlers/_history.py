@@ -18,7 +18,7 @@ from ..._shared.access import require_role
 from ..._shared.filters import CommandMatch
 from ..._shared.messages import BotMessage
 from ..config import ai_config
-from ..core import clear_session, session_guard
+from ..core import clear_session, purge_stale, session_guard
 from ..utils import make_session_key
 
 
@@ -29,8 +29,13 @@ def _get_file_path(key: SessionKey) -> Path:
 @require_role(CommandRole.ADMIN)
 @session_guard
 async def _show_history(raw: Message, ctx: HandlerContext) -> None:
-    """发送历史记录"""
-    file_path = _get_file_path(make_session_key(ctx.event.principal))
+    """发送历史记录
+
+    - 人设或主人换过即先清干净，旧记录不会越过这次变更发出去
+    """
+    key = make_session_key(ctx.event.principal)
+    await purge_stale(ai_config.init[0]["content"], key)
+    file_path = _get_file_path(key)
 
     if not file_path.exists():
         await ctx.answer(BotMessage.HISTORY_EMPTY)

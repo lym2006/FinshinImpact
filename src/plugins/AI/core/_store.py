@@ -94,6 +94,18 @@ async def purge_history() -> None:
         path.unlink(missing_ok=True)
 
 
+async def purge_stale(persona: str, session_key: SessionKey) -> SessionDTO:
+    """库里人设版本对不上即清全部历史，交出清理后的快照
+
+    - 换过人设或主人而不重开程序时，读取与问答两条路都在此收口
+    """
+    snapshot = await read_session(session_key)
+    if snapshot.messages and not matches_persona(persona, snapshot.messages):
+        await purge_history()
+        snapshot = await read_session(session_key)
+    return snapshot
+
+
 async def purge_sessions(session_keys: tuple[SessionKey, ...]) -> int:
     """按会话键清除上下文
 

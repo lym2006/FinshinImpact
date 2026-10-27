@@ -2,7 +2,7 @@
 """插件注册表
 
 - 按清单与实例启用集决定加载序列
-- 实现路由注册、常驻协程收集与逐项结果上报
+- 实现路由注册、常驻协程与历史清理入口收集、逐项结果上报
 - 插件只交路由清单，缺 spec 记失败
 """
 
@@ -14,6 +14,7 @@ from core.domain import (
     PLUGINS_PKG,
     PluginBackground,
     PluginFileName,
+    PluginReset,
     PluginSpec,
     RouteSink,
 )
@@ -26,8 +27,10 @@ from ._manifest import enabled_manifests
 # 逐项报告：(插件名, 是否成功, 失败原因)
 _PluginReport = list[tuple[str, bool, str]]
 
-# 注册结果：逐项报告与待启动的常驻协程
-_RegisterResult = tuple[_PluginReport, tuple[PluginBackground, ...]]
+# 注册结果：逐项报告、待启动的常驻协程与待挂载的历史清理入口
+_RegisterResult = tuple[
+    _PluginReport, tuple[PluginBackground, ...], tuple[PluginReset, ...]
+]
 
 # 平台侧的清单编译器，注册表只按契约交还对象，不认它的构造
 _RouteBuilder = Callable[[PluginSpec], Any]
@@ -41,13 +44,14 @@ def register_plugins(
 
     - sink 只被要求提供挂载路由这一个方法
     - build_router 由平台侧注入，把 PluginSpec 编成引擎要挂的对象
-    - 返回逐项报告与全部插件声明的常驻协程
+    - 返回逐项报告、全部插件声明的常驻协程与全部历史清理入口
     - 未启用的插件不进报告
     - core 插件加载失败直接上抛，可选插件失败仅记原因
     - 全部失败抛 PluginsMissingError
     """
     report: _PluginReport = []
     backgrounds: list[PluginBackground] = []
+    resets: list[PluginReset] = []
     success_count = 0
 
     for manifest in _resolve_plugins():
@@ -66,6 +70,8 @@ def register_plugins(
             declared = _checked_backgrounds(spec.backgrounds)
             sink.include_router(build_router(spec))
             backgrounds.extend(declared)
+            if spec.history_reset is not None:
+                resets.append(spec.history_reset)
             report.append((plugin_name, True, ""))
             success_count += 1
 
@@ -88,7 +94,7 @@ def register_plugins(
     if success_count == 0:
         raise PluginsMissingError() from None
 
-    return report, tuple(backgrounds)
+    return report, tuple(backgrounds), tuple(resets)
 
 
 def _checked_backgrounds(declared: object) -> tuple[PluginBackground, ...]:
