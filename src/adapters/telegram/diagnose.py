@@ -1,4 +1,4 @@
-# src/utils/check/_diagnose.py
+# src/adapters/telegram/diagnose.py
 """网络连通诊断
 
 - 配置留空或系统代理未开启的通道，首帧直接给结论
@@ -11,9 +11,9 @@ from collections.abc import Awaitable, Callable, Sequence
 
 from core.domain import FieldKey
 from skin.messages import CheckMessage
-
-from ..logger import get_logger
-from ..network import (
+from utils.check import run_channels
+from utils.logger import get_logger
+from utils.network import (
     Channel,
     FrameKey,
     RowId,
@@ -21,7 +21,7 @@ from ..network import (
     detect_system_proxy,
     via_label,
 )
-from ..network.probe import (
+from utils.network.probe import (
     extract_port,
     is_flap_hit,
     plan_channels,
@@ -29,9 +29,9 @@ from ..network.probe import (
     probe_budget,
     sys_deduped,
 )
-from ..network.proxy import registry_proxy
-from ._connectivity import attempt_channel, preload_engine
-from ._verify import run_channels
+from utils.network.proxy import registry_proxy
+
+from .probe import attempt_channel, preload_engine
 
 # 诊断跑在后台线程的私有 loop，计时句走此器落 debug
 _logger = get_logger("Mgr.Diagnose")

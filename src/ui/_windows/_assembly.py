@@ -10,12 +10,14 @@ from skin.qss import build_global_qss
 from skin.theme import BODY, FONT, TOOLBAR, WINDOW
 from utils.logger import GUI_FORMATTER
 
-from ._controllers import BaseController, build_controllers
+from ._controllers import BaseController, DiagnoseFlow, build_controllers
 from ._link_watcher import LinkWatcher
 from ._main_window import BotGUI
 
 
-def create_gui() -> tuple[BotGUI, dict[str, BaseController]]:
+def create_gui(
+    diagnose_flow: DiagnoseFlow,
+) -> tuple[BotGUI, dict[str, BaseController]]:
     """创建并装配 BotGUI 实例"""
     botgui = BotGUI(
         qss=build_global_qss(),
@@ -25,7 +27,7 @@ def create_gui() -> tuple[BotGUI, dict[str, BaseController]]:
     )
 
     # 打包业务控制器
-    controllers, instances = build_controllers(botgui)
+    controllers, instances = build_controllers(botgui, diagnose_flow)
 
     # 防呆校验
     valid_ui_keys = {key for _, key in MiscMessage.TOOLBAR_BUTTONS}

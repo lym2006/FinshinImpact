@@ -21,14 +21,12 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
+from adapters.telegram import probe as probe_mod  # noqa: E402
 from core.domain import FieldKey  # noqa: E402
 from exceptions import ProxyAddressError, ProxySchemeError, TokenError  # noqa: E402
-from utils.check import (  # noqa: E402
-    _connectivity,
-)
 
-_check_config = _connectivity._check_config
-_map_construct_error = _connectivity._map_construct_error
+_check_config = probe_mod._check_config
+_map_construct_error = probe_mod._map_construct_error
 
 
 class TestRealProbeNoHang(unittest.TestCase):
@@ -41,7 +39,7 @@ class TestRealProbeNoHang(unittest.TestCase):
         """非法端口的真实探测返回 proxy 键错误而非穿透"""
         import asyncio
 
-        from utils.check._connectivity import _check_config
+        from adapters.telegram.probe import _check_config
 
         async def ok_get_me(token: str, proxy: str) -> None:
             return None

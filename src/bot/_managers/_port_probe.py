@@ -7,10 +7,11 @@
 
 import asyncio
 
+from adapters.telegram.probe import attempt_channel
 from core.domain import FieldKey
 from skin.messages import CheckMessage
 from ui import gui_bridge
-from utils.check import ChannelOutcome, attempt_channel
+from utils.check import ChannelOutcome
 from utils.network import RowId, RowStatus, scan_proxy_ports
 
 

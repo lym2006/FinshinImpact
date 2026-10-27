@@ -18,10 +18,8 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
+from adapters.telegram import diagnose as diagnose_mod  # noqa: E402
 from core.domain import FieldKey  # noqa: E402
-from utils.check import (  # noqa: E402
-    _diagnose,
-)
 from utils.network import FrameKey, RowId, RowStatus  # noqa: E402
 
 _CFG = "http://127.0.0.1:7897"
@@ -50,13 +48,13 @@ def _stubbed_round(cfg: str, registry_server: str, passes: Callable[[str, int], 
     """
     frames: list[dict] = []
     with (
-        patch.object(_diagnose, "attempt_channel", _probe(passes)),
-        patch.object(_diagnose, "preload_engine"),
-        patch.object(_diagnose, "detect_system_proxy", return_value=None),
+        patch.object(diagnose_mod, "attempt_channel", _probe(passes)),
+        patch.object(diagnose_mod, "preload_engine"),
+        patch.object(diagnose_mod, "detect_system_proxy", return_value=None),
         patch.object(
-            _diagnose, "registry_proxy", return_value={"server": registry_server}
+            diagnose_mod, "registry_proxy", return_value={"server": registry_server}
         ),
-        patch.object(_diagnose, "port_alive", return_value=True),
+        patch.object(diagnose_mod, "port_alive", return_value=True),
     ):
         yield frames
 
@@ -75,7 +73,7 @@ class TestDiagnoseFlow(unittest.IsolatedAsyncioTestCase):
         - 结论行转绿为抖动，不发断链标记
         """
         with _stubbed_round(_CFG, "", lambda p, n: p == _CFG and n == 2) as frames:
-            await _diagnose.diagnose_flow(_CFG, "123:abc", frames.append)
+            await diagnose_mod.diagnose_flow(_CFG, "123:abc", frames.append)
 
         advice = _advice(frames)
         self.assertEqual(advice["status"], RowStatus.OK)
@@ -88,7 +86,7 @@ class TestDiagnoseFlow(unittest.IsolatedAsyncioTestCase):
         - 结论行报出该地址并保留断链标记
         """
         with _stubbed_round(_CFG, _ALT_PORT_SERVER, lambda p, _: p == _ALT) as frames:
-            await _diagnose.diagnose_flow(_CFG, "123:abc", frames.append)
+            await diagnose_mod.diagnose_flow(_CFG, "123:abc", frames.append)
 
         advice = _advice(frames)
         self.assertEqual(advice["status"], RowStatus.FAIL)
@@ -101,7 +99,7 @@ class TestDiagnoseFlow(unittest.IsolatedAsyncioTestCase):
         - 配置代理与直连保持首探落红，转绿的只有结论行
         """
         with _stubbed_round(_CFG, "", lambda p, n: p == _CFG and n == 2) as frames:
-            await _diagnose.diagnose_flow(_CFG, "123:abc", frames.append)
+            await diagnose_mod.diagnose_flow(_CFG, "123:abc", frames.append)
 
         settled = {
             f["id"]: f["status"]

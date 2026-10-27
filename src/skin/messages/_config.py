@@ -47,7 +47,7 @@ class ConfigMessage:
     # 用：utils/config/_validator.py 必填项缺键或留空文案
     REQUIRED_MARK = "必填项未填写"
 
-    # 用：utils/check/_connectivity.py 与设置面板前置项失败占位
+    # 用：adapters/telegram/probe.py 与设置面板前置项失败占位
     PENDING_MARK = "暂未检测"
 
     # 用：ui/_dialogs/_settings/_list_widget.py 列表增删按钮文本
