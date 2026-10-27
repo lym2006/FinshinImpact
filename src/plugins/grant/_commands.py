@@ -158,6 +158,7 @@ async def _finish_grant(raw: Message, ctx: HandlerContext) -> None:
     key = ctx.event.principal.key
     step = _pending[key]
     target = (ctx.event.content.text or "").strip()
+    _logger.info(f"{key} 分步待输入 {step} {target}")
 
     if target == StepInput.STOP:
         _pending.pop(key, None)

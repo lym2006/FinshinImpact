@@ -10,7 +10,6 @@ import time
 from collections.abc import AsyncGenerator
 from typing import Any, Literal
 
-from core.domain import ChatScope
 from core.domain.ids import SessionKey
 from core.dto import InboundEventDTO, MessageDTO
 from exceptions import DomainError, MessageVanishedError
@@ -36,7 +35,6 @@ from ..utils import (
     make_session_key,
     matches_persona,
     open_window,
-    speaker_mark,
     split_rounds,
 )
 from ._summary import compress_history
@@ -50,14 +48,13 @@ def _save_conversation_record(
     """写入对话记录
 
     - 一群一份、一私聊一份，条目内注明发言人
-    - 落盘记录不含引用块，只存发言人与裸正文
+    - 问句一行与交模型的 user 轮逐字相同，含引用块
     - 落盘失败只记错误，不影响本轮应答
     - 走线程落盘，磁盘慢不冻事件循环
     """
-    speaker = speaker_mark(event.scope, event.principal.user, event.display_name)
     wrt = (
         f"{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}\n\n"
-        f"{speaker}：{event.content.text}\n\n"
+        f"{compose_user_text(event)}\n\n"
         f"AI回复：\n{final_msg}\n\n\n"
     )
     try:
@@ -113,14 +110,14 @@ async def _collect_reply(
 
 
 def _kick_compression(
-    key: SessionKey, scope: ChatScope, head: tuple[MessageDTO, ...], tokens: int
+    key: SessionKey, head: tuple[MessageDTO, ...], tokens: int
 ) -> None:
     """投递后台压缩协程
 
     - 压缩不落对话队列，跟用户命令不抢同一条语义
     """
     _logger.info(f"{key} 上下文 {tokens} token 超线，交后台压缩")
-    summary_task = asyncio.create_task(compress_history(key, scope, head))
+    summary_task = asyncio.create_task(compress_history(key, head))
     active_tasks.add(summary_task)
     summary_task.add_done_callback(active_tasks.discard)
 
@@ -172,7 +169,6 @@ async def worker_loop(ctx: HandlerContext) -> None:
         persona=persona,
         summary=snapshot.summary,
         history=window[1:],
-        scope=ctx.event.scope,
         thisinput=prompt,
     )
 
@@ -195,7 +191,7 @@ async def worker_loop(ctx: HandlerContext) -> None:
         )
 
         if head:
-            _kick_compression(session_key, ctx.event.scope, head, tokens)
+            _kick_compression(session_key, head, tokens)
 
     except DomainError:
         raise
