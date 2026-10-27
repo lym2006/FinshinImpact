@@ -12,6 +12,7 @@ from typing import Any
 
 from aiogram.types import Message, TelegramObject
 
+from core.domain.ids import ChatId, MediaGroupId, UserId
 from utils import get_logger
 
 from ._event import sender_id
@@ -22,12 +23,16 @@ _logger = get_logger("Adapter")
 UpdateHandler = Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]]
 
 # 缓冲键：会话、组标识、发言人
-AlbumKey = tuple[str, str, str]
+_AlbumKey = tuple[ChatId, MediaGroupId, UserId]
 
 
-def _key_of(raw: Message) -> AlbumKey:
+def _key_of(raw: Message) -> _AlbumKey:
     """按会话、组标识与发言人取缓冲键"""
-    return (str(raw.chat.id), str(raw.media_group_id), sender_id(raw))
+    return (
+        ChatId(str(raw.chat.id)),
+        MediaGroupId(str(raw.media_group_id)),
+        sender_id(raw),
+    )
 
 
 @dataclass(slots=True)
@@ -67,7 +72,7 @@ class AlbumCollector:
         on_flush: Callable[[AlbumBatch], Awaitable[None]],
     ) -> None:
         self._on_flush = on_flush
-        self._pending: dict[AlbumKey, _Pending] = {}
+        self._pending: dict[_AlbumKey, _Pending] = {}
 
     async def collect(
         self,
@@ -97,13 +102,13 @@ class AlbumCollector:
         """丢弃在途分组，停服收尾用"""
         self._pending.clear()
 
-    def _schedule(self, key: AlbumKey) -> None:
+    def _schedule(self, key: _AlbumKey) -> None:
         """挂一次派发后的收口，取走即出表防重复投递"""
         asyncio.get_running_loop().call_soon(
             lambda: asyncio.ensure_future(self._flush(key))
         )
 
-    async def _flush(self, key: AlbumKey) -> None:
+    async def _flush(self, key: _AlbumKey) -> None:
         """放行整组"""
         pending = self._pending.pop(key, None)
         if pending is None:

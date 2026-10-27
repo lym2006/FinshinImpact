@@ -9,7 +9,7 @@
 import time
 
 from core.domain import ChatRole, ChatScope
-from core.domain.ids import KEY_SEP, SessionKey
+from core.domain.ids import KEY_SEP, SessionKey, UserId
 from core.dto import InboundEventDTO, MessageDTO, PrincipalDTO
 
 # 会话窗口条数上限，含人设首行，条数只当兜底
@@ -158,7 +158,7 @@ def _render_turn(message: MessageDTO, scope: ChatScope) -> dict[str, str]:
     """
     if message.role == ChatRole.ASSISTANT:
         return build_message(message.role, message.content)
-    mark = speaker_mark(scope, message.sender_id, message.sender_name)
+    mark = _speaker_mark(scope, message.sender_id, message.sender_name)
     return build_message(message.role, f"{mark} {message.content}")
 
 
@@ -185,7 +185,7 @@ def compose_user_text(event: InboundEventDTO) -> str:
 
     - 顺序为发言人标注、引用块、正文
     """
-    mark = speaker_mark(event.scope, event.principal.user, event.display_name)
+    mark = _speaker_mark(event.scope, event.principal.user, event.display_name)
     return f"{mark} {_compose_body(event)}"
 
 
@@ -197,7 +197,7 @@ def _compose_body(event: InboundEventDTO) -> str:
     return f"{_quote_block(event)}{event.content.text}"
 
 
-def speaker_mark(scope: ChatScope, sender_id: str, sender_name: str) -> str:
+def _speaker_mark(scope: ChatScope, sender_id: UserId, sender_name: str) -> str:
     """拼发言人标注
 
     - 名称缺位用 id 段填，格式仍是 [名称 | id]

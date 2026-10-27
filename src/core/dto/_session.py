@@ -7,7 +7,7 @@
 from dataclasses import dataclass
 
 from ..domain import ChatRole, Platform
-from ..domain.ids import KEY_SEP, ContainerKey, SessionKey
+from ..domain.ids import KEY_SEP, ContainerKey, SessionKey, UserId
 
 
 @dataclass(frozen=True, slots=True)
@@ -17,7 +17,7 @@ class MessageDTO:
     role: ChatRole
     content: str  # 媒体信息剥离，历史只存文本
     created_at: float = 0.0
-    sender_id: str = ""  # 判归属防冒名
+    sender_id: UserId = UserId("")  # 判归属防冒名
     sender_name: str = ""  # 记当时名不回改
 
 
