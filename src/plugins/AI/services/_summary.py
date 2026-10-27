@@ -5,7 +5,7 @@
 - 摘要超硬上限按句子边界裁掉前段
 """
 
-from core.domain import ChatRole, ChatScope
+from core.domain import ChatRole
 from core.domain.ids import SessionKey
 from core.dto import MessageDTO
 from utils import get_logger
@@ -20,7 +20,7 @@ _logger = get_logger("Plg.AI.Summary")
 # 压缩指令，发言人标注要求逐字照抄，压坏名称与 id 的对应不如不压
 _COMPRESS_PROMPT = (
     "把下面的对话记录压成一段摘要，要求：\n"
-    "1. 每处 [名称 | id] 标注原样照抄，不改名、不并人、不编造\n"
+    "1. 每处 [名称|id] 标注原样照抄，不改名、不并人、不编造\n"
     "2. 保留聊过的话题、给出的结论、没办完的事和出现过的数字\n"
     "3. 只输出摘要正文，纯文本，不加标题与任何样式标记，不作评价\n\n"
     "对话记录："
@@ -30,16 +30,14 @@ _COMPRESS_PROMPT = (
 _SENTENCE_ENDS = "。！？!?\n"
 
 
-async def compress_history(
-    key: SessionKey, scope: ChatScope, rows: tuple[MessageDTO, ...]
-) -> None:
+async def compress_history(key: SessionKey, rows: tuple[MessageDTO, ...]) -> None:
     """压缩问答并写回摘要
 
     - 请求失败或返回空即保持原摘要不动
     - 落笔前先确认会话没被清掉
     - 异常只记录不外抛，不拖垮对话
     """
-    text = render_history(rows, scope)
+    text = render_history(rows)
     if not text:
         return
 

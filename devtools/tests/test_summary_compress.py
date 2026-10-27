@@ -132,10 +132,10 @@ def _run_worker(history: tuple[MessageDTO, ...], *, trigger: int):
     """走过一轮工作循环并交出落库窗口与压缩入参"""
     ctx = _Ctx(_event())
     saved: list[tuple[SessionKey, tuple[MessageDTO, ...]]] = []
-    compressed: list[tuple[SessionKey, ChatScope, tuple[MessageDTO, ...]]] = []
+    compressed: list[tuple[SessionKey, tuple[MessageDTO, ...]]] = []
 
-    async def _fake_compress(key, scope, rows) -> None:
-        compressed.append((key, scope, rows))
+    async def _fake_compress(key, rows) -> None:
+        compressed.append((key, rows))
 
     async def _drive() -> None:
         snapshot = SimpleNamespace(messages=history, summary="")
@@ -167,7 +167,7 @@ class TestWorkerBudget(unittest.TestCase):
         self.assertEqual(window[0].content, _PERSONA)
         self.assertEqual(len(compressed), 1)
         self.assertEqual(compressed[0][0], _KEY)
-        self.assertEqual(len(compressed[0][2]), (8 - keep) * 2)
+        self.assertEqual(len(compressed[0][1]), (8 - keep) * 2)
 
     def test_within_trigger_keeps_window(self) -> None:
         """未超线不裁窗也不投递压缩"""
@@ -193,7 +193,7 @@ class TestCompressHistory(unittest.TestCase):
                 patch.object(_summary, "save_summary", _save),
                 patch.object(_summary, "ai_config", _summary_config()),
             ):
-                await _summary.compress_history(_KEY, ChatScope.GROUP, _rows(2)[1:])
+                await _summary.compress_history(_KEY, _rows(2)[1:])
 
         asyncio.run(_drive())
         self.assertEqual(written, ["摘要正文"])
@@ -212,7 +212,7 @@ class TestCompressHistory(unittest.TestCase):
                 patch.object(_summary, "save_summary", _save),
                 patch.object(_summary, "ai_config", _summary_config()),
             ):
-                await _summary.compress_history(_KEY, ChatScope.GROUP, _rows(1)[1:])
+                await _summary.compress_history(_KEY, _rows(1)[1:])
 
         asyncio.run(_drive())
         self.assertEqual(written, [])
@@ -226,7 +226,7 @@ class TestCompressHistory(unittest.TestCase):
 
         async def _drive() -> None:
             with patch.object(_summary.AIClient, "stream_chat", _boom):
-                await _summary.compress_history(_KEY, ChatScope.GROUP, _rows(1)[1:])
+                await _summary.compress_history(_KEY, _rows(1)[1:])
 
         asyncio.run(_drive())
 
@@ -240,7 +240,7 @@ class TestCompressHistory(unittest.TestCase):
 
         async def _drive() -> None:
             with patch.object(_summary.AIClient, "stream_chat", _fake):
-                await _summary.compress_history(_KEY, ChatScope.GROUP, ())
+                await _summary.compress_history(_KEY, ())
 
         asyncio.run(_drive())
         self.assertEqual(called, [])

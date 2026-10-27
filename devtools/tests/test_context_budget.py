@@ -16,7 +16,7 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
-from core.domain import ChatRole, ChatScope  # noqa: E402
+from core.domain import ChatRole  # noqa: E402
 from core.dto import MessageDTO  # noqa: E402
 from plugins.AI import utils  # noqa: E402
 
@@ -80,14 +80,14 @@ class TestSplitRounds(unittest.TestCase):
 class TestRenderHistory(unittest.TestCase):
     def test_marks_survive_render(self) -> None:
         """压缩文本逐字保留名称与 id 标注"""
-        text = utils.render_history(_rounds(2), ChatScope.GROUP)
-        self.assertIn("[人名0 | 100] 说一句0", text)
+        text = utils.render_history(_rounds(2))
+        self.assertIn("[人名0|100]说一句0", text)
         self.assertIn("回1回1回1回1", text)
 
     def test_system_row_skipped(self) -> None:
         """人设行不进压缩文本"""
         window = (MessageDTO(role=ChatRole.SYSTEM, content="人设"), *_rounds(1))
-        self.assertNotIn("人设", utils.render_history(window, ChatScope.GROUP))
+        self.assertNotIn("人设", utils.render_history(window))
 
 
 class TestWindowCap(unittest.TestCase):
