@@ -140,7 +140,7 @@ def _run_worker(history: tuple[MessageDTO, ...], *, trigger: int):
     async def _drive() -> None:
         snapshot = SimpleNamespace(messages=history, summary="")
         with (
-            patch.object(worker, "read_session", _value(snapshot)),
+            patch.object(worker, "purge_stale", _value(snapshot)),
             patch.object(worker, "ai_config", _worker_config(trigger)),
             patch.object(worker.AIClient, "stream_chat", _stream("回话")),
             patch.object(worker, "save_session", _capture(saved)),

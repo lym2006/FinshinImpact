@@ -203,9 +203,19 @@ class TestCommandGate(AccessCase):
         patcher = patch.object(_history, "clear_session", _fake_clear)
         patcher.start()
         self.addCleanup(patcher.stop)
+
+        async def _no_stale_check(_persona: str, _key: str) -> None:
+            """门禁用例只验权限，人设版本检查按不过期处理"""
+
+        patcher1 = patch.object(_history, "purge_stale", _no_stale_check)
+        patcher1.start()
+        self.addCleanup(patcher1.stop)
+
         self.records = Path(tempfile.mkdtemp())
         patcher2 = patch.object(
-            _history, "ai_config", SimpleNamespace(record_dir=self.records)
+            _history,
+            "ai_config",
+            SimpleNamespace(record_dir=self.records, init=({"content": "人设"},)),
         )
         patcher2.start()
         self.addCleanup(patcher2.stop)
