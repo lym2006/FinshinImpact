@@ -3,7 +3,7 @@
 
 - 驱动进程级唯一校验进度窗，校验轮之间互斥
 - 等待窗等首个进度帧才开，免测轮全程无窗
-- 维护复验与保存状态标记、待保存候选与开窗前的帧缓存
+- 维护复验与保存状态标记、待落盘配置与人设正文、开窗前的帧缓存
 """
 
 from typing import TYPE_CHECKING
@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 from skin.messages import CheckMessage
 from utils.config import AppConfigData
 from utils.network import RowId, RowStatus, verify_skeleton
+from utils.persona import revert_persona_cache
 
 from ..._bridge import gui_bridge
 from ..._dialogs import (
@@ -42,6 +43,9 @@ class VerifyCoordinator:
 
         # 待落盘候选：校验通过才写入磁盘，关面板/取消即弃
         self.pending_candidate: AppConfigData | None = None
+
+        # 待落盘人设正文：校验通过才写文件，未动人设轮为空
+        self.pending_persona: str | None = None
 
         # 开轮未开窗时的中断标记：None 表示没有在途轮，帧到达即按它开窗
         self.pending_aborts: bool | None = None
@@ -123,8 +127,7 @@ class VerifyCoordinator:
 
         # 保存在途走 abort 通道（Bot 中止任务并回退内存）
         if self.save_pending:
-            self.pending_candidate = None
-            self.save_pending = False
+            self.discard_pending()
             self._host.logger.info(CheckMessage.VERIFY_ABORTED)
             gui_bridge.config_abort.emit()
             return
@@ -136,6 +139,26 @@ class VerifyCoordinator:
                 self._host._panel.set_busy(False)
             self._host.logger.info(CheckMessage.VERIFY_STOPPED)
             gui_bridge.config_abort.emit()
+
+    def discard_pending(self) -> None:
+        """弃掉待落盘候选与正文顶替
+
+        - 生效缓存退回文件内容，草稿原样留着待续存到下次保存
+        """
+        persona_applied = self.pending_persona is not None
+        self.pending_candidate = None
+        self.pending_persona = None
+        self.save_pending = False
+        if persona_applied:
+            revert_persona_cache()
+
+    def drop_pending(self) -> None:
+        """校验未过原地转向导时弃掉待落盘项
+
+        - 连复验标记一起清，草稿归面板侧处置
+        """
+        self.validating = False
+        self.discard_pending()
 
     def attach_transient(self) -> None:
         """校验窗浮在当前面板之上
@@ -159,9 +182,10 @@ class VerifyCoordinator:
         - 启动轮的帧先缓存，定时器到点开窗补播
         - 结论帧即轮次收口，缓存帧随之作废
         - 其他轮次占用时直接丢弃
+        - 常驻死窗不吃帧，与无窗同走重开一条
         """
         wait = self.window()
-        if wait is not None:
+        if wait is not None and wait.is_running:
             wait.apply(frame)
             return
         if self._is_conclusion(frame):
@@ -196,7 +220,7 @@ class VerifyCoordinator:
         busy = current_check_window()
         if busy is not None and busy.is_running:
             return
-        self._host.logger.info(
+        self._host.logger.debug(
             CheckMessage.VERIFY_START.format(reason=CheckMessage.REASON_STARTUP)
         )
         self.open_wait(aborts=False)
