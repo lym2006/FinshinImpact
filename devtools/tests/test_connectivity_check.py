@@ -809,10 +809,14 @@ class TestRoundWindowOpens(unittest.TestCase):
 
     - 起轮只挂中断标记，首个进度帧才开等待窗
     - 免测轮不发进度帧，窗口一次不开
+    - 上轮收尾留下的常驻死窗不吃帧，新一轮照旧开窗补播
     """
 
-    def _parts(self) -> tuple[object, object, dict]:
-        """造协调器与假窗"""
+    def _parts(self, stale: object = None) -> tuple[object, object, dict]:
+        """造协调器与假窗
+
+        - stale 非空即模拟上轮收尾后常驻的死窗
+        """
         from unittest.mock import MagicMock
 
         from ui._windows._controllers._verify import VerifyCoordinator
@@ -825,7 +829,7 @@ class TestRoundWindowOpens(unittest.TestCase):
             opener["n"] += 1
             return win
 
-        patch.object(mod, "current_check_window", return_value=None).start()
+        patch.object(mod, "current_check_window", return_value=stale).start()
         patch.object(mod, "open_check_window", fake_open).start()
         self.addCleanup(patch.stopall)
         return VerifyCoordinator(MagicMock()), win, opener
@@ -854,6 +858,25 @@ class TestRoundWindowOpens(unittest.TestCase):
 
         self.assertEqual(opener["n"], 0, "免测轮不该开等待窗")
         self.assertEqual(coord.pre_frames, [], "结论帧应清空中转缓存")
+
+    def test_stale_window_reopens(self) -> None:
+        """上轮收尾的死窗改走重开，进度帧不落空"""
+        from unittest.mock import MagicMock
+
+        from ui._dialogs import Round
+        from utils.network import FrameKey, RowId
+
+        stale = MagicMock()
+        stale.round = Round.VERIFY
+        stale.is_running = False
+        coord, win, opener = self._parts(stale=stale)
+
+        self.assertTrue(coord.start_round(aborts=True))
+        coord.on_frame({FrameKey.ROWS: [{"id": RowId.CFG}]})
+
+        self.assertEqual(opener["n"], 1, "死窗不该顶掉新一轮的等待窗")
+        win.begin_round.assert_called_once()
+        stale.apply.assert_not_called()
 
 
 if __name__ == "__main__":
