@@ -97,7 +97,7 @@ class VersionController(BaseController):
         msg, notes, focus, passed = result[0]
         head = next((ln.strip() for ln in msg.splitlines() if ln.strip()), msg)
         if passed:
-            self.logger.info(f"版本检查：{head}")
+            self.logger.debug(f"版本检查：{head}")
         else:
             self.logger.error(f"版本检查失败：{head}")
 

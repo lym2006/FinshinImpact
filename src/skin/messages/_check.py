@@ -118,15 +118,18 @@ class CheckMessage:
     # 用：单通道探测超时的错误句（用户面不带秒数，秒数只进 debug 日志）
     TIMEOUT = "验证超时，请稍后重试"
 
-    # 用：校验发起（reason 为 启动/保存/复验）
-    VERIFY_START = "正在校验连通性（{reason}）"
+    # 用：校验发起（reason 为 启动/保存/复验），debug 级，出窗即已说明在校验
+    VERIFY_START = "正在校验配置（{reason}）"
+
+    # 用：免测轮的收尾句，未发探测包故不记用时（面板可见）
+    LOCAL_ONLY = "本地校验完成"
 
     # 用：VERIFY_START 的三个触发原因
     REASON_STARTUP = "启动"
     REASON_SAVE = "保存"
     REASON_RECHECK = "复验"
 
-    # 用：bot/_managers/_settings.py 首轮全不通后自动重检的面板日志与弹窗头部提示
+    # 用：bot/_managers/_settings.py 首轮全不通后自动重检的弹窗头部提示
     RETRY_HEAD = "首轮全部不通，正在自动重测一轮"
 
     # 用：单通道探测用时（debug 级，面板不展示）
@@ -135,7 +138,7 @@ class CheckMessage:
     # 用：bot/_main.py 主窗就绪时的启动用时反馈（面板可见，等待有回音）
     READY_COST = "主程序就绪耗时 {cost:.1f}s"
 
-    # 用：bot/_managers/_settings.py 校验轮收尾的整轮用时反馈（面板可见）
+    # 用：联网轮收尾的整轮用时（面板可见，免测轮一个包没发不记用时）
     ROUND_COST = "连通校验耗时 {cost:.1f}s"
 
     # 用：校验通过的日志句

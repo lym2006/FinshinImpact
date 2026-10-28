@@ -98,7 +98,7 @@ class SettingsManager(BaseManager):
             and self.resolved_proxy is not None
             and not self.last_errors
         ):
-            return self._local_round(schema, t0)
+            return self._local_round(schema)
 
         detected = detect_system_proxy()
         channels = plan_channels(configured, detected, mode=mode)
@@ -118,7 +118,7 @@ class SettingsManager(BaseManager):
         outcome = await run_channels(channels, probe, emit, via_label)
         if not outcome.passed and mode == ProxyMode.AUTO:
             # 首轮全挂多为冷启动握手慢：趁热连接原地重检一轮再定性
-            self.logger.info(CheckMessage.RETRY_HEAD)
+            self.logger.debug(CheckMessage.RETRY_HEAD)
 
             # 重发整表清场：已定案的行不吃单行帧，不重建则首轮的红行盖不掉
             self._emit_opening(
@@ -159,16 +159,15 @@ class SettingsManager(BaseManager):
             ),
         )
 
-    def _local_round(self, schema: AppSchema, started: float) -> bool:
+    def _local_round(self, schema: AppSchema) -> bool:
         """只跑本地校验的免测轮
 
         - 不发进度帧，秒过的轮次不占等待窗
+        - 一个探测包都没发，只报免测不报用时
         """
         _, type_errors = local_row(schema, config_manager.get_all())
         self.last_errors = cast("dict[str, str]", type_errors)
-        self.logger.info(
-            CheckMessage.ROUND_COST.format(cost=time.monotonic() - started)
-        )
+        self.logger.info(CheckMessage.LOCAL_ONLY)
         return self._emit_advice(schema)
 
     def _emit_opening(
