@@ -19,6 +19,7 @@ from ._settings import (
     ChangeConfirmDialog,
     ConfigMode,
     PersonaConflictDialog,
+    PersonaPendingDialog,
     SettingsDialog,
 )
 from ._shutdown import ShutdownDialog
@@ -38,6 +39,7 @@ __all__ = [
     "ConfigMode",
     "ChangeConfirmDialog",
     "PersonaConflictDialog",
+    "PersonaPendingDialog",
     "CheckDialog",
     "Round",
     "current_check_window",

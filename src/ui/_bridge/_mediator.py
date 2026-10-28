@@ -35,6 +35,7 @@ class _GUIBridge(QObject):
         str, bool
     )  # 弹通知窗，致命确认后直退：(展示文案，是否致命)
     request_persona_update = SafeSignal()  # 默认人设有更新，弹一键覆盖窗
+    request_persona_pending = SafeSignal()  # 上次的人设选择没保存，弹重新拍板窗
 
     # GUI → GUI：退出入口
     request_exit = SafeSignal(

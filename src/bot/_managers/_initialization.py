@@ -13,7 +13,12 @@ from data import (
     run_migrations,
 )
 from ui import gui_bridge
-from utils.init_files import PersonaSync, init_project_files, sync_persona_template
+from utils.init_files import (
+    PersonaSync,
+    init_project_files,
+    load_persona_pending,
+    sync_persona_template,
+)
 from utils.lifecycle import register_lifecycle
 from utils.paths import DB_BACKUP_DIR, DB_FILE
 from utils.persona import load_persona_cache
@@ -41,20 +46,26 @@ class InitializationManager(BaseManager):
         load_persona_cache()
 
     def sync_persona(self) -> bool:
-        """人设模板对账
+        """人设模板对账并交接未定稿的取用
 
         - 对账可能换过副本，按磁盘当前内容重装一遍才是最终正文
+        - 装填会抹掉内存里的取用记录，读档必须排在装填之后
         - 返回正文是否自动换过新版
         """
         result = sync_persona_template()
         load_persona_cache()
-        if result == PersonaSync.UPDATED:
+        updated = result == PersonaSync.UPDATED
+        if updated:
             self.logger.debug("实例人设从未改动，已更新为最新默认人设")
-            return True
-        if result == PersonaSync.NOTIFY:
+        elif result == PersonaSync.NOTIFY:
             self.logger.debug("默认人设有更新，弹窗询问是否覆盖")
             gui_bridge.request_persona_update.emit()
-        return False
+
+        # 上次没保存的选择要重新拍板，不拍板就留着记录下次照问
+        if load_persona_pending():
+            self.logger.debug("有人设选择没保存，弹窗要求重新拍板")
+            gui_bridge.request_persona_pending.emit()
+        return updated
 
     async def _migrate_database(self) -> None:
         """补做迁移并拒绝读不懂的库结构

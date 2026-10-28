@@ -97,6 +97,16 @@ class SettingsDialogTheme:
     persona_conflict_text: str = DialogMessage.SETUP_PERSONA_CONFLICT_TEXT
     persona_conflict_disk: str = DialogMessage.SETUP_PERSONA_CONFLICT_DISK
     persona_conflict_applied: str = DialogMessage.SETUP_PERSONA_CONFLICT_APPLIED
+    persona_choice_title: str = DialogMessage.SETUP_PERSONA_CHOICE_TITLE
+    persona_reload_disk: str = DialogMessage.SETUP_PERSONA_RELOAD_DISK
+    persona_reload_applied: str = DialogMessage.SETUP_PERSONA_RELOAD_APPLIED
+    persona_discarded_kept: str = DialogMessage.SETUP_PERSONA_DISCARDED_KEPT
+    persona_pending_title: str = DialogMessage.SETUP_PERSONA_PENDING_TITLE
+    persona_pending_text: str = DialogMessage.SETUP_PERSONA_PENDING_TEXT
+    persona_pending_disk_text: str = DialogMessage.SETUP_PERSONA_PENDING_DISK_TEXT
+    persona_pending_kept_text: str = DialogMessage.SETUP_PERSONA_PENDING_KEPT_TEXT
+    persona_pending_disk_ok: str = DialogMessage.SETUP_PERSONA_PENDING_DISK_OK
+    persona_pending_kept_ok: str = DialogMessage.SETUP_PERSONA_PENDING_KEPT_OK
 
     # SETUP 提示文案
     setup_tip: str = DialogMessage.SETUP_TIP

@@ -38,7 +38,7 @@ class DialogMessage:
     SETUP_PERSONA_EDITOR_TITLE = "人设正文编辑"
     SETUP_PERSONA_EDITOR_TIP = (
         "正文里的 {OWNER_ID} 是主人 id 占位符，保存配置时自动填入，请勿改动\n"
-        "别直接改实例人设文件，程序只在启动读它一次，改了不生效，还可能被这里的正文盖掉"
+        "别直接改实例人设文件，程序只在启动读它一次，改了不生效，点保存时这里的内容会盖掉它"
     )
     SETUP_PERSONA_USE_TEMPLATE = "用模板覆盖"
     SETUP_PERSONA_NO_TEMPLATE = "内置默认模板读不出"
@@ -50,9 +50,26 @@ class DialogMessage:
     SETUP_PERSONA_DIFF_ORI = "当前正文"
     SETUP_PERSONA_DIFF_MOD = "变更后"
     SETUP_PERSONA_CONFLICT_TITLE = "人设正文不一致"
-    SETUP_PERSONA_CONFLICT_TEXT = "实例人设文件与程序生效的正文不一致，选一份继续"
+    SETUP_PERSONA_CONFLICT_TEXT = (
+        "实例人设文件与程序生效的正文不一致，选一份继续，保存配置才真正覆盖"
+    )
     SETUP_PERSONA_CONFLICT_DISK = "用文件版本"
     SETUP_PERSONA_CONFLICT_APPLIED = "用生效版本"
+    SETUP_PERSONA_CHOICE_TITLE = "人设选择已记下"
+    SETUP_PERSONA_RELOAD_DISK = "文件正文已放进草稿，保存配置才生效"
+    SETUP_PERSONA_RELOAD_APPLIED = "已选生效版本，保存配置才把它写进文件"
+    SETUP_PERSONA_DISCARDED_KEPT = (
+        "人设没保存，生效正文和文件都保持原样，这次选择还记着"
+    )
+    SETUP_PERSONA_PENDING_TITLE = "上次的人设选择没保存"
+    SETUP_PERSONA_PENDING_TEXT = (
+        "人设文件跟上次记下的正文对不上，重新拍一次板。"
+        "不选就留着这条记录，生效正文和文件都不动"
+    )
+    SETUP_PERSONA_PENDING_DISK_TEXT = "用文件这份"
+    SETUP_PERSONA_PENDING_KEPT_TEXT = "用上次那份"
+    SETUP_PERSONA_PENDING_DISK_OK = "按文件这份继续，生效正文和文件都没动"
+    SETUP_PERSONA_PENDING_KEPT_OK = "上次那份已放进草稿，保存配置才生效"
 
     # 用：主窗弹窗与引导期选窗共用的按钮字段
     BTN_CANCEL = "取消"

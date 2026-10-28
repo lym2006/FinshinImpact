@@ -27,6 +27,7 @@ from ._change import ChangeConfirmDialog
 from ._chrome import ChromeBuilder
 from ._field import FieldBuilder
 from ._persona import PersonaConflictDialog
+from ._persona_pending import PersonaPendingDialog
 
 __all__ = [
     # 工作模式
@@ -35,6 +36,7 @@ __all__ = [
     "SettingsDialog",
     "ChangeConfirmDialog",
     "PersonaConflictDialog",
+    "PersonaPendingDialog",
 ]
 
 _ERROR_FONT = QFont(SETTINGS_DIALOG.error_font_family, SETTINGS_DIALOG.error_font_size)

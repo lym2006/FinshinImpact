@@ -13,6 +13,7 @@ from utils.persona import (
     applied_persona_text,
     clear_draft_persona,
     draft_persona_text,
+    pending_persona,
 )
 
 from ..._bridge import gui_bridge
@@ -204,9 +205,20 @@ class SettingsController(BaseController):
         self._is_dialog_open = False
 
     def _drop_draft(self) -> None:
-        """面板取消即丢掉未落盘的人设草稿"""
-        if draft_persona_text() == applied_persona_text():
+        """面板取消即丢掉草稿，生效正文与文件都原样留着
+
+        - 取用记录不动，没保存的选择下次启动重新拍板
+        - 生效缓存全程不动，没保存即对话身份没变，历史一行不少
+        """
+        pending = pending_persona()
+        draft_changed = draft_persona_text() != applied_persona_text()
+        if not draft_changed and pending is None:
             return
         clear_draft_persona()
-        self.logger.debug(SETTINGS_DIALOG.persona_discarded)
-        NoticeDialog.notify(SETTINGS_DIALOG.persona_discarded, parent=self.gui)
+        text = (
+            SETTINGS_DIALOG.persona_discarded_kept
+            if pending is not None
+            else SETTINGS_DIALOG.persona_discarded
+        )
+        self.logger.debug(text)
+        NoticeDialog.notify(text, parent=self.gui)
