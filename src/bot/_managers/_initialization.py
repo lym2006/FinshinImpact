@@ -16,7 +16,7 @@ from ui import gui_bridge
 from utils.init_files import PersonaSync, init_project_files, sync_persona_template
 from utils.lifecycle import register_lifecycle
 from utils.paths import DB_BACKUP_DIR, DB_FILE
-from utils.persona import reset_persona_cache
+from utils.persona import load_persona_cache
 
 from ._base import BaseManager
 
@@ -32,23 +32,27 @@ class InitializationManager(BaseManager):
         await self._migrate_database()
 
     def _init_files(self) -> None:
-        """创建必要路径"""
+        """建好路径并按磁盘正文装填生效正文
+
+        - 正文必须在配置应用前就位，对话身份的基准才不是空正文
+        """
         self.logger.info("正在创建路径...")
         init_project_files()
+        load_persona_cache()
 
     def sync_persona(self) -> bool:
         """人设模板对账
 
-        - 先清正文缓存，正文按磁盘当前内容重新组装
+        - 对账可能换过副本，按磁盘当前内容重装一遍才是最终正文
         - 返回正文是否自动换过新版
         """
-        reset_persona_cache()
         result = sync_persona_template()
+        load_persona_cache()
         if result == PersonaSync.UPDATED:
-            self.logger.info("实例人设从未改动，已更新为最新默认人设")
+            self.logger.debug("实例人设从未改动，已更新为最新默认人设")
             return True
         if result == PersonaSync.NOTIFY:
-            self.logger.info("默认人设有更新，弹窗询问是否覆盖")
+            self.logger.debug("默认人设有更新，弹窗询问是否覆盖")
             gui_bridge.request_persona_update.emit()
         return False
 

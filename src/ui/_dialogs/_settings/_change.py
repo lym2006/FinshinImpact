@@ -2,6 +2,8 @@
 """变更确认弹窗
 
 - 提供配置变更表格 diff 的二次确认
+- 人设行排在表格外，点开才出两栏大窗
+- 只改人设不出表格，没改人设不出人设行
 """
 
 from PySide6.QtGui import QFont, QFontMetrics
@@ -23,6 +25,7 @@ from utils.config.models import ConfigValue
 from ..._primitives import make_button
 from .._base import BaseDialog
 from ._diff import make_diff_cell, split_diff, to_lines
+from ._persona_edit import PersonaDiffDialog
 
 
 class ChangeConfirmDialog(BaseDialog):
@@ -31,33 +34,45 @@ class ChangeConfirmDialog(BaseDialog):
     def __init__(
         self,
         logs: list[tuple[str, ConfigValue, ConfigValue]],
+        persona: tuple[str, str] | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent=parent, title=CHANGE_DIALOG.title)
         self.set_always_on_top()
         self.setStyleSheet(build_change_dialog_qss())
         self.setMinimumSize(CHANGE_DIALOG.min_width, CHANGE_DIALOG.min_height)
+        self._persona = persona
         self._build_ui(logs)
 
     @staticmethod
     def confirm(
         logs: list[tuple[str, ConfigValue, ConfigValue]],
+        persona: tuple[str, str] | None = None,
         parent: QWidget | None = None,
     ) -> bool:
         """模态展示
 
         - 返回是否确认保存
         """
-        dialog = ChangeConfirmDialog(logs, parent=parent)
+        dialog = ChangeConfirmDialog(logs, persona=persona, parent=parent)
         return dialog.exec() == dialog.DialogCode.Accepted
 
     def _build_ui(self, logs: list[tuple[str, ConfigValue, ConfigValue]]) -> None:
-        """提示语 + diff 表格 + 按钮区"""
+        """提示语 + diff 表格 + 人设行 + 按钮区
+
+        - 只改人设时不出表格，没改人设时不出人设行
+        """
         layout = QVBoxLayout(self)
         layout.setSpacing(SETTINGS_DIALOG.tab_spacing)
         tip = QLabel(CHANGE_DIALOG.tip_text)
         layout.addWidget(tip)
-        layout.addWidget(self._make_table(logs))
+        if logs:
+            layout.addWidget(self._make_table(logs))
+        if self._persona is not None:
+            layout.addLayout(self._make_persona_row())
+        if not logs:
+            # 表格不在场就没人吃空档，补一段拉伸把人设行顶回提示语下面
+            layout.addStretch()
         layout.addLayout(self._make_buttons())
 
     def _make_table(
@@ -92,7 +107,27 @@ class ChangeConfirmDialog(BaseDialog):
                 CHANGE_DIALOG.row_max_lines,
             )
             table.setRowHeight(row, shown * line_h + CHANGE_DIALOG.row_pad)
+
         return table
+
+    def _make_persona_row(self) -> QHBoxLayout:
+        """人设正文一行，标签加查看变化，摆在表格之外
+
+        - 按钮走人设档样式，不吃表格的悬浮与选中色
+        """
+        row = QHBoxLayout()
+        row.setSpacing(SETTINGS_DIALOG.desc_spacing)
+        row.addWidget(QLabel(SETTINGS_DIALOG.persona_label))
+        btn_view = make_button(SETTINGS_DIALOG.persona_view_diff, ButtonStyle.PERSONA)
+        btn_view.clicked.connect(self._on_view_diff)
+        row.addWidget(btn_view)
+        row.addStretch()
+        return row
+
+    def _on_view_diff(self) -> None:
+        """两栏打开人设正文比对"""
+        if self._persona is not None:
+            PersonaDiffDialog.show_diff(*self._persona, parent=self)
 
     def _make_buttons(self) -> QHBoxLayout:
         """返回修改 / 确认保存"""

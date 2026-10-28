@@ -19,7 +19,7 @@ from .paths import (
     PERSONALITY_STAMP,
     RECORDS_DIR,
 )
-from .persona import reset_persona_cache
+from .persona import load_persona_cache
 
 
 class PersonaSync(StrEnum):
@@ -31,18 +31,6 @@ class PersonaSync(StrEnum):
     UNCHANGED = "unchanged"
     UPDATED = "updated"
     NOTIFY = "notify"
-
-
-class PersonaState(StrEnum):
-    """实例副本与内置默认模板的关系
-
-    - 预览弹窗的状态提示与对账判定共用，禁裸写协议串
-    """
-
-    SAME = "same"
-    OUTDATED = "outdated"
-    EDITED = "edited"
-    UNREADABLE = "unreadable"
 
 
 def _copy_if_missing(target: Path, template: Path) -> None:
@@ -89,7 +77,7 @@ def _write_persona_stamp(digest: str) -> None:
         pass
 
 
-def ensure_persona_copy() -> bool:
+def _ensure_persona_copy() -> bool:
     """实例人设副本缺失即从内置默认模板建好
 
     - 副本已在即原样保留
@@ -118,7 +106,24 @@ def apply_persona_template() -> bool:
     except OSError:
         return False
     _write_persona_stamp(template)
-    reset_persona_cache()
+    load_persona_cache()
+    return True
+
+
+def save_persona_text(text: str) -> bool:
+    """把正文写进实例人设副本
+
+    - 副本缺失即先从模板建好
+    - 对账戳不动，写过的副本按用户改动版处理
+    - 写不进返回 False，副本保持原样
+    """
+    if not _ensure_persona_copy():
+        return False
+    try:
+        write_bytes_atomic(PERSONALITY_FILE, text.encode("utf-8"))
+    except OSError:
+        return False
+    load_persona_cache()
     return True
 
 
@@ -129,23 +134,6 @@ def mark_persona_prompted() -> None:
     """
     if PERSONALITY_EXAMPLE.is_file():
         _write_persona_stamp(_digest(PERSONALITY_EXAMPLE))
-
-
-def check_persona_state() -> PersonaState:
-    """比对副本、模板与对账戳
-
-    - 只读三方指纹不动磁盘，任一读不出归为不可判定
-    """
-    try:
-        copy = _digest(PERSONALITY_FILE)
-        template = _digest(PERSONALITY_EXAMPLE)
-    except OSError:
-        return PersonaState.UNREADABLE
-    if copy == template:
-        return PersonaState.SAME
-    if copy == _read_persona_stamp():
-        return PersonaState.OUTDATED
-    return PersonaState.EDITED
 
 
 def sync_persona_template() -> PersonaSync:
@@ -162,7 +150,7 @@ def sync_persona_template() -> PersonaSync:
     template = _digest(PERSONALITY_EXAMPLE)
     stamp = _read_persona_stamp()
 
-    if not ensure_persona_copy():
+    if not _ensure_persona_copy():
         return PersonaSync.UNCHANGED
 
     try:
@@ -175,7 +163,7 @@ def sync_persona_template() -> PersonaSync:
         _write_persona_stamp(template)
         return PersonaSync.UNCHANGED
     if stamp == template:
-        # 戳等于当前模板即本版已提示过，不再重复打扰
+        # 戳等于当前模板即本版已提示过，同一版不重复打扰
         return PersonaSync.UNCHANGED
     if copy == stamp:
         return PersonaSync.UPDATED if apply_persona_template() else PersonaSync.NOTIFY

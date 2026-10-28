@@ -3,6 +3,7 @@
 
 - 实现多标签页表单与错误标红
 - 提供复验结果原地刷新与防重入
+- 变更确认窗与人设正文取用一问由本包一并交出
 """
 
 from enum import IntEnum, auto
@@ -25,6 +26,7 @@ from .._base import BaseDialog
 from ._change import ChangeConfirmDialog
 from ._chrome import ChromeBuilder
 from ._field import FieldBuilder
+from ._persona import PersonaConflictDialog
 
 __all__ = [
     # 工作模式
@@ -32,6 +34,7 @@ __all__ = [
     # 弹窗
     "SettingsDialog",
     "ChangeConfirmDialog",
+    "PersonaConflictDialog",
 ]
 
 _ERROR_FONT = QFont(SETTINGS_DIALOG.error_font_family, SETTINGS_DIALOG.error_font_size)

@@ -1,8 +1,9 @@
 # src/ui/_dialogs/_settings/_persona.py
-"""人设预览
+"""人设正文入口
 
-- 弹窗展示磁盘人设副本的当前正文并注入主人 id，附来源与对账状态
-- 提供打开实例人设文件入口与用默认模板覆盖副本的入口
+- 面板给预览、编辑与从文件重新加载三个入口，都不写文件
+- 预览渲染草稿正文，只在草稿未落盘时提示一句
+- 重载按钮才读实例文件，与当前正文不一致才问一句用哪份
 """
 
 from typing import TypeAlias
@@ -19,43 +20,24 @@ from PySide6.QtWidgets import (
 )
 
 from skin.qss import build_settings_dialog_qss
-from skin.theme import NOTICE_DIALOG, SETTINGS_DIALOG, ButtonStyle, ObjectName
-from system.shell import open_path
-from utils.init_files import (
-    PersonaState,
-    apply_persona_template,
-    check_persona_state,
-    ensure_persona_copy,
-)
-from utils.paths import PERSONALITY_FILE
+from skin.theme import SETTINGS_DIALOG, ButtonStyle, ObjectName
+from utils.init_files import save_persona_text
 from utils.persona import (
-    PersonaSource,
     applied_persona_text,
+    draft_persona_text,
     inject_owner,
+    load_persona_cache,
     read_persona_text,
+    set_draft_persona,
 )
 
 from ..._primitives import make_button
 from .._base import BaseDialog
 from .._notice import NoticeDialog
+from ._persona_edit import PersonaEditorDialog
 
 # 人设字符串被用户改成单行时渲染控件会回落 QLineEdit
 _TextWidget: TypeAlias = QTextEdit | QLineEdit
-
-# 正文来源到弹窗提示语的映射
-_SOURCE_HINTS = {
-    PersonaSource.FILE: SETTINGS_DIALOG.persona_from_file,
-    PersonaSource.TEMPLATE: SETTINGS_DIALOG.persona_from_template,
-    PersonaSource.EMPTY: SETTINGS_DIALOG.persona_missing,
-}
-
-# 副本与默认模板关系到弹窗提示语的映射
-_STATE_HINTS = {
-    PersonaState.SAME: SETTINGS_DIALOG.persona_same,
-    PersonaState.OUTDATED: SETTINGS_DIALOG.persona_outdated,
-    PersonaState.EDITED: SETTINGS_DIALOG.persona_edited,
-    PersonaState.UNREADABLE: SETTINGS_DIALOG.persona_unreadable,
-}
 
 # Qt 布局四边
 _MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
@@ -69,15 +51,14 @@ def _text_of(widget: _TextWidget) -> str:
 
 
 class _PersonaPreviewDialog(BaseDialog):
-    """人设正文弹窗
+    """人设正文预览
 
-    - 打开即渲染磁盘当前正文，底部标注来源、对账状态与是否已生效
-    - 覆盖副本当场重写文件并刷新窗内提示，正文即所见
+    - 正文取面板草稿并按 markdown 渲染
+    - 草稿没落盘才在窗底提示一句，一致时窗底干净
     """
 
     def __init__(self, owner_id: str, parent: QWidget | None = None) -> None:
         super().__init__(parent=parent, title=SETTINGS_DIALOG.persona_title)
-        self._owner_id = owner_id
         self.set_always_on_top()
         self.setStyleSheet(build_settings_dialog_qss())
 
@@ -94,54 +75,96 @@ class _PersonaPreviewDialog(BaseDialog):
             SETTINGS_DIALOG.persona_preview_width,
             SETTINGS_DIALOG.persona_preview_height,
         )
-        self._body = body
+        draft = draft_persona_text()
+        body.setMarkdown(inject_owner(draft, owner_id))
         layout.addWidget(body, stretch=1)
 
-        tip = QLabel()
-        tip.setWordWrap(True)
-        self._tip = tip
-        layout.addWidget(tip)
+        if draft != applied_persona_text():
+            tip = QLabel(SETTINGS_DIALOG.persona_pending)
+            tip.setWordWrap(True)
+            layout.addWidget(tip)
 
         btn_layout = QHBoxLayout()
         btn_layout.addStretch()
-        btn_apply = make_button(SETTINGS_DIALOG.persona_apply_text, ButtonStyle.PRIMARY)
-        btn_apply.clicked.connect(self._on_apply_clicked)
         btn_close = QPushButton(SETTINGS_DIALOG.persona_close_text)
         btn_close.clicked.connect(self.accept)
         btn_close.setDefault(True)
-        btn_layout.addWidget(btn_apply)
         btn_layout.addWidget(btn_close)
         layout.addLayout(btn_layout)
 
-        self.refresh()
 
-    def refresh(self) -> None:
-        """按磁盘当前状态重画正文与三行提示"""
-        text, source = read_persona_text()
-        self._body.setPlainText(inject_owner(text, self._owner_id))
-        self._tip.setText("\n".join(self._hints(text, source)))
+class PersonaConflictDialog(BaseDialog):
+    """人设正文不一致取用确认
 
-    def _hints(self, text: str, source: PersonaSource) -> tuple[str, ...]:
-        """取来源、对账与生效三行提示语"""
-        applied = (
-            SETTINGS_DIALOG.persona_applied
-            if text == applied_persona_text()
-            else SETTINGS_DIALOG.persona_pending
-        )
-        return _SOURCE_HINTS[source], _STATE_HINTS[check_persona_state()], applied
+    - 只在面板点「从文件重新加载」时弹，运行期不自动读文件
+    - 磁盘副本与当前正文一致即只提示一句，不改动任何东西
+    - 关窗不算选，缓存与文件原样并存，要重载再点一次
+    """
 
-    def _on_apply_clicked(self) -> None:
-        """用默认模板覆盖实例副本"""
-        if not apply_persona_template():
-            NoticeDialog.notify(NOTICE_DIALOG.persona_apply_fail, parent=self)
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent=parent, title=SETTINGS_DIALOG.persona_conflict_title)
+
+        # 没选即 None，Esc 与标题栏关闭都走这条
+        self.use_disk: bool | None = None
+        self.set_always_on_top()
+        self.setStyleSheet(build_settings_dialog_qss())
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(*[SETTINGS_DIALOG.input_padding_h] * _MARGIN_EDGES)
+        layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
+        tip = QLabel(SETTINGS_DIALOG.persona_conflict_text)
+        tip.setWordWrap(True)
+        layout.addWidget(tip)
+        layout.addLayout(self._make_buttons())
+
+    @staticmethod
+    def resolve(parent: QWidget | None = None) -> None:
+        """按实例文件与当前正文的比对结果决定提示还是问一句
+
+        - 一致即只报无变化，两份内容本就相同
+        - 用文件版本即按磁盘当前内容重新装填，草稿一并丢掉
+        - 用生效版本即把生效正文写回磁盘，等同放弃文件里的改动
+        """
+        if read_persona_text()[0] == applied_persona_text():
+            NoticeDialog.notify(SETTINGS_DIALOG.persona_reload_same, parent=parent)
             return
-        self.refresh()
+        dialog = PersonaConflictDialog(parent=parent)
+        dialog.exec()
+        if dialog.use_disk is None:
+            return
+        if dialog.use_disk:
+            load_persona_cache()
+            return
+        if not save_persona_text(applied_persona_text()):
+            NoticeDialog.notify(SETTINGS_DIALOG.persona_file_create_fail, parent=parent)
+
+    def _make_buttons(self) -> QHBoxLayout:
+        """用生效版本 / 用文件版本"""
+        btn_layout = QHBoxLayout()
+        btn_layout.addStretch()
+        btn_applied = QPushButton(SETTINGS_DIALOG.persona_conflict_applied)
+        btn_applied.clicked.connect(lambda: self._choose(False))
+        btn_disk = make_button(
+            SETTINGS_DIALOG.persona_conflict_disk, ButtonStyle.PRIMARY
+        )
+        btn_disk.clicked.connect(lambda: self._choose(True))
+        btn_disk.setDefault(True)
+        btn_layout.addWidget(btn_applied)
+        btn_layout.addWidget(btn_disk)
+        return btn_layout
+
+    def _choose(self, use_disk: bool) -> None:
+        """记下取舍再收窗"""
+        self.use_disk = use_disk
+        self.accept()
 
 
 class PersonaPreviewRow(QWidget):
     """人设正文入口行
 
     - 标签占位与字段行同宽，按钮才与其他输入框左对齐
+    - 预览与编辑各开一窗，都不写文件
+    - 重载按钮是全窗唯一读实例文件的地方
     """
 
     def __init__(self, label_width: int = 0, parent: QWidget | None = None) -> None:
@@ -156,19 +179,23 @@ class PersonaPreviewRow(QWidget):
         title.setMinimumWidth(label_width)
 
         btn_preview = make_button(
-            SETTINGS_DIALOG.persona_preview_text, ButtonStyle.PERSONA_PREVIEW
+            SETTINGS_DIALOG.persona_preview_text, ButtonStyle.PERSONA
         )
         btn_preview.clicked.connect(self._on_preview_clicked)
 
-        btn_open = make_button(
-            SETTINGS_DIALOG.persona_open_text, ButtonStyle.PERSONA_OPEN
+        btn_edit = make_button(SETTINGS_DIALOG.persona_edit_text, ButtonStyle.PERSONA)
+        btn_edit.clicked.connect(self._on_edit_clicked)
+
+        btn_reload = make_button(
+            SETTINGS_DIALOG.persona_reload_text, ButtonStyle.PERSONA
         )
-        btn_open.clicked.connect(self._on_open_clicked)
+        btn_reload.clicked.connect(self._on_reload_clicked)
 
         # 本行内容顶部对齐，不与上方多行输入框的底边缠斗
         layout.addWidget(title)
         layout.addWidget(btn_preview, alignment=Qt.AlignmentFlag.AlignTop)
-        layout.addWidget(btn_open, alignment=Qt.AlignmentFlag.AlignTop)
+        layout.addWidget(btn_edit, alignment=Qt.AlignmentFlag.AlignTop)
+        layout.addWidget(btn_reload, alignment=Qt.AlignmentFlag.AlignTop)
         layout.addStretch()
 
     def bind(self, owner: QWidget) -> bool:
@@ -182,27 +209,26 @@ class PersonaPreviewRow(QWidget):
         return True
 
     def _on_preview_clicked(self) -> None:
-        """弹窗展示磁盘正文"""
+        """弹窗渲染草稿正文"""
         if self._owner is None:
             return
         owner_id = _text_of(self._owner).strip()
         _PersonaPreviewDialog(owner_id, parent=self.window()).exec()
 
-    def _on_open_clicked(self) -> None:
-        """打开实例人设文件
+    def _on_edit_clicked(self) -> None:
+        """编辑草稿正文
 
-        - 副本没建先从默认模板建好，建不出才弹窗告知
+        - 确认只更新草稿，落盘归配置面板保存那一步
         """
-        if not ensure_persona_copy():
-            self._notify(
-                f"{PERSONALITY_FILE}\n{SETTINGS_DIALOG.persona_file_create_fail}"
-            )
+        edited = PersonaEditorDialog.edit(draft_persona_text(), parent=self.window())
+        if edited is None:
             return
-        try:
-            open_path(PERSONALITY_FILE)
-        except OSError as e:
-            self._notify(str(e))
+        set_draft_persona(edited)
+        NoticeDialog.notify(SETTINGS_DIALOG.persona_pending, parent=self.window())
 
-    def _notify(self, detail: str) -> None:
-        """弹出打开失败提示"""
-        NoticeDialog.notify(f"{SETTINGS_DIALOG.persona_open_fail}\n{detail}", self)
+    def _on_reload_clicked(self) -> None:
+        """按实例文件重新装填正文
+
+        - 读文件与比对都收在这一颗按钮，一致只提示一句
+        """
+        PersonaConflictDialog.resolve(parent=self.window())

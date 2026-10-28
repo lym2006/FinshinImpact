@@ -2,6 +2,8 @@
 """人设正文组装
 
 - 按实例副本、内置模板、空正文三级取正文并注入主人 id
+- 生效正文与面板草稿各存一份，只在启动与落盘时按文件装填
+- 运行期不读实例文件，取文件内容要走面板的重载按钮
 - 组装规则单源，运行期与配置向导预览共用
 """
 
@@ -12,15 +14,18 @@ from system.profile_env import OWNER_PLACEHOLDER
 from .logger import get_logger
 from .paths import PERSONALITY_EXAMPLE, PERSONALITY_FILE
 
-_persona_text: str | None = None  # 生效正文缓存，保存、覆盖与启动时重新装填
-
 _logger = get_logger("Util.Persona")
 
+# 生效正文与面板草稿三槽，运行期只由启动、落盘与手动重载改写
+_persona_text: str = ""  # 生效正文缓存，启动与落盘后按磁盘内容装填
+_persona_prev: str = ""  # 草稿顶替前的生效正文，校验不过即从这份回退
+_draft_text: str | None = None  # 面板草稿缓存，编辑窗确认与面板关闭时改写
 
-class PersonaSource(StrEnum):
+
+class _PersonaSource(StrEnum):
     """人设正文来源
 
-    - 预览弹窗的来源提示与回退判定共用，禁裸写协议串
+    - 只用于装填时的回退判定，禁裸写协议串
     """
 
     FILE = "file"
@@ -28,61 +33,105 @@ class PersonaSource(StrEnum):
     EMPTY = "empty"
 
 
-# 退到内置模板或空正文时的日志句，副本每轮都读不出会刷同一条
+# 退到内置模板或空正文时的日志句，副本读不出只在装填那一处报
 _FALLBACK_HINTS = {
-    PersonaSource.TEMPLATE: "实例人设副本读不出，本轮正文退回内置默认模板",
-    PersonaSource.EMPTY: "实例人设副本与内置模板均读不出，正文为空",
+    _PersonaSource.TEMPLATE: "实例人设副本读不出，正文退回内置默认模板",
+    _PersonaSource.EMPTY: "实例人设副本与内置模板均读不出，正文为空",
 }
 
 
-def read_persona_text() -> tuple[str, PersonaSource]:
+def read_persona_text() -> tuple[str, _PersonaSource]:
     """读磁盘当前正文
 
     - 副本读不出退内置模板，模板也读不出退空正文
     - 只读不装填缓存，预览与判定拿到的即磁盘真值
     """
     for path, source in (
-        (PERSONALITY_FILE, PersonaSource.FILE),
-        (PERSONALITY_EXAMPLE, PersonaSource.TEMPLATE),
+        (PERSONALITY_FILE, _PersonaSource.FILE),
+        (PERSONALITY_EXAMPLE, _PersonaSource.TEMPLATE),
     ):
         try:
             return path.read_text(encoding="utf-8"), source
         except OSError:
             continue
-    return "", PersonaSource.EMPTY
+    return "", _PersonaSource.EMPTY
+
+
+def read_template_text() -> str:
+    """读内置默认模板正文
+
+    - 读不出返回空串，是否停手由调用方判
+    """
+    try:
+        return PERSONALITY_EXAMPLE.read_text(encoding="utf-8")
+    except OSError:
+        return ""
 
 
 def applied_persona_text() -> str:
     """取当前生效正文
 
-    - 缓存未装填即按磁盘当前正文，两者此时本就一致
+    - 只读缓存，实例文件只在装填那三处读
     """
-    return _persona_text if _persona_text is not None else read_persona_text()[0]
+    return _persona_text
 
 
-def reset_persona_cache() -> None:
-    """重置人设正文缓存
+def load_persona_cache() -> None:
+    """按磁盘当前内容装填生效正文，并丢掉面板草稿
 
-    - 实例人设文件被换掉后调用，下一轮组装重新读文件
+    - 只在启动、落盘与面板手动重载三处调用
+    - 退到模板或空正文时记错误，副本读不出只在这一处报
+    """
+    global _persona_text, _draft_text
+    text, source = read_persona_text()
+    if source != _PersonaSource.FILE:
+        _logger.error(_FALLBACK_HINTS[source])
+    _persona_text = text
+    _draft_text = None
+
+
+def draft_persona_text() -> str:
+    """取面板草稿正文
+
+    - 未起稿即按生效正文，面板上屏的永远是同一份
+    """
+    return _draft_text if _draft_text is not None else _persona_text
+
+
+def set_draft_persona(text: str) -> None:
+    """把编辑窗确认过的正文写进草稿"""
+    global _draft_text
+    _draft_text = text
+
+
+def clear_draft_persona() -> None:
+    """丢掉草稿，面板取消时回到生效正文"""
+    global _draft_text
+    _draft_text = None
+
+
+def apply_draft_persona() -> str | None:
+    """生效缓存顶替成草稿正文并交出该正文
+
+    - 只换缓存不写文件，校验不过由回退路径换回顶替前的正文
+    - 草稿与生效正文一致即交空，这次没有人设变更
+    """
+    global _persona_text, _persona_prev
+    draft = _draft_text
+    if draft is None or draft == _persona_text:
+        return None
+    _persona_prev = _persona_text
+    _persona_text = draft
+    return draft
+
+
+def revert_persona_cache() -> None:
+    """生效缓存换回草稿顶替前的那份正文，草稿原样留着
+
+    - 校验失败或取消回退时用，草稿待续存到下次保存
     """
     global _persona_text
-    _persona_text = None
-
-
-def reload_persona_cache() -> bool:
-    """把生效正文缓存换成磁盘当前内容
-
-    - 缓存未装填不作判定，组装自然按磁盘内容填
-    - 返回正文是否发生变化
-    """
-    global _persona_text
-    if _persona_text is None:
-        return False
-    current = read_persona_text()[0]
-    if current == _persona_text:
-        return False
-    _persona_text = current
-    return True
+    _persona_text = _persona_prev
 
 
 def inject_owner(text: str, owner_id: str) -> str:
@@ -102,18 +151,4 @@ def build_persona(owner_id: str) -> str:
     - 正文取缓存，主人 id 每次注入
     - 占位符替换后逐字节稳定，禁在其中拼时间戳等每轮变化的内容
     """
-    return inject_owner(_read_cached(), owner_id)
-
-
-def _read_cached() -> str:
-    """取缓存正文，未装填即按磁盘三级读一次
-
-    - 退到模板或空正文时记错误，副本每轮都读不出会刷同一条
-    """
-    global _persona_text
-    if _persona_text is None:
-        text, source = read_persona_text()
-        if source != PersonaSource.FILE:
-            _logger.error(_FALLBACK_HINTS[source])
-        _persona_text = text
-    return _persona_text
+    return inject_owner(_persona_text, owner_id)

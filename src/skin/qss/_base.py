@@ -10,6 +10,7 @@ from typing import NewType
 from ..theme import (
     BODY,
     BTN,
+    BTN_DANGER,
     GLOBAL,
     LIST_DIALOG,
     SETTINGS_DIALOG,
@@ -33,7 +34,7 @@ QLabel {{
     color: {BODY.color};
 }}"""
 
-# 主按钮（高亮）
+# 主按钮（高亮）与危险按钮
 DIALOG_BUTTON_QSS = f"""\
 QPushButton#{ButtonStyle.PRIMARY} {{
     background-color: {BODY.selection_bg};
@@ -50,6 +51,23 @@ QPushButton#{ButtonStyle.PRIMARY}:hover {{
 
 QPushButton#{ButtonStyle.PRIMARY}:pressed {{
     background-color: {SETTINGS_DIALOG.btn_pressed_bg};
+}}
+
+QPushButton#{ButtonStyle.DANGER} {{
+    background-color: {BTN_DANGER.bg};
+    color: {BODY.selection_color};
+    border: none;
+    border-radius: {GLOBAL.radius}px;
+    padding: {BTN.padding_v}px {BTN.padding_h}px;
+    min-width: {SETTINGS_DIALOG.btn_min_width}px;
+}}
+
+QPushButton#{ButtonStyle.DANGER}:hover {{
+    background-color: {BTN_DANGER.hover_bg};
+}}
+
+QPushButton#{ButtonStyle.DANGER}:pressed {{
+    background-color: {BTN_DANGER.pressed_bg};
 }}
 
 QPushButton#{ButtonStyle.RESET} {{
@@ -75,8 +93,7 @@ QPushButton#{ButtonStyle.RESET}:pressed {{
     background-color: {BTN.pressed_bg};
 }}
 
-QPushButton#{ButtonStyle.PERSONA_OPEN},
-QPushButton#{ButtonStyle.PERSONA_PREVIEW} {{
+QPushButton#{ButtonStyle.PERSONA} {{
     background-color: {LIST_DIALOG.primary_bg};
     color: {LIST_DIALOG.primary_color};
     border: none;
@@ -85,13 +102,11 @@ QPushButton#{ButtonStyle.PERSONA_PREVIEW} {{
     min-width: {LIST_DIALOG.btn_min_width}px;
 }}
 
-QPushButton#{ButtonStyle.PERSONA_OPEN}:hover,
-QPushButton#{ButtonStyle.PERSONA_PREVIEW}:hover {{
+QPushButton#{ButtonStyle.PERSONA}:hover {{
     background-color: {SETTINGS_DIALOG.btn_hover_bg};
 }}
 
-QPushButton#{ButtonStyle.PERSONA_OPEN}:pressed,
-QPushButton#{ButtonStyle.PERSONA_PREVIEW}:pressed {{
+QPushButton#{ButtonStyle.PERSONA}:pressed {{
     background-color: {SETTINGS_DIALOG.btn_pressed_bg};
 }}
 
