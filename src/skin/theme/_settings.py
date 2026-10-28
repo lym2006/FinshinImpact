@@ -52,7 +52,10 @@ class SettingsDialogTheme:
 
     # 人设预览
     persona_preview_height: int = 180  # 预览弹窗正文固定高度
-    persona_preview_width: int = 520  # 预览弹窗正文固定宽度
+    persona_preview_width: int = 520  # 预览与编辑弹窗正文固定宽度
+    persona_editor_height: int = 420  # 编辑弹窗正文固定高度
+    persona_diff_width: int = 900  # diff 弹窗最小宽度，两栏并排
+    persona_diff_height: int = 460  # diff 弹窗最小高度
 
     # 提示文案
     verified_ok: str = DialogMessage.SETUP_VERIFIED_OK
@@ -61,30 +64,39 @@ class SettingsDialogTheme:
     # 按钮文案
     cancel_text: str = DialogMessage.BTN_CANCEL
     save_text: str = DialogMessage.BTN_SAVE
+    confirm_text: str = DialogMessage.BTN_CONFIRM
     exit_text: str = DialogMessage.BTN_EXIT
     finish_text: str = DialogMessage.BTN_FINISH
     validating_text: str = DialogMessage.BTN_VALIDATING
     reset_text: str = DialogMessage.SETUP_RESET
     reset_icon: str = DialogMessage.SETUP_RESET_ICON
 
-    # 人设预览文案
+    # 人设正文文案
     persona_title: str = DialogMessage.SETUP_PERSONA_TITLE
     persona_label: str = DialogMessage.SETUP_PERSONA_LABEL
     persona_preview_text: str = DialogMessage.SETUP_PERSONA_PREVIEW
-    persona_apply_text: str = DialogMessage.PERSONA_APPLY
-    persona_from_file: str = DialogMessage.SETUP_PERSONA_FROM_FILE
-    persona_from_template: str = DialogMessage.SETUP_PERSONA_FROM_TEMPLATE
-    persona_missing: str = DialogMessage.SETUP_PERSONA_MISSING
-    persona_same: str = DialogMessage.SETUP_PERSONA_SAME
-    persona_outdated: str = DialogMessage.SETUP_PERSONA_OUTDATED
-    persona_edited: str = DialogMessage.SETUP_PERSONA_EDITED
-    persona_unreadable: str = DialogMessage.SETUP_PERSONA_UNREADABLE
-    persona_applied: str = DialogMessage.SETUP_PERSONA_APPLIED
+    persona_reload_text: str = DialogMessage.SETUP_PERSONA_RELOAD
+    persona_reload_same: str = DialogMessage.SETUP_PERSONA_RELOAD_SAME
     persona_pending: str = DialogMessage.SETUP_PERSONA_PENDING
+    persona_discarded: str = DialogMessage.SETUP_PERSONA_DISCARDED
     persona_file_create_fail: str = DialogMessage.SETUP_PERSONA_FILE_CREATE_FAIL
-    persona_open_text: str = DialogMessage.SETUP_PERSONA_OPEN
-    persona_open_fail: str = DialogMessage.SETUP_PERSONA_OPEN_FAIL
     persona_close_text: str = DialogMessage.SETUP_PERSONA_CLOSE
+    persona_edit_text: str = DialogMessage.SETUP_PERSONA_EDIT
+    persona_editor_title: str = DialogMessage.SETUP_PERSONA_EDITOR_TITLE
+    persona_editor_tip: str = DialogMessage.SETUP_PERSONA_EDITOR_TIP
+    persona_use_template: str = DialogMessage.SETUP_PERSONA_USE_TEMPLATE
+    persona_no_template: str = DialogMessage.SETUP_PERSONA_NO_TEMPLATE
+    persona_template_same: str = DialogMessage.SETUP_PERSONA_TEMPLATE_SAME
+    persona_template_title: str = DialogMessage.SETUP_PERSONA_TEMPLATE_TITLE
+    persona_template_ok: str = DialogMessage.SETUP_PERSONA_TEMPLATE_OK
+    persona_view_diff: str = DialogMessage.SETUP_PERSONA_VIEW_DIFF
+    persona_diff_title: str = DialogMessage.SETUP_PERSONA_DIFF_TITLE
+    persona_diff_col_ori: str = DialogMessage.SETUP_PERSONA_DIFF_ORI
+    persona_diff_col_mod: str = DialogMessage.SETUP_PERSONA_DIFF_MOD
+    persona_conflict_title: str = DialogMessage.SETUP_PERSONA_CONFLICT_TITLE
+    persona_conflict_text: str = DialogMessage.SETUP_PERSONA_CONFLICT_TEXT
+    persona_conflict_disk: str = DialogMessage.SETUP_PERSONA_CONFLICT_DISK
+    persona_conflict_applied: str = DialogMessage.SETUP_PERSONA_CONFLICT_APPLIED
 
     # SETUP 提示文案
     setup_tip: str = DialogMessage.SETUP_TIP

@@ -15,7 +15,6 @@ class ButtonStyle(StrEnum):
     DANGER = "btn_danger"
     START = "btn_start"
     RESET = "btn_reset"
-    PERSONA_OPEN = "btn_persona_open"
-    PERSONA_PREVIEW = "btn_persona_preview"
+    PERSONA = "btn_persona"
     LIST_ADD = "btn_list_add"
     LIST_DEL = "btn_list_del"
