@@ -17,7 +17,7 @@ from core.domain.ids import ContainerKey
 from core.dto import MsgReferenceDTO, OutboundPayloadDTO, PrincipalDTO
 
 from ._errors import is_vanished, translate
-from ._event import build_ref
+from ._fields import build_ref
 
 if TYPE_CHECKING:
     from aiogram import Bot

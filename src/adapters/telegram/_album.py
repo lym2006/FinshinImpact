@@ -15,7 +15,7 @@ from aiogram.types import Message, TelegramObject
 from core.domain.ids import ChatId, MediaGroupId, UserId
 from utils import get_logger
 
-from ._event import sender_id
+from ._fields import sender_id
 
 _logger = get_logger("Adapter")
 
