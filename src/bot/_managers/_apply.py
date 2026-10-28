@@ -104,8 +104,8 @@ class ConfigApplier:
 
         - 由主人 id 与生效正文两项构成
         """
-        chore = config_manager.get_all().get(ConfigSection.CHORE, {})
-        return (str(chore.get(ConfigKey.OWNER, "")).strip(), applied_persona_text())
+        owner = config_manager.get(ConfigKey.OWNER.path(ConfigSection.CHORE), str)
+        return (owner.strip(), applied_persona_text())
 
     async def reset_identity(self) -> bool:
         """清掉全部会话与落盘记录并把当前身份记成基准
