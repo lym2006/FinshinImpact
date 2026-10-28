@@ -3,7 +3,7 @@
 
 - 面板给预览、编辑与从文件重新加载三个入口，都不写文件
 - 预览渲染草稿正文，只在草稿未落盘时提示一句
-- 重载按钮才读实例文件，与当前正文不一致才问一句用哪份
+- 重载按钮才读实例文件，与当前正文不一致即开两栏比对再问一句用哪份
 """
 
 from typing import TypeAlias
@@ -21,12 +21,11 @@ from PySide6.QtWidgets import (
 
 from skin.qss import build_settings_dialog_qss
 from skin.theme import SETTINGS_DIALOG, ButtonStyle, ObjectName
-from utils.init_files import save_persona_text
+from utils.init_files import save_persona_pending
 from utils.persona import (
     applied_persona_text,
     draft_persona_text,
     inject_owner,
-    load_persona_cache,
     read_persona_text,
     set_draft_persona,
 )
@@ -34,7 +33,7 @@ from utils.persona import (
 from ..._primitives import make_button
 from .._base import BaseDialog
 from .._notice import NoticeDialog
-from ._persona_edit import PersonaEditorDialog
+from ._persona_edit import PersonaDiffDialog, PersonaEditorDialog
 
 # 人设字符串被用户改成单行时渲染控件会回落 QLineEdit
 _TextWidget: TypeAlias = QTextEdit | QLineEdit
@@ -98,14 +97,19 @@ class PersonaConflictDialog(BaseDialog):
 
     - 只在面板点「从文件重新加载」时弹，运行期不自动读文件
     - 磁盘副本与当前正文一致即只提示一句，不改动任何东西
+    - 先看两栏比对再决定用哪份，比对窗关掉不影响本窗
+    - 两份都不当场生效，覆盖文件与换正文都等保存那一步
     - 关窗不算选，缓存与文件原样并存，要重载再点一次
     """
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(self, disk: str, parent: QWidget | None = None) -> None:
         super().__init__(parent=parent, title=SETTINGS_DIALOG.persona_conflict_title)
 
         # 没选即 None，Esc 与标题栏关闭都走这条
         self.use_disk: bool | None = None
+
+        # 比对窗要展示的磁盘快照，与本次提问读到的那份同一次读取
+        self._disk = disk
         self.set_always_on_top()
         self.setStyleSheet(build_settings_dialog_qss())
 
@@ -122,25 +126,38 @@ class PersonaConflictDialog(BaseDialog):
         """按实例文件与当前正文的比对结果决定提示还是问一句
 
         - 一致即只报无变化，两份内容本就相同
-        - 用文件版本即按磁盘当前内容重新装填，草稿一并丢掉
-        - 用生效版本即把生效正文写回磁盘，等同放弃文件里的改动
+        - 选完落一条取用记录，两份正文都存着，没保存就重启也拼得回比对
+        - 用文件版本即把文件正文放进草稿，生效缓存与文件都不动
+        - 两条都不当场生效，覆盖文件与换正文都等保存那一步
+        - 关窗不算选，缓存与文件原样并存，要重载再点一次
         """
-        if read_persona_text()[0] == applied_persona_text():
+        disk = read_persona_text()[0]
+        applied = applied_persona_text()
+        if disk == applied:
             NoticeDialog.notify(SETTINGS_DIALOG.persona_reload_same, parent=parent)
             return
-        dialog = PersonaConflictDialog(parent=parent)
+        dialog = PersonaConflictDialog(disk, parent=parent)
         dialog.exec()
         if dialog.use_disk is None:
             return
+        save_persona_pending(applied, disk)
+        text = SETTINGS_DIALOG.persona_reload_applied
         if dialog.use_disk:
-            load_persona_cache()
-            return
-        if not save_persona_text(applied_persona_text()):
-            NoticeDialog.notify(SETTINGS_DIALOG.persona_file_create_fail, parent=parent)
+            set_draft_persona(disk)
+            text = SETTINGS_DIALOG.persona_reload_disk
+        NoticeDialog.notify(
+            text,
+            parent=parent,
+            title=SETTINGS_DIALOG.persona_choice_title,
+            bold=True,
+        )
 
     def _make_buttons(self) -> QHBoxLayout:
-        """用生效版本 / 用文件版本"""
+        """查看变化 / 用生效版本 / 用文件版本"""
         btn_layout = QHBoxLayout()
+        btn_view = make_button(SETTINGS_DIALOG.persona_view_diff, ButtonStyle.PERSONA)
+        btn_view.clicked.connect(self._on_view_diff)
+        btn_layout.addWidget(btn_view)
         btn_layout.addStretch()
         btn_applied = QPushButton(SETTINGS_DIALOG.persona_conflict_applied)
         btn_applied.clicked.connect(lambda: self._choose(False))
@@ -152,6 +169,13 @@ class PersonaConflictDialog(BaseDialog):
         btn_layout.addWidget(btn_applied)
         btn_layout.addWidget(btn_disk)
         return btn_layout
+
+    def _on_view_diff(self) -> None:
+        """两栏比对生效正文与磁盘文件正文
+
+        - 左取生效版本，右取文件版本，与两颗按钮的取舍同序
+        """
+        PersonaDiffDialog.show_diff(applied_persona_text(), self._disk, parent=self)
 
     def _choose(self, use_disk: bool) -> None:
         """记下取舍再收窗"""
@@ -227,8 +251,9 @@ class PersonaPreviewRow(QWidget):
         NoticeDialog.notify(SETTINGS_DIALOG.persona_pending, parent=self.window())
 
     def _on_reload_clicked(self) -> None:
-        """按实例文件重新装填正文
+        """比对实例文件与当前正文，按所选起记录或进草稿
 
         - 读文件与比对都收在这一颗按钮，一致只提示一句
+        - 选完不当场生效，覆盖文件与换正文都等保存那一步
         """
         PersonaConflictDialog.resolve(parent=self.window())

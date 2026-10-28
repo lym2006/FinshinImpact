@@ -143,6 +143,11 @@ class Main:
             window.show_persona_update, "人设覆盖提示", queued=True
         )
 
+        # 未定稿的人设选择：Queued 投递到 GUI 线程，拍完板才算数
+        gui_bridge.request_persona_pending.connect(
+            window.show_persona_pending, "人设重新拍板", queued=True
+        )
+
         # 向导内"退出程序"按钮：携带向导窗口，确认框以其为父级
         gui_bridge.request_exit.connect(
             shutdown_controller.request_exit_from, "弹窗退出"

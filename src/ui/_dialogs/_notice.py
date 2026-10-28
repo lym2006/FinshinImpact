@@ -5,6 +5,7 @@
 """
 
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 from skin.qss import build_notice_dialog_qss
@@ -22,6 +23,7 @@ class NoticeDialog(BaseDialog):
 
     - 提示/致命共用，critical 区分标题与确认语义
     - 标题缺省按 critical 取通用提示或致命错误，调用点可覆盖
+    - bold 只加粗正文，给那种当场不生效、容易被看漏的提示用
     """
 
     def __init__(
@@ -31,6 +33,7 @@ class NoticeDialog(BaseDialog):
         parent: QWidget | None = None,
         *,
         title: str | None = None,
+        bold: bool = False,
     ) -> None:
         super().__init__(
             parent=parent,
@@ -48,6 +51,10 @@ class NoticeDialog(BaseDialog):
             head.setAlignment(Qt.AlignmentFlag.AlignCenter)
             layout.addWidget(head)
         label = QLabel(text)
+        if bold:
+            font = QFont(label.font())
+            font.setBold(True)
+            label.setFont(font)
         label.setWordWrap(True)
         label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(label)
@@ -71,6 +78,7 @@ class NoticeDialog(BaseDialog):
         parent: QWidget | None = None,
         *,
         title: str | None = None,
+        bold: bool = False,
     ) -> None:
         """模态展示一行提示"""
-        NoticeDialog(text, parent=parent, title=title).exec()
+        NoticeDialog(text, parent=parent, title=title, bold=bold).exec()

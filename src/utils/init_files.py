@@ -3,9 +3,11 @@
 
 - 实现必要文件检查与模板落盘
 - 实例人设与内置默认模板按内容指纹对账
+- 没保存成人设的那次取用落成记录，跨重启也拼得回比对
 """
 
 import hashlib
+import json
 from enum import StrEnum
 from pathlib import Path
 
@@ -16,10 +18,11 @@ from .paths import (
     DB_DIR,
     PERSONALITY_EXAMPLE,
     PERSONALITY_FILE,
+    PERSONALITY_PENDING,
     PERSONALITY_STAMP,
     RECORDS_DIR,
 )
-from .persona import load_persona_cache
+from .persona import clear_persona_pending, load_persona_cache, mark_persona_pending
 
 
 class PersonaSync(StrEnum):
@@ -125,6 +128,61 @@ def save_persona_text(text: str) -> bool:
         return False
     load_persona_cache()
     return True
+
+
+def save_persona_pending(applied: str, disk: str) -> bool:
+    """落一条没保存成人设的取用记录
+
+    - 两份正文一起存，重启后才拼得回当初的比对
+    - 写不进返回 False，内存那份照样留着，本次选择仍然算数
+    """
+    mark_persona_pending(applied, disk)
+    payload = json.dumps({"applied": applied, "disk": disk}, ensure_ascii=False)
+    try:
+        write_bytes_atomic(PERSONALITY_PENDING, payload.encode("utf-8"))
+    except OSError:
+        return False
+    return True
+
+
+def load_persona_pending() -> bool:
+    """读未定稿的取用记录并装进内存
+
+    - 记录缺失或读不懂即按没有待拍板处理，文件原样留着
+    """
+    try:
+        raw = json.loads(PERSONALITY_PENDING.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        clear_persona_pending()
+        return False
+    texts = _pending_texts(raw)
+    if texts is None:
+        clear_persona_pending()
+        return False
+    mark_persona_pending(*texts)
+    return True
+
+
+def drop_persona_pending() -> None:
+    """抹掉取用记录，内存与文件一起撤
+
+    - 文件删不掉不报错，留着下次启动照样只问不改
+    """
+    clear_persona_pending()
+    try:
+        PERSONALITY_PENDING.unlink(missing_ok=True)
+    except OSError:
+        pass
+
+
+def _pending_texts(raw: object) -> tuple[str, str] | None:
+    """从记录里取出两份正文，形状不对即交空"""
+    if not isinstance(raw, dict):
+        return None
+    applied, disk = raw.get("applied"), raw.get("disk")
+    if not isinstance(applied, str) or not isinstance(disk, str):
+        return None
+    return applied, disk
 
 
 def mark_persona_prompted() -> None:
