@@ -92,6 +92,14 @@ class ManagerFlowTestBase(unittest.IsolatedAsyncioTestCase):
             patch.object(sm, "verify_connectivity", new=_fake_verify),
             patch.object(vm, "execute", new=_count_start),
         ]
+
+        # 对话身份只读主人一项，其余路径按取不到走原降级分支
+        def _read_config(path: str, expected_type: type) -> str:
+            if path.endswith("owner"):
+                return ""
+            raise KeyError(path)
+
+        patches += [patch.object(_apply.config_manager, "get", _read_config)]
         for p in patches:
             p.start()
             self.addCleanup(p.stop)
@@ -294,6 +302,12 @@ class TestIdentityReset(ManagerFlowTestBase):
         async def _reset() -> None:
             calls.append(1)
 
+        def _read(path: str, expected_type: type):
+            """只给主人那条路径，其余按取不到处理"""
+            if path.endswith("owner"):
+                return owner["v"]
+            raise KeyError(path)
+
         for patcher in (
             patch.object(
                 self.manager._service_manager,
@@ -301,11 +315,7 @@ class TestIdentityReset(ManagerFlowTestBase):
                 (_reset,) if with_reset else (),
             ),
             patch.object(_apply, "applied_persona_text", lambda: text["v"]),
-            patch.object(
-                _apply.config_manager,
-                "get_all",
-                lambda: {"chore": {"owner": owner["v"]}},
-            ),
+            patch.object(_apply.config_manager, "get", _read),
         ):
             patcher.start()
             self.addCleanup(patcher.stop)
