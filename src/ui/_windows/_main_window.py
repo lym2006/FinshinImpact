@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
 from skin.theme import BodyTheme, FontTheme, ObjectName, ToolbarTheme, WindowTheme
 from utils.logger import get_logger
 
-from .._dialogs import NoticeDialog, PersonaSyncDialog
+from .._dialogs import NoticeDialog, PersonaPendingDialog, PersonaSyncDialog
 from .._lifecycle import Ticker
 from ._dashboard import DashboardWidget, TextHandler
 
@@ -180,3 +180,14 @@ class BotGUI(QMainWindow):
             return
 
         PersonaSyncDialog.notify_update(parent=self)
+
+    def show_persona_pending(self) -> None:
+        """弹出上次人设选择的重新拍板窗
+
+        - 已有模态窗时延后重试，防止弹窗被吞
+        """
+        if QApplication.activeModalWidget() is not None:
+            Ticker.after(_NOTICE_RETRY_DELAY_MS, self.show_persona_pending)
+            return
+
+        PersonaPendingDialog.resolve(parent=self)

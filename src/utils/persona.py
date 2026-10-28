@@ -4,9 +4,12 @@
 - 按实例副本、内置模板、空正文三级取正文并注入主人 id
 - 生效正文与面板草稿各存一份，只在启动与落盘时按文件装填
 - 运行期不读实例文件，取文件内容要走面板的重载按钮
+- 重载按钮选完只落一条取用记录，覆盖文件与换生效正文都等保存那一步
+- 取用记录同时留档两份正文，没保存就重启也拼得回当初的比对
 - 组装规则单源，运行期与配置向导预览共用
 """
 
+from dataclasses import dataclass
 from enum import StrEnum
 
 from system.profile_env import OWNER_PLACEHOLDER
@@ -16,10 +19,25 @@ from .paths import PERSONALITY_EXAMPLE, PERSONALITY_FILE
 
 _logger = get_logger("Util.Persona")
 
-# 生效正文与面板草稿三槽，运行期只由启动、落盘与手动重载改写
+# 生效正文与面板草稿三槽，生效正文只在启动与落盘两处按文件装填
 _persona_text: str = ""  # 生效正文缓存，启动与落盘后按磁盘内容装填
 _persona_prev: str = ""  # 草稿顶替前的生效正文，校验不过即从这份回退
 _draft_text: str | None = None  # 面板草稿缓存，编辑窗确认与面板关闭时改写
+
+
+@dataclass(frozen=True)
+class _PersonaPending:
+    """没保存成人设的那次取用
+
+    - 只在本进程内比对，落盘与读取归 init_files
+    """
+
+    applied: str  # 拍板时的生效正文，文件里要被换成的那一份
+    disk: str  # 拍板时的文件正文，草稿要被换成的那一份
+
+
+# 待拍板槽：重载按钮记下两份正文，保存成功才抹掉这条记录
+_pending: _PersonaPending | None = None
 
 
 class _PersonaSource(StrEnum):
@@ -71,7 +89,7 @@ def read_template_text() -> str:
 def applied_persona_text() -> str:
     """取当前生效正文
 
-    - 只读缓存，实例文件只在装填那三处读
+    - 只读缓存，实例文件只在装填那两处读
     """
     return _persona_text
 
@@ -79,15 +97,17 @@ def applied_persona_text() -> str:
 def load_persona_cache() -> None:
     """按磁盘当前内容装填生效正文，并丢掉面板草稿
 
-    - 只在启动、落盘与面板手动重载三处调用
+    - 只在启动与落盘两处调用，重载按钮选完不装填
+    - 装填完磁盘与生效正文本就一致，待拍板记录随之撤掉
     - 退到模板或空正文时记错误，副本读不出只在这一处报
     """
-    global _persona_text, _draft_text
+    global _persona_text, _draft_text, _pending
     text, source = read_persona_text()
     if source != _PersonaSource.FILE:
         _logger.error(_FALLBACK_HINTS[source])
     _persona_text = text
     _draft_text = None
+    _pending = None
 
 
 def draft_persona_text() -> str:
@@ -108,6 +128,29 @@ def clear_draft_persona() -> None:
     """丢掉草稿，面板取消时回到生效正文"""
     global _draft_text
     _draft_text = None
+
+
+def mark_persona_pending(applied: str, disk: str) -> None:
+    """记下两份正文不一致，等保存那一步再定谁覆盖谁
+
+    - 只起内存记录，不动生效正文、不动草稿、不写文件
+    """
+    global _pending
+    _pending = _PersonaPending(applied=applied, disk=disk)
+
+
+def pending_persona() -> _PersonaPending | None:
+    """交出待拍板记录，没记录即 None"""
+    return _pending
+
+
+def clear_persona_pending() -> None:
+    """撤掉待拍板记录的内存那一份
+
+    - 落盘与启动读档时用，文件那一份归 init_files 删
+    """
+    global _pending
+    _pending = None
 
 
 def apply_draft_persona() -> str | None:

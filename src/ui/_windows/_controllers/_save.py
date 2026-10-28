@@ -18,11 +18,12 @@ from utils.config import (
     compare_configs,
     save_config,
 )
-from utils.init_files import save_persona_text
+from utils.init_files import drop_persona_pending, save_persona_text
 from utils.persona import (
     applied_persona_text,
     apply_draft_persona,
     draft_persona_text,
+    pending_persona,
     revert_persona_cache,
 )
 
@@ -63,6 +64,12 @@ class SaveCoordinator:
         persona_new = draft_persona_text()
         persona_changed = persona_new != persona_old
 
+        # 重载按钮落下的取用记录，本次保存才把它写进文件
+        pending = pending_persona()
+
+        # 只有取用记录、正文没动的这一次也要落盘，不然文件永远追不上生效值
+        file_needed = persona_changed or pending is not None
+
         changes, logs = compare_configs(
             config_manager.schema, config_manager.get_all(), new_config
         )
@@ -75,7 +82,7 @@ class SaveCoordinator:
 
         # 向导态或有任何改动都要起校验轮，通道没变时 Manager 只跑本地校验
         in_setup = host._current_mode == ConfigMode.SETUP
-        if not changes and not persona_changed:
+        if not changes and not file_needed:
             if not in_setup:
                 NoticeDialog.notify(NOTICE_DIALOG.not_changed, parent=dialog)
                 host.logger.debug("配置未修改")
@@ -84,11 +91,15 @@ class SaveCoordinator:
             return
 
         # 二次确认以面板为父级，取消后面板仍在
-        persona = (persona_old, persona_new) if persona_changed else None
+        persona: tuple[str, str] | None = None
+        if persona_changed:
+            persona = (persona_old, persona_new)
+        elif pending is not None:
+            persona = (pending.disk, pending.applied)
         if not ChangeConfirmDialog.confirm(logs, persona=persona, parent=dialog):
             return
 
-        self.log_changes(logs, persona_changed)
+        self.log_changes(logs, file_needed)
 
         # 先验后存，候选只进内存，通过才落盘，取消即回退
         self.start_verify(dialog, new_config, persona_new if persona_changed else None)
@@ -145,11 +156,12 @@ class SaveCoordinator:
         """落盘本次校验通过的候选
 
         - 先验后存的落盘时刻：内存早已就位，磁盘只给验证过的内容
-        - 人设正文写成功即连带清掉生效缓存与草稿，下一轮组装按文件读
-        - 正文写不进退回文件内容，草稿原样留着待下次保存
+        - 正文写成功即重装生效缓存并抹掉取用记录
+        - 写不进时动过缓存的退回文件内容，取用记录留着等下次重新拍板
         """
         verify = self._host._verify
         persona = verify.pending_persona
+        pending = pending_persona()
         verify.pending_candidate = None
         verify.pending_persona = None
         try:
@@ -157,10 +169,19 @@ class SaveCoordinator:
             self._host.logger.info(CheckMessage.WRITTEN)
         except ConfigOutputError as e:
             return self.write_failed(CheckMessage.WRITE_FAILED.format(err=e))
-        if persona is not None and not save_persona_text(persona):
+
+        # 没动正文只留过取用记录，这次写进文件的就是生效那一份
+        text = persona
+        if text is None and pending is not None:
+            text = applied_persona_text()
+        if text is None:
+            return True
+        if save_persona_text(text):
+            drop_persona_pending()
+            return True
+        if persona is not None:
             revert_persona_cache()
-            return self.write_failed(SETTINGS_DIALOG.persona_file_create_fail, True)
-        return True
+        return self.write_failed(SETTINGS_DIALOG.persona_file_create_fail, True)
 
     def write_failed(self, reason: str, notice: bool = False) -> bool:
         """落盘失败收尾
@@ -175,13 +196,14 @@ class SaveCoordinator:
             panel.set_busy(False)
         return False
 
-    def log_changes(self, logs: list, persona_changed: bool) -> None:
+    def log_changes(self, logs: list, file_needed: bool) -> None:
         """分级记录变更日志
 
         - 人设正文不进逐行比对，只在变更清单里占一项
+        - 只留过取用记录这一项也算动过正文，文件确实被换了一份内容
         """
         names = [name for name, _, _ in logs]
-        if persona_changed:
+        if file_needed:
             names.append(SETTINGS_DIALOG.persona_label)
         joined = "、".join(names)
         self._host.logger.info(f"保存 {len(names)} 项配置: {joined}")
