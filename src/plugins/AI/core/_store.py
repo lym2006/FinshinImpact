@@ -3,17 +3,19 @@
 
 - 按会话键读写消息，仓储首次用时装配
 - 摘要按会话键覆盖写入
-- 人设或主人变更后清掉全部会话与落盘记录
+- 人设或主人变更后清掉全部会话与落盘记录，动手前落记号、断在半途由下次启动补完
 - 闲置够久的会话按最后问答时间清除
 """
 
 import asyncio
 from collections import defaultdict
+from pathlib import Path
 
 from core.contracts import SessionRepository
 from core.domain.ids import SessionKey
 from core.dto import MessageDTO, SessionDTO, SessionPatchDTO
 from data import build_repositories, get_connection
+from utils import get_logger
 from utils.paths import DB_FILE
 
 from ..config import ai_config
@@ -22,6 +24,11 @@ from ..utils import matches_persona
 # 同会话两路并发写会算出同一个序号，写入按会话键串行
 _write_locks: dict[SessionKey, asyncio.Lock] = defaultdict(asyncio.Lock)
 _session_repo: SessionRepository | None = None
+
+_logger = get_logger("Plg.AI.Store")
+
+# 清理半途断掉的记号，启动扫描按它补完
+_PENDING_MARK = ".pending-clear"
 
 
 async def _repo() -> SessionRepository:
@@ -88,10 +95,58 @@ async def purge_history() -> None:
     """清空全部会话与落盘记录
 
     - 换过人设或主人后所有人的历史一并作废
+    - 动手前先落记号，删不净或中途断掉都靠下次启动补完
     """
+    _set_pending_mark(True)
     await (await _repo()).delete_all()
+    if _purge_records():
+        _set_pending_mark(False)
+
+
+async def purge_pending() -> None:
+    """按记号补完上次没做完的历史清理
+
+    - 记号不在即什么都没断，直接返回
+    """
+    if not _pending_mark().exists():
+        return
+    _logger.info("上次历史清理未做完，本次补完")
+    await purge_history()
+
+
+def _pending_mark() -> Path:
+    """落盘记录目录里的清理记号文件"""
+    return ai_config.record_dir / _PENDING_MARK
+
+
+def _set_pending_mark(pending: bool) -> None:
+    """落或撤清理记号
+
+    - 记号自己动不了只记日志，不挡住清理
+    """
+    mark = _pending_mark()
+    try:
+        if pending:
+            mark.touch()
+        else:
+            mark.unlink(missing_ok=True)
+    except OSError as e:
+        _logger.send_error(f"清理记号动不了: {mark.name}", e)
+
+
+def _purge_records() -> bool:
+    """删净落盘记录，交出是否一个不剩
+
+    - 单个删不掉继续删其他的，留下的靠记号在下一次启动重试
+    """
+    cleared = True
     for path in ai_config.record_dir.glob("*.md"):
-        path.unlink(missing_ok=True)
+        try:
+            path.unlink(missing_ok=True)
+        except OSError as e:
+            cleared = False
+            _logger.send_error(f"落盘记录删不掉: {path.name}", e)
+    return cleared
 
 
 async def purge_stale(persona: str, session_key: SessionKey) -> SessionDTO:
