@@ -153,9 +153,11 @@ async def purge_stale(persona: str, session_key: SessionKey) -> SessionDTO:
     """库里人设版本对不上即清全部历史，交出清理后的快照
 
     - 换过人设或主人而不重开程序时，读取与问答两条路都在此收口
+    - 这一条是兜底路径，动手必记一行，禁静默删掉所有人的历史
     """
     snapshot = await read_session(session_key)
     if snapshot.messages and not matches_persona(persona, snapshot.messages):
+        _logger.info("库内人设与生效正文不符，按兜底清全部历史与记录")
         await purge_history()
         snapshot = await read_session(session_key)
     return snapshot
