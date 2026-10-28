@@ -4,6 +4,7 @@
 - 字符折算按中文与其余两套系数
 - 窗口超线切段问答成对不断
 - 压缩文本带上发言人标注
+- 摘要跟人设轮作第一条独立 user 轮
 """
 
 import sys
@@ -88,6 +89,33 @@ class TestRenderHistory(unittest.TestCase):
         """人设行不进压缩文本"""
         window = (MessageDTO(role=ChatRole.SYSTEM, content="人设"), *_rounds(1))
         self.assertNotIn("人设", utils.render_history(window))
+
+
+class TestTurnAssembly(unittest.TestCase):
+    """摘要轮位置"""
+
+    def test_summary_follows_persona_as_user(self) -> None:
+        """摘要跟人设轮之后作第一条独立 user 轮，后面不配 assistant"""
+        turns = utils.build_turns(
+            persona="人设",
+            summary="早前聊过两句",
+            history=_rounds(1),
+            thisinput="[人名0|100]再说一遍",
+        )
+        self.assertEqual(turns[0]["role"], ChatRole.SYSTEM)
+        self.assertEqual(turns[1]["role"], ChatRole.USER)
+        self.assertTrue(turns[1]["content"].startswith("[历史摘要]"))
+        self.assertEqual(turns[2]["role"], ChatRole.USER)
+
+    def test_no_summary_row_when_empty(self) -> None:
+        """没有摘要即不占轮位，人设后直接是历史"""
+        turns = utils.build_turns(
+            persona="人设",
+            summary="",
+            history=_rounds(1),
+            thisinput="[人名0|100]再说一遍",
+        )
+        self.assertNotIn("[历史摘要]", str(turns))
 
 
 class TestWindowCap(unittest.TestCase):

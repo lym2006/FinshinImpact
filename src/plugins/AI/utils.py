@@ -132,11 +132,11 @@ def build_turns(
     """构建发给模型的消息列表
 
     - 人设轮按当前正文现取，库里那行人设不重复发
-    - 摘要作独立 system 轮排在人设之后
+    - 摘要固定作第一条独立 user 轮紧跟人设，后面不配 assistant 回复
     """
     turns = [build_message(ChatRole.SYSTEM, persona)]
     if summary:
-        turns.append(build_message(ChatRole.SYSTEM, f"{_SUMMARY_MARK}{summary}"))
+        turns.append(build_message(ChatRole.USER, f"{_SUMMARY_MARK}{summary}"))
 
     turns.extend(
         _render_turn(message) for message in history if message.role != ChatRole.SYSTEM
