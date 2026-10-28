@@ -17,6 +17,7 @@ from ..config import ai_config
 from ..core import (
     active_tasks,
     purge_idle_sessions,
+    purge_pending,
     purge_sessions,
     session_states,
     task_queues,
@@ -110,9 +111,11 @@ async def cleanup_loop() -> NoReturn:
     - 内存会话按最后活跃时间清，记录按文件时间清，库内上下文按最后问答时间清
     - 记录一到期即连带清掉同键上下文，两边不分叉
     - 重启后留下的记录与上下文照样扫得到
+    - 起手先按记号补完上次断掉的历史清理
     - 收到停服取消时先作废内存态，再收在途问答与压缩
     """
     try:
+        await purge_pending()
         while True:
             deadline = time.time() - ai_config.keep_seconds
 
