@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
 from skin.theme import BodyTheme, FontTheme, ObjectName, ToolbarTheme, WindowTheme
 from utils.logger import get_logger
 
-from .._dialogs import NoticeDialog, PersonaPendingDialog, PersonaSyncDialog
+from .._dialogs import NoticeDialog, PersonaResolveDialog, PersonaSyncDialog
 from .._lifecycle import Ticker
 from ._dashboard import DashboardWidget, TextHandler
 
@@ -145,24 +145,27 @@ class BotGUI(QMainWindow):
         """注入致命错误后的直退句柄"""
         self._shutdown_handler = handler
 
-    def show_notice(self, message: str, critical: bool = False) -> None:
+    def show_notice(
+        self, message: str, critical: bool = False, bold: bool = False
+    ) -> None:
         """弹出统一通知
 
         - critical 为致命通知，确认后直接退出
+        - bold 加粗正文，给当场生效、容易被看漏的提示用
         - 已有模态窗时延后重试，防止弹窗被吞
         - 多行长文只进弹窗
         """
         if QApplication.activeModalWidget() is not None:
             Ticker.after(
                 _NOTICE_RETRY_DELAY_MS,
-                lambda: self.show_notice(message, critical),
+                lambda: self.show_notice(message, critical, bold),
             )
             return
 
         if critical:
             self._logger.error(f"致命错误: {message}")
 
-        box = NoticeDialog(message, critical=critical, parent=self)
+        box = NoticeDialog(message, critical=critical, parent=self, bold=bold)
         box.raise_()
         box.activateWindow()
         box.exec()
@@ -181,13 +184,20 @@ class BotGUI(QMainWindow):
 
         PersonaSyncDialog.notify_update(parent=self)
 
-    def show_persona_pending(self) -> None:
-        """弹出上次人设选择的重新拍板窗
+    def show_persona_resolve(
+        self, old: str, new: str, old_label: str, new_label: str, source: str
+    ) -> None:
+        """弹出人设拍板窗
 
         - 已有模态窗时延后重试，防止弹窗被吞
         """
         if QApplication.activeModalWidget() is not None:
-            Ticker.after(_NOTICE_RETRY_DELAY_MS, self.show_persona_pending)
+            Ticker.after(
+                _NOTICE_RETRY_DELAY_MS,
+                lambda: self.show_persona_resolve(
+                    old, new, old_label, new_label, source
+                ),
+            )
             return
 
-        PersonaPendingDialog.resolve(parent=self)
+        PersonaResolveDialog(old, new, old_label, new_label, source, parent=self).exec()

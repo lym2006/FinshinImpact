@@ -3,7 +3,7 @@
 
 - 驱动进程级唯一校验进度窗，校验轮之间互斥
 - 等待窗等首个进度帧才开，免测轮全程无窗
-- 维护复验与保存状态标记、待落盘配置与人设正文、开窗前的帧缓存
+- 维护复验与保存状态标记、待落盘配置、开窗前的帧缓存
 """
 
 from typing import TYPE_CHECKING
@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING
 from skin.messages import CheckMessage
 from utils.config import AppConfigData
 from utils.network import RowId, RowStatus, verify_skeleton
-from utils.persona import revert_persona_cache
 
 from ..._bridge import gui_bridge
 from ..._dialogs import (
@@ -43,9 +42,6 @@ class VerifyCoordinator:
 
         # 待落盘候选：校验通过才写入磁盘，关面板/取消即弃
         self.pending_candidate: AppConfigData | None = None
-
-        # 待落盘人设正文：校验通过才写文件，未动人设轮为空
-        self.pending_persona: str | None = None
 
         # 开轮未开窗时的中断标记：None 表示没有在途轮，帧到达即按它开窗
         self.pending_aborts: bool | None = None
@@ -141,21 +137,17 @@ class VerifyCoordinator:
             gui_bridge.config_abort.emit()
 
     def discard_pending(self) -> None:
-        """弃掉待落盘候选与正文顶替
+        """弃掉待落盘候选
 
-        - 生效缓存退回文件内容，草稿原样留着待续存到下次保存
+        - 保存标记一并复位，面板手上不留半截状态
         """
-        persona_applied = self.pending_persona is not None
         self.pending_candidate = None
-        self.pending_persona = None
         self.save_pending = False
-        if persona_applied:
-            revert_persona_cache()
 
     def drop_pending(self) -> None:
         """校验未过原地转向导时弃掉待落盘项
 
-        - 连复验标记一起清，草稿归面板侧处置
+        - 连复验标记一起清
         """
         self.validating = False
         self.discard_pending()

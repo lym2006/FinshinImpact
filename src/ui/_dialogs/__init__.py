@@ -18,8 +18,7 @@ from ._release_notes import ReleaseNotesDialog
 from ._settings import (
     ChangeConfirmDialog,
     ConfigMode,
-    PersonaConflictDialog,
-    PersonaPendingDialog,
+    PersonaResolveDialog,
     SettingsDialog,
 )
 from ._shutdown import ShutdownDialog
@@ -38,8 +37,7 @@ __all__ = [
     "SettingsDialog",
     "ConfigMode",
     "ChangeConfirmDialog",
-    "PersonaConflictDialog",
-    "PersonaPendingDialog",
+    "PersonaResolveDialog",
     "CheckDialog",
     "Round",
     "current_check_window",

@@ -54,8 +54,8 @@ class SettingsDialogTheme:
     persona_preview_height: int = 180  # 预览弹窗正文固定高度
     persona_preview_width: int = 520  # 预览与编辑弹窗正文固定宽度
     persona_editor_height: int = 420  # 编辑弹窗正文固定高度
-    persona_diff_width: int = 900  # diff 弹窗最小宽度，两栏并排
-    persona_diff_height: int = 460  # diff 弹窗最小高度
+    persona_resolve_width: int = 900  # 拍板弹窗最小宽度，两栏并排
+    persona_resolve_height: int = 460  # 拍板弹窗最小高度
 
     # 提示文案
     verified_ok: str = DialogMessage.SETUP_VERIFIED_OK
@@ -77,9 +77,8 @@ class SettingsDialogTheme:
     persona_preview_text: str = DialogMessage.SETUP_PERSONA_PREVIEW
     persona_reload_text: str = DialogMessage.SETUP_PERSONA_RELOAD
     persona_reload_same: str = DialogMessage.SETUP_PERSONA_RELOAD_SAME
-    persona_pending: str = DialogMessage.SETUP_PERSONA_PENDING
-    persona_discarded: str = DialogMessage.SETUP_PERSONA_DISCARDED
     persona_file_create_fail: str = DialogMessage.SETUP_PERSONA_FILE_CREATE_FAIL
+    persona_file_read_fail: str = DialogMessage.SETUP_PERSONA_FILE_READ_FAIL
     persona_close_text: str = DialogMessage.SETUP_PERSONA_CLOSE
     persona_edit_text: str = DialogMessage.SETUP_PERSONA_EDIT
     persona_editor_title: str = DialogMessage.SETUP_PERSONA_EDITOR_TITLE
@@ -87,26 +86,26 @@ class SettingsDialogTheme:
     persona_use_template: str = DialogMessage.SETUP_PERSONA_USE_TEMPLATE
     persona_no_template: str = DialogMessage.SETUP_PERSONA_NO_TEMPLATE
     persona_template_same: str = DialogMessage.SETUP_PERSONA_TEMPLATE_SAME
-    persona_template_title: str = DialogMessage.SETUP_PERSONA_TEMPLATE_TITLE
-    persona_template_ok: str = DialogMessage.SETUP_PERSONA_TEMPLATE_OK
-    persona_view_diff: str = DialogMessage.SETUP_PERSONA_VIEW_DIFF
-    persona_diff_title: str = DialogMessage.SETUP_PERSONA_DIFF_TITLE
-    persona_diff_col_ori: str = DialogMessage.SETUP_PERSONA_DIFF_ORI
-    persona_diff_col_mod: str = DialogMessage.SETUP_PERSONA_DIFF_MOD
-    persona_conflict_title: str = DialogMessage.SETUP_PERSONA_CONFLICT_TITLE
-    persona_conflict_text: str = DialogMessage.SETUP_PERSONA_CONFLICT_TEXT
-    persona_conflict_disk: str = DialogMessage.SETUP_PERSONA_CONFLICT_DISK
-    persona_conflict_applied: str = DialogMessage.SETUP_PERSONA_CONFLICT_APPLIED
-    persona_choice_title: str = DialogMessage.SETUP_PERSONA_CHOICE_TITLE
-    persona_reload_disk: str = DialogMessage.SETUP_PERSONA_RELOAD_DISK
-    persona_reload_applied: str = DialogMessage.SETUP_PERSONA_RELOAD_APPLIED
-    persona_discarded_kept: str = DialogMessage.SETUP_PERSONA_DISCARDED_KEPT
-    persona_pending_title: str = DialogMessage.SETUP_PERSONA_PENDING_TITLE
-    persona_pending_text: str = DialogMessage.SETUP_PERSONA_PENDING_TEXT
-    persona_pending_disk_text: str = DialogMessage.SETUP_PERSONA_PENDING_DISK_TEXT
-    persona_pending_kept_text: str = DialogMessage.SETUP_PERSONA_PENDING_KEPT_TEXT
-    persona_pending_disk_ok: str = DialogMessage.SETUP_PERSONA_PENDING_DISK_OK
-    persona_pending_kept_ok: str = DialogMessage.SETUP_PERSONA_PENDING_KEPT_OK
+
+    # 人设拍板弹窗
+    persona_resolve_title: str = DialogMessage.SETUP_PERSONA_RESOLVE_TITLE
+    persona_resolve_text: str = DialogMessage.SETUP_PERSONA_RESOLVE_TEXT
+    persona_resolve_use: str = DialogMessage.SETUP_PERSONA_RESOLVE_USE
+    persona_resolve_back: str = DialogMessage.SETUP_PERSONA_RESOLVE_BACK
+    persona_resolve_confirm: str = DialogMessage.SETUP_PERSONA_RESOLVE_CONFIRM
+    persona_resolve_confirm_text: str = DialogMessage.SETUP_PERSONA_RESOLVE_CONFIRM_TEXT
+    persona_resolve_same: str = DialogMessage.SETUP_PERSONA_RESOLVE_SAME
+
+    # 人设栏名与来源词
+    persona_label_saved: str = DialogMessage.SETUP_PERSONA_LABEL_SAVED
+    persona_label_active: str = DialogMessage.SETUP_PERSONA_LABEL_ACTIVE
+    persona_label_file: str = DialogMessage.SETUP_PERSONA_LABEL_FILE
+    persona_label_disk: str = DialogMessage.SETUP_PERSONA_LABEL_DISK
+    persona_label_edited: str = DialogMessage.SETUP_PERSONA_LABEL_EDITED
+    persona_label_template: str = DialogMessage.SETUP_PERSONA_LABEL_TEMPLATE
+    persona_source_file: str = DialogMessage.SETUP_PERSONA_SOURCE_FILE
+    persona_source_panel: str = DialogMessage.SETUP_PERSONA_SOURCE_PANEL
+    persona_source_template: str = DialogMessage.SETUP_PERSONA_SOURCE_TEMPLATE
 
     # SETUP 提示文案
     setup_tip: str = DialogMessage.SETUP_TIP
