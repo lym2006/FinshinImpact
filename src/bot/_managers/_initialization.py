@@ -74,7 +74,6 @@ class InitializationManager(BaseManager):
             disk,
             DialogMessage.SETUP_PERSONA_LABEL_SAVED,
             DialogMessage.SETUP_PERSONA_LABEL_FILE,
-            DialogMessage.SETUP_PERSONA_SOURCE_FILE,
         )
 
     async def _migrate_database(self) -> None:

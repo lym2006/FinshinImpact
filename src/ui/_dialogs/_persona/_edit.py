@@ -87,7 +87,7 @@ class PersonaEditorDialog(BaseDialog):
     def _on_use_template(self) -> None:
         """用内置模板替换正文
 
-        - 读不出模板与内容一致都只提示，一个字不改
+        - 读不出模板只提示，一个字不改
         - 有差异开拍板窗，定稿后本窗收起
         """
         template = read_template_text()
@@ -95,9 +95,6 @@ class PersonaEditorDialog(BaseDialog):
             NoticeDialog.notify(SETTINGS_DIALOG.persona_no_template, parent=self)
             return
         applied = applied_persona_text()
-        if template == applied:
-            NoticeDialog.notify(SETTINGS_DIALOG.persona_template_same, parent=self)
-            return
         parent = self.parentWidget()
         self.reject()
         PersonaResolveDialog.resolve(
@@ -105,6 +102,5 @@ class PersonaEditorDialog(BaseDialog):
             template,
             SETTINGS_DIALOG.persona_label_active,
             SETTINGS_DIALOG.persona_label_template,
-            SETTINGS_DIALOG.persona_source_template,
             parent=parent,
         )

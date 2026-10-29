@@ -114,6 +114,7 @@ class ConfigApplier:
         - 文件与存档都写成才换正文，写坏一次不会出现正文新文件旧
         - 正文与生效值相同即只结清文件，不动历史
         - 换了正文才清历史，清完把新身份记成基准
+        - 来源词只写进换版那条，正文没变即无来源可报
         """
         if not save_persona_text(text) or not save_applied_persona(text):
             gui_bridge.request_notice.emit(
@@ -125,11 +126,11 @@ class ConfigApplier:
         if changed:
             await self.reset_identity()
         tip = (
-            DialogMessage.PERSONA_APPLIED_RESET
+            DialogMessage.PERSONA_APPLIED_RESET.format(source=source)
             if changed
             else DialogMessage.PERSONA_APPLIED_KEPT
         )
-        gui_bridge.request_persona_applied.emit(tip.format(source=source))
+        gui_bridge.request_persona_applied.emit(tip)
 
     async def reset_identity(self) -> bool:
         """清掉全部会话与落盘记录并把当前身份记成基准

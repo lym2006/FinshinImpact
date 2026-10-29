@@ -14,7 +14,7 @@ class DialogMessage:
     SETUP_TIP = "检测到配置有误，请修正后继续"
     SETUP_HINT = "留意带 ⚠ 的标签页，标题标红的即为出错字段"
     SETUP_VERIFIED_OK = "配置已验证通过"
-    SETUP_HISTORY_RESET = "人设或主人已变更，全部对话历史与落盘记录已清空"
+    SETUP_HISTORY_RESET = "主人已变更，全部对话历史与记录文件已清空"
     SETUP_RESET = "恢复默认"
     SETUP_RESET_ICON = "↺"
 
@@ -29,41 +29,37 @@ class DialogMessage:
     SETUP_PERSONA_LABEL = "人设正文"
     SETUP_PERSONA_PREVIEW = "预览人设"
     SETUP_PERSONA_RELOAD = "从文件重新加载"
-    SETUP_PERSONA_RELOAD_SAME = "文件跟当前正文一样，什么都没换"
-    SETUP_PERSONA_FILE_CREATE_FAIL = "人设文件建不出来，检查目录是否可写"
-    SETUP_PERSONA_FILE_READ_FAIL = "人设文件读不出，检查目录与权限"
+    SETUP_PERSONA_FILE_CREATE_FAIL = "人设文件无法创建，检查目录是否可写"
+    SETUP_PERSONA_FILE_READ_FAIL = "人设文件无法读取，检查目录与权限"
     SETUP_PERSONA_CLOSE = "关闭"
     SETUP_PERSONA_EDIT = "编辑人设"
     SETUP_PERSONA_EDITOR_TITLE = "人设正文编辑"
     SETUP_PERSONA_EDITOR_TIP = (
         "正文里的 {OWNER_ID} 是主人 id 占位符，运行时自动填入，请勿改动\n"
-        "确认后选用哪份正文，选定即当场生效，正文变了对话历史与落盘记录一起清空"
+        "选定即生效，正文变了会清空对话历史与记录文件"
     )
     SETUP_PERSONA_USE_TEMPLATE = "用模板覆盖"
-    SETUP_PERSONA_NO_TEMPLATE = "内置默认模板读不出"
-    SETUP_PERSONA_TEMPLATE_SAME = "正文和模板一样，不用覆盖"
+    SETUP_PERSONA_NO_TEMPLATE = "内置模板无法读取"
+
+    # 用：人设正文拍板窗
     SETUP_PERSONA_RESOLVE_TITLE = "人设正文有变化"
-    SETUP_PERSONA_RESOLVE_TEXT = "左右两份正文不一样，选一份继续，选完即当场生效"
+    SETUP_PERSONA_RESOLVE_TEXT = "两份正文不同，选一份继续"
     SETUP_PERSONA_RESOLVE_USE = "用这份"
     SETUP_PERSONA_RESOLVE_BACK = "再看看"
     SETUP_PERSONA_RESOLVE_CONFIRM = "确认"
-    SETUP_PERSONA_RESOLVE_CONFIRM_TEXT = "确认用「{label}」这份继续？"
-    SETUP_PERSONA_RESOLVE_SAME = "正文跟现在用的一样，什么都没换"
+    SETUP_PERSONA_RESOLVE_CONFIRM_TEXT = "确认选用「{label}」？"
+    SETUP_PERSONA_RESOLVE_SAME = "正文与当前生效一致，未作改动"
 
-    # 用：拍板窗两栏栏名与「已生效」提示的来源词
+    # 用：拍板窗栏名，兼作「已生效」提示里的来源词
     SETUP_PERSONA_LABEL_SAVED = "上次生效"
     SETUP_PERSONA_LABEL_ACTIVE = "当前生效"
-    SETUP_PERSONA_LABEL_FILE = "当前文件"
-    SETUP_PERSONA_LABEL_DISK = "文件那份"
-    SETUP_PERSONA_LABEL_EDITED = "修改后"
+    SETUP_PERSONA_LABEL_FILE = "文件内容"
+    SETUP_PERSONA_LABEL_EDITED = "面板内容"
     SETUP_PERSONA_LABEL_TEMPLATE = "内置模板"
-    SETUP_PERSONA_SOURCE_FILE = "文件里那一份"
-    SETUP_PERSONA_SOURCE_PANEL = "面板改的那一份"
-    SETUP_PERSONA_SOURCE_TEMPLATE = "内置模板"
 
     # 用：Bot 人设落盘后弹的「已生效」提示
-    PERSONA_APPLIED_RESET = "人设已生效\n来源：{source}\n全部对话历史与落盘记录已清空"
-    PERSONA_APPLIED_KEPT = "人设已生效\n来源：{source}\n正文与现在用的一样，历史没动"
+    PERSONA_APPLIED_RESET = "人设已生效\n来源：{source}\n全部对话历史与记录文件已清空"
+    PERSONA_APPLIED_KEPT = "人设已生效\n正文未变，历史与记录文件未改动"
 
     # 用：主窗弹窗与引导期选窗共用的按钮字段
     BTN_CANCEL = "取消"
@@ -86,7 +82,7 @@ class DialogMessage:
     NOTICE_NOT_CHANGED = "您未修改任何配置"
 
     # 用：theme NoticeDialogTheme 人设对账弹窗字段
-    PERSONA_APPLY = "用默认人设覆盖"
+    PERSONA_APPLY = "用内置模板覆盖"
     PERSONA_KEEP = "保留我的人设"
 
     # 用：theme ReleaseNotesDialogTheme 文案字段

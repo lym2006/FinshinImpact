@@ -22,7 +22,7 @@ class _GUIBridge(QObject):
     request_shutdown_cancel = SafeSignal()  # 确认框取消，Bot 复位关闭状态
     persona_committed = SafeSignal(
         str, str
-    )  # 人设正文当场定稿：(正文, 来源词)，交 Bot 落盘并换生效正文
+    )  # 人设正文当场定稿：(正文, 所选栏名)，交 Bot 落盘并换生效正文
 
     # Bot → GUI：状态广播与弹窗调度
     config_ready_changed = SafeSignal(
@@ -39,8 +39,8 @@ class _GUIBridge(QObject):
     )  # 弹通知窗，致命确认后直退：(展示文案，是否致命)
     request_persona_update = SafeSignal()  # 默认人设有更新，弹一键覆盖窗
     request_persona_resolve = SafeSignal(
-        str, str, str, str, str
-    )  # 两份正文不一致，弹拍板窗：(旧, 新, 旧栏名, 新栏名, 来源词)
+        str, str, str, str
+    )  # 两份正文不一致，弹拍板窗：(旧, 新, 旧栏名, 新栏名)
     request_persona_applied = SafeSignal(str)  # 人设已生效，加粗弹窗：展示文案
 
     # GUI → GUI：退出入口

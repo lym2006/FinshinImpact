@@ -332,7 +332,7 @@ class TestExternalDetection(_StageBase):
         )
 
     def test_edited_copy_opens_resolve(self) -> None:
-        """文件与存档不一致即发拍板信号，带两栏栏名与来源词"""
+        """文件与存档不一致即发拍板信号，带两栏栏名"""
         self.write_copy(_V1)
         persona.load_persona_cache()
         self.write_copy(_EDITED)
@@ -344,7 +344,6 @@ class TestExternalDetection(_StageBase):
             _EDITED,
             DialogMessage.SETUP_PERSONA_LABEL_SAVED,
             DialogMessage.SETUP_PERSONA_LABEL_FILE,
-            DialogMessage.SETUP_PERSONA_SOURCE_FILE,
         )
 
     def test_cache_keeps_applied_after_edit(self) -> None:
