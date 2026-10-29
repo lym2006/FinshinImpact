@@ -26,7 +26,7 @@ set_profile("tg.000000")
 
 from core.domain.ids import SessionKey  # noqa: E402
 from plugins.AI.core import _store  # noqa: E402
-from plugins.AI.services import _monitor  # noqa: E402
+from plugins.AI.services import _cleanup  # noqa: E402
 
 _DAY = 86400.0
 _KEEP = 30 * _DAY
@@ -52,9 +52,9 @@ class TestPurgeRecords(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
         self.patchers = [
-            patch.object(_monitor, "_logger", _logger_stub()),
+            patch.object(_cleanup, "_logger", _logger_stub()),
             patch.object(
-                _monitor,
+                _cleanup,
                 "ai_config",
                 SimpleNamespace(keep_seconds=_KEEP, record_dir=self.root),
             ),
@@ -69,7 +69,7 @@ class TestPurgeRecords(unittest.TestCase):
         gone.write_text("旧问答", encoding="utf8")
         _stamp(gone, _AGE)
 
-        keys = _monitor._purge_records(time.time() - _KEEP)
+        keys = _cleanup._purge_records(time.time() - _KEEP)
 
         self.assertEqual(keys, (SessionKey("tg.g100123"),))
         self.assertFalse(gone.exists())
@@ -79,7 +79,7 @@ class TestPurgeRecords(unittest.TestCase):
         live = self.root / "tg.u456.md"
         live.write_text("新问答", encoding="utf8")
 
-        keys = _monitor._purge_records(time.time() - _KEEP)
+        keys = _cleanup._purge_records(time.time() - _KEEP)
 
         self.assertEqual(keys, ())
         self.assertTrue(live.exists())
@@ -90,7 +90,7 @@ class TestPurgeRecords(unittest.TestCase):
         legacy.write_text("旧形态", encoding="utf8")
         _stamp(legacy, _AGE)
 
-        keys = _monitor._purge_records(time.time() - _KEEP)
+        keys = _cleanup._purge_records(time.time() - _KEEP)
 
         self.assertEqual(keys, (SessionKey("tg.g100123.456"),))
 
@@ -101,7 +101,7 @@ class TestPurgeRecords(unittest.TestCase):
         for name in ("tg.g999.md", "tg.g888.md"):
             _stamp(self.root / name, _AGE)
 
-        keys = _monitor._purge_records(time.time() - _KEEP)
+        keys = _cleanup._purge_records(time.time() - _KEEP)
 
         self.assertEqual(keys, ())
 
@@ -180,18 +180,18 @@ class TestCleanupRound(unittest.IsolatedAsyncioTestCase):
             raise asyncio.CancelledError
 
         self.patchers = [
-            patch.object(_monitor, "_logger", _logger_stub()),
+            patch.object(_cleanup, "_logger", _logger_stub()),
             patch.object(
-                _monitor,
+                _cleanup,
                 "ai_config",
                 SimpleNamespace(
                     keep_seconds=_KEEP, waiting_time=0.0, record_dir=self.root
                 ),
             ),
-            patch.object(_monitor, "purge_sessions", _purge_sessions),
-            patch.object(_monitor, "purge_idle_sessions", _purge_idle),
-            patch.object(_monitor, "purge_pending", _resume),
-            patch.object(_monitor.asyncio, "sleep", _stop_sleep),
+            patch.object(_cleanup, "purge_sessions", _purge_sessions),
+            patch.object(_cleanup, "purge_idle_sessions", _purge_idle),
+            patch.object(_cleanup, "purge_pending", _resume),
+            patch.object(_cleanup.asyncio, "sleep", _stop_sleep),
         ]
         for patcher in self.patchers:
             patcher.start()
@@ -199,7 +199,7 @@ class TestCleanupRound(unittest.IsolatedAsyncioTestCase):
 
     async def _run_once(self) -> None:
         with self.assertRaises(asyncio.CancelledError):
-            await _monitor.cleanup_loop()
+            await _cleanup.cleanup_loop()
 
     async def test_expired_record_clears_same_key(self) -> None:
         """到期记录被删时同键上下文一起清"""

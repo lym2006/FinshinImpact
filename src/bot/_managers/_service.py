@@ -17,7 +17,8 @@ from ._base import BaseManager
 
 if TYPE_CHECKING:
     from adapters.telegram.adapter import TelegramAdapter
-    from core.domain import PluginBackground, PluginReset
+    from core.domain import PluginBackground, PluginReset, TaskHandler
+    from services.tasks import TaskItem
 
     from .._service import BotService
 
@@ -45,13 +46,16 @@ class ServiceManager(BaseManager):
 
     async def _execute(self) -> None:
         """启动 Bot 服务"""
+        from services.tasks import configure_task_service
+
         from .._service import BotService
 
         self.stop_service()  # 停掉旧服务（如果有）
 
         self.logger.info(EngineMessage.CREATING)
-        adapter, backgrounds, resets = self._create_components()
+        adapter, backgrounds, resets, handlers = self._create_components()
         self._history_resets = resets
+        configure_task_service(handlers, on_fault=self._report_task_fault)
         self._service = BotService(adapter, backgrounds)
 
         await asyncio.to_thread(self._service.start)
@@ -59,8 +63,13 @@ class ServiceManager(BaseManager):
 
     def _create_components(
         self,
-    ) -> tuple[TelegramAdapter, tuple[PluginBackground, ...], tuple[PluginReset, ...]]:
-        """按配置构建适配器、插件常驻协程与历史清理入口
+    ) -> tuple[
+        TelegramAdapter,
+        tuple[PluginBackground, ...],
+        tuple[PluginReset, ...],
+        tuple[TaskHandler, ...],
+    ]:
+        """按配置构建适配器、插件常驻协程、历史清理入口与任务处理清单
 
         - aiogram 重依赖此刻才入场，主窗启动不受其拖累
         """
@@ -75,7 +84,9 @@ class ServiceManager(BaseManager):
 
         # 注册中间件和路由
         dispatcher.update.outer_middleware(LoggingMiddleware())
-        report, backgrounds, resets = register_plugins(dispatcher, build_router)
+        report, backgrounds, resets, handlers = register_plugins(
+            dispatcher, build_router
+        )
         total = len(report)
         self.logger.info(EngineMessage.PLUGINS_DONE.format(n=total))
         for index, (name, ok, reason) in enumerate(report, 1):
@@ -90,7 +101,11 @@ class ServiceManager(BaseManager):
                     )
                 )
 
-        return adapter, backgrounds, resets
+        return adapter, backgrounds, resets, handlers
+
+    def _report_task_fault(self, item: TaskItem, error: Exception) -> None:
+        """任务派发失败的行落在面板"""
+        self.logger.error(EngineMessage.TASK_FAULT.format(kind=item.kind, reason=error))
 
     def stop_service(self) -> None:
         """停止 Bot 服务"""
