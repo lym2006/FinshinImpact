@@ -247,3 +247,4 @@ class ChangeDialogTheme:
     alt_bg: str = "#252526"  # 隔行背景
     diff_del: str = _FAIL_COLOR  # 删除行红色（带删除线）
     diff_add: str = _OK_COLOR  # 新增行绿色加粗
+    diff_skip: str = "#8C8C8C"  # 折叠提示行与对侧占位行文字色

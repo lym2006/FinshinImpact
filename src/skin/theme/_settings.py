@@ -56,6 +56,7 @@ class SettingsDialogTheme:
     persona_editor_height: int = 420  # 编辑弹窗正文固定高度
     persona_resolve_width: int = 900  # 拍板弹窗最小宽度，两栏并排
     persona_resolve_height: int = 460  # 拍板弹窗最小高度
+    persona_resolve_context: int = 3  # 折叠未改动时每侧保留的上下文行数
 
     # 提示文案
     verified_ok: str = DialogMessage.SETUP_VERIFIED_OK
@@ -91,6 +92,9 @@ class SettingsDialogTheme:
     persona_resolve_back: str = DialogMessage.SETUP_PERSONA_RESOLVE_BACK
     persona_resolve_confirm_text: str = DialogMessage.SETUP_PERSONA_RESOLVE_CONFIRM_TEXT
     persona_resolve_same: str = DialogMessage.SETUP_PERSONA_RESOLVE_SAME
+    persona_resolve_skip: str = DialogMessage.SETUP_PERSONA_RESOLVE_SKIP
+    persona_resolve_expand: str = DialogMessage.SETUP_PERSONA_RESOLVE_EXPAND
+    persona_resolve_collapse: str = DialogMessage.SETUP_PERSONA_RESOLVE_COLLAPSE
 
     # 人设栏名，兼作「已生效」提示里的来源词
     persona_label_active: str = DialogMessage.SETUP_PERSONA_LABEL_ACTIVE
