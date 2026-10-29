@@ -15,7 +15,7 @@ from enum import StrEnum
 from system.profile_env import OWNER_PLACEHOLDER
 
 from .logger import get_logger
-from .paths import PERSONALITY_EXAMPLE, PERSONALITY_FILE
+from .paths import PERSONA_FILE, PERSONA_TEMPLATE
 
 _logger = get_logger("Util.Persona")
 
@@ -65,8 +65,8 @@ def read_persona_text() -> tuple[str, _PersonaSource]:
     - 只读不装填缓存，预览与判定拿到的即磁盘真值
     """
     for path, source in (
-        (PERSONALITY_FILE, _PersonaSource.FILE),
-        (PERSONALITY_EXAMPLE, _PersonaSource.TEMPLATE),
+        (PERSONA_FILE, _PersonaSource.FILE),
+        (PERSONA_TEMPLATE, _PersonaSource.TEMPLATE),
     ):
         try:
             return path.read_text(encoding="utf-8"), source
@@ -81,7 +81,7 @@ def read_template_text() -> str:
     - 读不出返回空串，是否停手由调用方判
     """
     try:
-        return PERSONALITY_EXAMPLE.read_text(encoding="utf-8")
+        return PERSONA_TEMPLATE.read_text(encoding="utf-8")
     except OSError:
         return ""
 

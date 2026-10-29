@@ -16,10 +16,11 @@ from system.atomic_write import write_bytes_atomic
 from .paths import (
     DB_BACKUP_DIR,
     DB_DIR,
-    PERSONALITY_EXAMPLE,
-    PERSONALITY_FILE,
-    PERSONALITY_PENDING,
-    PERSONALITY_STAMP,
+    PERSONA_DIR,
+    PERSONA_FILE,
+    PERSONA_PENDING,
+    PERSONA_STAMP,
+    PERSONA_TEMPLATE,
     RECORDS_DIR,
 )
 from .persona import clear_persona_pending, load_persona_cache, mark_persona_pending
@@ -64,7 +65,7 @@ def _read_persona_stamp() -> str:
     - 缺失或读不出返回空串，按从未对过账处理
     """
     try:
-        return PERSONALITY_STAMP.read_text(encoding="utf-8").strip()
+        return PERSONA_STAMP.read_text(encoding="utf-8").strip()
     except OSError:
         return ""
 
@@ -75,7 +76,7 @@ def _write_persona_stamp(digest: str) -> None:
     - 写不进不阻断启动，下次启动重走判定
     """
     try:
-        PERSONALITY_STAMP.write_text(digest, encoding="utf-8")
+        PERSONA_STAMP.write_text(digest, encoding="utf-8")
     except OSError:
         pass
 
@@ -86,11 +87,11 @@ def _ensure_persona_copy() -> bool:
     - 副本已在即原样保留
     - 模板读不出或写不进返回 False
     """
-    if PERSONALITY_FILE.is_file():
+    if PERSONA_FILE.is_file():
         return True
     try:
-        template = _digest(PERSONALITY_EXAMPLE)
-        _copy_if_missing(PERSONALITY_FILE, PERSONALITY_EXAMPLE)
+        template = _digest(PERSONA_TEMPLATE)
+        _copy_if_missing(PERSONA_FILE, PERSONA_TEMPLATE)
     except OSError:
         return False
     _write_persona_stamp(template)
@@ -104,8 +105,8 @@ def apply_persona_template() -> bool:
     - 读写失败返回 False，实例副本保持原样
     """
     try:
-        template = _digest(PERSONALITY_EXAMPLE)
-        write_bytes_atomic(PERSONALITY_FILE, PERSONALITY_EXAMPLE.read_bytes())
+        template = _digest(PERSONA_TEMPLATE)
+        write_bytes_atomic(PERSONA_FILE, PERSONA_TEMPLATE.read_bytes())
     except OSError:
         return False
     _write_persona_stamp(template)
@@ -123,7 +124,7 @@ def save_persona_text(text: str) -> bool:
     if not _ensure_persona_copy():
         return False
     try:
-        write_bytes_atomic(PERSONALITY_FILE, text.encode("utf-8"))
+        write_bytes_atomic(PERSONA_FILE, text.encode("utf-8"))
     except OSError:
         return False
     load_persona_cache()
@@ -139,7 +140,7 @@ def save_persona_pending(applied: str, disk: str) -> bool:
     mark_persona_pending(applied, disk)
     payload = json.dumps({"applied": applied, "disk": disk}, ensure_ascii=False)
     try:
-        write_bytes_atomic(PERSONALITY_PENDING, payload.encode("utf-8"))
+        write_bytes_atomic(PERSONA_PENDING, payload.encode("utf-8"))
     except OSError:
         return False
     return True
@@ -151,7 +152,7 @@ def load_persona_pending() -> bool:
     - 记录缺失或读不懂即按没有待拍板处理，文件原样留着
     """
     try:
-        raw = json.loads(PERSONALITY_PENDING.read_text(encoding="utf-8"))
+        raw = json.loads(PERSONA_PENDING.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         clear_persona_pending()
         return False
@@ -170,7 +171,7 @@ def drop_persona_pending() -> None:
     """
     clear_persona_pending()
     try:
-        PERSONALITY_PENDING.unlink(missing_ok=True)
+        PERSONA_PENDING.unlink(missing_ok=True)
     except OSError:
         pass
 
@@ -190,8 +191,8 @@ def mark_persona_prompted() -> None:
 
     - 提示窗关掉才记这一版模板已打过交道，同一版只提示一次
     """
-    if PERSONALITY_EXAMPLE.is_file():
-        _write_persona_stamp(_digest(PERSONALITY_EXAMPLE))
+    if PERSONA_TEMPLATE.is_file():
+        _write_persona_stamp(_digest(PERSONA_TEMPLATE))
 
 
 def sync_persona_template() -> PersonaSync:
@@ -203,16 +204,16 @@ def sync_persona_template() -> PersonaSync:
     - 提示未送达即不落戳，下次启动接着提示
     - 换新写不进退回提示路径，由用户当场处置
     """
-    if not PERSONALITY_EXAMPLE.is_file():
+    if not PERSONA_TEMPLATE.is_file():
         return PersonaSync.UNCHANGED
-    template = _digest(PERSONALITY_EXAMPLE)
+    template = _digest(PERSONA_TEMPLATE)
     stamp = _read_persona_stamp()
 
     if not _ensure_persona_copy():
         return PersonaSync.UNCHANGED
 
     try:
-        copy = _digest(PERSONALITY_FILE)
+        copy = _digest(PERSONA_FILE)
     except OSError:
         # 副本读不出时指纹无从比对，覆盖会毁掉读不到的内容
         return PersonaSync.UNCHANGED
@@ -231,5 +232,5 @@ def sync_persona_template() -> PersonaSync:
 def init_project_files() -> None:
     """初始化实例运行所需目录"""
     # sqlite3 只建库文件不建父目录，父目录缺失即打不开库
-    for d in (RECORDS_DIR, DB_DIR, DB_BACKUP_DIR):
+    for d in (RECORDS_DIR, DB_DIR, DB_BACKUP_DIR, PERSONA_DIR):
         d.mkdir(parents=True, exist_ok=True)

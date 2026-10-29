@@ -62,15 +62,15 @@ class _StageBase(unittest.TestCase):
         self.stack = ExitStack()
         self.addCleanup(self.stack.close)
         for name, path in (
-            ("PERSONALITY_EXAMPLE", self.template),
-            ("PERSONALITY_FILE", self.copy),
-            ("PERSONALITY_STAMP", self.stamp),
-            ("PERSONALITY_PENDING", self.pending),
+            ("PERSONA_TEMPLATE", self.template),
+            ("PERSONA_FILE", self.copy),
+            ("PERSONA_STAMP", self.stamp),
+            ("PERSONA_PENDING", self.pending),
         ):
             self.stack.enter_context(patch.object(init_files, name, path))
         for name, path in (
-            ("PERSONALITY_EXAMPLE", self.template),
-            ("PERSONALITY_FILE", self.copy),
+            ("PERSONA_TEMPLATE", self.template),
+            ("PERSONA_FILE", self.copy),
         ):
             self.stack.enter_context(patch.object(persona, name, path))
         for name, value in (
