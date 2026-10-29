@@ -1,4 +1,4 @@
-# src/ui/_dialogs/_settings/_persona_edit.py
+# src/ui/_dialogs/_persona/_edit.py
 """人设正文编辑窗
 
 - 正文按原文展示，主人 id 留占位符
@@ -21,7 +21,7 @@ from utils.persona import applied_persona_text, read_template_text
 from ..._primitives import make_button
 from .._base import BaseDialog
 from .._notice import NoticeDialog
-from ._persona_resolve import PersonaResolveDialog
+from ._resolve import PersonaResolveDialog
 
 _MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
 

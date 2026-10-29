@@ -1,4 +1,4 @@
-# src/ui/_dialogs/_persona.py
+# src/ui/_dialogs/_persona/_sync.py
 """默认人设更新弹窗
 
 - 提示内置默认人设有更新，并给出一键覆盖实例副本的入口
@@ -11,9 +11,9 @@ from skin.qss import build_notice_dialog_qss
 from skin.theme import NOTICE_DIALOG, ButtonStyle
 from utils.init_files import apply_persona_template, mark_persona_prompted
 
-from .._primitives import make_button
-from ._base import BaseDialog
-from ._notice import NoticeDialog
+from ..._primitives import make_button
+from .._base import BaseDialog
+from .._notice import NoticeDialog
 
 # Qt 布局四边
 _MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值

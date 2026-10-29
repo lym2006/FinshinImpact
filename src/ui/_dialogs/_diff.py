@@ -1,4 +1,4 @@
-# src/ui/_dialogs/_settings/_diff.py
+# src/ui/_dialogs/_diff.py
 """变更 diff 渲染
 
 - 实现配置值的行级与字符级比对

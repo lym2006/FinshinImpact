@@ -22,7 +22,7 @@ from utils.config.models import ConfigValue
 
 from ..._primitives import make_button
 from .._base import BaseDialog
-from ._diff import make_diff_cell, split_diff, to_lines
+from .._diff import make_diff_cell, split_diff, to_lines
 
 
 class ChangeConfirmDialog(BaseDialog):
