@@ -8,7 +8,6 @@ from dataclasses import dataclass
 
 from ..domain import TaskKind, TaskPayload, TaskPriority, TaskStatus
 from ..domain.ids import KEY_SEP, TaskId
-from ._content import ContentDTO
 from ._identity import MsgReferenceDTO, PrincipalDTO
 
 
@@ -43,7 +42,6 @@ class TaskRequestDTO:
 
     priority: TaskPriority = TaskPriority.NORMAL
     dedupe_key: str = ""  # 防重复提交
-    content: ContentDTO | None = None
     payload: TaskPayload = ()
 
 
