@@ -70,12 +70,12 @@ class HotQueue:
         """该容器当前排队条数"""
         return len(self._by_container.get(container_key, ()))
 
-    async def discard(self, container_key: SessionKey) -> int:
-        """丢掉该容器整串，交回被丢的条数"""
+    async def discard_all(self) -> int:
+        """丢掉全部容器的排队项，交回被丢的条数"""
         async with self._lock:
-            rows = self._by_container.get(container_key, [])
-            count = len(rows)
-            self._release(container_key)
+            count = sum(len(rows) for rows in self._by_container.values())
+            for container_key in list(self._by_container):
+                self._release(container_key)
             return count
 
     def _release(self, container_key: SessionKey) -> None:

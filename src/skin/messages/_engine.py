@@ -5,7 +5,7 @@
 class EngineMessage:
     """引擎与链路文案
 
-    - 覆盖引擎装配、轮询启停、插件注册与链路断连恢复的面板短句
+    - 覆盖引擎装配、轮询启停、插件注册、任务派发与链路断连恢复的面板短句
     """
 
     # 用：bot/_managers/_service.py 构建适配器前
@@ -37,6 +37,9 @@ class EngineMessage:
 
     # 用：bot/_managers/_service.py 逐插件失败行，reason 取自注册报告
     PLUGIN_FAIL = "[{index}/{n}] 插件 '{name}' {reason}"
+
+    # 用：bot/_managers/_service.py 任务派发报错行，kind 为任务类型、reason 为异常文本
+    TASK_FAULT = "任务 {kind} 派发失败：{reason}"
 
     # 用：utils/network/_link.py 断连周期首行
     DOWN = "引擎断线：等待网络恢复"

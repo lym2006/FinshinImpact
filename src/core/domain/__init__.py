@@ -25,6 +25,8 @@ from ._plugin import (
     PluginSpec,
     RouteSink,
     StateKey,
+    TaskHandler,
+    TaskRun,
 )
 from ._role import ChatRole, CommandRole
 from ._task import TaskKind, TaskPayload, TaskPriority, TaskStatus
@@ -63,6 +65,8 @@ __all__ = [
     "HelpKey",
     "StateKey",
     "RouteSink",
+    "TaskHandler",
+    "TaskRun",
     # 内容与角色
     "ContentKind",
     "ChatRole",

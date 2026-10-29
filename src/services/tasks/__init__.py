@@ -4,3 +4,15 @@
 - 存放平台无关的排队与调度，位于 core 契约与 plugins 之间
 - 热队列见 _queue，服务与调度见 _service
 """
+
+from ._queue import TaskItem
+from ._service import TaskService, configure_task_service, get_task_service
+
+__all__ = [
+    # 排队项
+    "TaskItem",
+    # 服务装配与取用
+    "TaskService",
+    "configure_task_service",
+    "get_task_service",
+]

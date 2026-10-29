@@ -1,7 +1,7 @@
 # src/plugins/AI/core/models.py
 """核心数据模型
 
-- 定义会话并发状态结构
+- 定义容器级会话活跃时间结构
 """
 
 from dataclasses import dataclass
@@ -9,7 +9,6 @@ from dataclasses import dataclass
 
 @dataclass
 class SessionState:
-    """会话并发状态"""
+    """容器会话的活跃时间"""
 
-    is_active: bool = False  # 当前会话是否处于活跃状态
-    last_active: float = 0.0  # 最后一次活跃时间
+    last_active: float = 0.0  # 闲置清理按它判到期
