@@ -48,6 +48,9 @@ class DialogMessage:
     SETUP_PERSONA_RESOLVE_BACK = "再看看"
     SETUP_PERSONA_RESOLVE_CONFIRM_TEXT = "确认选用「{label}」？"
     SETUP_PERSONA_RESOLVE_SAME = "正文与当前生效一致，未作改动"
+    SETUP_PERSONA_RESOLVE_SKIP = "…… 未改动 {n} 行"
+    SETUP_PERSONA_RESOLVE_EXPAND = "展开未改动"
+    SETUP_PERSONA_RESOLVE_COLLAPSE = "收起未改动"
 
     # 用：拍板窗栏名，兼作「已生效」提示里的来源词
     SETUP_PERSONA_LABEL_SAVED = "上次生效"
