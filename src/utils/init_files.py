@@ -3,11 +3,9 @@
 
 - 实现必要文件检查与模板落盘
 - 实例人设与内置默认模板按内容指纹对账
-- 没保存成人设的那次取用落成记录，跨重启也拼得回比对
 """
 
 import hashlib
-import json
 from enum import StrEnum
 from pathlib import Path
 
@@ -18,12 +16,11 @@ from .paths import (
     DB_DIR,
     PERSONA_DIR,
     PERSONA_FILE,
-    PERSONA_PENDING,
     PERSONA_STAMP,
     PERSONA_TEMPLATE,
     RECORDS_DIR,
 )
-from .persona import clear_persona_pending, load_persona_cache, mark_persona_pending
+from .persona import load_persona_cache, save_applied_persona
 
 
 class PersonaSync(StrEnum):
@@ -101,13 +98,16 @@ def _ensure_persona_copy() -> bool:
 def apply_persona_template() -> bool:
     """用内置默认模板覆盖实例人设
 
-    - 覆盖后落当前模板指纹并重置进程内人设缓存
-    - 读写失败返回 False，实例副本保持原样
+    - 覆盖后落当前模板指纹、刷存档并按存档装填正文
+    - 读写失败返回 False
     """
     try:
         template = _digest(PERSONA_TEMPLATE)
+        text = PERSONA_TEMPLATE.read_text(encoding="utf-8")
         write_bytes_atomic(PERSONA_FILE, PERSONA_TEMPLATE.read_bytes())
     except OSError:
+        return False
+    if not save_applied_persona(text):
         return False
     _write_persona_stamp(template)
     load_persona_cache()
@@ -127,63 +127,7 @@ def save_persona_text(text: str) -> bool:
         write_bytes_atomic(PERSONA_FILE, text.encode("utf-8"))
     except OSError:
         return False
-    load_persona_cache()
     return True
-
-
-def save_persona_pending(applied: str, disk: str) -> bool:
-    """落一条没保存成人设的取用记录
-
-    - 两份正文一起存，重启后才拼得回当初的比对
-    - 写不进返回 False，内存那份照样留着，本次选择仍然算数
-    """
-    mark_persona_pending(applied, disk)
-    payload = json.dumps({"applied": applied, "disk": disk}, ensure_ascii=False)
-    try:
-        write_bytes_atomic(PERSONA_PENDING, payload.encode("utf-8"))
-    except OSError:
-        return False
-    return True
-
-
-def load_persona_pending() -> bool:
-    """读未定稿的取用记录并装进内存
-
-    - 记录缺失或读不懂即按没有待拍板处理，文件原样留着
-    """
-    try:
-        raw = json.loads(PERSONA_PENDING.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        clear_persona_pending()
-        return False
-    texts = _pending_texts(raw)
-    if texts is None:
-        clear_persona_pending()
-        return False
-    mark_persona_pending(*texts)
-    return True
-
-
-def drop_persona_pending() -> None:
-    """抹掉取用记录，内存与文件一起撤
-
-    - 文件删不掉不报错，留着下次启动照样只问不改
-    """
-    clear_persona_pending()
-    try:
-        PERSONA_PENDING.unlink(missing_ok=True)
-    except OSError:
-        pass
-
-
-def _pending_texts(raw: object) -> tuple[str, str] | None:
-    """从记录里取出两份正文，形状不对即交空"""
-    if not isinstance(raw, dict):
-        return None
-    applied, disk = raw.get("applied"), raw.get("disk")
-    if not isinstance(applied, str) or not isinstance(disk, str):
-        return None
-    return applied, disk
 
 
 def mark_persona_prompted() -> None:

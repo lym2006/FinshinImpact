@@ -48,9 +48,18 @@ class BotManager:
         await self._initializer.execute()
         await self._applier.apply_config()
 
+        # 先拍「文件这份要不要生效」，再问「文件本身要不要换成新版模板」
+        self._initializer.detect_external_persona()
+
         # 勾选态已进内存，人设对账据此决定要不要打扰用户
         if self._initializer.sync_persona() and await self._applier.reset_identity():
             gui_bridge.request_notice.emit(MiscMessage.PERSONA_AUTO_APPLIED, False)
+
+    def on_persona_committed(self, text: str, source: str) -> None:
+        """人设正文定稿回调"""
+        self._loop.call_soon_threadsafe(
+            self._signals.handle_persona_committed, text, source
+        )
 
     def on_config_candidate(self) -> None:
         """候选配置待验回调"""

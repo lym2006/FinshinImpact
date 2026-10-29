@@ -8,11 +8,12 @@
 from typing import TYPE_CHECKING
 
 from core.domain import ConfigKey, ConfigSection, FieldKey
-from skin.messages import CheckMessage
+from skin.messages import CheckMessage, DialogMessage
 from system.profile_env import get_profile, read_token
 from ui import gui_bridge
 from utils import config_manager
-from utils.persona import applied_persona_text
+from utils.init_files import save_persona_text
+from utils.persona import applied_persona_text, load_persona_cache, save_applied_persona
 
 from ..error_guard import error_guard
 
@@ -107,6 +108,29 @@ class ConfigApplier:
         owner = config_manager.get(ConfigKey.OWNER.path(ConfigSection.CHORE), str)
         return (owner.strip(), applied_persona_text())
 
+    async def commit_persona(self, text: str, source: str) -> None:
+        """人设正文一次独立落盘
+
+        - 文件与存档都写成才换正文，写坏一次不会出现正文新文件旧
+        - 正文与生效值相同即只结清文件，不动历史
+        - 换了正文才清历史，清完把新身份记成基准
+        """
+        if not save_persona_text(text) or not save_applied_persona(text):
+            gui_bridge.request_notice.emit(
+                DialogMessage.SETUP_PERSONA_FILE_CREATE_FAIL, False
+            )
+            return
+        changed = text != applied_persona_text()
+        load_persona_cache()
+        if changed:
+            await self.reset_identity()
+        tip = (
+            DialogMessage.PERSONA_APPLIED_RESET
+            if changed
+            else DialogMessage.PERSONA_APPLIED_KEPT
+        )
+        gui_bridge.request_persona_applied.emit(tip.format(source=source))
+
     async def reset_identity(self) -> bool:
         """清掉全部会话与落盘记录并把当前身份记成基准
 
@@ -119,7 +143,6 @@ class ConfigApplier:
         for reset in resets:
             await reset()
         self._last_identity = self._current_identity()
-        self._host._logger.info("人设或主人已变更，全部对话历史与落盘记录已清空")
         return True
 
     async def _reset_stale_identity(self) -> None:

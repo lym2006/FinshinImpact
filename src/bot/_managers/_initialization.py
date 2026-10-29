@@ -12,16 +12,16 @@ from data import (
     purge_dead_tasks,
     run_migrations,
 )
+from skin.messages import DialogMessage
 from ui import gui_bridge
 from utils.init_files import (
     PersonaSync,
     init_project_files,
-    load_persona_pending,
     sync_persona_template,
 )
 from utils.lifecycle import register_lifecycle
 from utils.paths import DB_BACKUP_DIR, DB_FILE
-from utils.persona import load_persona_cache
+from utils.persona import applied_persona_text, load_persona_cache, read_persona_file
 
 from ._base import BaseManager
 
@@ -46,26 +46,36 @@ class InitializationManager(BaseManager):
         load_persona_cache()
 
     def sync_persona(self) -> bool:
-        """人设模板对账并交接未定稿的取用
+        """人设模板对账
 
-        - 对账可能换过副本，按磁盘当前内容重装一遍才是最终正文
-        - 装填会抹掉内存里的取用记录，读档必须排在装填之后
+        - 对账可能补建过副本，按存档重装一遍才是最终正文
         - 返回正文是否自动换过新版
         """
         result = sync_persona_template()
         load_persona_cache()
-        updated = result == PersonaSync.UPDATED
-        if updated:
-            self.logger.debug("实例人设从未改动，已更新为最新默认人设")
-        elif result == PersonaSync.NOTIFY:
-            self.logger.debug("默认人设有更新，弹窗询问是否覆盖")
+        if result == PersonaSync.NOTIFY:
             gui_bridge.request_persona_update.emit()
+        return result == PersonaSync.UPDATED
 
-        # 上次没保存的选择要重新拍板，不拍板就留着记录下次照问
-        if load_persona_pending():
-            self.logger.debug("有人设选择没保存，弹窗要求重新拍板")
-            gui_bridge.request_persona_pending.emit()
-        return updated
+    def detect_external_persona(self) -> None:
+        """比对实例文件与上次生效存档
+
+        - 文件读不出即不打扰，装填那处已报过
+        - 两份不一致才发信号，由界面开合一拍板窗
+        """
+        disk = read_persona_file()
+        if disk is None:
+            return
+        applied = applied_persona_text()
+        if disk == applied:
+            return
+        gui_bridge.request_persona_resolve.emit(
+            applied,
+            disk,
+            DialogMessage.SETUP_PERSONA_LABEL_SAVED,
+            DialogMessage.SETUP_PERSONA_LABEL_FILE,
+            DialogMessage.SETUP_PERSONA_SOURCE_FILE,
+        )
 
     async def _migrate_database(self) -> None:
         """补做迁移并拒绝读不懂的库结构

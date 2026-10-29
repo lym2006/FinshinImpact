@@ -9,12 +9,6 @@
 from skin.messages import CheckMessage
 from skin.theme import SETTINGS_DIALOG
 from utils import config_manager
-from utils.persona import (
-    applied_persona_text,
-    clear_draft_persona,
-    draft_persona_text,
-    pending_persona,
-)
 
 from ..._bridge import gui_bridge
 from ..._dialogs import (
@@ -199,26 +193,6 @@ class SettingsController(BaseController):
 
             # 校验在途时关面板即放弃本次操作，候选与后台轮一并掐掉
             self._verify.abort_pending()
-            self._drop_draft()
         self._panel.deleteLater()
         self._panel = None
         self._is_dialog_open = False
-
-    def _drop_draft(self) -> None:
-        """面板取消即丢掉草稿，生效正文与文件都原样留着
-
-        - 取用记录不动，没保存的选择下次启动重新拍板
-        - 生效缓存全程不动，没保存即对话身份没变，历史一行不少
-        """
-        pending = pending_persona()
-        draft_changed = draft_persona_text() != applied_persona_text()
-        if not draft_changed and pending is None:
-            return
-        clear_draft_persona()
-        text = (
-            SETTINGS_DIALOG.persona_discarded_kept
-            if pending is not None
-            else SETTINGS_DIALOG.persona_discarded
-        )
-        self.logger.debug(text)
-        NoticeDialog.notify(text, parent=self.gui)
