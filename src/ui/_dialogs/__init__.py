@@ -13,14 +13,9 @@ from ._check import (
 )
 from ._link import LinkDialog
 from ._notice import NoticeDialog
-from ._persona import PersonaSyncDialog
+from ._persona import PersonaResolveDialog, PersonaSyncDialog
 from ._release_notes import ReleaseNotesDialog
-from ._settings import (
-    ChangeConfirmDialog,
-    ConfigMode,
-    PersonaResolveDialog,
-    SettingsDialog,
-)
+from ._settings import ChangeConfirmDialog, ConfigMode, SettingsDialog
 from ._shutdown import ShutdownDialog
 from ._wait import WaitDialog
 

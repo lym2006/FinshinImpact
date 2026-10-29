@@ -1,4 +1,4 @@
-# src/ui/_dialogs/_settings/_persona_resolve.py
+# src/ui/_dialogs/_persona/_resolve.py
 """人设正文拍板窗
 
 - 左右两栏比对两份正文，两份一致即只提示一句
@@ -21,8 +21,8 @@ from skin.theme import CHANGE_DIALOG, SETTINGS_DIALOG, ButtonStyle
 from ..._bridge import gui_bridge
 from ..._primitives import make_button
 from .._base import BaseDialog
+from .._diff import make_diff_cell, split_diff, to_lines
 from .._notice import NoticeDialog
-from ._diff import make_diff_cell, split_diff, to_lines
 
 # Qt 布局四边
 _MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
