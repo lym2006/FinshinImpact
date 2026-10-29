@@ -13,6 +13,7 @@
 - 运行期只读生效正文，外部改过的副本要拍板才生效
 - 外部改动靠文件与存档比对检出，一致或读不出都不打扰
 - 磁盘正文按副本、内置模板、空正文三级取，取正文不装填正文
+- 两栏比对给对侧补占位行，未改动长段折成一行提示
 - 副本与模板和戳都不同即判不出未改动，只提示不覆盖
 - 写入副本只动副本，存档与对账戳留给落盘与对账
 - 模板原文供覆盖确认窗比对，读不出给空串
@@ -34,6 +35,7 @@ from system.profile_env import set_profile  # noqa: E402
 set_profile("tg.000000")
 
 from skin.messages import DialogMessage, MiscMessage  # noqa: E402
+from ui._dialogs._diff import split_diff, split_diff_aligned  # noqa: E402
 from utils import init_files, persona  # noqa: E402
 
 _V1 = "# 默认人设 v1\n"
@@ -632,6 +634,77 @@ class TestReadPersonaText(_StageBase):
 
         self.assertEqual(persona.build_persona(""), _V1)
         self.assertEqual(persona.applied_persona_text(), _V1)
+
+
+class TestDiffFold(unittest.TestCase):
+    """两栏比对的补位与未改动折叠"""
+
+    def setUp(self) -> None:
+        self.old = [f"第 {i} 行" for i in range(1, 41)]
+
+    def _kinds(self, rows: list[list[tuple[str, str]]]) -> list[str]:
+        """栏内出现过的行档"""
+        return [kind for line in rows for kind, _ in line]
+
+    def test_long_equal_run_folds(self) -> None:
+        """未改动长段折成一行提示，两栏各一份且行数相等"""
+        new = self.old[:]
+        new[2] = "第 2 行改过"
+
+        left, right = split_diff_aligned(
+            self.old, new, DialogMessage.SETUP_PERSONA_RESOLVE_SKIP, context=3
+        )
+
+        self.assertEqual(len(left), len(right))
+        hints = [text for line in left for kind, text in line if kind == "skip"]
+        self.assertEqual(hints, [DialogMessage.SETUP_PERSONA_RESOLVE_SKIP.format(n=31)])
+
+    def test_short_equal_run_stays(self) -> None:
+        """未改动段短到省不下几行即不折"""
+        old = [f"第 {i} 行" for i in range(1, 9)]
+        new = old[:]
+        new[2] = "第 3 行改过"
+        new[5] = "第 6 行改过"
+
+        left, _ = split_diff_aligned(
+            old, new, DialogMessage.SETUP_PERSONA_RESOLVE_SKIP, context=3
+        )
+
+        self.assertNotIn("skip", self._kinds(left))
+        self.assertEqual(len(left), 8)
+
+    def test_no_context_shows_every_line(self) -> None:
+        """context 给 None 即整份铺开，一行不折"""
+        new = self.old[:]
+        new[2] = "第 2 行改过"
+
+        left, right = split_diff_aligned(
+            self.old, new, DialogMessage.SETUP_PERSONA_RESOLVE_SKIP, context=None
+        )
+
+        self.assertEqual([len(left), len(right)], [40, 40])
+        self.assertNotIn("skip", self._kinds(left))
+
+    def test_delete_pads_the_other_side(self) -> None:
+        """纯删行在右栏补等长占位，两栏逐行对得齐"""
+        new = self.old[:2] + self.old[5:]
+
+        left, right = split_diff_aligned(
+            self.old, new, DialogMessage.SETUP_PERSONA_RESOLVE_SKIP, context=None
+        )
+
+        self.assertEqual(len(left), len(right))
+        self.assertEqual(self._kinds(right).count("blank"), 3)
+        self.assertEqual(self._kinds(left).count("del"), 3)
+
+    def test_split_diff_stays_ragged(self) -> None:
+        """面板那条路不补位，两栏行数各按自己内容"""
+        new = self.old[:2] + self.old[5:]
+
+        left, right = split_diff(self.old, new)
+
+        self.assertEqual([len(left), len(right)], [40, 37])
+        self.assertNotIn("blank", self._kinds(right))
 
 
 if __name__ == "__main__":
