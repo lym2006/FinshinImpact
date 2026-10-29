@@ -23,7 +23,7 @@ from skin.theme import CHANGE_DIALOG, SETTINGS_DIALOG, ButtonStyle
 from ..._bridge import gui_bridge
 from ..._primitives import make_button
 from .._base import BaseDialog
-from .._diff import diff_html, make_diff_cell, split_diff_aligned, to_lines
+from .._diff import diff_html, make_long_diff_cell, split_diff_aligned, to_lines
 from .._notice import NoticeDialog
 
 # Qt 布局四边
@@ -136,7 +136,7 @@ class PersonaResolveDialog(BaseDialog):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
         layout.addWidget(QLabel(label))
-        cell = make_diff_cell([], CHANGE_DIALOG.mono_family)
+        cell = make_long_diff_cell(CHANGE_DIALOG.mono_family)
         layout.addWidget(cell, stretch=1)
         layout.addWidget(button)
         return column, cell
@@ -168,18 +168,26 @@ class PersonaResolveDialog(BaseDialog):
         self._repaint()
 
     def _link_scroll(self) -> None:
-        """两栏纵向滚动手拉手
+        """两栏横竖滚动手拉手
 
         - 补位之后两栏行数相同，值相等即同一行落在同一高度
+        - 长行不折行，横向也一起走才不会一边看行首一边看行尾
         """
-        bars = (
-            self._left_cell.verticalScrollBar(),
-            self._right_cell.verticalScrollBar(),
+        pairs = (
+            (
+                self._left_cell.verticalScrollBar(),
+                self._right_cell.verticalScrollBar(),
+            ),
+            (
+                self._left_cell.horizontalScrollBar(),
+                self._right_cell.horizontalScrollBar(),
+            ),
         )
-        for source, target in ((bars[0], bars[1]), (bars[1], bars[0])):
-            source.valueChanged.connect(
-                lambda value, to=target: self._follow_scroll(value, to)
-            )
+        for left, right in pairs:
+            for source, target in ((left, right), (right, left)):
+                source.valueChanged.connect(
+                    lambda value, to=target: self._follow_scroll(value, to)
+                )
 
     def _follow_scroll(self, value: int, target: QScrollBar) -> None:
         """一栏滚了即把值抄给另一栏，抄的过程不回手"""
