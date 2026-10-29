@@ -89,7 +89,6 @@ class SettingsDialogTheme:
     persona_resolve_text: str = DialogMessage.SETUP_PERSONA_RESOLVE_TEXT
     persona_resolve_use: str = DialogMessage.SETUP_PERSONA_RESOLVE_USE
     persona_resolve_back: str = DialogMessage.SETUP_PERSONA_RESOLVE_BACK
-    persona_resolve_confirm: str = DialogMessage.SETUP_PERSONA_RESOLVE_CONFIRM
     persona_resolve_confirm_text: str = DialogMessage.SETUP_PERSONA_RESOLVE_CONFIRM_TEXT
     persona_resolve_same: str = DialogMessage.SETUP_PERSONA_RESOLVE_SAME
 
