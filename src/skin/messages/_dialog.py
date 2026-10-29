@@ -46,7 +46,6 @@ class DialogMessage:
     SETUP_PERSONA_RESOLVE_TEXT = "两份正文不同，选一份继续"
     SETUP_PERSONA_RESOLVE_USE = "用这份"
     SETUP_PERSONA_RESOLVE_BACK = "再看看"
-    SETUP_PERSONA_RESOLVE_CONFIRM = "确认"
     SETUP_PERSONA_RESOLVE_CONFIRM_TEXT = "确认选用「{label}」？"
     SETUP_PERSONA_RESOLVE_SAME = "正文与当前生效一致，未作改动"
 
