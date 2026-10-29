@@ -24,52 +24,46 @@ class DialogMessage:
     SETUP_MODE_SYS = "仅系统代理"
     SETUP_MODE_DIRECT = "仅直连（代理软件开 TUN 时选这个）"
 
-    # 用：settings 弹窗 chore 页人设按钮行与预览弹窗
+    # 用：settings 弹窗 chore 页人设按钮行、预览弹窗与拍板窗
     SETUP_PERSONA_TITLE = "人设预览"
     SETUP_PERSONA_LABEL = "人设正文"
     SETUP_PERSONA_PREVIEW = "预览人设"
     SETUP_PERSONA_RELOAD = "从文件重新加载"
     SETUP_PERSONA_RELOAD_SAME = "文件跟当前正文一样，什么都没换"
-    SETUP_PERSONA_PENDING = "草稿尚未落盘，保存配置后生效"
-    SETUP_PERSONA_DISCARDED = "人设草稿未保存，已丢弃"
     SETUP_PERSONA_FILE_CREATE_FAIL = "人设文件建不出来，检查目录是否可写"
+    SETUP_PERSONA_FILE_READ_FAIL = "人设文件读不出，检查目录与权限"
     SETUP_PERSONA_CLOSE = "关闭"
     SETUP_PERSONA_EDIT = "编辑人设"
     SETUP_PERSONA_EDITOR_TITLE = "人设正文编辑"
     SETUP_PERSONA_EDITOR_TIP = (
-        "正文里的 {OWNER_ID} 是主人 id 占位符，保存配置时自动填入，请勿改动\n"
-        "别直接改实例人设文件，程序只在启动读它一次，改了不生效，点保存时这里的内容会盖掉它"
+        "正文里的 {OWNER_ID} 是主人 id 占位符，运行时自动填入，请勿改动\n"
+        "确认后选用哪份正文，选定即当场生效，正文变了对话历史与落盘记录一起清空"
     )
     SETUP_PERSONA_USE_TEMPLATE = "用模板覆盖"
     SETUP_PERSONA_NO_TEMPLATE = "内置默认模板读不出"
-    SETUP_PERSONA_TEMPLATE_SAME = "编辑框里的正文和模板一模一样，不用覆盖"
-    SETUP_PERSONA_TEMPLATE_TITLE = "用模板覆盖前比对"
-    SETUP_PERSONA_TEMPLATE_OK = "确认覆盖"
-    SETUP_PERSONA_VIEW_DIFF = "查看变化"
-    SETUP_PERSONA_DIFF_TITLE = "人设正文变更"
-    SETUP_PERSONA_DIFF_ORI = "当前正文"
-    SETUP_PERSONA_DIFF_MOD = "变更后"
-    SETUP_PERSONA_CONFLICT_TITLE = "人设正文不一致"
-    SETUP_PERSONA_CONFLICT_TEXT = (
-        "实例人设文件与程序生效的正文不一致，选一份继续，保存配置才真正覆盖"
-    )
-    SETUP_PERSONA_CONFLICT_DISK = "用文件版本"
-    SETUP_PERSONA_CONFLICT_APPLIED = "用生效版本"
-    SETUP_PERSONA_CHOICE_TITLE = "人设选择已记下"
-    SETUP_PERSONA_RELOAD_DISK = "文件正文已放进草稿，保存配置才生效"
-    SETUP_PERSONA_RELOAD_APPLIED = "已选生效版本，保存配置才把它写进文件"
-    SETUP_PERSONA_DISCARDED_KEPT = (
-        "人设没保存，生效正文和文件都保持原样，这次选择还记着"
-    )
-    SETUP_PERSONA_PENDING_TITLE = "上次的人设选择没保存"
-    SETUP_PERSONA_PENDING_TEXT = (
-        "人设文件跟上次记下的正文对不上，重新拍一次板。"
-        "不选就留着这条记录，生效正文和文件都不动"
-    )
-    SETUP_PERSONA_PENDING_DISK_TEXT = "用文件这份"
-    SETUP_PERSONA_PENDING_KEPT_TEXT = "用上次那份"
-    SETUP_PERSONA_PENDING_DISK_OK = "按文件这份继续，生效正文和文件都没动"
-    SETUP_PERSONA_PENDING_KEPT_OK = "上次那份已放进草稿，保存配置才生效"
+    SETUP_PERSONA_TEMPLATE_SAME = "正文和模板一样，不用覆盖"
+    SETUP_PERSONA_RESOLVE_TITLE = "人设正文有变化"
+    SETUP_PERSONA_RESOLVE_TEXT = "左右两份正文不一样，选一份继续，选完即当场生效"
+    SETUP_PERSONA_RESOLVE_USE = "用这份"
+    SETUP_PERSONA_RESOLVE_BACK = "再看看"
+    SETUP_PERSONA_RESOLVE_CONFIRM = "确认"
+    SETUP_PERSONA_RESOLVE_CONFIRM_TEXT = "确认用「{label}」这份继续？"
+    SETUP_PERSONA_RESOLVE_SAME = "正文跟现在用的一样，什么都没换"
+
+    # 用：拍板窗两栏栏名与「已生效」提示的来源词
+    SETUP_PERSONA_LABEL_SAVED = "上次生效"
+    SETUP_PERSONA_LABEL_ACTIVE = "当前生效"
+    SETUP_PERSONA_LABEL_FILE = "当前文件"
+    SETUP_PERSONA_LABEL_DISK = "文件那份"
+    SETUP_PERSONA_LABEL_EDITED = "修改后"
+    SETUP_PERSONA_LABEL_TEMPLATE = "内置模板"
+    SETUP_PERSONA_SOURCE_FILE = "文件里那一份"
+    SETUP_PERSONA_SOURCE_PANEL = "面板改的那一份"
+    SETUP_PERSONA_SOURCE_TEMPLATE = "内置模板"
+
+    # 用：Bot 人设落盘后弹的「已生效」提示
+    PERSONA_APPLIED_RESET = "人设已生效\n来源：{source}\n全部对话历史与落盘记录已清空"
+    PERSONA_APPLIED_KEPT = "人设已生效\n来源：{source}\n正文与现在用的一样，历史没动"
 
     # 用：主窗弹窗与引导期选窗共用的按钮字段
     BTN_CANCEL = "取消"

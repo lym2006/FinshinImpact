@@ -33,6 +33,7 @@ from aiogram.methods import GetMe  # noqa: E402
 from bot._managers import BotManager, _apply  # noqa: E402
 from bot._service import BotService  # noqa: E402
 from core.domain import FieldKey  # noqa: E402
+from skin.messages import DialogMessage  # noqa: E402
 from ui import gui_bridge  # noqa: E402
 
 
@@ -322,19 +323,30 @@ class TestIdentityReset(ManagerFlowTestBase):
         return calls, _reset
 
     async def test_persona_body_change_clears_once(self) -> None:
-        """正文换版即清，同一版再保存不重复清"""
+        """正文换版即清，同一份再定稿不重复清"""
         text, owner = {"v": "旧正文"}, {"v": "456"}
         calls, _ = self._stage(text, owner)
+        applier = self.manager._applier
+        saved = {"v": "旧正文"}
 
-        await self.manager._applier.apply_config()
-        self.assertEqual(calls, [], "首次应用只记基准")
+        def _store(value: str) -> bool:
+            saved["v"] = value
+            return True
 
-        text["v"] = "新正文"
-        await self.manager._applier.apply_config()
-        self.assertEqual(calls, [1], "正文换版应清一次")
+        def _load() -> None:
+            text["v"] = saved["v"]
 
-        await self.manager._applier.apply_config()
-        self.assertEqual(calls, [1], "正文没再动不该重复清")
+        with (
+            patch.object(_apply, "save_persona_text", lambda _text: True),
+            patch.object(_apply, "save_applied_persona", _store),
+            patch.object(_apply, "load_persona_cache", _load),
+            patch.object(_apply.gui_bridge, "request_persona_applied"),
+        ):
+            await applier.commit_persona("新正文", "面板改的那一份")
+            self.assertEqual(calls, [1], "正文换版应清一次")
+
+            await applier.commit_persona("新正文", "面板改的那一份")
+            self.assertEqual(calls, [1], "正文没再动不该重复清")
 
     async def test_owner_change_clears_even_with_same_body(self) -> None:
         """主人换了即便正文一字不动也清"""
@@ -362,6 +374,104 @@ class TestIdentityReset(ManagerFlowTestBase):
             await applier.apply_config()
 
         self.assertEqual(calls, [1], "入口到位即补上这次清理")
+
+
+class TestCommitPersona(ManagerFlowTestBase):
+    """人设正文一次独立落盘
+
+    - 副本与存档都写成才换正文
+    - 正文变了才清历史，提示窗写明来源
+    """
+
+    def _stage(
+        self, applied: dict, *, file_ok: bool = True, cache_ok: bool = True
+    ) -> tuple[list[int], object, object]:
+        """把副本与存档的写入、正文装填与两种提示窗都换成可控值"""
+        calls: list[int] = []
+        saved = {"v": applied["v"]}
+
+        async def _reset() -> None:
+            calls.append(1)
+
+        def _save_text(_text: str) -> bool:
+            return file_ok
+
+        def _save_cache(text: str) -> bool:
+            if not cache_ok:
+                return False
+            saved["v"] = text
+            return True
+
+        def _load() -> None:
+            applied["v"] = saved["v"]
+
+        notice = self.enterContext(patch.object(_apply.gui_bridge, "request_notice"))
+        applied_notice = self.enterContext(
+            patch.object(_apply.gui_bridge, "request_persona_applied")
+        )
+        for patcher in (
+            patch.object(self.manager._service_manager, "_history_resets", (_reset,)),
+            patch.object(_apply, "save_persona_text", _save_text),
+            patch.object(_apply, "save_applied_persona", _save_cache),
+            patch.object(_apply, "load_persona_cache", _load),
+            patch.object(_apply, "applied_persona_text", lambda: applied["v"]),
+        ):
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        return calls, applied_notice, notice
+
+    async def test_changed_body_clears_and_reports_source(self) -> None:
+        """正文换版即清历史，提示窗写来源"""
+        applied = {"v": "旧正文"}
+        calls, applied_notice, _ = self._stage(applied)
+
+        await self.manager._applier.commit_persona("新正文", "面板改的那一份")
+
+        self.assertEqual(calls, [1])
+        self.assertEqual(applied["v"], "新正文")
+        applied_notice.emit.assert_called_once_with(
+            DialogMessage.PERSONA_APPLIED_RESET.format(source="面板改的那一份")
+        )
+
+    async def test_same_body_keeps_history(self) -> None:
+        """正文与现在用的一样即只结清文件，历史不动"""
+        applied = {"v": "同一正文"}
+        calls, applied_notice, _ = self._stage(applied)
+
+        await self.manager._applier.commit_persona("同一正文", "文件里那一份")
+
+        self.assertEqual(calls, [])
+        applied_notice.emit.assert_called_once_with(
+            DialogMessage.PERSONA_APPLIED_KEPT.format(source="文件里那一份")
+        )
+
+    async def test_file_failure_leaves_body(self) -> None:
+        """副本写不进即通知失败，正文与历史都不动"""
+        applied = {"v": "旧正文"}
+        calls, applied_notice, notice = self._stage(applied, file_ok=False)
+
+        await self.manager._applier.commit_persona("新正文", "面板改的那一份")
+
+        self.assertEqual(calls, [])
+        self.assertEqual(applied["v"], "旧正文")
+        notice.emit.assert_called_once_with(
+            DialogMessage.SETUP_PERSONA_FILE_CREATE_FAIL, False
+        )
+        applied_notice.emit.assert_not_called()
+
+    async def test_cache_failure_leaves_body(self) -> None:
+        """存档写不进即通知失败，正文与历史都不动"""
+        applied = {"v": "旧正文"}
+        calls, applied_notice, notice = self._stage(applied, cache_ok=False)
+
+        await self.manager._applier.commit_persona("新正文", "面板改的那一份")
+
+        self.assertEqual(calls, [])
+        self.assertEqual(applied["v"], "旧正文")
+        notice.emit.assert_called_once_with(
+            DialogMessage.SETUP_PERSONA_FILE_CREATE_FAIL, False
+        )
+        applied_notice.emit.assert_not_called()
 
 
 class TestFatalRouting(ManagerFlowTestBase):

@@ -10,6 +10,7 @@ import threading
 import time
 from collections.abc import Callable
 from concurrent.futures import Future
+from functools import partial
 from typing import cast
 
 from adapters.telegram.diagnose import diagnose_flow
@@ -143,9 +144,19 @@ class Main:
             window.show_persona_update, "人设覆盖提示", queued=True
         )
 
-        # 未定稿的人设选择：Queued 投递到 GUI 线程，拍完板才算数
-        gui_bridge.request_persona_pending.connect(
-            window.show_persona_pending, "人设重新拍板", queued=True
+        # 人设正文定稿：Queued 投递到 Bot 线程，落盘、换正文与清历史一次做完
+        gui_bridge.persona_committed.connect(
+            self._manager.on_persona_committed, "人设落盘"
+        )
+
+        # 外部改动人设：Queued 投递到 GUI 线程，开合一拍板窗
+        gui_bridge.request_persona_resolve.connect(
+            window.show_persona_resolve, "人设拍板", queued=True
+        )
+
+        # 人设已生效：Queued 投递到 GUI 线程，正文加粗，来源与清空结果不容易看漏
+        gui_bridge.request_persona_applied.connect(
+            partial(window.show_notice, bold=True), "人设已生效", queued=True
         )
 
         # 向导内"退出程序"按钮：携带向导窗口，确认框以其为父级

@@ -1,22 +1,20 @@
 # devtools/tests/test_persona_sync.py
-"""人设模板对账与正文缓存的单元测试
+"""人设模板对账与生效正文的单元测试
 
 - 副本缺失即从模板建好并落戳，不打扰
 - 副本内容等于戳所记的模板才自动换新，行尾转换不算改动
 - 从未改动判不出即弹一键覆盖窗，提示送达才记本版已提示
-- 一键覆盖落当前模板指纹并按新副本装填正文缓存
+- 一键覆盖落当前模板指纹，换副本、刷存档与重装正文同批
 - 提示弹一键覆盖窗，自动换新只交回换新版标记
 - 总控接线换成新版且清成功才弹告知窗，清不成不弹
-- 对账排在配置进内存之后
+- 拍板排在对账前面，起服务不等拍板
 - 打开入口用的副本补建只在缺失时动手
-- 正文缓存只在启动与落盘两处按磁盘装填
-- 运行期只读缓存，外部改过的副本要重载按钮才取得到
-- 重载选完只落一条取用记录，覆盖文件与换正文都等保存那一步
-- 取用记录把两份正文一起落盘，没保存就重启也重新拍板
-- 面板草稿与生效正文各存一槽，确认才顶替、回退取备份
-- 磁盘正文按副本、内置模板、空正文三级取，取正文不装填缓存
+- 生效正文按存档装填，存档缺失按副本补落一次
+- 运行期只读生效正文，外部改过的副本要拍板才生效
+- 外部改动靠文件与存档比对检出，一致或读不出都不打扰
+- 磁盘正文按副本、内置模板、空正文三级取，取正文不装填正文
 - 副本与模板和戳都不同即判不出未改动，只提示不覆盖
-- 编辑写入只动副本与缓存，对账戳留给模板判定
+- 写入副本只动副本，存档与对账戳留给落盘与对账
 - 模板原文供覆盖确认窗比对，读不出给空串
 """
 
@@ -35,7 +33,7 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
-from skin.messages import MiscMessage  # noqa: E402
+from skin.messages import DialogMessage, MiscMessage  # noqa: E402
 from utils import init_files, persona  # noqa: E402
 
 _V1 = "# 默认人设 v1\n"
@@ -45,10 +43,10 @@ _EDITED = "# 我自己改过的人设\n"
 
 
 class _StageBase(unittest.TestCase):
-    """把模板、副本、对账戳与正文四槽换成可控值
+    """把模板、副本、对账戳与存档换成可控值
 
-    - 三个文件路径各指临时盘
-    - 正文四槽在每条用例开头清空
+    - 四个文件路径各指临时盘
+    - 生效正文槽在每条用例开头清空
     """
 
     def setUp(self) -> None:
@@ -56,30 +54,24 @@ class _StageBase(unittest.TestCase):
         self.addCleanup(stage.cleanup)
         root = Path(stage.name)
         self.template = root / "persona.example.md"
-        self.copy = root / "persona.md"
-        self.stamp = root / ".persona.base"
-        self.pending = root / ".persona.pending"
+        self.copy = root / "persona" / "persona.md"
+        self.stamp = root / "persona" / "template.sha256"
+        self.applied = root / "persona" / "applied.cache"
         self.stack = ExitStack()
         self.addCleanup(self.stack.close)
         for name, path in (
             ("PERSONA_TEMPLATE", self.template),
             ("PERSONA_FILE", self.copy),
             ("PERSONA_STAMP", self.stamp),
-            ("PERSONA_PENDING", self.pending),
         ):
             self.stack.enter_context(patch.object(init_files, name, path))
         for name, path in (
             ("PERSONA_TEMPLATE", self.template),
             ("PERSONA_FILE", self.copy),
+            ("PERSONA_APPLIED", self.applied),
         ):
             self.stack.enter_context(patch.object(persona, name, path))
-        for name, value in (
-            ("_persona_text", ""),
-            ("_persona_prev", ""),
-            ("_draft_text", None),
-            ("_pending", None),
-        ):
-            self.stack.enter_context(patch.object(persona, name, value))
+        self.stack.enter_context(patch.object(persona, "_persona_text", ""))
 
     def write_template(self, text: str) -> None:
         """写内置默认模板"""
@@ -87,6 +79,7 @@ class _StageBase(unittest.TestCase):
 
     def write_copy(self, text: str) -> None:
         """写实例人设副本"""
+        self.copy.parent.mkdir(parents=True, exist_ok=True)
         self.copy.write_text(text, encoding="utf-8")
 
     def sync(self) -> init_files.PersonaSync:
@@ -119,13 +112,14 @@ class TestSyncPersonaTemplate(_StageBase):
         )
 
     def test_untouched_copy_auto_updated(self) -> None:
-        """副本仍是戳所记的旧模板原样即自动换新"""
+        """副本仍是戳所记的旧模板原样即自动换新并顺手刷存档"""
         self.write_template(_V1)
         self.sync()
         self.write_template(_V2)
 
         self.assertIs(self.sync(), init_files.PersonaSync.UPDATED)
         self.assertEqual(self.copy.read_text(encoding="utf-8"), _V2)
+        self.assertEqual(self.applied.read_text(encoding="utf-8"), _V2)
         self.assertEqual(
             self.stamp.read_text(encoding="utf-8"), init_files._digest(self.template)
         )
@@ -209,12 +203,13 @@ class TestApplyPersonaTemplate(_StageBase):
     """用户当场授权的一键覆盖"""
 
     def test_copy_replaced_and_stamp_written(self) -> None:
-        """覆盖即换新并落当前模板指纹"""
+        """覆盖即换新副本、刷存档并落当前模板指纹"""
         self.write_template(_V2)
         self.write_copy(_EDITED)
 
         self.assertTrue(init_files.apply_persona_template())
         self.assertEqual(self.copy.read_text(encoding="utf-8"), _V2)
+        self.assertEqual(self.applied.read_text(encoding="utf-8"), _V2)
         self.assertEqual(
             self.stamp.read_text(encoding="utf-8"), init_files._digest(self.template)
         )
@@ -276,18 +271,17 @@ class TestEnsurePersonaCopy(_StageBase):
 
 
 class TestSavePersonaText(_StageBase):
-    """编辑窗确认后的正文写入"""
+    """落盘第一步只写副本"""
 
-    def test_copy_replaced_and_cache_reloaded(self) -> None:
-        """写入副本后正文按新副本重装，组装立刻取到"""
-        self.write_template(_V1)
-        self.write_copy(_EDITED)
+    def test_copy_replaced_only(self) -> None:
+        """写入即换副本，生效正文与存档都不动"""
+        self.write_copy(_V1)
         persona.load_persona_cache()
-        self.assertEqual(persona.build_persona(""), _EDITED)
 
         self.assertTrue(init_files.save_persona_text(_V2))
         self.assertEqual(self.copy.read_text(encoding="utf-8"), _V2)
-        self.assertEqual(persona.build_persona(""), _V2)
+        self.assertEqual(self.applied.read_text(encoding="utf-8"), _V1)
+        self.assertEqual(persona.build_persona(""), _V1)
 
     def test_stamp_left_untouched(self) -> None:
         """写过的副本不刷戳，对账按用户改动版处理"""
@@ -325,39 +319,60 @@ class TestReadTemplateText(_StageBase):
         self.assertEqual(persona.read_template_text(), "")
 
 
-class TestResyncOnSave(_StageBase):
-    """启动对账把正文换成磁盘当前内容
-
-    - 对账之外运行期不再读实例文件
-    """
+class TestExternalDetection(_StageBase):
+    """启动比对文件与存档，不一致才开拍板窗"""
 
     def setUp(self) -> None:
         super().setUp()
         from bot._managers import _initialization
 
-        self.stack.enter_context(
-            patch.object(_initialization.gui_bridge, "request_persona_update")
-        )
         self.manager = _initialization.InitializationManager()
+        self.resolve = self.stack.enter_context(
+            patch.object(_initialization.gui_bridge, "request_persona_resolve")
+        )
 
-    def _body(self) -> str:
-        """取当前组装出的正文"""
-        return persona.build_persona("")
-
-    def test_copy_edit_reads_in_after_resync(self) -> None:
-        """重跑一次即按磁盘当前内容重新组装，且不动副本"""
-        self.write_template(_V1)
-        self.manager.sync_persona()
-        self.assertEqual(self._body(), _V1)
-
+    def test_edited_copy_opens_resolve(self) -> None:
+        """文件与存档不一致即发拍板信号，带两栏栏名与来源词"""
+        self.write_copy(_V1)
+        persona.load_persona_cache()
         self.write_copy(_EDITED)
 
-        self.assertEqual(self._body(), _V1)
+        self.manager.detect_external_persona()
 
-        self.manager.sync_persona()
+        self.resolve.emit.assert_called_once_with(
+            _V1,
+            _EDITED,
+            DialogMessage.SETUP_PERSONA_LABEL_SAVED,
+            DialogMessage.SETUP_PERSONA_LABEL_FILE,
+            DialogMessage.SETUP_PERSONA_SOURCE_FILE,
+        )
 
-        self.assertEqual(self._body(), _EDITED)
-        self.assertEqual(self.copy.read_text(encoding="utf-8"), _EDITED)
+    def test_cache_keeps_applied_after_edit(self) -> None:
+        """外部改动不自动顶替生效正文"""
+        self.write_copy(_V1)
+        persona.load_persona_cache()
+        self.write_copy(_EDITED)
+
+        self.assertEqual(persona.build_persona(""), _V1)
+
+    def test_same_text_stays_silent(self) -> None:
+        """两处一致不打扰"""
+        self.write_copy(_V1)
+        persona.load_persona_cache()
+
+        self.manager.detect_external_persona()
+
+        self.resolve.emit.assert_not_called()
+
+    def test_missing_file_stays_silent(self) -> None:
+        """文件读不出不打扰，装填那处已报过"""
+        self.write_copy(_V1)
+        persona.load_persona_cache()
+        self.copy.unlink()
+
+        self.manager.detect_external_persona()
+
+        self.resolve.emit.assert_not_called()
 
 
 class TestInitFiles(_StageBase):
@@ -376,6 +391,7 @@ class TestInitFiles(_StageBase):
         _initialization.InitializationManager()._init_files()
 
         self.assertEqual(persona.applied_persona_text(), _V1)
+        self.assertEqual(self.applied.read_text(encoding="utf-8"), _V1)
 
 
 class TestStartupWiring(unittest.TestCase):
@@ -445,7 +461,9 @@ class TestStartupNotice(unittest.TestCase):
 
         manager = BotManager.__new__(BotManager)
         manager._initializer = SimpleNamespace(
-            execute=_noop, sync_persona=lambda: swapped
+            execute=_noop,
+            detect_external_persona=lambda: None,
+            sync_persona=lambda: swapped,
         )
         manager._applier = SimpleNamespace(apply_config=_noop, reset_identity=_reset)
         notice = self.enterContext(patch.object(_manager.gui_bridge, "request_notice"))
@@ -480,10 +498,10 @@ class TestStartupNotice(unittest.TestCase):
 
 
 class TestStartupOrder(unittest.TestCase):
-    """对账排在配置进内存之后"""
+    """拍板排在对账前面，起服务不等拍板"""
 
-    def test_sync_runs_after_config_apply(self) -> None:
-        """start 先应用配置再对人设"""
+    def test_resolve_runs_before_sync(self) -> None:
+        """start 先应用配置，再比对文件，最后对人设模板"""
         from bot._managers import BotManager
 
         order: list[str] = []
@@ -494,44 +512,51 @@ class TestStartupOrder(unittest.TestCase):
         async def apply_config() -> None:
             order.append("apply")
 
+        def detect() -> None:
+            order.append("detect")
+
         manager = BotManager.__new__(BotManager)
         manager._initializer = SimpleNamespace(
-            execute=execute, sync_persona=lambda: order.append("persona")
+            execute=execute,
+            detect_external_persona=detect,
+            sync_persona=lambda: order.append("persona"),
         )
         manager._applier = SimpleNamespace(apply_config=apply_config)
 
         asyncio.run(manager.start())
 
-        self.assertEqual(order, ["init", "apply", "persona"])
+        self.assertEqual(order, ["init", "apply", "detect", "persona"])
 
 
 class TestLoadPersonaCache(_StageBase):
-    """正文缓存只在启动与落盘两处显式装填"""
+    """生效正文按存档装填，存档缺失才按副本补落"""
 
-    def test_load_fills_from_copy(self) -> None:
-        """装填即取磁盘副本正文"""
-        self.write_copy(_V1)
+    def test_load_fills_from_applied(self) -> None:
+        """存档在场即以存档为准，副本内容不参与"""
+        self.write_copy(_V2)
+        self.applied.write_text(_V1, encoding="utf-8")
 
         persona.load_persona_cache()
 
         self.assertEqual(persona.applied_persona_text(), _V1)
 
-    def test_load_drops_draft(self) -> None:
-        """装填连带丢草稿，面板下屏回到磁盘正文"""
+    def test_missing_applied_seeds_from_copy(self) -> None:
+        """存档缺失即按副本装填并补落一次"""
         self.write_copy(_V1)
-        persona.set_draft_persona(_EDITED)
 
         persona.load_persona_cache()
 
-        self.assertEqual(persona.draft_persona_text(), _V1)
+        self.assertEqual(persona.applied_persona_text(), _V1)
+        self.assertEqual(self.applied.read_text(encoding="utf-8"), _V1)
 
     def test_missing_copy_falls_back_to_template(self) -> None:
-        """副本读不出即按内置模板装填"""
+        """副本读不出即按内置模板装填，不落存档"""
         self.write_template(_V2)
 
         persona.load_persona_cache()
 
         self.assertEqual(persona.applied_persona_text(), _V2)
+        self.assertFalse(self.applied.exists())
 
     def test_external_edit_stays_out_of_cache(self) -> None:
         """装填之后外部改副本不碰生效正文"""
@@ -539,150 +564,29 @@ class TestLoadPersonaCache(_StageBase):
         persona.load_persona_cache()
 
         self.write_copy(_V2)
+        persona.load_persona_cache()
 
         self.assertEqual(persona.applied_persona_text(), _V1)
         self.assertEqual(persona.build_persona(""), _V1)
 
 
-class TestDraftPersonaCache(_StageBase):
-    """面板草稿与生效正文各存一槽，草稿不落文件"""
+class TestSaveAppliedPersona(_StageBase):
+    """上次生效存档的写入"""
 
-    def test_draft_follows_applied_before_editing(self) -> None:
-        """未起稿时草稿就是生效正文"""
-        self.write_copy(_V1)
-        persona.load_persona_cache()
+    def test_stored_as_raw_text(self) -> None:
+        """主人占位符保持字面，换主人不被判成正文变了"""
+        self.assertTrue(persona.save_applied_persona("主人是 {OWNER_ID}\n"))
 
-        self.assertEqual(persona.draft_persona_text(), _V1)
+        self.assertEqual(
+            self.applied.read_text(encoding="utf-8"), "主人是 {OWNER_ID}\n"
+        )
 
-    def test_draft_leaves_applied_untouched(self) -> None:
-        """起草稿不动生效正文也不动磁盘"""
-        self.write_copy(_V1)
-        persona.load_persona_cache()
+    def test_unwritable_returns_false(self) -> None:
+        """写不进返回 False，调用方据此不换正文"""
+        self.applied.parent.mkdir(parents=True, exist_ok=True)
+        self.applied.mkdir()
 
-        persona.set_draft_persona(_EDITED)
-
-        self.assertEqual(persona.build_persona(""), _V1)
-        self.assertEqual(self.copy.read_text(encoding="utf8"), _V1)
-
-    def test_apply_draft_swaps_cache_only(self) -> None:
-        """确认草稿只顶替生效正文，文件仍留旧正文"""
-        self.write_copy(_V1)
-        persona.load_persona_cache()
-        persona.set_draft_persona(_EDITED)
-
-        self.assertEqual(persona.apply_draft_persona(), _EDITED)
-        self.assertEqual(persona.applied_persona_text(), _EDITED)
-        self.assertEqual(self.copy.read_text(encoding="utf8"), _V1)
-
-    def test_apply_unchanged_draft_reports_nothing(self) -> None:
-        """草稿与生效正文一字不差即本轮没有人设变更"""
-        self.write_copy(_V1)
-        persona.load_persona_cache()
-        persona.set_draft_persona(_V1)
-
-        self.assertIsNone(persona.apply_draft_persona())
-        self.assertEqual(persona.applied_persona_text(), _V1)
-
-    def test_revert_keeps_draft(self) -> None:
-        """回退只把生效正文换回顶替前的备份，草稿留着待续存"""
-        self.write_copy(_V1)
-        persona.load_persona_cache()
-        persona.set_draft_persona(_EDITED)
-        persona.apply_draft_persona()
-
-        persona.revert_persona_cache()
-
-        self.assertEqual(persona.applied_persona_text(), _V1)
-        self.assertEqual(persona.draft_persona_text(), _EDITED)
-
-    def test_save_clears_both_slots(self) -> None:
-        """正文落盘即按新副本重装，草稿一起清掉"""
-        self.write_copy(_V1)
-        persona.load_persona_cache()
-        persona.set_draft_persona(_EDITED)
-        persona.apply_draft_persona()
-
-        self.assertTrue(init_files.save_persona_text(_EDITED))
-
-        self.assertEqual(persona.applied_persona_text(), _EDITED)
-        self.assertEqual(persona.draft_persona_text(), _EDITED)
-        self.assertEqual(self.copy.read_text(encoding="utf8"), _EDITED)
-
-
-class TestPersonaPending(_StageBase):
-    """重载按钮选完只落一条取用记录，覆盖文件与换正文都等保存"""
-
-    def test_mark_touches_nothing(self) -> None:
-        """记下两份正文不动生效、草稿与磁盘副本"""
-        self.write_copy(_V1)
-        persona.load_persona_cache()
-        self.write_copy(_EDITED)
-
-        persona.mark_persona_pending(_V1, _EDITED)
-
-        self.assertEqual(persona.applied_persona_text(), _V1)
-        self.assertEqual(persona.draft_persona_text(), _V1)
-        self.assertEqual(self.copy.read_text(encoding="utf8"), _EDITED)
-        self.assertFalse(self.pending.exists())
-
-    def test_record_keeps_both_texts(self) -> None:
-        """落盘记录存住两份正文，重启读档才拼得回比对"""
-        self.write_copy(_V1)
-        persona.load_persona_cache()
-
-        self.assertTrue(init_files.save_persona_pending(_V1, _EDITED))
-
-        record = persona.pending_persona()
-        self.assertIsNotNone(record)
-        self.assertEqual(record.applied, _V1)
-        self.assertEqual(record.disk, _EDITED)
-        self.assertEqual(self.copy.read_text(encoding="utf8"), _V1)
-
-        persona.load_persona_cache()
-        self.assertTrue(init_files.load_persona_pending())
-
-        reloaded = persona.pending_persona()
-        self.assertEqual(reloaded, record)
-
-    def test_missing_record_is_no_pending(self) -> None:
-        """没记录即没待拍板，读档报否"""
-        self.write_copy(_V1)
-        persona.load_persona_cache()
-
-        self.assertFalse(init_files.load_persona_pending())
-        self.assertIsNone(persona.pending_persona())
-
-    def test_broken_record_stays_put(self) -> None:
-        """记录读不懂即按没待拍板处理，文件原样留着"""
-        self.pending.write_text("不是 json", encoding="utf-8")
-
-        self.assertFalse(init_files.load_persona_pending())
-        self.assertIsNone(persona.pending_persona())
-        self.assertTrue(self.pending.exists())
-
-    def test_loading_cache_clears_record(self) -> None:
-        """按磁盘装填后两边本就一致，内存那份随之撤掉"""
-        self.write_copy(_V1)
-        persona.load_persona_cache()
-        persona.mark_persona_pending(_V1, _EDITED)
-
-        persona.load_persona_cache()
-
-        self.assertIsNone(persona.pending_persona())
-
-    def test_drop_clears_record_file(self) -> None:
-        """抹记录同时撤内存与文件，生效正文与草稿原样留着"""
-        self.write_copy(_V1)
-        persona.load_persona_cache()
-        self.assertTrue(init_files.save_persona_pending(_V1, _EDITED))
-        persona.set_draft_persona(_V2)
-
-        init_files.drop_persona_pending()
-
-        self.assertFalse(self.pending.exists())
-        self.assertIsNone(persona.pending_persona())
-        self.assertEqual(persona.applied_persona_text(), _V1)
-        self.assertEqual(persona.draft_persona_text(), _V2)
+        self.assertFalse(persona.save_applied_persona(_V1))
 
 
 class TestReadPersonaText(_StageBase):
@@ -694,7 +598,7 @@ class TestReadPersonaText(_StageBase):
         self.write_copy(_V1)
 
         self.assertEqual(
-            persona.read_persona_text(), (_V1, persona._PersonaSource.FILE)
+            persona._read_persona_text(), (_V1, persona._PersonaSource.FILE)
         )
 
     def test_template_used_without_copy(self) -> None:
@@ -702,13 +606,13 @@ class TestReadPersonaText(_StageBase):
         self.write_template(_V2)
 
         self.assertEqual(
-            persona.read_persona_text(), (_V2, persona._PersonaSource.TEMPLATE)
+            persona._read_persona_text(), (_V2, persona._PersonaSource.TEMPLATE)
         )
 
     def test_empty_without_copy_and_template(self) -> None:
         """模板也读不出即空正文"""
         self.assertEqual(
-            persona.read_persona_text(), ("", persona._PersonaSource.EMPTY)
+            persona._read_persona_text(), ("", persona._PersonaSource.EMPTY)
         )
 
     def test_owner_injected_into_body(self) -> None:
@@ -719,13 +623,13 @@ class TestReadPersonaText(_StageBase):
         self.assertEqual(persona.build_persona("456"), "主人 id 是 456\n")
 
     def test_read_keeps_cache_untouched(self) -> None:
-        """取正文不装填缓存，预览读盘不改运行中的正文"""
+        """取正文不装填正文，预览读盘不改运行中的正文"""
         self.write_template(_V2)
         self.write_copy(_V1)
         persona.load_persona_cache()
 
         self.write_copy(_EDITED)
-        persona.read_persona_text()
+        persona._read_persona_text()
 
         self.assertEqual(persona.build_persona(""), _V1)
         self.assertEqual(persona.applied_persona_text(), _V1)
