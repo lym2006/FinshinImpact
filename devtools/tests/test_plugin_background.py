@@ -8,8 +8,9 @@
 - 回归点 3：非 callable 成员丢弃
 - 回归点 4：轮询退出即拉起并取消常驻协程
 - 回归点 5：协程抛错只记录，不穿透引擎线程
-- 回归点 6：AI 插件把清理协程与会话清理入口交进契约
+- 回归点 6：AI 插件把清理协程、会话清理入口与问答任务处理交进契约
 - 回归点 7：注册表只认路由清单，清单交给注入的编译器组装
+- 回归点 8：插件声明的任务处理随报告一起交出
 """
 
 import asyncio
@@ -27,7 +28,7 @@ set_profile("tg.000000")
 
 from bot import _service as service_module  # noqa: E402
 from bot._service import BotService  # noqa: E402
-from core.domain import PluginRoute, PluginSpec  # noqa: E402
+from core.domain import PluginRoute, PluginSpec, TaskHandler, TaskKind  # noqa: E402
 from utils.plugin import _register  # noqa: E402
 
 
@@ -57,7 +58,7 @@ class _FakeDispatcher:
 def _register_modules(modules: dict[str, object], names: list[str]):
     """按假插件表跑一轮注册
 
-    - 返回 (报告, 协程, 清理入口) 与收到的路由
+    - 返回 (报告, 协程, 清理入口, 任务处理) 与收到的路由
     """
 
     def fake_import(full: str) -> object:
@@ -93,7 +94,7 @@ class TestCollectBackgrounds(unittest.TestCase):
         """声明了常驻协程的插件交出协程并进成功报告"""
         modules = {"AI": _plugin(backgrounds=(_noop,), history_reset=_noop)}
 
-        (report, hooks, resets), routers = _register_modules(modules, ["AI"])
+        (report, hooks, resets, _), routers = _register_modules(modules, ["AI"])
 
         self.assertEqual(hooks, (_noop,))
         self.assertEqual(resets, (_noop,))
@@ -105,7 +106,7 @@ class TestCollectBackgrounds(unittest.TestCase):
         """缺清单的插件记失败且不交出协程"""
         modules = {"AI": SimpleNamespace(backgrounds=(_noop,)), "help": _plugin()}
 
-        (report, hooks, resets), routers = _register_modules(modules, ["AI", "help"])
+        (report, hooks, resets, _), routers = _register_modules(modules, ["AI", "help"])
 
         self.assertEqual(hooks, ())
         self.assertEqual(resets, (), "缺清单的插件不该交出清理入口")
@@ -118,7 +119,9 @@ class TestCollectBackgrounds(unittest.TestCase):
         """只交 router 的插件记加载失败"""
         modules = {"bad": SimpleNamespace(router=object()), "good": _plugin()}
 
-        (report, hooks, resets), routers = _register_modules(modules, ["bad", "good"])
+        (report, hooks, resets, _), routers = _register_modules(
+            modules, ["bad", "good"]
+        )
 
         self.assertFalse(report[0][1])
         self.assertTrue(report[1][1])
@@ -130,7 +133,7 @@ class TestCollectBackgrounds(unittest.TestCase):
         """声明里混进非 callable 只丢该成员"""
         modules = {"AI": _plugin(backgrounds=(_noop, "拼错了"))}
 
-        (_, hooks, resets), _ = _register_modules(modules, ["AI"])
+        (_, hooks, resets, _), _ = _register_modules(modules, ["AI"])
 
         self.assertEqual(hooks, (_noop,))
         self.assertEqual(resets, ())
@@ -142,7 +145,9 @@ class TestCollectBackgrounds(unittest.TestCase):
             "good": _plugin(backgrounds=(_noop,)),
         }
 
-        (report, hooks, resets), routers = _register_modules(modules, ["bad", "good"])
+        (report, hooks, resets, _), routers = _register_modules(
+            modules, ["bad", "good"]
+        )
 
         self.assertEqual(hooks, (_noop,))
         self.assertEqual(resets, ())
@@ -155,11 +160,21 @@ class TestCollectBackgrounds(unittest.TestCase):
         """未声明常驻协程的插件照常注册，协程为空"""
         modules = {"help": _plugin()}
 
-        (report, hooks, resets), _ = _register_modules(modules, ["help"])
+        (report, hooks, resets, handlers), _ = _register_modules(modules, ["help"])
 
         self.assertEqual(hooks, ())
         self.assertEqual(resets, ())
+        self.assertEqual(handlers, ())
         self.assertEqual(report, [("help", True, "")])
+
+    def test_declared_task_handlers_returned(self) -> None:
+        """回归点 8：声明了任务处理的插件交出处理清单"""
+        declared = TaskHandler(kind=TaskKind.CHAT, run=_handle)
+        modules = {"AI": _plugin(task_handlers=(declared,)), "help": _plugin()}
+
+        (_, _, _, handlers), _ = _register_modules(modules, ["AI", "help"])
+
+        self.assertEqual(handlers, (declared,))
 
 
 class _FakeSession:
@@ -232,13 +247,14 @@ class TestAIPluginDeclares(unittest.TestCase):
     """回归点 6"""
 
     def test_cleanup_loop_is_declared(self) -> None:
-        """AI 插件把过期清理协程与会话清理入口交进契约"""
+        """AI 插件把过期清理协程、会话清理入口与问答任务处理交进契约"""
         from plugins.AI import spec
         from plugins.AI.core import purge_history
-        from plugins.AI.services import cleanup_loop
+        from plugins.AI.services import chat_task_handler, cleanup_loop
 
         self.assertEqual(spec.backgrounds, (cleanup_loop,))
         self.assertIs(spec.history_reset, purge_history)
+        self.assertEqual(spec.task_handlers, (chat_task_handler,))
 
 
 if __name__ == "__main__":

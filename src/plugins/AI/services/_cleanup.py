@@ -1,16 +1,15 @@
-# src/plugins/AI/services/_monitor.py
-"""队列监控服务
+# src/plugins/AI/services/_cleanup.py
+"""会话清理服务
 
-- 实现任务消费与会话清理循环
+- 实现过期记录与闲置会话的后台清理
 """
 
 import asyncio
 import time
-from asyncio import CancelledError
 from typing import NoReturn
 
 from core.domain.ids import SessionKey
-from exceptions import MessageVanishedError
+from services.tasks import get_task_service
 from utils import get_logger
 
 from ..config import ai_config
@@ -20,54 +19,9 @@ from ..core import (
     purge_pending,
     purge_sessions,
     session_states,
-    task_queues,
 )
-from ..state import session_locks
-from .worker import worker_loop
 
-_logger = get_logger("Plg.AI.Monitor")
-
-
-async def monitor_loop(key: SessionKey) -> None:
-    """监控任务队列
-
-    - 有任务即消费，队列空时清理退出
-    """
-    state = session_states[key]
-    queue = task_queues[key]
-
-    try:
-        while True:
-            # 消费循环：peek 队首，空则置非活跃退出
-            ctx = await queue.peek_front()
-            if ctx is None:
-                _logger.debug(f"{key} 队列为空")
-                state.is_active = False
-                break
-
-            try:
-                await worker_loop(ctx)
-            except MessageVanishedError:
-                _logger.error(f"{key} 原消息被删除")
-            except CancelledError:
-                _logger.error(f"{key} 任务被取消")
-                raise
-            except Exception as e:
-                _logger.send_error(f"{key} 任务出错", e)
-            finally:
-                # 无论成功失败，都必须将当前任务出队
-                await queue.pop_front()
-
-    except CancelledError:
-        _logger.error(f"{key} 监控循环被取消")
-        raise
-    except Exception as e:
-        # 外层兜底：崩溃只记录不外抛，防拖垮宿主
-        _logger.send_error(f"{key} 监控循环崩溃", e)
-    finally:
-        state.is_active = False
-        session_locks.pop(key, None)
-        _logger.debug(f"{key} 监控循环结束")
+_logger = get_logger("Plg.AI.Cleanup")
 
 
 def _purge_records(deadline: float) -> tuple[SessionKey, ...]:
@@ -90,13 +44,11 @@ def _purge_records(deadline: float) -> tuple[SessionKey, ...]:
 
 
 async def _release_inflight() -> None:
-    """作废会话内存态并收掉在途协程"""
-    # 活跃标记留在账上，下轮新消息只入队不起监控，那一路容器从此不应答
+    """作废会话内存态并收掉在途问答"""
     session_states.clear()
-    task_queues.clear()
-    session_locks.clear()
+    await get_task_service().release()
 
-    # 队列项揣着停机前那套引擎的连接句柄，新引擎接着答它必撞错
+    # 摘要压缩不排队，停服时单独收
     tasks = list(active_tasks)
     active_tasks.clear()
     for task in tasks:
@@ -118,18 +70,16 @@ async def cleanup_loop() -> NoReturn:
         await purge_pending()
         while True:
             deadline = time.time() - ai_config.keep_seconds
+            service = get_task_service()
 
-            # list() 快照防遍历途中改字典大小，任务非空或正在应答的容器不动
+            # list() 快照防遍历途中改字典大小，队列非空的容器不动
             idle_keys = [
                 key
                 for key, state in list(session_states.items())
-                if state.last_active < deadline
-                and not state.is_active
-                and task_queues[key].size == 0
+                if state.last_active < deadline and service.size(key) == 0
             ]
             for key in idle_keys:
                 session_states.pop(key, None)
-                task_queues.pop(key, None)
                 _logger.info(f"清理闲置会话: {key}")
 
             purged = await purge_sessions(_purge_records(deadline))

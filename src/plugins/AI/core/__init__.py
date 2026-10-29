@@ -4,7 +4,7 @@
 - 提供网络客户端、会话状态与落库出口
 """
 
-from ._chat_context import active_tasks, session_guard, session_states, task_queues
+from ._chat_context import active_tasks, session_guard, session_states
 from ._client import AIClient, StreamUsage
 from ._store import (
     clear_session,
@@ -17,7 +17,6 @@ from ._store import (
     save_session,
     save_summary,
 )
-from ._tasks import TaskQueue
 
 __all__ = [
     # 网络客户端
@@ -27,9 +26,6 @@ __all__ = [
     "active_tasks",
     "session_guard",
     "session_states",
-    "task_queues",
-    # 异步任务队列
-    "TaskQueue",
     # 会话落库
     "clear_session",
     "purge_history",

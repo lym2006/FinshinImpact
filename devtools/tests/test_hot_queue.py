@@ -44,7 +44,7 @@ _OTHER_CONTAINER = ContainerKey("g999")
 
 
 class _NullPort(InteractionPort):
-    """占位端口，队列不碰它"""
+    """入队路径用的占位端口"""
 
     async def send_message(
         self,
@@ -149,13 +149,13 @@ class TestHotQueue(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.queue.size(_GROUP), 1)
         self.assertEqual(self.queue.size(_OTHER), 1)
 
-    async def test_discard_drops_whole_container(self) -> None:
+    async def test_discard_all_drops_every_container(self) -> None:
         await self.queue.push(_item("111"))
-        await self.queue.push(_item("222"))
+        await self.queue.push(_item("222", container=_OTHER_CONTAINER))
 
-        self.assertEqual(await self.queue.discard(_GROUP), 2)
+        self.assertEqual(await self.queue.discard_all(), 2)
         self.assertEqual(self.queue.size(_GROUP), 0)
-        self.assertIsNone(await self.queue.pop_next(_GROUP))
+        self.assertEqual(self.queue.size(_OTHER), 0)
 
 
 if __name__ == "__main__":

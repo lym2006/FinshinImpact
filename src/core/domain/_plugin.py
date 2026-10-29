@@ -5,7 +5,7 @@
 - 定义插件相关文件名词表
 - 定义插件数据契约的键名词表
 - 定义插件清单标量字段的类型、必填与默认
-- 定义插件路由清单、常驻协程与历史清理协程的签名
+- 定义插件路由清单、常驻协程、历史清理协程与任务处理清单的签名
 - 定义平台侧的路由挂载口
 """
 
@@ -13,6 +13,8 @@ from collections.abc import Awaitable, Callable, Coroutine
 from dataclasses import dataclass
 from enum import IntEnum, StrEnum
 from typing import Any, Protocol
+
+from ._task import TaskKind
 
 PLUGINS_PKG = "plugins"  # 插件树顶层包名，find_spec 与动态导入路径共用同值
 
@@ -27,6 +29,20 @@ PluginPredicate = Callable[..., Awaitable[bool]]
 
 # 路由处理函数，首位按位置收原始事件，ctx 按名注入
 _PluginHandler = Callable[..., Awaitable[None]]
+
+# 任务处理函数，只吃归一后的处理上下文，报错自行收干净再交回调度
+TaskRun = Callable[..., Awaitable[None]]
+
+
+@dataclass(frozen=True, slots=True)
+class TaskHandler:
+    """一条任务处理声明
+
+    - kind 是派发依据，同一类型只认最先交出来的那个
+    """
+
+    kind: TaskKind
+    run: TaskRun
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,11 +63,13 @@ class PluginSpec:
     - routes 的顺序即匹配优先级
     - backgrounds 随 Bot 服务起停
     - history_reset 交出本插件的对话历史清理入口，不涉历史的插件留空
+    - task_handlers 交出本插件能吃下的任务类型与处理协程，不排队的插件留空
     """
 
     routes: tuple[PluginRoute, ...] = ()
     backgrounds: tuple[PluginBackground, ...] = ()
     history_reset: PluginReset | None = None
+    task_handlers: tuple[TaskHandler, ...] = ()
 
 
 class RouteSink(Protocol):

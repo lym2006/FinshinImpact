@@ -1,38 +1,54 @@
 # src/plugins/AI/services/_ai_chat.py
 """对话分发服务
 
-- 实现入队、状态提示与监控启动
+- 实现问答入队与单条消费
 """
 
-import asyncio
+from asyncio import CancelledError
 
+from core.domain import TaskHandler, TaskKind, TaskPriority
+from exceptions import MessageVanishedError
 from services.context import HandlerContext
+from services.tasks import TaskItem, get_task_service
 from utils import get_logger
 
-from ..core import active_tasks, session_states, task_queues
-from ..state import session_locks
 from ..utils import make_session_key
-from ._monitor import monitor_loop
+from .worker import worker_loop
 
 _logger = get_logger("Plg.AI")
 
 
 async def handle_ai_chat(ctx: HandlerContext) -> None:
-    """入队消息并启动监控"""
+    """把一次问答排进本容器的队列"""
     key = make_session_key(ctx.event.principal)
+    service = get_task_service()
+    await service.enqueue(
+        TaskItem(
+            container_key=key,
+            principal_key=ctx.event.principal.key,
+            kind=TaskKind.CHAT,
+            priority=TaskPriority.NORMAL,
+            ctx=ctx,
+        )
+    )
+    _logger.info(f"容器 {key} 新任务入队，当前长度: {service.size(key)}")
 
-    state = session_states[key]
-    queue = task_queues[key]
 
-    lock = session_locks[key]
-    async with lock:
-        await queue.add_task(ctx)
+async def _run_chat_task(ctx: HandlerContext) -> None:
+    """消费一条问答
 
-        if not state.is_active:
-            _logger.debug(f"{key} 监控循环启动")
-            state.is_active = True
-            monitor_task = asyncio.create_task(monitor_loop(key))
-            active_tasks.add(monitor_task)
-            monitor_task.add_done_callback(active_tasks.discard)
-        else:
-            _logger.info(f"容器 {key} 新任务入队，当前长度: {queue.size}")
+    - 原消息被删只记账，取消照线上抛，其余报错交上报
+    """
+    key = make_session_key(ctx.event.principal)
+    try:
+        await worker_loop(ctx)
+    except MessageVanishedError:
+        _logger.error(f"{key} 原消息被删除")
+    except CancelledError:
+        _logger.error(f"{key} 任务被取消")
+        raise
+    except Exception as e:
+        _logger.send_error(f"{key} 任务出错", e)
+
+
+chat_task_handler = TaskHandler(kind=TaskKind.CHAT, run=_run_chat_task)

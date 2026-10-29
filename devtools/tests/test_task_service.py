@@ -5,6 +5,8 @@
 - 队空即退并放掉该容器的活跃标记
 - 单项报错与缺处理函数都不打死整串
 - 并发闸跨容器生效，闸为一时同一时刻只跑一条
+- 同类型重复交处理函数只认最先那个
+- 收尾作废全部排队与在途
 """
 
 import asyncio
@@ -19,7 +21,13 @@ from system.profile_env import set_profile  # noqa: E402
 set_profile("tg.000000")
 
 from core.contracts import InteractionPort  # noqa: E402
-from core.domain import ChatScope, Platform, TaskKind, TaskPriority  # noqa: E402
+from core.domain import (  # noqa: E402
+    ChatScope,
+    Platform,
+    TaskHandler,
+    TaskKind,
+    TaskPriority,
+)
 from core.domain.ids import (  # noqa: E402
     KEY_SEP,
     ContainerKey,
@@ -43,7 +51,7 @@ _OTHER_CONTAINER = ContainerKey("g999")
 
 
 class _NullPort(InteractionPort):
-    """占位端口，派发不碰它"""
+    """派发路径用的占位端口"""
 
     async def send_message(
         self,
@@ -97,9 +105,13 @@ class TestTaskService(unittest.IsolatedAsyncioTestCase):
         self.faults: list[tuple[TaskItem, Exception]] = []
 
     def _service(self, handlers: dict[TaskKind, object], **kwargs: int) -> TaskService:
-        """装配一只服务，报错全部收进本用例"""
+        """把类型到处理函数的映射交进服务，报错全部收进本用例"""
+        declared = [
+            TaskHandler(kind=kind, run=run)  # type: ignore[arg-type]
+            for kind, run in handlers.items()
+        ]
         return TaskService(
-            handlers, on_fault=lambda item, e: self.faults.append((item, e)), **kwargs
+            declared, on_fault=lambda item, e: self.faults.append((item, e)), **kwargs
         )
 
     async def _finish(self, service: TaskService) -> None:
@@ -196,6 +208,67 @@ class TestTaskService(unittest.IsolatedAsyncioTestCase):
         await self._finish(service)
 
         self.assertEqual(order, ["111", "222"])
+
+    async def test_same_kind_keeps_first_handler(self) -> None:
+        order: list[str] = []
+
+        async def first(ctx: HandlerContext) -> None:
+            order.append("first")
+
+        async def second(ctx: HandlerContext) -> None:
+            order.append("second")
+
+        service = TaskService(
+            [
+                TaskHandler(kind=TaskKind.CHAT, run=first),
+                TaskHandler(kind=TaskKind.CHAT, run=second),
+            ],
+            on_fault=lambda item, e: self.faults.append((item, e)),
+        )
+        await service.enqueue(_item("111"))
+        await self._finish(service)
+
+        self.assertEqual(order, ["first"])
+
+    async def test_release_drops_rows_and_runners(self) -> None:
+        gate = asyncio.Event()
+        order: list[str] = []
+
+        async def run(ctx: HandlerContext) -> None:
+            order.append(str(ctx.event.principal.user))
+            await gate.wait()
+
+        service = self._service({TaskKind.CHAT: run})
+        await service.enqueue(_item("111"))
+        for _ in range(5):
+            await asyncio.sleep(0)
+        await service.enqueue(_item("222"))
+        await service.enqueue(_item("333", container=_OTHER_CONTAINER))
+
+        await service.release()
+
+        self.assertEqual(service._runners, {})
+        self.assertEqual(service.size(_item("111").container_key), 0)
+        self.assertEqual(order, ["111"])
+        self.assertEqual(self.faults, [])
+
+    async def test_enqueue_after_release_starts_new_runner(self) -> None:
+        order: list[str] = []
+
+        async def run(ctx: HandlerContext) -> None:
+            order.append(str(ctx.event.principal.user))
+
+        service = self._service({TaskKind.CHAT: run})
+        await service.enqueue(_item("111"))
+        await self._finish(service)
+        await service.enqueue(_item("222"))
+        await service.release()
+        self.assertEqual(order, ["111"])
+
+        await service.enqueue(_item("333"))
+        await self._finish(service)
+
+        self.assertEqual(order, ["111", "333"])
 
 
 if __name__ == "__main__":
