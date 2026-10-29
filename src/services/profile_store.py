@@ -16,6 +16,7 @@ from system.atomic_write import write_bytes_atomic
 from system.profile_env import (
     ASSET_PERSONA_EXAMPLE_NAME,
     ASSETS_DIR,
+    INSTANCE_PERSONA_DIR_NAME,
     INSTANCE_PERSONA_NAME,
     INSTANCE_PROFILE_NAME,
     INSTANCES_DIR,
@@ -29,7 +30,7 @@ from system.profile_env import (
 _TG_TOKEN_PATTERN = re.compile(r"(\d+):[A-Za-z0-9_-]+")
 
 # 引导期身份码未定，路径常量所在的通用包一导入即按空身份码冻结，故模板路径就地拼
-_PERSONALITY_EXAMPLE = ASSETS_DIR / ASSET_PERSONA_EXAMPLE_NAME
+_PERSONA_TEMPLATE = ASSETS_DIR / ASSET_PERSONA_EXAMPLE_NAME
 
 # 实例判定只认自描述文件，引导期必写，新建实例此刻还没有 config.toml
 _INSTANCE_MARK = INSTANCE_PROFILE_NAME
@@ -124,10 +125,10 @@ def create_profile(code: str, token: str, remark: str) -> None:
     target = profile_dir(code)
     target.mkdir(parents=True, exist_ok=True)
 
-    if _PERSONALITY_EXAMPLE.exists():
-        write_bytes_atomic(
-            target / INSTANCE_PERSONA_NAME, _PERSONALITY_EXAMPLE.read_bytes()
-        )
+    if _PERSONA_TEMPLATE.exists():
+        persona = target / INSTANCE_PERSONA_DIR_NAME / INSTANCE_PERSONA_NAME
+        persona.parent.mkdir(parents=True, exist_ok=True)
+        write_bytes_atomic(persona, _PERSONA_TEMPLATE.read_bytes())
 
     write_profile_data(
         code,

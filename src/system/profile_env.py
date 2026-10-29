@@ -24,8 +24,9 @@ _ROOT_MARKERS = (".git", "pyproject.toml")
 
 # 实例与资源标识符，各方必须取同一个值
 INSTANCE_PROFILE_NAME = "profile.json"  # 自描述文件，token 与备注名的唯一载体
+INSTANCE_PERSONA_DIR_NAME = "persona"
 INSTANCE_PERSONA_NAME = "persona.md"
-INSTANCE_PERSONA_STAMP_NAME = ".persona.base"  # 记最近一次打过交道的模板指纹
+INSTANCE_PERSONA_TEMPLATE_NAME = "template.sha256"  # 记最近一次打过交道的模板指纹
 INSTANCE_PERSONA_PENDING_NAME = ".persona.pending"  # 记没保存成人设的那次取用
 ASSET_PERSONA_EXAMPLE_NAME = "persona.example.md"  # 引导期复制源与运行期回退源同名
 ASSET_FONT_NAME = "font.ttf"  # GUI 令牌、帮助图、HTML 渲染三方共用
