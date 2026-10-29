@@ -3,12 +3,13 @@
 
 - 实现配置值的行级与字符级比对
 - 两栏补位与未改动折叠供长文比对
-- 提供只读 diff 单元格构建
+- 两档只读单元格共用同一套字色，长文那档不画纵向条
 """
 
 import difflib
 import html
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QTextEdit
 
 from skin.theme import CHANGE_DIALOG, ObjectName
@@ -191,33 +192,43 @@ def _blanks(count: int) -> list[_Line]:
 
 def diff_html(lines: list[_Line], mono: str) -> str:
     """一栏正文的 HTML，一行一个 div"""
-    body = (
-        "".join(
-            "<div>"
-            + (
-                "".join(
-                    f"<span style='{_DIFF_STYLE[kind]}'>"
-                    f"{html.escape(text) or '&nbsp;'}</span>"
-                    for kind, text in seg
-                )
-                or "&nbsp;"
-            )
-            + "</div>"
-            for seg in lines
-        )
-        or "&nbsp;"
-    )
+    body = "".join(_line_html(seg) for seg in lines) or "&nbsp;"
     return f"<div style=\"font-family: '{mono}';\">{body}</div>"
 
 
-def make_diff_cell(lines: list[_Line], mono: str) -> QTextEdit:
-    """只读 diff 单元格
+def _line_html(seg: _Line) -> str:
+    """一行的 HTML，空行补占位撑住高度"""
+    parts = "".join(_span_html(kind, text) for kind, text in seg)
+    return f"<div>{parts or '&nbsp;'}</div>"
 
-    - 超行高自动出滚动条
+
+def _span_html(kind: str, text: str) -> str:
+    """一段比对片段的 HTML"""
+    return f"<span style='{_DIFF_STYLE[kind]}'>{html.escape(text) or '&nbsp;'}</span>"
+
+
+def make_diff_cell(lines: list[_Line], mono: str) -> QTextEdit:
+    """短值比对单元格
+
+    - 只读，超行高自动出滚动条
     """
     view = QTextEdit()
     view.setObjectName(ObjectName.CHANGE_CELL)
     view.setReadOnly(True)
     view.setLineWrapMode(QTextEdit.LineWrapMode.NoWrap)
     view.setHtml(diff_html(lines, mono))
+    return view
+
+
+def make_long_diff_cell(mono: str) -> QTextEdit:
+    """长文比对单元格
+
+    - 只读、不折行，纵向滚动条不画但滚轮照旧
+    - 正文由调用方 setHtml 填，折叠与展开两态共用一条路径
+    """
+    view = QTextEdit()
+    view.setObjectName(ObjectName.CHANGE_CELL)
+    view.setReadOnly(True)
+    view.setLineWrapMode(QTextEdit.LineWrapMode.NoWrap)
+    view.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
     return view
