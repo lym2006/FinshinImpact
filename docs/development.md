@@ -17,7 +17,7 @@
 5. 启动：`python -m bootstrap`，先弹出「选择机器人」窗口，选定或新建实例后管理面板出现。
 6. 首次运行在选择窗点「新建」，填 Bot Token 即生成实例文件夹 `instances/<身份码>/` 并弹出配置向导，填完即完成初始化，无需手编文件。
 7. 实例文件夹：
-   - 内含 `config.toml`、`persona.md`、`.persona.base`、`.persona.pending`（仅在有人设选择没保存时出现）、`profile.json`、`records/`、`db/`（内有 `bot.db` 与 `backups/`）、`logs/`，整体不进版本库。
+   - 内含 `config.toml`、`persona/`（内有 `persona.md`、`template.sha256`、`applied.cache`）、`profile.json`、`records/`、`db/`（内有 `bot.db` 与 `backups/`）、`logs/`，整体不进版本库。
    - Bot Token 存 `profile.json`，不进 `config.toml`，面板不渲染也不可改。
 8. 身份码：
    - 经环境变量 `FINSHINIMPACT_PROFILE` 传递，单源定义在 `src/system/profile_env.py` 的 `_PROFILE_ENV`，选窗写入、业务模块导入期读取。
