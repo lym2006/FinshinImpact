@@ -145,7 +145,7 @@ class PersonaResolveDialog(BaseDialog):
         btn_back = QPushButton(SETTINGS_DIALOG.persona_resolve_back)
         btn_back.clicked.connect(self._restore_choose)
         self._btn_commit = make_button(
-            SETTINGS_DIALOG.persona_resolve_confirm, ButtonStyle.PRIMARY
+            SETTINGS_DIALOG.confirm_text, ButtonStyle.PRIMARY
         )
         self._btn_commit.clicked.connect(self._on_commit)
         layout.addWidget(btn_back)
