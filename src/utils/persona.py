@@ -34,8 +34,8 @@ class _PersonaSource(StrEnum):
 
 # 退到内置模板或空正文时的日志句，副本读不出只在装填那一处报
 _FALLBACK_HINTS = {
-    _PersonaSource.TEMPLATE: "实例人设副本读不出，正文退回内置默认模板",
-    _PersonaSource.EMPTY: "实例人设副本与内置模板均读不出，正文为空",
+    _PersonaSource.TEMPLATE: "实例人设文件无法读取，正文退回内置模板",
+    _PersonaSource.EMPTY: "实例人设文件与内置模板均无法读取，正文为空",
 }
 
 

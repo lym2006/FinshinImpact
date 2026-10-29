@@ -342,10 +342,10 @@ class TestIdentityReset(ManagerFlowTestBase):
             patch.object(_apply, "load_persona_cache", _load),
             patch.object(_apply.gui_bridge, "request_persona_applied"),
         ):
-            await applier.commit_persona("新正文", "面板改的那一份")
+            await applier.commit_persona("新正文", "面板内容")
             self.assertEqual(calls, [1], "正文换版应清一次")
 
-            await applier.commit_persona("新正文", "面板改的那一份")
+            await applier.commit_persona("新正文", "面板内容")
             self.assertEqual(calls, [1], "正文没再动不该重复清")
 
     async def test_owner_change_clears_even_with_same_body(self) -> None:
@@ -421,16 +421,16 @@ class TestCommitPersona(ManagerFlowTestBase):
         return calls, applied_notice, notice
 
     async def test_changed_body_clears_and_reports_source(self) -> None:
-        """正文换版即清历史，提示窗写来源"""
+        """正文换版即清历史，提示窗写来源栏名"""
         applied = {"v": "旧正文"}
         calls, applied_notice, _ = self._stage(applied)
 
-        await self.manager._applier.commit_persona("新正文", "面板改的那一份")
+        await self.manager._applier.commit_persona("新正文", "面板内容")
 
         self.assertEqual(calls, [1])
         self.assertEqual(applied["v"], "新正文")
         applied_notice.emit.assert_called_once_with(
-            DialogMessage.PERSONA_APPLIED_RESET.format(source="面板改的那一份")
+            DialogMessage.PERSONA_APPLIED_RESET.format(source="面板内容")
         )
 
     async def test_same_body_keeps_history(self) -> None:
@@ -438,19 +438,17 @@ class TestCommitPersona(ManagerFlowTestBase):
         applied = {"v": "同一正文"}
         calls, applied_notice, _ = self._stage(applied)
 
-        await self.manager._applier.commit_persona("同一正文", "文件里那一份")
+        await self.manager._applier.commit_persona("同一正文", "文件内容")
 
         self.assertEqual(calls, [])
-        applied_notice.emit.assert_called_once_with(
-            DialogMessage.PERSONA_APPLIED_KEPT.format(source="文件里那一份")
-        )
+        applied_notice.emit.assert_called_once_with(DialogMessage.PERSONA_APPLIED_KEPT)
 
     async def test_file_failure_leaves_body(self) -> None:
         """副本写不进即通知失败，正文与历史都不动"""
         applied = {"v": "旧正文"}
         calls, applied_notice, notice = self._stage(applied, file_ok=False)
 
-        await self.manager._applier.commit_persona("新正文", "面板改的那一份")
+        await self.manager._applier.commit_persona("新正文", "面板内容")
 
         self.assertEqual(calls, [])
         self.assertEqual(applied["v"], "旧正文")
@@ -464,7 +462,7 @@ class TestCommitPersona(ManagerFlowTestBase):
         applied = {"v": "旧正文"}
         calls, applied_notice, notice = self._stage(applied, cache_ok=False)
 
-        await self.manager._applier.commit_persona("新正文", "面板改的那一份")
+        await self.manager._applier.commit_persona("新正文", "面板内容")
 
         self.assertEqual(calls, [])
         self.assertEqual(applied["v"], "旧正文")

@@ -65,7 +65,7 @@ class PersonaSyncDialog(BaseDialog):
         NoticeDialog.notify(detail, parent=parent)
 
     def _make_buttons(self) -> QHBoxLayout:
-        """保留我的人设 / 用默认人设覆盖"""
+        """保留我的人设 / 用内置模板覆盖"""
         btn_layout = QHBoxLayout()
         btn_layout.addStretch()
         btn_keep = QPushButton(NOTICE_DIALOG.persona_keep_text)

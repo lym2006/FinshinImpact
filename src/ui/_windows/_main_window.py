@@ -185,7 +185,7 @@ class BotGUI(QMainWindow):
         PersonaSyncDialog.notify_update(parent=self)
 
     def show_persona_resolve(
-        self, old: str, new: str, old_label: str, new_label: str, source: str
+        self, old: str, new: str, old_label: str, new_label: str
     ) -> None:
         """弹出人设拍板窗
 
@@ -194,10 +194,8 @@ class BotGUI(QMainWindow):
         if QApplication.activeModalWidget() is not None:
             Ticker.after(
                 _NOTICE_RETRY_DELAY_MS,
-                lambda: self.show_persona_resolve(
-                    old, new, old_label, new_label, source
-                ),
+                lambda: self.show_persona_resolve(old, new, old_label, new_label),
             )
             return
 
-        PersonaResolveDialog(old, new, old_label, new_label, source, parent=self).exec()
+        PersonaResolveDialog(old, new, old_label, new_label, parent=self).exec()
