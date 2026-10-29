@@ -76,7 +76,6 @@ class SettingsDialogTheme:
     persona_label: str = DialogMessage.SETUP_PERSONA_LABEL
     persona_preview_text: str = DialogMessage.SETUP_PERSONA_PREVIEW
     persona_reload_text: str = DialogMessage.SETUP_PERSONA_RELOAD
-    persona_reload_same: str = DialogMessage.SETUP_PERSONA_RELOAD_SAME
     persona_file_read_fail: str = DialogMessage.SETUP_PERSONA_FILE_READ_FAIL
     persona_close_text: str = DialogMessage.SETUP_PERSONA_CLOSE
     persona_edit_text: str = DialogMessage.SETUP_PERSONA_EDIT
@@ -84,7 +83,6 @@ class SettingsDialogTheme:
     persona_editor_tip: str = DialogMessage.SETUP_PERSONA_EDITOR_TIP
     persona_use_template: str = DialogMessage.SETUP_PERSONA_USE_TEMPLATE
     persona_no_template: str = DialogMessage.SETUP_PERSONA_NO_TEMPLATE
-    persona_template_same: str = DialogMessage.SETUP_PERSONA_TEMPLATE_SAME
 
     # 人设拍板弹窗
     persona_resolve_title: str = DialogMessage.SETUP_PERSONA_RESOLVE_TITLE
@@ -95,14 +93,11 @@ class SettingsDialogTheme:
     persona_resolve_confirm_text: str = DialogMessage.SETUP_PERSONA_RESOLVE_CONFIRM_TEXT
     persona_resolve_same: str = DialogMessage.SETUP_PERSONA_RESOLVE_SAME
 
-    # 人设栏名与来源词
+    # 人设栏名，兼作「已生效」提示里的来源词
     persona_label_active: str = DialogMessage.SETUP_PERSONA_LABEL_ACTIVE
-    persona_label_disk: str = DialogMessage.SETUP_PERSONA_LABEL_DISK
+    persona_label_file: str = DialogMessage.SETUP_PERSONA_LABEL_FILE
     persona_label_edited: str = DialogMessage.SETUP_PERSONA_LABEL_EDITED
     persona_label_template: str = DialogMessage.SETUP_PERSONA_LABEL_TEMPLATE
-    persona_source_file: str = DialogMessage.SETUP_PERSONA_SOURCE_FILE
-    persona_source_panel: str = DialogMessage.SETUP_PERSONA_SOURCE_PANEL
-    persona_source_template: str = DialogMessage.SETUP_PERSONA_SOURCE_TEMPLATE
 
     # SETUP 提示文案
     setup_tip: str = DialogMessage.SETUP_TIP

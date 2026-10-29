@@ -42,7 +42,6 @@ class PersonaResolveDialog(BaseDialog):
         new: str,
         old_label: str,
         new_label: str,
-        source: str,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent=parent, title=SETTINGS_DIALOG.persona_resolve_title)
@@ -54,21 +53,17 @@ class PersonaResolveDialog(BaseDialog):
         )
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowCloseButtonHint)
 
-        # 选中那一份的正文、来源词与二次确认里点的栏名
+        # 选定那份的正文与栏名，栏名兼作落盘提示里的来源词
         self._old = old
         self._new = new
         self._old_label = old_label
         self._new_label = new_label
-        self._old_source = f"{old_label}那一份"
-        self._new_source = source
         self._chosen: tuple[str, str] = ("", "")
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(*[SETTINGS_DIALOG.input_padding_h] * _MARGIN_EDGES)
         layout.setSpacing(SETTINGS_DIALOG.tab_spacing)
-        tip = QLabel(SETTINGS_DIALOG.persona_resolve_text)
-        tip.setWordWrap(True)
-        layout.addWidget(tip)
+        layout.addWidget(QLabel(SETTINGS_DIALOG.persona_resolve_text))
         layout.addLayout(self._make_columns(old, new, old_label, new_label), 1)
         self._confirm_row = self._make_confirm_row()
         layout.addWidget(self._confirm_row)
@@ -79,7 +74,6 @@ class PersonaResolveDialog(BaseDialog):
         new: str,
         old_label: str,
         new_label: str,
-        source: str,
         parent: QWidget | None = None,
     ) -> None:
         """两份一致即只提示一句，不一致才开窗拍板
@@ -89,7 +83,7 @@ class PersonaResolveDialog(BaseDialog):
         if old == new:
             NoticeDialog.notify(SETTINGS_DIALOG.persona_resolve_same, parent=parent)
             return
-        PersonaResolveDialog(old, new, old_label, new_label, source, parent).exec()
+        PersonaResolveDialog(old, new, old_label, new_label, parent).exec()
 
     def _make_columns(
         self, old: str, new: str, old_label: str, new_label: str
@@ -146,7 +140,6 @@ class PersonaResolveDialog(BaseDialog):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
         self._confirm_tip = QLabel("")
-        self._confirm_tip.setWordWrap(True)
         layout.addWidget(self._confirm_tip)
         layout.addStretch()
         btn_back = QPushButton(SETTINGS_DIALOG.persona_resolve_back)
@@ -161,10 +154,10 @@ class PersonaResolveDialog(BaseDialog):
         return row
 
     def _on_use(self, button: QPushButton) -> None:
-        """记下选中的那份并进二次确认"""
+        """记下选中的那份正文与其栏名，进二次确认"""
         is_new = button is self._btn_new
         self._chosen = (
-            (self._new, self._new_source) if is_new else (self._old, self._old_source)
+            (self._new, self._new_label) if is_new else (self._old, self._old_label)
         )
         label = self._new_label if is_new else self._old_label
         self._confirm_tip.setText(

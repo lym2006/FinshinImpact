@@ -145,29 +145,23 @@ class PersonaPreviewRow(QWidget):
             edited,
             SETTINGS_DIALOG.persona_label_active,
             SETTINGS_DIALOG.persona_label_edited,
-            SETTINGS_DIALOG.persona_source_panel,
             parent=self.window(),
         )
 
     def _on_reload_clicked(self) -> None:
-        """比对实例文件与当前正文，按所选当场落盘
+        """现读实例文件那份，交拍板窗当场落盘
 
-        - 读文件与比对都收在这一颗按钮，一致只提示一句
+        - 读不出只提示，两份一致由拍板窗统一提示
         """
         parent = self.window()
         disk = read_persona_file()
         if disk is None:
             NoticeDialog.notify(SETTINGS_DIALOG.persona_file_read_fail, parent=parent)
             return
-        applied = applied_persona_text()
-        if disk == applied:
-            NoticeDialog.notify(SETTINGS_DIALOG.persona_reload_same, parent=parent)
-            return
-        PersonaResolveDialog(
-            applied,
+        PersonaResolveDialog.resolve(
+            applied_persona_text(),
             disk,
             SETTINGS_DIALOG.persona_label_active,
-            SETTINGS_DIALOG.persona_label_disk,
-            SETTINGS_DIALOG.persona_source_file,
-            parent,
-        ).exec()
+            SETTINGS_DIALOG.persona_label_file,
+            parent=parent,
+        )
