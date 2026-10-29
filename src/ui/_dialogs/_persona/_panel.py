@@ -1,9 +1,9 @@
-# src/ui/_dialogs/_settings/_persona.py
+# src/ui/_dialogs/_persona/_panel.py
 """人设正文入口
 
 - 面板给预览、编辑与从文件重新加载三个入口
 - 预览纯读生效正文，编辑确认与重载都当场落盘
-- 重载按钮是面板里唯一读实例文件的地方
+- 重载按钮现读实例文件那份，交比对窗拍板
 """
 
 from typing import TypeAlias
@@ -26,8 +26,8 @@ from utils.persona import applied_persona_text, inject_owner, read_persona_file
 from ..._primitives import make_button
 from .._base import BaseDialog
 from .._notice import NoticeDialog
-from ._persona_edit import PersonaEditorDialog
-from ._persona_resolve import PersonaResolveDialog
+from ._edit import PersonaEditorDialog
+from ._resolve import PersonaResolveDialog
 
 # 人设字符串被用户改成单行时渲染控件会回落 QLineEdit
 _TextWidget: TypeAlias = QTextEdit | QLineEdit

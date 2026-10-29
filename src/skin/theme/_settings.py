@@ -77,7 +77,6 @@ class SettingsDialogTheme:
     persona_preview_text: str = DialogMessage.SETUP_PERSONA_PREVIEW
     persona_reload_text: str = DialogMessage.SETUP_PERSONA_RELOAD
     persona_reload_same: str = DialogMessage.SETUP_PERSONA_RELOAD_SAME
-    persona_file_create_fail: str = DialogMessage.SETUP_PERSONA_FILE_CREATE_FAIL
     persona_file_read_fail: str = DialogMessage.SETUP_PERSONA_FILE_READ_FAIL
     persona_close_text: str = DialogMessage.SETUP_PERSONA_CLOSE
     persona_edit_text: str = DialogMessage.SETUP_PERSONA_EDIT
@@ -97,9 +96,7 @@ class SettingsDialogTheme:
     persona_resolve_same: str = DialogMessage.SETUP_PERSONA_RESOLVE_SAME
 
     # 人设栏名与来源词
-    persona_label_saved: str = DialogMessage.SETUP_PERSONA_LABEL_SAVED
     persona_label_active: str = DialogMessage.SETUP_PERSONA_LABEL_ACTIVE
-    persona_label_file: str = DialogMessage.SETUP_PERSONA_LABEL_FILE
     persona_label_disk: str = DialogMessage.SETUP_PERSONA_LABEL_DISK
     persona_label_edited: str = DialogMessage.SETUP_PERSONA_LABEL_EDITED
     persona_label_template: str = DialogMessage.SETUP_PERSONA_LABEL_TEMPLATE

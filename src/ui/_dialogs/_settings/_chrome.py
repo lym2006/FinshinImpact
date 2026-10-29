@@ -25,8 +25,8 @@ from skin.theme import GLOBAL, SETTINGS_DIALOG, ButtonStyle
 from utils.config.models import AppSchema, TabSchema
 
 from ..._primitives import make_button
+from .._persona import PersonaPreviewRow
 from ._field import FieldBuilder
-from ._persona import PersonaPreviewRow
 
 # 仅这两档用得上代理项，其余模式整行隐藏
 _PROXY_EDITABLE_MODES = (ProxyMode.AUTO, ProxyMode.CFG)

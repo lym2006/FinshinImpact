@@ -24,7 +24,7 @@ class DialogMessage:
     SETUP_MODE_SYS = "仅系统代理"
     SETUP_MODE_DIRECT = "仅直连（代理软件开 TUN 时选这个）"
 
-    # 用：settings 弹窗 chore 页人设按钮行、预览弹窗与拍板窗
+    # 用：人设入口行、预览窗与正文编辑窗
     SETUP_PERSONA_TITLE = "人设预览"
     SETUP_PERSONA_LABEL = "人设正文"
     SETUP_PERSONA_PREVIEW = "预览人设"
