@@ -7,6 +7,7 @@
 - 并发闸跨容器生效，闸为一时同一时刻只跑一条
 - 同类型重复交处理函数只认最先那个
 - 收尾作废全部排队与在途
+- 派发推进的三处逐条记账，报错项按失败记
 """
 
 import asyncio
@@ -70,6 +71,25 @@ class _NullPort(InteractionPort):
         return "@张三"
 
 
+class _StubLedger:
+    """记账路径用的占位账本，只留下调用序列"""
+
+    def __init__(self) -> None:
+        self.calls: list[str] = []
+
+    async def enqueue(self, item: TaskItem) -> None:
+        self.calls.append("enqueue")
+
+    async def begin(self, item: TaskItem) -> None:
+        self.calls.append("begin")
+
+    async def settle(self, item: TaskItem, *, failed: bool) -> None:
+        self.calls.append("settle:failed" if failed else "settle:ok")
+
+    def reset(self) -> None:
+        self.calls.append("reset")
+
+
 def _item(
     user: str,
     container: ContainerKey = _GROUP_CONTAINER,
@@ -103,6 +123,7 @@ class TestTaskService(unittest.IsolatedAsyncioTestCase):
 
     async def asyncSetUp(self) -> None:
         self.faults: list[tuple[TaskItem, Exception]] = []
+        self.ledger = _StubLedger()
 
     def _service(self, handlers: dict[TaskKind, object], **kwargs: int) -> TaskService:
         """把类型到处理函数的映射交进服务，报错全部收进本用例"""
@@ -111,7 +132,10 @@ class TestTaskService(unittest.IsolatedAsyncioTestCase):
             for kind, run in handlers.items()
         ]
         return TaskService(
-            declared, on_fault=lambda item, e: self.faults.append((item, e)), **kwargs
+            declared,
+            ledger=self.ledger,
+            on_fault=lambda item, e: self.faults.append((item, e)),
+            **kwargs,
         )
 
     async def _finish(self, service: TaskService) -> None:
@@ -165,6 +189,10 @@ class TestTaskService(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(len(self.faults), 1)
         self.assertEqual(order, ["222"])
+        self.assertEqual(
+            self.ledger.calls,
+            ["enqueue", "enqueue", "begin", "settle:failed", "begin", "settle:ok"],
+        )
 
     async def test_missing_handler_reports_and_moves_on(self) -> None:
         service = self._service({})
@@ -173,6 +201,7 @@ class TestTaskService(unittest.IsolatedAsyncioTestCase):
 
         self.assertIsInstance(self.faults[0][1], LookupError)
         self.assertEqual(service._runners, {})
+        self.assertEqual(self.ledger.calls, ["enqueue", "settle:failed"])
 
     async def test_gate_serializes_across_containers(self) -> None:
         inflight = 0
@@ -223,6 +252,7 @@ class TestTaskService(unittest.IsolatedAsyncioTestCase):
                 TaskHandler(kind=TaskKind.CHAT, run=first),
                 TaskHandler(kind=TaskKind.CHAT, run=second),
             ],
+            ledger=self.ledger,
             on_fault=lambda item, e: self.faults.append((item, e)),
         )
         await service.enqueue(_item("111"))
@@ -251,6 +281,7 @@ class TestTaskService(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(service.size(_item("111").container_key), 0)
         self.assertEqual(order, ["111"])
         self.assertEqual(self.faults, [])
+        self.assertIn("reset", self.ledger.calls)
 
     async def test_enqueue_after_release_starts_new_runner(self) -> None:
         order: list[str] = []
