@@ -9,6 +9,8 @@
 # 路径注释 → 模块 docstring → 导入 → 常量 → 业务 → 主入口 → __main__
 ```
 
+按本骨架排布的示范文件见 [`example.py`](example.py)。
+
 1. 首行相对路径 `# src/.../xx.py`，与文件名（含 `_` 前缀）严格一致。
 2. 模块 docstring：一行定位 + 空行 + 短横列表说职责。
 3. 禁用区块标题注释（`# === 对外暴露 ===`、`# === 辅助方法 ===` 一类）。
@@ -155,6 +157,11 @@
 - `__all__` 只有一项时豁免分组注释，直接裸写（如 `main`、`Main` 这类单一入口）。
 - 同源的散装模块级变量（常量、配置项、协议串）攒够三五件即收进命名空间类，不许裸变量持续堆积。
 - `core/dto` 类型一律 `DTO` 后缀（如 `PrincipalDTO`、`MsgReferenceDTO`）。
+- 类型后缀分三类：类型定义 `XxxType`，定位与寻址 `XxxKey`，身份 `XxxId`。
+  - 语义冲突时优先保语义正确，枚举惯用后缀照旧保留（`Kind`、`Mode`、`Status`、`Role`、`Scope`、`Priority`、`Flag`、`Path`、`Spec`、`Schema`、`Callback`、`Result`），不为三类硬改成 `Type`。
+- 词根贯通：表达同一概念的属性、形参、局部缩写变量同批改名。
+  - 两个概念只在有映射关系的那一处换算，不硬并。判断标准是这个词在代码里是不是同一个概念。
+- 跨 DTO 复用的语义串集中到领域层的标识模块，消费者从那里 import。配置与领域两级门面不 re-export，否则同一个类型有两个入口，改哪边都漏。
 - 词表按变更范围归层：与某 DTO 字段共变的进该 DTO 文件，横切适配层与存储的进 `core/domain`。
 - 同域成员不重复域前缀：类名或裸常量前缀已表达域义，成员只写语义本体。
   - `RowStatus.SKIP` 不写成 `ROW_STATUS_SKIP`，`CheckMessage.TIMEOUT` 不写成 `_CHECK_TIMEOUT`。
