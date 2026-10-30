@@ -495,6 +495,37 @@ class TestTask(_RealDb):
             [TaskKind.CLEAR, TaskKind.HISTORY, TaskKind.CHAT],
         )
 
+    async def test_list_all_unfinished_groups_by_principal(self) -> None:
+        """跨主体全量筛未完成，同主体的挨在一起且落定的不进"""
+        other = _principal(group=False)
+        await self.repos.principal.upsert(other, "李四")
+        settled = await self.repos.task.insert(self._request(dedupe_key="k-1"))
+        await self.repos.task.insert(
+            self._request(kind=TaskKind.HISTORY, dedupe_key="k-2")
+        )
+        await self.repos.task.insert(
+            TaskRequestDTO(
+                principal=other,
+                kind=TaskKind.CHAT,
+                source_ref=_ref(),
+                priority=TaskPriority.IMMEDIATE,
+            )
+        )
+        await self.repos.task.patch(
+            settled.task_id, TaskPatchDTO(status=TaskStatus.RUNNING)
+        )
+        await self.repos.task.patch(
+            settled.task_id, TaskPatchDTO(status=TaskStatus.SUCCEEDED)
+        )
+
+        all_unfinished = await self.repos.task.list_all_unfinished()
+
+        self.assertEqual(
+            [(task.principal, task.kind) for task in all_unfinished],
+            [(_principal(), TaskKind.HISTORY), (other, TaskKind.CHAT)],
+        )
+        self.assertEqual((await _one(self.conn, "SELECT COUNT(*) FROM task"))[0], 3)
+
     async def test_startup_marks_every_open_task_dead(self) -> None:
         """启动清死行把排队中与执行中一并判死"""
         chat = await self.repos.task.insert(self._request(dedupe_key="k-1"))

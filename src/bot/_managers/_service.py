@@ -17,7 +17,7 @@ from ._base import BaseManager
 
 if TYPE_CHECKING:
     from adapters.telegram.adapter import TelegramAdapter
-    from core.domain import PluginBackground, PluginReset, TaskHandler
+    from core.domain import PluginBackground, PluginReset, PluginStartup, TaskHandler
     from services.tasks import TaskItem
 
     from .._service import BotService
@@ -54,14 +54,14 @@ class ServiceManager(BaseManager):
         self.stop_service()  # 停掉旧服务（如果有）
 
         self.logger.info(EngineMessage.CREATING)
-        adapter, backgrounds, resets, handlers = self._create_components()
+        adapter, backgrounds, resets, handlers, startups = self._create_components()
         self._history_resets = resets
         configure_task_service(
             handlers,
             ledger=TaskLedger(DB_FILE, on_fault=self._report_ledger_fault),
             on_fault=self._report_task_fault,
         )
-        self._service = BotService(adapter, backgrounds)
+        self._service = BotService(adapter, backgrounds, startups)
 
         await asyncio.to_thread(self._service.start)
         self.logger.info(EngineMessage.STARTED)
@@ -73,8 +73,9 @@ class ServiceManager(BaseManager):
         tuple[PluginBackground, ...],
         tuple[PluginReset, ...],
         tuple[TaskHandler, ...],
+        tuple[PluginStartup, ...],
     ]:
-        """按配置构建适配器、插件常驻协程、历史清理入口与任务处理清单
+        """按配置构建适配器、插件常驻协程、历史清理入口、任务处理清单与启动交代协程
 
         - aiogram 重依赖此刻才入场，主窗启动不受其拖累
         """
@@ -89,7 +90,7 @@ class ServiceManager(BaseManager):
 
         # 注册中间件和路由
         dispatcher.update.outer_middleware(LoggingMiddleware())
-        report, backgrounds, resets, handlers = register_plugins(
+        report, backgrounds, resets, handlers, startups = register_plugins(
             dispatcher, build_router
         )
         total = len(report)
@@ -106,7 +107,7 @@ class ServiceManager(BaseManager):
                     )
                 )
 
-        return adapter, backgrounds, resets, handlers
+        return adapter, backgrounds, resets, handlers, startups
 
     def _report_task_fault(self, item: TaskItem, error: Exception) -> None:
         """任务派发失败的行落在面板"""

@@ -4,13 +4,14 @@
 - 实现后台线程中的 asyncio 事件循环
 - 托管轮询的启停与日志记录
 - 托管插件常驻协程的起停
+- 轮询开跑前依次调插件交出的启动交代入口
 """
 
 import asyncio
 import threading
 from typing import TYPE_CHECKING
 
-from core.domain import PluginBackground
+from core.domain import PluginBackground, PluginStartup
 from skin.messages import EngineMessage
 from utils import get_logger, register_lifecycle, unregister_lifecycle
 from utils.network import link_report
@@ -35,9 +36,11 @@ class BotService:
         self,
         adapter: "TelegramAdapter",
         backgrounds: tuple[PluginBackground, ...] = (),
+        startups: tuple[PluginStartup, ...] = (),
     ) -> None:
         self._adapter = adapter
         self._backgrounds = backgrounds
+        self._startups = startups
         self._loop: asyncio.AbstractEventLoop | None = None
         self._thread: threading.Thread | None = None
         self._stop_event = threading.Event()
@@ -127,10 +130,12 @@ class BotService:
         """执行自动重连轮询
 
         - 常驻协程与轮询同一条命，退出路径统一在 finally 收
+        - 启动交代排在轮询前面，解释的话先于新回答落地
         """
         register_lifecycle(
             self._adapter.bot.session.close, "Telegram Session", "hook_async"
         )
+        await self._run_startups()
         tasks = [asyncio.create_task(hook()) for hook in self._backgrounds]
 
         try:
@@ -148,6 +153,17 @@ class BotService:
             unregister_lifecycle(self._adapter.bot.session.close, "hook_async")
             unregister_lifecycle(self._thread, "thread")
             self._idle_event.set()
+
+    async def _run_startups(self) -> None:
+        """逐个调插件交出的启动交代入口
+
+        - 只交外发端口，报错的入口记一笔后接着跑下一个
+        """
+        for hook in self._startups:
+            try:
+                await hook(self._adapter.interaction)
+            except Exception as e:
+                _logger.send_error("插件启动交代入口出错", e)
 
     async def _stop_backgrounds(self, tasks: list[asyncio.Task]) -> None:
         """收掉插件常驻协程

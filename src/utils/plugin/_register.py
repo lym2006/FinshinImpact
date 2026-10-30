@@ -2,7 +2,7 @@
 """插件注册表
 
 - 按清单与实例启用集决定加载序列
-- 实现路由注册、常驻协程、历史清理入口与任务处理清单收集、逐项结果上报
+- 实现路由注册、常驻协程、历史清理入口、任务处理清单与启动交代协程收集、逐项结果上报
 - 插件只交路由清单，缺 spec 记失败
 """
 
@@ -16,6 +16,7 @@ from core.domain import (
     PluginFileName,
     PluginReset,
     PluginSpec,
+    PluginStartup,
     RouteSink,
     TaskHandler,
 )
@@ -28,12 +29,13 @@ from ._manifest import enabled_manifests
 # 逐项报告：(插件名, 是否成功, 失败原因)
 _PluginReport = list[tuple[str, bool, str]]
 
-# 注册结果：逐项报告、待启动的常驻协程、待挂载的历史清理入口与任务处理清单
+# 注册结果：逐项报告、待启动的常驻协程、待挂载的历史清理入口、任务处理清单与启动交代协程
 _RegisterResult = tuple[
     _PluginReport,
     tuple[PluginBackground, ...],
     tuple[PluginReset, ...],
     tuple[TaskHandler, ...],
+    tuple[PluginStartup, ...],
 ]
 
 # 平台侧的清单编译器，注册表只按契约交还对象，不认它的构造
@@ -48,7 +50,7 @@ def register_plugins(
 
     - sink 只被要求提供挂载路由这一个方法
     - build_router 由平台侧注入，把 PluginSpec 编成引擎要挂的对象
-    - 返回逐项报告、全部插件声明的常驻协程、全部历史清理入口与全部任务处理清单
+    - 返回逐项报告、全部插件声明的常驻协程、全部历史清理入口、全部任务处理清单与全部启动交代协程
     - 未启用的插件不进报告
     - core 插件加载失败直接上抛，可选插件失败仅记原因
     - 全部失败抛 PluginsMissingError
@@ -57,6 +59,7 @@ def register_plugins(
     backgrounds: list[PluginBackground] = []
     resets: list[PluginReset] = []
     handlers: list[TaskHandler] = []
+    startups: list[PluginStartup] = []
     success_count = 0
 
     for manifest in _resolve_plugins():
@@ -72,10 +75,11 @@ def register_plugins(
                 )
                 continue
 
-            declared = _checked_backgrounds(spec.backgrounds)
+            declared = _checked_hooks(spec.backgrounds, "backgrounds")
             sink.include_router(build_router(spec))
             backgrounds.extend(declared)
             handlers.extend(spec.task_handlers)
+            startups.extend(_checked_hooks(spec.startups, "startups"))
             if spec.history_reset is not None:
                 resets.append(spec.history_reset)
             report.append((plugin_name, True, ""))
@@ -100,18 +104,18 @@ def register_plugins(
     if success_count == 0:
         raise PluginsMissingError() from None
 
-    return report, tuple(backgrounds), tuple(resets), tuple(handlers)
+    return report, tuple(backgrounds), tuple(resets), tuple(handlers), tuple(startups)
 
 
-def _checked_backgrounds(declared: object) -> tuple[PluginBackground, ...]:
-    """校验插件声明的常驻协程
+def _checked_hooks(declared: object, field: str) -> tuple[Any, ...]:
+    """校验插件声明的协程清单
 
     - 非列表或元组即判形态非法
     - 非可调用成员直接丢弃
     """
     if not isinstance(declared, (list, tuple)):
-        raise TypeError("backgrounds 必须是可调用对象的列表或元组")
-    return tuple(cast(PluginBackground, hook) for hook in declared if callable(hook))
+        raise TypeError(f"{field} 必须是可调用对象的列表或元组")
+    return tuple(hook for hook in declared if callable(hook))
 
 
 def _resolve_plugins() -> list[PluginManifestDTO]:

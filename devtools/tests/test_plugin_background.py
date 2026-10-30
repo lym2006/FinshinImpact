@@ -11,6 +11,8 @@
 - 回归点 6：AI 插件把清理协程、会话清理入口与问答任务处理交进契约
 - 回归点 7：注册表只认路由清单，清单交给注入的编译器组装
 - 回归点 8：插件声明的任务处理随报告一起交出
+- 回归点 9：插件声明的启动交代随报告一起交出，形态非法整条丢
+- 回归点 10：引擎开跑前逐个调启动交代并只交外发端口，报错不挡轮询
 """
 
 import asyncio
@@ -58,7 +60,7 @@ class _FakeDispatcher:
 def _register_modules(modules: dict[str, object], names: list[str]):
     """按假插件表跑一轮注册
 
-    - 返回 (报告, 协程, 清理入口, 任务处理) 与收到的路由
+    - 返回 (报告, 协程, 清理入口, 任务处理, 启动交代) 与收到的路由
     """
 
     def fake_import(full: str) -> object:
@@ -94,7 +96,7 @@ class TestCollectBackgrounds(unittest.TestCase):
         """声明了常驻协程的插件交出协程并进成功报告"""
         modules = {"AI": _plugin(backgrounds=(_noop,), history_reset=_noop)}
 
-        (report, hooks, resets, _), routers = _register_modules(modules, ["AI"])
+        (report, hooks, resets, _, _), routers = _register_modules(modules, ["AI"])
 
         self.assertEqual(hooks, (_noop,))
         self.assertEqual(resets, (_noop,))
@@ -106,7 +108,9 @@ class TestCollectBackgrounds(unittest.TestCase):
         """缺清单的插件记失败且不交出协程"""
         modules = {"AI": SimpleNamespace(backgrounds=(_noop,)), "help": _plugin()}
 
-        (report, hooks, resets, _), routers = _register_modules(modules, ["AI", "help"])
+        (report, hooks, resets, _, _), routers = _register_modules(
+            modules, ["AI", "help"]
+        )
 
         self.assertEqual(hooks, ())
         self.assertEqual(resets, (), "缺清单的插件不该交出清理入口")
@@ -119,7 +123,7 @@ class TestCollectBackgrounds(unittest.TestCase):
         """只交 router 的插件记加载失败"""
         modules = {"bad": SimpleNamespace(router=object()), "good": _plugin()}
 
-        (report, hooks, resets, _), routers = _register_modules(
+        (report, hooks, resets, _, _), routers = _register_modules(
             modules, ["bad", "good"]
         )
 
@@ -133,7 +137,7 @@ class TestCollectBackgrounds(unittest.TestCase):
         """声明里混进非 callable 只丢该成员"""
         modules = {"AI": _plugin(backgrounds=(_noop, "拼错了"))}
 
-        (_, hooks, resets, _), _ = _register_modules(modules, ["AI"])
+        (_, hooks, resets, _, _), _ = _register_modules(modules, ["AI"])
 
         self.assertEqual(hooks, (_noop,))
         self.assertEqual(resets, ())
@@ -145,7 +149,7 @@ class TestCollectBackgrounds(unittest.TestCase):
             "good": _plugin(backgrounds=(_noop,)),
         }
 
-        (report, hooks, resets, _), routers = _register_modules(
+        (report, hooks, resets, _, _), routers = _register_modules(
             modules, ["bad", "good"]
         )
 
@@ -160,7 +164,7 @@ class TestCollectBackgrounds(unittest.TestCase):
         """未声明常驻协程的插件照常注册，协程为空"""
         modules = {"help": _plugin()}
 
-        (report, hooks, resets, handlers), _ = _register_modules(modules, ["help"])
+        (report, hooks, resets, handlers, _), _ = _register_modules(modules, ["help"])
 
         self.assertEqual(hooks, ())
         self.assertEqual(resets, ())
@@ -172,9 +176,23 @@ class TestCollectBackgrounds(unittest.TestCase):
         declared = TaskHandler(kind=TaskKind.CHAT, run=_handle)
         modules = {"AI": _plugin(task_handlers=(declared,)), "help": _plugin()}
 
-        (_, _, _, handlers), _ = _register_modules(modules, ["AI", "help"])
+        (_, _, _, handlers, _), _ = _register_modules(modules, ["AI", "help"])
 
         self.assertEqual(handlers, (declared,))
+
+    def test_declared_startups_returned(self) -> None:
+        """回归点 9：声明了启动交代的插件交出入口，形态非法整条丢"""
+        modules = {
+            "bad": _plugin(startups=_noop),
+            "AI": _plugin(startups=(_noop, "拼错了")),
+        }
+
+        (report, _, _, _, startups), _ = _register_modules(modules, ["bad", "AI"])
+
+        self.assertEqual(startups, (_noop,))
+        self.assertFalse(report[0][1])
+        self.assertIn("startups", report[0][2])
+        self.assertTrue(report[1][1])
 
 
 class _FakeSession:
@@ -186,10 +204,11 @@ class _FakeSession:
 
 
 class _FakeAdapter:
-    """只喂 _polling_task 需要的 start 协程与 session"""
+    """只喂 _polling_task 需要的 start 协程、session 与外发端口"""
 
     def __init__(self) -> None:
         self.bot = SimpleNamespace(session=_FakeSession())
+        self.interaction = SimpleNamespace(name="外发端口")
 
     async def start(self) -> None:
         """让出一轮调度后结束本轮轮询"""
@@ -243,18 +262,63 @@ class TestServiceRunsHooks(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(adapter.bot.session.closed, 1)
 
 
+class TestServiceRunsStartups(unittest.IsolatedAsyncioTestCase):
+    """回归点 10"""
+
+    async def test_startups_run_before_polling(self) -> None:
+        """启动交代先于轮询开跑，收到的只有外发端口"""
+        seen: list[object] = []
+
+        class _OrderedAdapter(_FakeAdapter):
+            async def start(self) -> None:
+                seen.append("轮询开跑")
+
+        async def startup(interaction: object) -> None:
+            seen.append(interaction)
+
+        adapter = _OrderedAdapter()
+        service = BotService(adapter, (), (startup,))  # type: ignore[arg-type]
+        await service._polling_task()
+
+        self.assertEqual(seen, [adapter.interaction, "轮询开跑"])
+
+    async def test_startup_crash_is_logged_and_polling_runs(self) -> None:
+        """交代入口抛错只落日志，轮询照常开跑、收尾照常关会话"""
+        sent: list[tuple[str, BaseException]] = []
+
+        def _send_error(desc: str, exc: BaseException) -> None:
+            sent.append((desc, exc))
+
+        async def boom(interaction: object) -> None:
+            raise ValueError("交代失败")
+
+        adapter = _FakeAdapter()
+        service = BotService(adapter, (), (boom,))  # type: ignore[arg-type]
+        with patch.object(service_module._logger, "send_error", new=_send_error):
+            await service._polling_task()
+
+        self.assertEqual(len(sent), 1, "交代入口异常应记录一次")
+        self.assertIsInstance(sent[0][1], ValueError)
+        self.assertEqual(adapter.bot.session.closed, 1)
+
+
 class TestAIPluginDeclares(unittest.TestCase):
     """回归点 6"""
 
     def test_cleanup_loop_is_declared(self) -> None:
-        """AI 插件把过期清理协程、会话清理入口与问答任务处理交进契约"""
+        """AI 插件把过期清理协程、会话清理入口、问答任务处理与停机交代交进契约"""
         from plugins.AI import spec
         from plugins.AI.core import purge_history
-        from plugins.AI.services import chat_task_handler, cleanup_loop
+        from plugins.AI.services import (
+            chat_task_handler,
+            cleanup_loop,
+            report_lost_tasks,
+        )
 
         self.assertEqual(spec.backgrounds, (cleanup_loop,))
         self.assertIs(spec.history_reset, purge_history)
         self.assertEqual(spec.task_handlers, (chat_task_handler,))
+        self.assertEqual(spec.startups, (report_lost_tasks,))
 
 
 if __name__ == "__main__":

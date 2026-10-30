@@ -9,7 +9,6 @@ from data import (
     check_schema_compatible,
     close_all,
     get_connection,
-    purge_dead_tasks,
     run_migrations,
 )
 from skin.messages import DialogMessage
@@ -80,6 +79,7 @@ class InitializationManager(BaseManager):
         """补做迁移并拒绝读不懂的库结构
 
         - 库连接打开即挂上退出清理，进程退出时合并 WAL
+        - 中断任务此处不判死：活行留给引擎起来后先交代再结算
         """
         conn = await get_connection(DB_FILE)
         register_lifecycle(close_all, "SQLite 库连接", "hook_async")
@@ -88,6 +88,3 @@ class InitializationManager(BaseManager):
             raise RuntimeError(
                 f"库结构版本高于本程序支持的 {SUPPORTED_SCHEMA}，请升级程序或从备份恢复"
             )
-        dead = await purge_dead_tasks(conn)
-        if dead:
-            self.logger.info(f"中断任务判死 {dead} 个")
