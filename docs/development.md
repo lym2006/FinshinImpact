@@ -62,9 +62,6 @@
 
 版本号与 CHANGELOG 归段、tag、release、版本页收尾统一见 [release-workflow.md](release-workflow.md)，构建与本地实测见 [packaging.md](packaging.md)。
 
-- 版本页仓库的 workflow 随发布自动同步 `pyproject.toml` 并部署 Pages，在线版本号随之生效，无需手动操作。
-- 用户下次启动时 GUI 版本检查命中新版本，启动器自动完成升级。
-
 ## 更新方式
 
 - **「版本检查」按钮**：两种版本行为一致，只比对在线版本号并弹窗提示有无新版，不当场替你更新。
