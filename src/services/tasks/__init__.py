@@ -5,12 +5,15 @@
 - 热队列见 _queue，服务与调度见 _service
 """
 
+from ._ledger import TaskLedger
 from ._queue import TaskItem
 from ._service import TaskService, configure_task_service, get_task_service
 
 __all__ = [
     # 排队项
     "TaskItem",
+    # 状态账
+    "TaskLedger",
     # 服务装配与取用
     "TaskService",
     "configure_task_service",

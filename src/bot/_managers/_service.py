@@ -46,7 +46,8 @@ class ServiceManager(BaseManager):
 
     async def _execute(self) -> None:
         """启动 Bot 服务"""
-        from services.tasks import configure_task_service
+        from services.tasks import TaskLedger, configure_task_service
+        from utils.paths import DB_FILE
 
         from .._service import BotService
 
@@ -55,7 +56,11 @@ class ServiceManager(BaseManager):
         self.logger.info(EngineMessage.CREATING)
         adapter, backgrounds, resets, handlers = self._create_components()
         self._history_resets = resets
-        configure_task_service(handlers, on_fault=self._report_task_fault)
+        configure_task_service(
+            handlers,
+            ledger=TaskLedger(DB_FILE, on_fault=self._report_ledger_fault),
+            on_fault=self._report_task_fault,
+        )
         self._service = BotService(adapter, backgrounds)
 
         await asyncio.to_thread(self._service.start)
@@ -106,6 +111,15 @@ class ServiceManager(BaseManager):
     def _report_task_fault(self, item: TaskItem, error: Exception) -> None:
         """任务派发失败的行落在面板"""
         self.logger.error(EngineMessage.TASK_FAULT.format(kind=item.kind, reason=error))
+
+    def _report_ledger_fault(self, item: TaskItem, error: Exception) -> None:
+        """状态账写失败的行落在面板
+
+        - 账本断头不拦派发，回答照走
+        """
+        self.logger.error(
+            EngineMessage.TASK_LEDGER_FAULT.format(kind=item.kind, reason=error)
+        )
 
     def stop_service(self) -> None:
         """停止 Bot 服务"""

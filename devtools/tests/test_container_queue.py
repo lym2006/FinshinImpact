@@ -58,6 +58,25 @@ class _Ctx:
         self.event = event
 
 
+class _StubLedger:
+    """接线测试用的占位账本，只留调用序列不碰库"""
+
+    def __init__(self) -> None:
+        self.calls: list[str] = []
+
+    async def enqueue(self, item: object) -> None:
+        self.calls.append("enqueue")
+
+    async def begin(self, item: object) -> None:
+        self.calls.append("begin")
+
+    async def settle(self, item: object, *, failed: bool) -> None:
+        self.calls.append("settle:failed" if failed else "settle:ok")
+
+    def reset(self) -> None:
+        self.calls.append("reset")
+
+
 @session_guard
 async def _touch(*, ctx: _Ctx) -> None:
     """走过会话守卫的空处理"""
@@ -124,7 +143,9 @@ class TestEnqueueThroughService(unittest.TestCase):
 
         async def _run() -> int:
             configure_task_service(
-                [TaskHandler(kind=TaskKind.CHAT, run=run)], on_fault=_fault
+                [TaskHandler(kind=TaskKind.CHAT, run=run)],
+                ledger=_StubLedger(),
+                on_fault=_fault,
             )
             await _enqueue(ctx=_Ctx(_event("111", ChatScope.GROUP)))
             await started.wait()
@@ -138,7 +159,7 @@ class TestEnqueueThroughService(unittest.TestCase):
         try:
             queued = asyncio.run(_run())
         finally:
-            configure_task_service([], on_fault=_fault)
+            configure_task_service([], ledger=_StubLedger(), on_fault=_fault)
 
         self.assertEqual(queued, 1)
         self.assertEqual(order, ["111", "222"])
@@ -154,13 +175,16 @@ class TestShutdownRelease(unittest.TestCase):
     def test_teardown_clears_memory_and_cancels_inflight(self) -> None:
         """收尾抹平内存态，排队清空，在途压缩收到取消"""
         box: dict[str, asyncio.Task] = {}
+        ledger = _StubLedger()
 
         async def _fault(item: object, error: Exception) -> None:
             raise AssertionError(f"派发不该报错：{error}")
 
         async def _run() -> int:
             configure_task_service(
-                [TaskHandler(kind=TaskKind.CHAT, run=_hold)], on_fault=_fault
+                [TaskHandler(kind=TaskKind.CHAT, run=_hold)],
+                ledger=ledger,
+                on_fault=_fault,
             )
             await _enqueue(ctx=_Ctx(_event("111", ChatScope.GROUP)))
             await _enqueue(ctx=_Ctx(_event("222", ChatScope.GROUP)))
@@ -182,12 +206,14 @@ class TestShutdownRelease(unittest.TestCase):
             patch.object(_cleanup, "purge_idle_sessions", _no_purge),
         ):
             queued = asyncio.run(_run())
-        configure_task_service([], on_fault=_fault)
+        configure_task_service([], ledger=_StubLedger(), on_fault=_fault)
 
         self.assertEqual(session_states, {})
         self.assertEqual(queued, 0)
         self.assertEqual(active_tasks, set())
         self.assertTrue(box["inflight"].cancelled())
+        # 在途那条被取消即不写终态，库里留着活行等下次启动交代
+        self.assertEqual(ledger.calls, ["enqueue", "enqueue", "begin", "reset"])
 
 
 if __name__ == "__main__":

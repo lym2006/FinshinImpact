@@ -3,6 +3,7 @@
 
 - 同容器排一串逐条派发，跨容器共用一把并发闸
 - 每容器一条消费协程，退出即放掉该容器的活跃标记
+- 派发推进的三处同时记状态账，记不进不挡派发
 - 服务实例由装配层交出插件处理清单后落单，业务侧按取用函数拿
 """
 
@@ -12,6 +13,7 @@ from collections.abc import Callable, Iterable
 from core.domain import TaskHandler, TaskKind, TaskRun
 from core.domain.ids import SessionKey
 
+from ._ledger import TaskLedger
 from ._queue import HotQueue, TaskItem
 
 # 同时开跑的容器数上限，受 AI 服务商 QPS 与本机连接数约束
@@ -31,12 +33,14 @@ class TaskService:
         self,
         handlers: Iterable[TaskHandler],
         *,
+        ledger: TaskLedger,
         on_fault: _TaskFault,
         max_concurrency: int = _MAX_CONCURRENT,
     ) -> None:
         self._handlers: dict[TaskKind, TaskRun] = {}
         for declared in handlers:
             self._handlers.setdefault(declared.kind, declared.run)
+        self._ledger = ledger
         self._on_fault = on_fault
         self._queue = HotQueue()
         self._runners: dict[SessionKey, asyncio.Task[None]] = {}
@@ -49,6 +53,7 @@ class TaskService:
         """排入一条任务，该容器无人消费即起消费协程"""
         async with self._book_lock:
             queued = await self._queue.push(item)
+            await self._ledger.enqueue(queued)
             runner = self._runners.get(queued.container_key)
             if runner is None or runner.done():
                 self._runners[queued.container_key] = asyncio.create_task(
@@ -63,6 +68,7 @@ class TaskService:
         """作废全部排队与在途消费协程
 
         - 队列项揣着停机前那套引擎的连接句柄，新引擎接着答它必撞错
+        - 状态账只抹内存计数，库里那行留给下次启动交代
         """
         async with self._book_lock:
             runners = list(self._runners.values())
@@ -72,6 +78,7 @@ class TaskService:
         if runners:
             await asyncio.gather(*runners, return_exceptions=True)
         await self._queue.discard_all()
+        self._ledger.reset()
 
     async def _drain(self, container_key: SessionKey) -> None:
         """逐条消费该容器，队空即退
@@ -88,14 +95,19 @@ class TaskService:
                 run = self._handlers.get(item.kind)
                 if run is None:
                     self._on_fault(item, LookupError(f"没有 {item.kind} 的处理函数"))
+                    await self._ledger.settle(item, failed=True)
                     continue
                 async with self._gate:
+                    await self._ledger.begin(item)
+                    failed = False
                     try:
                         await run(item.ctx)
                     except asyncio.CancelledError:
                         raise
                     except Exception as e:
                         self._on_fault(item, e)
+                        failed = True
+                await self._ledger.settle(item, failed=failed)
         finally:
             async with self._book_lock:
                 self._retire(container_key)
@@ -114,14 +126,14 @@ _service: TaskService | None = None
 
 
 def configure_task_service(
-    handlers: Iterable[TaskHandler], *, on_fault: _TaskFault
+    handlers: Iterable[TaskHandler], *, ledger: TaskLedger, on_fault: _TaskFault
 ) -> TaskService:
     """按本次注册交来的处理清单装配服务
 
     - 重复装配换整套处理清单，旧实例里在跑的协程归上一次收尾管
     """
     global _service
-    _service = TaskService(handlers, on_fault=on_fault)
+    _service = TaskService(handlers, ledger=ledger, on_fault=on_fault)
     return _service
 
 
