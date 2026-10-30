@@ -29,7 +29,7 @@ $env:PYTHONUTF8 = 1; $env:PYTHONPATH = "src"
 
 - 绿的标准：ruff 两项通过，pyright 0 errors，契约 0 broken，扫描器 0 硬性，pytest 全过。
 - `node` 是跑 JavaScript 的解释器，pyright 本体是 JS 写的，随 pip 包只发来 JS 文件。`.venv\Scripts\pyright.exe` 会先联网装一个 nodeenv 环境，断网即失败，所以改用本机已有的 node 直接跑那些 JS。`node` 可换成任意 node 等价可执行文件，Qoder 自带的那份就行。
-- 这五条由交付 skill 的闸门脚本一次跑齐，日常不用手敲；手敲只在脚本本身出问题时需要。
+- 闸门要五条一次跑齐，别挑着跑；日常包成本地脚本执行即可，本节列出的就是脚本里真正跑的命令。
 - 各步判据不在这里重复：扫描器的分节、待核基线与豁免见 [style-checker.md](style-checker.md)，用例口径见 [testing.md](testing.md)，构建与发布物见 [packaging.md](packaging.md)。
 
 ## 日常与定稿
@@ -197,6 +197,7 @@ Release 不承担升级链（升级走版本页与 PEP440 比对），只承担�
 ## 版本页同步（发布最后一步）
 
 Release 发布完成不等于升级链生效：在线版本页是启动器与 GUI 版本检查的唯一真相。
+「版本页」在线地址的单源定义在 `packaging/pack_spec.py` 的 `_PAGES_PYPROJECT_URL`。
 
 版本页仓库的 workflow 随发布自动同步 `pyproject.toml` 并部署 Pages，**无需手动覆盖推送**。跑 `python packaging\build.py --check`，末行「在线版本页」显示新版本号即发布闭环（Pages 部署有延迟，读数未变稍后重跑）。
 
