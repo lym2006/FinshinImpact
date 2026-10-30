@@ -82,7 +82,7 @@ class _PersonaPreviewDialog(BaseDialog):
 class PersonaPreviewRow(QWidget):
     """人设正文入口行
 
-    - 标签占位与字段行同宽，按钮才与其他输入框左对齐
+    - 标签占位与对齐同字段行，按钮才与其他输入框左对齐
     - 预览与编辑各开一窗
     """
 
@@ -96,6 +96,7 @@ class PersonaPreviewRow(QWidget):
 
         title = QLabel(SETTINGS_DIALOG.persona_label)
         title.setMinimumWidth(label_width)
+        title.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
 
         btn_preview = make_button(
             SETTINGS_DIALOG.persona_preview_text, ButtonStyle.PERSONA
