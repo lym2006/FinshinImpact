@@ -167,6 +167,19 @@ class SqliteTaskRepository(TaskRepository):
             rows = await cursor.fetchall()
         return tuple(self._to_dto(row) for row in rows)
 
+    async def list_all_unfinished(self) -> tuple[TaskDTO, ...]:
+        """列出全部主体的未完成任务
+
+        - 按主体键与入队序升序，同主体的挨在一起
+        """
+        async with self._conn.execute(
+            f"SELECT {_TASK_COLUMNS} FROM task WHERE status IN (?, ?)"
+            " ORDER BY principal, sequence",
+            (TaskStatus.PENDING, TaskStatus.RUNNING),
+        ) as cursor:
+            rows = await cursor.fetchall()
+        return tuple(self._to_dto(row) for row in rows)
+
     async def delete_by_principal(self, key: PrincipalKey) -> int:
         """清除主体全部任务"""
         async with self._conn.execute(
