@@ -96,6 +96,13 @@ class TaskRepository(ABC):
         """
 
     @abstractmethod
+    async def list_all_unfinished(self) -> tuple[TaskDTO, ...]:
+        """列出全部主体的未完成任务
+
+        - 按主体键与入队序升序，同主体的挨在一起
+        """
+
+    @abstractmethod
     async def delete_by_principal(self, key: PrincipalKey) -> int:
         """清除主体全部任务"""
 

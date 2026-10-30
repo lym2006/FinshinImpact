@@ -5,7 +5,7 @@
 - 定义插件相关文件名词表
 - 定义插件数据契约的键名词表
 - 定义插件清单标量字段的类型、必填与默认
-- 定义插件路由清单、常驻协程、历史清理协程与任务处理清单的签名
+- 定义插件路由清单、常驻协程、历史清理协程、任务处理清单与启动交代协程的签名
 - 定义平台侧的路由挂载口
 """
 
@@ -32,6 +32,9 @@ _PluginHandler = Callable[..., Awaitable[None]]
 
 # 任务处理函数，只吃归一后的处理上下文，报错自行收干净再交回调度
 TaskRun = Callable[..., Awaitable[None]]
+
+# 启动交代函数，只吃外发端口，引擎起来后随轮询开跑前调用一次
+PluginStartup = Callable[..., Awaitable[None]]
 
 
 @dataclass(frozen=True, slots=True)
@@ -64,12 +67,14 @@ class PluginSpec:
     - backgrounds 随 Bot 服务起停
     - history_reset 交出本插件的对话历史清理入口，不涉历史的插件留空
     - task_handlers 交出本插件能吃下的任务类型与处理协程，不排队的插件留空
+    - startups 交出引擎起来后要主动说一句的入口，收外发端口作唯一形参
     """
 
     routes: tuple[PluginRoute, ...] = ()
     backgrounds: tuple[PluginBackground, ...] = ()
     history_reset: PluginReset | None = None
     task_handlers: tuple[TaskHandler, ...] = ()
+    startups: tuple[PluginStartup, ...] = ()
 
 
 class RouteSink(Protocol):
