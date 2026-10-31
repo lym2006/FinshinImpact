@@ -8,6 +8,7 @@
 from dataclasses import dataclass
 
 from ..messages import DialogMessage
+from ._palette import PALETTE
 
 
 @dataclass(frozen=True)
@@ -26,9 +27,6 @@ class SettingsDialogTheme:
     tab_padding_h: int = 16  # 标签页水平内边距
     tab_spacing: int = 12  # 标签页内部控件间距
     tab_bg: str = "#2D2D2D"  # 标签页背景色
-    tab_container_name: str = (
-        "settings_tab_container"  # 页容器样式名，改名同步 _parts 选择器
-    )
 
     # 输入框
     input_padding_v: int = 6  # 输入框垂直内边距
@@ -36,7 +34,7 @@ class SettingsDialogTheme:
 
     # 边框
     border_width: int = 1  # 边框宽度
-    border_color: str = "#444444"  # 边框色
+    border_color: str = PALETTE.border_color  # 边框色
 
     # 按钮
     finish_btn_min_width: int = 150  # "完成"按钮最小宽度
