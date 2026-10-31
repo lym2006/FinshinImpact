@@ -40,8 +40,8 @@ class ConfigMessage:
         "api_key": "在千问 AI 平台自行创建并填入",
         "temperature": "取值范围 0~2，越高越有创造性，越低越稳定",
         "owner": "具有最高权限的用户 ID（注意实例对应的平台）",
-        "triggers": "用户消息包含关键词触发 AI 回复，不区分大小写，双击编辑",
-        "lost_lines": "重启时对遗失对话补一句说明，随机取一条，留空交给 AI 现写，双击编辑",
+        "triggers": "用户消息包含关键词触发 AI 回复，不区分大小写",
+        "lost_lines": "重启时对遗失对话补一句说明，随机取一条，留空交给 AI 现写",
         "record_keep": "闲置超过这个天数的对话记录与群上下文一并删除",
         "waiting": "间隔多久检测一次后台任务",
     }
@@ -52,6 +52,8 @@ class ConfigMessage:
     # 用：adapters/telegram/probe.py 与设置面板前置项失败占位
     PENDING_MARK = "暂未检测"
 
-    # 用：ui/_dialogs/_settings/_list_widget.py 列表增删按钮文本
+    # 用：ui/_dialogs/_settings/_list_widget.py 列表入口与增删按钮文本
+    LIST_EDIT_TEXT = "编辑（{count} 条）"
+    LIST_EDIT_TIP = "双击条目即可修改文字"
     LIST_ADD_TEXT = "添加新项"
     LIST_DEL_TEXT = "删除选中"
