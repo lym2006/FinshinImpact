@@ -217,9 +217,7 @@ class FieldBuilder:
         - 含换行的字符串走多行编辑
         """
         if isinstance(field.default, bool):
-            bool_box = TickedCheckBox(
-                SETTINGS_DIALOG.check_size, SETTINGS_DIALOG.check_spacing
-            )
+            bool_box = TickedCheckBox(GLOBAL.check_size, SETTINGS_DIALOG.check_spacing)
             bool_box.setChecked(bool(current_value))
             return bool_box
         if field.options:

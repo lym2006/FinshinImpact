@@ -45,7 +45,7 @@ class ReleaseNotesController(BaseController):
 
     # 契约声明
     LOGGER_NAME = "GUI.ReleaseNotes"
-    BTN_KEY = "release_notes"  # 工具栏接线标识，改名需连动 _misc 与主窗
+    BTN_KEY = "release_notes"
 
     def _execute(self) -> None:
         """拉取版本变化内容

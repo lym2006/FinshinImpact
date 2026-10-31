@@ -31,7 +31,7 @@ from services.env_setup.subprocess_ops import is_pin_installed
 from services.env_setup.toolchain import dev_mode
 from skin.messages import PluginMessage
 from skin.qss import build_bootstrap_qss
-from skin.theme import PANEL, ButtonStyle, ObjectName
+from skin.theme import GLOBAL, PANEL, ButtonStyle, ObjectName
 
 from .._lifecycle import ensure_app
 from .._primitives import ThemedList, TickedCheckBox, make_button
@@ -116,7 +116,7 @@ class _PluginPanelDialog(QDialog):
         )
         row_layout.setSpacing(PANEL.col_gap)
 
-        check = TickedCheckBox(PANEL.check_size, PANEL.col_gap)
+        check = TickedCheckBox(GLOBAL.check_size, PANEL.col_gap)
         check.setChecked(checked)
         name_label = QLabel(title)
         name_label.setFixedWidth(PANEL.name_width)

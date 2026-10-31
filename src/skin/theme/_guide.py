@@ -39,7 +39,6 @@ class PanelTheme:
     row_pad_v: int = 6  # 插件行垂直内边距
     row_pad_h: int = 10  # 插件行水平内边距
     row_height: int = 44  # 插件行高
-    check_size: int = 18  # 勾选框指示器边长
     check_width: int = 34  # 勾选位列宽，容下"必选"两字并与勾选框对齐
     name_width: int = 180  # 名称列固定宽
     status_width: int = 110  # 状态列固定宽

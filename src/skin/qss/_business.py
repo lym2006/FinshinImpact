@@ -34,7 +34,7 @@ _PENDING_LABEL_QSS = f"color: {SETTINGS_DIALOG.pending_color};"
 
 # 标签页
 _TAB_QSS = f"""\
-QWidget#{SETTINGS_DIALOG.tab_container_name} {{
+QWidget#{ObjectName.TAB_CONTAINER} {{
     background-color: {SETTINGS_DIALOG.tab_bg};
 }}
 

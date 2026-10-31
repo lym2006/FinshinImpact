@@ -61,7 +61,7 @@ class VersionController(BaseController):
 
     # 契约声明
     LOGGER_NAME = "GUI.Version"
-    BTN_KEY = "version"  # 工具栏接线标识，改名需连动 _misc 与主窗
+    BTN_KEY = "version"
 
     def _execute(self) -> None:
         """版本检查
