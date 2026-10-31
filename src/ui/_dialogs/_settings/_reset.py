@@ -23,11 +23,9 @@ from skin.theme import SETTINGS_DIALOG, ButtonStyle
 from utils.config.models import ConfigValue, FieldSchema
 
 from ..._primitives import make_button
-from ._list_widget import ConfigListWidget
+from ._list_widget import ConfigListRow
 
-_InputWidget: TypeAlias = (
-    ConfigListWidget | QLineEdit | QTextEdit | QCheckBox | QComboBox
-)
+_InputWidget: TypeAlias = ConfigListRow | QLineEdit | QTextEdit | QCheckBox | QComboBox
 Inputs: TypeAlias = dict[str, _InputWidget]
 
 # Qt 布局四边
@@ -37,10 +35,12 @@ _MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
 def _value_signal(widget: _InputWidget) -> SignalInstance | None:
     """取控件的值变化信号源
 
-    - 列表控件的变更信号属私有实现，不回挂
+    - 入口行只在弹窗确认时广播一次
     - 枚举下拉不登记恢复钮，无信号可挂
     """
     match widget:
+        case ConfigListRow():
+            return widget.items_changed
         case QCheckBox():
             return widget.toggled
         case QTextEdit():
@@ -124,7 +124,7 @@ class ResetRegistry:
             return
         text = "" if restore_target is None else str(restore_target)
         match widget:
-            case ConfigListWidget():
+            case ConfigListRow():
                 items = list(restore_target) if isinstance(restore_target, list) else []
                 widget.set_items(items)
             case QCheckBox():

@@ -17,7 +17,7 @@ class SettingsDialogTheme:
 
     # 主体
     min_width: int = 800  # 最小宽度
-    min_height: int = 300  # 最小高度
+    min_height: int = 480  # 最小高度
     margin: int = 0  # 通用间距
     desc_spacing: int = 4  # 控件与提示语间距
 
@@ -143,4 +143,4 @@ class SettingsListTheme:
 
     # 列表容器
     container_inner_margin = 2  # 内边距
-    height: int = 90  # 列表区高度，可见约四行
+    height: int = 180  # 列表区高度，可见约八行

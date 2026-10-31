@@ -33,7 +33,7 @@ from utils.config.models import (
 )
 
 from ..._primitives import TickedCheckBox, make_combo
-from ._list_widget import ConfigListWidget
+from ._list_widget import ConfigListRow
 from ._reset import Inputs, ResetRegistry
 
 # Qt 布局四边
@@ -86,23 +86,6 @@ class FieldBuilder:
         current_value, restore_target, required = self._resolve_value(field, section)
         label_widget = self._build_label(field, errors, label_width)
 
-        # 列表型字段：恢复按钮挂进列表底栏
-        if isinstance(field.default, list):
-            list_widget = ConfigListWidget(
-                items=current_value if isinstance(current_value, list) else [],
-                description=field.desc,
-            )
-            self.inputs[field.key] = list_widget
-            if not required:
-                btn = list_widget.add_reset_button(
-                    SETTINGS_DIALOG.reset_icon,
-                    SETTINGS_DIALOG.reset_text,
-                    lambda: self._resets.reset(field.key, restore_target),
-                )
-                self._resets.register(btn, field.key, field, restore_target)
-            form.addRow(label_widget, list_widget)
-            return container
-
         input_widget = self._build_input(field, current_value)
         self.inputs[field.key] = input_widget
         form.addRow(
@@ -125,7 +108,7 @@ class FieldBuilder:
         if widget is None:
             return None
         match widget:
-            case ConfigListWidget():
+            case ConfigListRow():
                 return widget.get_values()
             case QCheckBox():
                 return widget.isChecked()
@@ -209,13 +192,17 @@ class FieldBuilder:
 
     def _build_input(
         self, field: FieldSchema, current_value: ConfigValue
-    ) -> QCheckBox | QComboBox | QTextEdit | QLineEdit:
+    ) -> QCheckBox | QComboBox | QTextEdit | QLineEdit | ConfigListRow:
         """按值形态选控件
 
         - bool 项用勾选框且不挂文字，标签与说明走通用右侧结构
         - 枚举项渲染下拉，显示文案挂 userData 取键值
+        - 列表项收成入口行，内容在弹窗里改
         - 含换行的字符串走多行编辑
         """
+        if isinstance(field.default, list):
+            items = current_value if isinstance(current_value, list) else []
+            return ConfigListRow(field.label, items)
         if isinstance(field.default, bool):
             bool_box = TickedCheckBox(GLOBAL.check_size, SETTINGS_DIALOG.check_spacing)
             bool_box.setChecked(bool(current_value))
