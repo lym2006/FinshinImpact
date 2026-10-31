@@ -32,6 +32,7 @@ class GlobalTheme:
     """
 
     radius: int = PALETTE.radius  # 全局默认圆角
+    check_size: int = 18  # 勾选框指示器边长
     already_running: str = MiscMessage.ALREADY_RUNNING
 
 

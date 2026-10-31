@@ -21,7 +21,7 @@ from PySide6.QtWidgets import (
 )
 
 from core.domain import ConfigKey, ConfigSection, ProxyMode
-from skin.theme import GLOBAL, SETTINGS_DIALOG, ButtonStyle
+from skin.theme import GLOBAL, SETTINGS_DIALOG, ButtonStyle, ObjectName
 from utils.config.models import AppSchema, TabSchema
 
 from ..._primitives import make_button
@@ -154,7 +154,7 @@ class ChromeBuilder:
         scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setAutoFillBackground(False)
         container = QWidget()
-        container.setObjectName(SETTINGS_DIALOG.tab_container_name)
+        container.setObjectName(ObjectName.TAB_CONTAINER)
         main_layout = QVBoxLayout(container)
         main_layout.setSpacing(SETTINGS_DIALOG.tab_spacing)
         label_width = self._fields.label_width_of(tab_schema.fields)

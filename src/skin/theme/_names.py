@@ -18,6 +18,7 @@ class ObjectName(StrEnum):
     RELEASE_NOTES_VIEW = "release_notes_view"
     LIST_WIDGET = "list_widget"
     PERSONA_PREVIEW = "persona_preview"
+    TAB_CONTAINER = "settings_tab_container"
     LINK_HEAD = "link_head"
     LINK_TIMER = "link_timer"
     LINK_RETRIES = "link_retries"
