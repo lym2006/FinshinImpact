@@ -68,8 +68,8 @@ class SettingsManager(BaseManager):
         # 三级解析出的生效通道，未通过为 None，空串表示直连
         self.resolved_proxy: str | None = None
 
-        # 上次验证时的网络参数：(配置代理, 代理模式, 超时)，变化判定基准
-        self._net_state: tuple[str, str, float] = ("", "", 0.0)
+        # 上次验证时的网络参数：(配置代理, 代理模式)，变化判定基准
+        self._net_state: tuple[str, str] = ("", "")
 
     async def _execute(self) -> None:
         """加载配置进内存"""
@@ -91,7 +91,7 @@ class SettingsManager(BaseManager):
         prev_state = self._net_state
         state = self._read_net_state(raw)
         self._net_state = state
-        configured, mode, _ = state
+        configured, mode = state
 
         if (
             state == prev_state
@@ -145,18 +145,15 @@ class SettingsManager(BaseManager):
         self.logger.info(CheckMessage.ROUND_COST.format(cost=time.monotonic() - t0))
         return self._emit_advice(schema)
 
-    def _read_net_state(self, configured: str) -> tuple[str, str, float]:
+    def _read_net_state(self, configured: str) -> tuple[str, str]:
         """读取连通校验用的网络参数
 
-        - 配置代理串、代理模式与超时三项
+        - 配置代理串与代理模式两项
         """
         proxy = config_manager.get_all().get(ConfigSection.PROXY) or {}
         return (
             configured.strip(),
             str(proxy.get(ConfigKey.PROXY_MODE, ProxyMode.AUTO)).strip(),
-            config_manager.get(
-                ConfigKey.NETWORK_TIMEOUT.path(ConfigSection.GLOBAL), float
-            ),
         )
 
     def _local_round(self, schema: AppSchema) -> bool:

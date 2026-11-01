@@ -61,7 +61,6 @@ class _DynamicAIConfig:
 
         # 定义动态属性的获取规则：属性名 -> (配置中心路径, 类型)
         self._dynamic_attr_map: dict[str, tuple[ConfigPath, type]] = {
-            "timeout": (ConfigKey.NETWORK_TIMEOUT.path(ConfigSection.GLOBAL), float),
             "api_key": (ConfigKey.API_KEY.path(ConfigSection.AI), str),
             "temperature": (ConfigKey.TEMPERATURE.path(ConfigSection.AI), float),
             "group_triggers": (ConfigKey.TRIGGERS.path(ConfigSection.CHORE), list),

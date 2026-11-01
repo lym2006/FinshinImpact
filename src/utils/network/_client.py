@@ -14,7 +14,7 @@ import httpx
 
 from exceptions import ConnectionFailedError, HTTPStatusError, RequestTimeoutError
 
-# 无配置场景（如版本检查跑在配置加载前）的兜底超时
+# 请求默认超时：读、写与连接池三档共用
 _DEFAULT_TIMEOUT = 90.0
 _CONNECT_TIMEOUT = 10.0
 
