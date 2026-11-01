@@ -180,7 +180,7 @@ async def _check_config(
 async def attempt_channel(token: str, proxy: str) -> tuple[str | None, dict[str, str]]:
     """预算内探测单个通道
 
-    - 轮次入口已在首帧前预触引擎，此处兜底端口复测等直调方
+    - 轮次入口已在首帧前预触引擎，此处兜底漏触的直调方
     - 返回 (生效通道或 None, 错误字典)
     - 空错误即该通道通过
     - 超时预算按通道类型取值，直连短、代理长
