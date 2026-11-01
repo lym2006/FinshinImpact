@@ -33,10 +33,9 @@ from utils.network import (
     verify_plan,
     via_label,
 )
-from utils.network.probe import is_flap_hit, single_row_of
+from utils.network.probe import single_row_of
 
 from ._base import BaseManager
-from ._port_probe import verify_port_row
 
 
 def _label_of(schema: AppSchema, key: str) -> str:
@@ -83,7 +82,6 @@ class SettingsManager(BaseManager):
         - 通过则记录生效通道
         - 单路模式只测选定通道，缺席不发探测
         - 自动模式全挂先原地重检一轮再报失败
-        - 端口复测命中本次已探测端点即按抖动采用该通道
         """
         t0 = time.monotonic()
         schema = get_schema()
@@ -129,16 +127,7 @@ class SettingsManager(BaseManager):
                 head=CheckMessage.RETRY_HEAD,
             )
             outcome = await run_channels(channels, probe, emit, via_label)
-        if single is not None:
-            port_hint = ""
-        else:
-            port_hint = await verify_port_row(outcome, token)
-        net_errors = self._aggregate_errors(outcome, channels, port_hint)
-        if not outcome.passed and port_hint and is_flap_hit(channels, port_hint):
-            # 复测用的正是刚判失败那条通道：同地址重探即通属抖动，不推荐重填
-            outcome.passed = True
-            outcome.resolved = configured
-            net_errors.pop(FieldKey.PROXY, None)
+        net_errors = self._aggregate_errors(outcome, channels)
 
         self._settle(outcome.resolved, configured, mode == ProxyMode.AUTO)
         self.last_errors = {**net_errors, **type_errors}
@@ -219,22 +208,19 @@ class SettingsManager(BaseManager):
         return probe
 
     def _aggregate_errors(
-        self, outcome: ChannelOutcome, channels: list[Channel], port_hint: str
+        self, outcome: ChannelOutcome, channels: list[Channel]
     ) -> dict[str, str]:
         """聚合代理错误
 
-        - 仅直连单候选时保留原始错误，多候选聚合为一句引导
+        - 多候选聚合为一句引导，单候选保留原始错误
+        - 尾句指引用户自查代理软件
         """
         errors = dict(outcome.errors)
         if outcome.resolved is None and FieldKey.PROXY in errors:
             base = (
                 CheckMessage.ALL_FAIL if len(channels) > 1 else errors[FieldKey.PROXY]
             )
-            if port_hint:
-                base += f"\n{CheckMessage.PORT_HOVER.format(url=port_hint)}"
-            elif len(channels) > 1:
-                base += f"\n{CheckMessage.DIAGNOSE}"
-            errors = {FieldKey.PROXY: base}
+            errors = {FieldKey.PROXY: f"{base}\n{CheckMessage.PROXY_GUIDE}"}
         return errors
 
     def _settle(self, resolved: str | None, configured: str, warn_stale: bool) -> None:
