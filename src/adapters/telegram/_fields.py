@@ -2,28 +2,21 @@
 """Telegram 字段归一取值
 
 - 会话作用域、内容种类与发言人显示名按 Telegram 协议取
-- 被引用消息无文字时按种类写占位标记，引用块不交空串
+- 被引用消息与带附文的媒体都按种类写占位标记，引用块不交空串
 - 用户 id 与消息定位三元组是适配层对外的最小形状
 """
+
+from collections.abc import Sequence
 
 from aiogram.enums import ChatType, ContentType
 from aiogram.types import Message, User
 
 from core.domain import ChatScope, ContentKind, Platform
 from core.domain.ids import ContainerKey, MessageId, UserId
-from core.dto import MsgReferenceDTO
+from core.dto import MediaEntryDTO, MsgReferenceDTO
+from utils.speaker import media_mark
 
 _ANONYMOUS_USER = UserId("unknown")  # 匿名代发无 user 段时的占位值
-
-# 被引用消息无文字时的种类占位，引用块禁交空串
-_REPLY_KIND_LABELS = {
-    ContentKind.PHOTO: "图片",
-    ContentKind.DOCUMENT: "文档",
-    ContentKind.AUDIO: "音频",
-    ContentKind.ANIMATION: "动图",
-    ContentKind.VIDEO: "视频",
-}
-_REPLY_KIND_DEFAULT = "媒体"
 
 
 def scope_of(chat_type: str) -> ChatScope:
@@ -88,7 +81,16 @@ def reply_text_of(reply: Message) -> str:
     kind = kind_of(reply.content_type)
     if kind == ContentKind.TEXT:
         return ""
-    return f"[{_REPLY_KIND_LABELS.get(kind, _REPLY_KIND_DEFAULT)}]"
+    return media_mark(kind)
+
+
+def media_marks(entries: Sequence[MediaEntryDTO]) -> str:
+    """按种类拼媒体占位帧
+
+    - 同种多张只标一次，整组图集算一面 [图片]
+    """
+    kinds = dict.fromkeys(entry.kind for entry in entries)
+    return "".join(media_mark(kind) for kind in kinds)
 
 
 def user_id_of(user: User | None) -> UserId:

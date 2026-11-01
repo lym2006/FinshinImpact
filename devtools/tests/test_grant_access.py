@@ -22,7 +22,7 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
-from core.domain import ChatScope, CommandRole, Platform  # noqa: E402
+from core.domain import ChatScope, CommandRole, ContentKind, Platform  # noqa: E402
 from core.domain.ids import (  # noqa: E402
     ContainerKey,
     MessageId,
@@ -32,6 +32,7 @@ from core.dto import (  # noqa: E402
     CommandDTO,
     ContentDTO,
     InboundEventDTO,
+    MediaEntryDTO,
     MsgReferenceDTO,
     OutboundPayloadDTO,
     PrincipalDTO,
@@ -43,6 +44,7 @@ from plugins.grant import _commands  # noqa: E402
 from services.context import HandlerContext  # noqa: E402
 
 _CONTAINER = ContainerKey("g100123")
+_PHOTO = MediaEntryDTO(kind=ContentKind.PHOTO, local_path="")
 
 
 class _Port:
@@ -97,6 +99,7 @@ def _ctx(
     command: CommandDTO | None = None,
     scope: ChatScope = ChatScope.GROUP,
     text: str = "/clear",
+    media: tuple[MediaEntryDTO, ...] = (),
 ) -> tuple[HandlerContext, _Port]:
     """构造一条命令事件，默认落在群里"""
     port = _Port()
@@ -109,7 +112,7 @@ def _ctx(
     event = InboundEventDTO(
         ref=ref,
         principal=principal,
-        content=ContentDTO(text=text),
+        content=ContentDTO(text=text, media=media),
         scope=scope,
         display_name="三",
         command=command or CommandDTO(matched=True, head="clear"),
@@ -469,8 +472,15 @@ class TestPrivateGate(AccessCase):
         text: str = "随便一句",
         command: CommandDTO | None = None,
         scope: ChatScope = ChatScope.PRIVATE,
+        media: tuple[MediaEntryDTO, ...] = (),
     ) -> bool:
-        ctx, _ = _ctx(user_id, command=command or CommandDTO(), scope=scope, text=text)
+        ctx, _ = _ctx(
+            user_id,
+            command=command or CommandDTO(),
+            scope=scope,
+            text=text,
+            media=media,
+        )
         return asyncio.run(self.gate(ctx))
 
     def test_member_private_is_taken(self) -> None:
@@ -502,6 +512,14 @@ class TestPrivateGate(AccessCase):
     def test_empty_text_is_not_taken(self) -> None:
         """没有正文的消息不当门槛对象"""
         self.assertFalse(self._taken("999", text=""))
+
+    def test_photo_with_caption_is_taken(self) -> None:
+        """成员私聊发图带附文照样被拦，不能落到应答"""
+        self.assertTrue(self._taken("999", media=(_PHOTO,)))
+
+    def test_photo_without_caption_is_not_taken(self) -> None:
+        """没附文的图没有正文，门槛不接"""
+        self.assertFalse(self._taken("999", text="", media=(_PHOTO,)))
 
 
 class TestAdminView(AccessCase):
