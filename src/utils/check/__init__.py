@@ -5,12 +5,12 @@
 - 通道探测与诊断流程归各平台适配层，本门面只交平台无关的调度核心
 """
 
-from ._verify import ChannelOutcome, local_row, run_channels
+from ._verify import ChannelOutcome, local_row, run_probe_round
 from ._version import ReleaseNote, check_updates, release_history
 
 __all__ = [
     # 并行调度核心
-    "run_channels",
+    "run_probe_round",
     "local_row",
     "ChannelOutcome",
     # 版本检查

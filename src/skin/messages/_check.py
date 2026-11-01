@@ -105,7 +105,7 @@ class CheckMessage:
     REASON_SAVE = "保存"
     REASON_RECHECK = "复验"
 
-    # 用：bot/_managers/_settings.py 首轮全不通后自动重检的弹窗头部提示
+    # 用：bot/_managers/_settings.py 与 adapters/telegram/diagnose.py 首轮全不通后的重测提示
     RETRY_HEAD = "首轮全部不通，正在自动重测一轮"
 
     # 用：单通道探测用时（debug 级，面板不展示）

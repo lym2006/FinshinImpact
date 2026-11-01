@@ -1,15 +1,16 @@
 # src/adapters/telegram/diagnose.py
 """网络连通诊断
 
-- 配置留空或系统代理未开启的通道，首帧直接给结论
+- 按代理模式只测选定路线，缺席行首帧直接给结论
 - 全部通道失败给不通结论并标记断链
 """
 
 import time
 from collections.abc import Awaitable, Callable, Sequence
 
+from core.domain import ProxyMode
 from skin.messages import CheckMessage
-from utils.check import run_channels
+from utils.check import run_probe_round
 from utils.logger import get_logger
 from utils.network import (
     Channel,
@@ -19,7 +20,12 @@ from utils.network import (
     detect_system_proxy,
     via_label,
 )
-from utils.network.probe import plan_channels, probe_budget, sys_deduped
+from utils.network.probe import (
+    plan_channels,
+    probe_budget,
+    single_row_of,
+    sys_deduped,
+)
 
 from .probe import attempt_channel, preload_engine
 
@@ -47,11 +53,16 @@ def _never_emit(_frame_data: dict) -> None:
     return None
 
 
-def _diagnose_plan(channels: Sequence[Channel], sys_dedup: bool = False) -> list[dict]:
+def _diagnose_plan(
+    channels: Sequence[Channel],
+    sys_dedup: bool = False,
+    single: tuple[str, str, str] | None = None,
+) -> list[dict]:
     """生成诊断首帧整表
 
     - 待探测通道标进行中，缺席行直接给结论
     - sys_dedup 为真时系统代理行标同端点去重而非缺席
+    - single 传入即单路模式，表裁成选定通道行加结论行
     """
     present = {ch.kind for ch in channels}
     budgets = {ch.kind: probe_budget(ch.url) for ch in channels}
@@ -61,8 +72,12 @@ def _diagnose_plan(channels: Sequence[Channel], sys_dedup: bool = False) -> list
     }
     rows: list[dict] = []
     for rid, title in _ROWS:
+        if single is not None and rid not in (single[0], RowId.ADVICE):
+            continue
         if rid in present:
             status, detail = RowStatus.CHECKING, ""
+        elif single is not None and rid == single[0]:
+            status, detail = RowStatus.FAIL, single[2]
         elif rid == RowId.SYS and sys_dedup:
             status, detail = RowStatus.SKIP, CheckMessage.SYS_DEDUP
         elif rid in absent:
@@ -74,6 +89,27 @@ def _diagnose_plan(channels: Sequence[Channel], sys_dedup: bool = False) -> list
             row["budget"] = str(int(budgets[rid]))
         rows.append(row)
     return rows
+
+
+def _opening(
+    channels: Sequence[Channel],
+    configured: str,
+    detected: str | None,
+    single: tuple[str, str, str] | None,
+    head: str = "",
+) -> dict:
+    """组装诊断整表帧
+
+    - head 非空即同时给出弹窗头部提示
+    """
+    frame: dict = {
+        FrameKey.ROWS: _diagnose_plan(
+            channels, sys_deduped(configured, detected), single
+        )
+    }
+    if head:
+        frame[FrameKey.HEAD] = head
+    return frame
 
 
 def _diagnose_probe(
@@ -100,12 +136,14 @@ def _diagnose_probe(
 async def diagnose_flow(
     configured_proxy: str = "",
     token: str = "",
+    mode: str = ProxyMode.AUTO,
     emit: Callable[[dict], None] | None = None,
     stop_check: Callable[[], bool] | None = None,
 ) -> None:
     """执行一轮网络诊断
 
-    - 任一通道可用即通过
+    - 只测本模式用得到的路线，缺席不发探测
+    - 任一通道可用即通过，两轮都全挂才定不通
     - 全挂给不通结论并标记断链
     - stop_check 为真时中止并取消在测任务，不输出结论
     """
@@ -114,15 +152,20 @@ async def diagnose_flow(
 
     detected = detect_system_proxy()
     cfg = configured_proxy.strip()
-
-    channels = plan_channels(cfg, detected)
+    channels = plan_channels(cfg, detected, mode=mode)
+    single = single_row_of(mode)
 
     # 首帧把通道行点亮为检测中即启动界面倒计时，引擎导入费须在这之前付完
     preload_engine()
-    frame({FrameKey.ROWS: _diagnose_plan(channels, sys_deduped(cfg, detected))})
+    frame(_opening(channels, cfg, detected, single))
 
-    outcome = await run_channels(
-        channels, _diagnose_probe(token), frame, via_label, stop
+    def replay() -> None:
+        """预热后重发整表清场"""
+        _logger.debug(CheckMessage.RETRY_HEAD)
+        frame(_opening(channels, cfg, detected, single, head=CheckMessage.RETRY_HEAD))
+
+    outcome = await run_probe_round(
+        channels, _diagnose_probe(token), frame, via_label, replay, stop
     )
     if stop():
         return
