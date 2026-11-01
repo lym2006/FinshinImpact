@@ -1068,8 +1068,8 @@ class TestFollowAbove(unittest.TestCase):
 class TestLiftYieldsToOtherModal(unittest.TestCase):
     """回归点
 
-    - 被跟窗自己演模态不算拦路，结论窗照样浮
-    - 只有别人的确认框在演才让位
+    - 被跟窗自己模态不算拦路，结论窗照样浮
+    - 只有别的模态窗开着才让位
     """
 
     def _front(self, modal: object, owner: object) -> object:
@@ -1090,14 +1090,14 @@ class TestLiftYieldsToOtherModal(unittest.TestCase):
         return top
 
     def test_owner_modal_still_lifts(self) -> None:
-        """被跟面板自己在演模态也照样浮"""
+        """被跟面板自己模态也照样浮"""
         panel = object()
         top = self._front(panel, panel)
 
         top.raise_.assert_called_once()
 
     def test_other_modal_blocks_lift(self) -> None:
-        """别人的确认框在演则让位"""
+        """别的模态窗开着则让位"""
         top = self._front(object(), object())
 
         top.raise_.assert_not_called()
@@ -1106,13 +1106,13 @@ class TestLiftYieldsToOtherModal(unittest.TestCase):
 class TestResultWindowOwner(unittest.TestCase):
     """结果窗该挂谁
 
-    - 有窗在演模态就挂它，结果浮在它上面
-    - 在场的已是报结果的窗时交回 None，等它关闭
-    - 没窗在演时挂回主窗
+    - 有模态窗开着就挂它，结果浮在它上面
+    - 开着的已是报结果的窗时交回 None，等它关闭
+    - 没有模态窗开着时挂回主窗
     """
 
     def _owner(self, modal: object, fallback: object) -> object:
-        """按「当前在演模态的窗」取结果窗的父"""
+        """按「当前那只模态窗」取结果窗的父"""
         from ui._windows import _main_window
 
         with patch.object(
@@ -1121,7 +1121,7 @@ class TestResultWindowOwner(unittest.TestCase):
             return _main_window._result_owner(fallback)
 
     def test_parent_is_host_window(self) -> None:
-        """在演的是普通弹窗就挂它"""
+        """开着的是普通模态窗就挂它"""
         from unittest.mock import MagicMock
 
         from ui._dialogs import BaseDialog
@@ -1132,7 +1132,7 @@ class TestResultWindowOwner(unittest.TestCase):
         self.assertIs(self._owner(host, object()), host)
 
     def test_parent_is_main_window_when_free(self) -> None:
-        """没窗在演时挂回主窗"""
+        """没有模态窗开着时挂回主窗"""
         main_window = object()
 
         self.assertIs(self._owner(None, main_window), main_window)

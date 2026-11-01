@@ -24,7 +24,7 @@ _MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
 class LinkDialog(BaseDialog):
     """断连计时弹窗
 
-    - 常驻回写数字，主窗在它演着时点不动
+    - 常驻回写数字，它开着时主窗点不动，收掉才恢复
     - 叉号只压本次断连，「本次不提示」按钮压本次运行
     """
 
