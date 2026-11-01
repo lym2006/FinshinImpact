@@ -6,6 +6,7 @@
 """
 
 from ._models import (
+    ConfigGroup,
     ConfigKey,
     ConfigSection,
     ConfigValue,
@@ -21,6 +22,8 @@ __all__ = [
     # 段与键
     "ConfigSection",
     "ConfigKey",
+    # 界面大类
+    "ConfigGroup",
     # 代理模式取值域
     "ProxyMode",
     # 结构体

@@ -36,6 +36,8 @@ def _schema() -> list[TabSchema]:
         TabSchema(
             title="AI",
             section="ai",
+            group="ai",
+            group_title="AI 设置",
             fields=[
                 FieldSchema("temperature", "温度", "", 0.7, float),
                 FieldSchema("model", "模型", "", "gpt", str),
@@ -99,6 +101,8 @@ class TestRequiredValidation(unittest.TestCase):
             TabSchema(
                 title="AI",
                 section="ai",
+                group="ai",
+                group_title="AI 设置",
                 fields=[
                     FieldSchema("api_key", "密钥", "", "sk", str, required=True),
                     FieldSchema("temperature", "温度", "", 0.7, float),
@@ -108,6 +112,8 @@ class TestRequiredValidation(unittest.TestCase):
             TabSchema(
                 title="触发",
                 section="chore",
+                group="ai",
+                group_title="AI 设置",
                 fields=[
                     FieldSchema("triggers", "触发词", "", ["a"], list, required=True)
                 ],
