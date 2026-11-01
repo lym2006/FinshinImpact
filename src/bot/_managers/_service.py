@@ -11,6 +11,7 @@ import asyncio
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
+from exceptions import MAP_KEY_PLUGINS, MAPS
 from skin.messages import EngineMessage
 
 from ._base import BaseManager
@@ -21,6 +22,8 @@ if TYPE_CHECKING:
     from services.tasks import TaskItem
 
     from .._service import BotService
+
+_ERR_MAP_PLUGIN = MAPS[MAP_KEY_PLUGINS]
 
 
 class ServiceManager(BaseManager):
@@ -95,31 +98,36 @@ class ServiceManager(BaseManager):
         )
         total = len(report)
         self.logger.info(EngineMessage.PLUGINS_DONE.format(n=total))
-        for index, (name, ok, reason) in enumerate(report, 1):
-            if ok:
+        for index, (name, error) in enumerate(report, 1):
+            if error is None:
                 self.logger.info(
                     EngineMessage.PLUGIN_OK.format(index=index, n=total, name=name)
                 )
-            else:
-                self.logger.error(
-                    EngineMessage.PLUGIN_FAIL.format(
-                        index=index, n=total, name=name, reason=reason
-                    )
-                )
+                continue
+            self.logger.send_error(
+                EngineMessage.PLUGIN_FAIL.format(
+                    index=index,
+                    n=total,
+                    name=name,
+                    reason=_ERR_MAP_PLUGIN[type(error)].format(**vars(error)),
+                ),
+                error,
+            )
 
         return adapter, backgrounds, resets, handlers, startups
 
     def _report_task_fault(self, item: TaskItem, error: Exception) -> None:
-        """任务派发失败的行落在面板"""
-        self.logger.error(EngineMessage.TASK_FAULT.format(kind=item.kind, reason=error))
+        """任务派发失败的行落在面板，异常本体下沉调试日志"""
+        self.logger.send_error(EngineMessage.TASK_FAULT.format(kind=item.kind), error)
 
     def _report_ledger_fault(self, item: TaskItem, error: Exception) -> None:
         """状态账写失败的行落在面板
 
         - 账本断头不拦派发，回答照走
+        - 异常本体下沉调试日志
         """
-        self.logger.error(
-            EngineMessage.TASK_LEDGER_FAULT.format(kind=item.kind, reason=error)
+        self.logger.send_error(
+            EngineMessage.TASK_LEDGER_FAULT.format(kind=item.kind), error
         )
 
     def stop_service(self) -> None:
