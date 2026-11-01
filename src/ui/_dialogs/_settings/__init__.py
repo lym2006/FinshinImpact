@@ -1,7 +1,7 @@
 # src/ui/_dialogs/_settings/__init__.py
 """配置向导
 
-- 实现多标签页表单与错误标红
+- 实现左侧大类与上排页签的两级表单、错误标红
 - 提供复验结果原地刷新与防重入
 - 变更确认窗由本包一并交出
 """
@@ -142,7 +142,7 @@ class SettingsDialog(BaseDialog):
         """原地刷新校验结果
 
         - 标红或清除字段错误
-        - 增撤标签页 ⚠ 标记
+        - 增撤页签与大类的 ⚠ 标记
         """
         self._field_errors = dict(field_errors or {})
         bad = self._resolve_error_sections(self._schema)
@@ -158,11 +158,7 @@ class SettingsDialog(BaseDialog):
                 label.setText(title)
                 label.setStyleSheet("")
             label.setToolTip(err or "")
-        for section, (index, title) in self._chrome.tab_titles.items():
-            mark = "⚠ " if section in bad else ""
-            if self._chrome.tabs is None:
-                continue
-            self._chrome.tabs.setTabText(index, f"{mark}{title}")
+        self._chrome.set_error_marks(bad)
         self._fields.refresh_resets()
 
     def set_busy(self, busy: bool) -> None:
@@ -173,8 +169,7 @@ class SettingsDialog(BaseDialog):
         self._chrome.save_btn.setText(
             SETTINGS_DIALOG.validating_text if busy else self._chrome.save_text
         )
-        if self._chrome.tabs is not None:
-            self._chrome.tabs.setEnabled(not busy)
+        self._chrome.lock_nav(busy)
 
     def switch_to_setup(self, field_errors: dict[str, str] | None) -> None:
         """EDIT 原地转 SETUP

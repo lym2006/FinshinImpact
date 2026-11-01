@@ -19,6 +19,7 @@ class ObjectName(StrEnum):
     LIST_WIDGET = "list_widget"
     PERSONA_PREVIEW = "persona_preview"
     TAB_CONTAINER = "settings_tab_container"
+    CATEGORY_LIST = "settings_category_list"
     LINK_HEAD = "link_head"
     LINK_TIMER = "link_timer"
     LINK_RETRIES = "link_retries"
