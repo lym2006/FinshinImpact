@@ -30,7 +30,19 @@ set_profile("tg.000000")
 
 from bot import _service as service_module  # noqa: E402
 from bot._service import BotService  # noqa: E402
-from core.domain import PluginRoute, PluginSpec, TaskHandler, TaskKind  # noqa: E402
+from core.domain import (  # noqa: E402
+    PLUGINS_PKG,
+    PluginRoute,
+    PluginSpec,
+    TaskHandler,
+    TaskKind,
+)
+from exceptions import (  # noqa: E402
+    PluginDependencyError,
+    PluginLoadError,
+    PluginMissingError,
+    PluginSpecError,
+)
 from utils.plugin import _register  # noqa: E402
 
 
@@ -64,7 +76,10 @@ def _register_modules(modules: dict[str, object], names: list[str]):
     """
 
     def fake_import(full: str) -> object:
-        return modules[full.rsplit(".", 1)[-1]]
+        found = modules[full.rsplit(".", 1)[-1]]
+        if isinstance(found, Exception):
+            raise found
+        return found
 
     dispatcher = _FakeDispatcher()
     manifests = [SimpleNamespace(name=name, core=False) for name in names]
@@ -100,7 +115,7 @@ class TestCollectBackgrounds(unittest.TestCase):
 
         self.assertEqual(hooks, (_noop,))
         self.assertEqual(resets, (_noop,))
-        self.assertEqual(report, [("AI", True, "")])
+        self.assertEqual(report, [("AI", None)])
         self.assertEqual(len(routers), 1)
         self.assertEqual(len(routers[0].compiled.routes), 1)
 
@@ -115,9 +130,8 @@ class TestCollectBackgrounds(unittest.TestCase):
         self.assertEqual(hooks, ())
         self.assertEqual(resets, (), "缺清单的插件不该交出清理入口")
         self.assertEqual(len(routers), 1)
-        self.assertFalse(report[0][1])
-        self.assertIn("缺少 spec 属性", report[0][2])
-        self.assertTrue(report[1][1])
+        self.assertIsInstance(report[0][1], PluginSpecError)
+        self.assertIsNone(report[1][1])
 
     def test_legacy_router_not_mounted(self) -> None:
         """只交 router 的插件记加载失败"""
@@ -127,11 +141,25 @@ class TestCollectBackgrounds(unittest.TestCase):
             modules, ["bad", "good"]
         )
 
-        self.assertFalse(report[0][1])
-        self.assertTrue(report[1][1])
+        self.assertIsInstance(report[0][1], PluginSpecError)
+        self.assertIsNone(report[1][1])
         self.assertEqual(hooks, ())
         self.assertEqual(resets, ())
         self.assertEqual(len(routers), 1)
+
+    def test_module_missing_kinds(self) -> None:
+        """插件本身缺席与内部缺依赖记成两种异常"""
+        modules = {
+            "gone": ModuleNotFoundError(f"No module named '{PLUGINS_PKG}.gone'"),
+            "deps": ModuleNotFoundError("No module named 'numpy'"),
+            "good": _plugin(),
+        }
+
+        (report, _, _, _, _), _ = _register_modules(modules, ["gone", "deps", "good"])
+
+        self.assertIsInstance(report[0][1], PluginMissingError)
+        self.assertIsInstance(report[1][1], PluginDependencyError)
+        self.assertIsNone(report[2][1])
 
     def test_non_callable_member_dropped(self) -> None:
         """声明里混进非 callable 只丢该成员"""
@@ -157,8 +185,8 @@ class TestCollectBackgrounds(unittest.TestCase):
         self.assertEqual(resets, ())
         self.assertEqual(len(routers), 1)
         self.assertEqual([row[0] for row in report], ["bad", "good"])
-        self.assertFalse(report[0][1])
-        self.assertTrue(report[1][1])
+        self.assertIsInstance(report[0][1], PluginLoadError)
+        self.assertIsNone(report[1][1])
 
     def test_undeclared_plugin_yields_empty(self) -> None:
         """未声明常驻协程的插件照常注册，协程为空"""
@@ -169,7 +197,7 @@ class TestCollectBackgrounds(unittest.TestCase):
         self.assertEqual(hooks, ())
         self.assertEqual(resets, ())
         self.assertEqual(handlers, ())
-        self.assertEqual(report, [("help", True, "")])
+        self.assertEqual(report, [("help", None)])
 
     def test_declared_task_handlers_returned(self) -> None:
         """回归点 8：声明了任务处理的插件交出处理清单"""
@@ -190,9 +218,8 @@ class TestCollectBackgrounds(unittest.TestCase):
         (report, _, _, _, startups), _ = _register_modules(modules, ["bad", "AI"])
 
         self.assertEqual(startups, (_noop,))
-        self.assertFalse(report[0][1])
-        self.assertIn("startups", report[0][2])
-        self.assertTrue(report[1][1])
+        self.assertIsInstance(report[0][1], PluginLoadError)
+        self.assertIsNone(report[1][1])
 
 
 class _FakeSession:
