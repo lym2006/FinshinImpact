@@ -34,7 +34,6 @@ class ChangeConfirmDialog(BaseDialog):
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent=parent, title=CHANGE_DIALOG.title)
-        self.set_always_on_top()
         self.setStyleSheet(build_change_dialog_qss())
         self.setMinimumSize(CHANGE_DIALOG.min_width, CHANGE_DIALOG.min_height)
         self._build_ui(logs)

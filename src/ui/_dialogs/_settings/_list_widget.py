@@ -120,7 +120,6 @@ class _ConfigListDialog(BaseDialog):
         self, title: str, items: list[str], parent: QWidget | None = None
     ) -> None:
         super().__init__(parent=parent, title=title)
-        self.set_always_on_top()
         self.setStyleSheet(build_settings_dialog_qss())
 
         layout = QVBoxLayout(self)

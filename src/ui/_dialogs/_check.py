@@ -2,7 +2,7 @@
 """检查进度窗
 
 - 校验轮与诊断轮共用的唯一表格窗，换轮原地重置
-- 窗口置顶在首显前定死，进行中只留「取消」出口
+- 窗口可关性在首显前定死，进行中只留「取消」出口
 - 启动轮进行中无按钮并屏蔽 Esc，跑完才结束
 """
 
@@ -77,7 +77,7 @@ class CheckDialog(BaseDialog):
 
         # ×开关只在 flags 上，首显前定死，换轮换标题不触 flags 无重建，退出只认按钮
         flags = self.windowFlags() & ~Qt.WindowType.WindowCloseButtonHint
-        self.setWindowFlags(flags | Qt.WindowType.WindowStaysOnTopHint)
+        self.setWindowFlags(flags)
 
         self._round: str = ""
         self._aborts = False
