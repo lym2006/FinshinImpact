@@ -1,7 +1,7 @@
 # src/ui/_dialogs/_link.py
 """断连计时弹窗
 
-- 非模态浮窗展示断线时长与重连次数
+- 只锁主窗展示断线时长与重连次数
 """
 
 from collections.abc import Callable
@@ -24,7 +24,7 @@ _MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
 class LinkDialog(BaseDialog):
     """断连计时弹窗
 
-    - 非模态常驻，数字由外部逐秒回写
+    - 常驻回写数字，主窗在它演着时点不动
     - 叉号只压本次断连，「本次不提示」按钮压本次运行
     """
 
@@ -35,7 +35,6 @@ class LinkDialog(BaseDialog):
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent=parent, title=LINK_DIALOG.title)
-        self.setWindowModality(Qt.WindowModality.NonModal)
         self.setStyleSheet(build_link_dialog_qss())
 
         self._on_close = on_close
