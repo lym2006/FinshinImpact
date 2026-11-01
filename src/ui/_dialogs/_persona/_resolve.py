@@ -241,12 +241,12 @@ class PersonaResolveDialog(BaseDialog):
         """切换比对与确认两段
 
         - 两栏的「用这份」与确认行不会同时在场
-        - 折叠开关属比对段，二次确认时收起
+        - 折叠开关两段都在场，收掉会把提示行压矮一截
         """
         self._confirm_row.setVisible(confirm)
         self._btn_old.setVisible(not confirm)
         self._btn_new.setVisible(not confirm)
-        self._btn_fold.setVisible(self._has_skip and not confirm)
+        self._btn_fold.setVisible(self._has_skip)
         default = self._btn_commit if confirm else self._btn_new
         default.setDefault(True)
         default.setFocus()
