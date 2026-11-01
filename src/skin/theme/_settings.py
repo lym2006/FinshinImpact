@@ -28,6 +28,12 @@ class SettingsDialogTheme:
     tab_spacing: int = 12  # 标签页内部控件间距
     tab_bg: str = "#2D2D2D"  # 标签页背景色
 
+    # 左侧大类
+    category_width: int = 132  # 大类列表固定宽度
+    category_padding_v: int = 8  # 大类项垂直内边距
+    category_padding_h: int = 12  # 大类项水平内边距
+    category_spacing: int = 8  # 大类列表与页签区间距
+
     # 输入框
     input_padding_v: int = 6  # 输入框垂直内边距
     input_padding_h: int = 8  # 输入框水平内边距

@@ -17,10 +17,10 @@ class ConfigMessage:
 
     # 用：utils/config/_schema.py 组装页签标题
     TAB_TITLES = {
-        "proxy": "Bot 基础设置",
-        "ai": "AI 模型设置",
-        "chore": "AI 杂项设置",
-        "data": "数据与运维",
+        "proxy": "连接与代理",
+        "ai": "模型",
+        "chore": "主人与触发",
+        "data": "记录与运维",
     }
 
     # 用：utils/config/_schema.py 组装字段标题
