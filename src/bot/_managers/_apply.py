@@ -13,6 +13,7 @@ from system.profile_env import get_profile, read_token
 from ui import gui_bridge
 from utils import config_manager
 from utils.init_files import save_persona_text
+from utils.network import link_report
 from utils.persona import applied_persona_text, load_persona_cache, save_applied_persona
 
 from ..error_guard import error_guard
@@ -48,6 +49,7 @@ class ConfigApplier:
         """应用当前配置
 
         - 失败弹向导等待再次保存，通过则重启服务
+        - 代理不通导致的失败作废断连周期，配置问题只由向导说话
         """
         host = self._host
         if host._shutdown:
@@ -61,6 +63,9 @@ class ConfigApplier:
         else:
             await host._settings_manager.execute()
         if not await host._settings_manager.verify_connectivity():
+            if not host._settings_manager.link_verified:
+                # 代理不通或没探成：引擎失败源于代理，作废链路账，断连窗不踩配置向导
+                link_report.reset()
             self._resolved_proxy = None
 
             errors = host._settings_manager.last_errors

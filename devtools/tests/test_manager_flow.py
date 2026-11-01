@@ -163,6 +163,42 @@ class TestApplyConfig(ManagerFlowTestBase):
         )
 
 
+class TestProxyFaultVoidsLinkCycle(ManagerFlowTestBase):
+    """回归点 10
+
+    - 代理不通作废断连周期，配置问题只由向导说话
+    - 连通已过的失败不碰链路账，引擎自身断线照旧播报
+    """
+
+    async def _resets_with(self, link_verified: bool) -> int:
+        """按连通判据跑一轮失败校验，返回链路账作废次数"""
+        sm = self.manager._settings_manager
+        resets = {"n": 0}
+
+        def _reset() -> None:
+            resets["n"] += 1
+
+        async def _fail_verify() -> bool:
+            sm.last_errors = {FieldKey.PROXY: "代理不通"}
+            sm.link_verified = link_verified
+            return False
+
+        with (
+            patch.object(sm, "verify_connectivity", new=_fail_verify),
+            patch.object(_apply.link_report, "reset", _reset),
+        ):
+            await self.manager._applier.apply_config()
+
+        self.assertEqual(len(self.force_events), 1, "失败应弹向导")
+        return resets["n"]
+
+    async def test_proxy_not_verified_voids_the_cycle(self) -> None:
+        self.assertEqual(await self._resets_with(link_verified=False), 1)
+
+    async def test_verified_link_keeps_the_cycle(self) -> None:
+        self.assertEqual(await self._resets_with(link_verified=True), 0)
+
+
 class TestShutdownAfterDialog(ManagerFlowTestBase):
     """回归点 2
 

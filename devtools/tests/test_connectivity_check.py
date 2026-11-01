@@ -6,7 +6,8 @@
 - _check_config 聚合 proxy 与 token 双探测，两坏同时报
 - token 纯格式校验，坏 token 不联网即标记
 - verify_connectivity 覆盖三步通道解析与错误聚合
-- 网络轮只在参数变化或上轮连通未通过时起，其余只跑本地
+- 网络轮只在参数变化、上轮连通未过或引擎断线时起，其余只跑本地
+- 系统代理地址只计进用得到它的那两档
 - 首轮全挂每种模式都预热后重检一轮，单路模式同样重检本路
 """
 
@@ -15,6 +16,7 @@ import sys
 import unittest
 from contextlib import contextmanager
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "src"))
@@ -158,14 +160,16 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
     """回归点
 
     - 三步通道解析（配置→系统→直连）与错误聚合
+    - 免测判据由连通结论、引擎断线与系统代理地址共同把关
     """
 
     @contextmanager
-    def _patches(self, mod, fake_check, types=None):
+    def _patches(self, mod, fake_check, types=None, link_down=False, sys_box=None):
         """统一打桩
 
-        - 探针、本地校验、系统代理缺席、重检预热归零
+        - 探针、本地校验、系统代理缺席、链路快照与健康档、重检预热归零
         - fake_check 返回错误 dict，适配成 attempt_channel 的 (生效址, 错误) 元组
+        - sys_box 传入即 {"value": 地址} 盒子，现取现换用于测系统代理变化
         """
 
         local = ({"id": "local", "status": "ok", "detail": ""}, types or {})
@@ -176,10 +180,16 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
             errors = await fake_check(token, proxy)
             return (proxy, {}) if not errors else (None, errors)
 
+        report = SimpleNamespace(snapshot=lambda: SimpleNamespace(down=link_down))
+
+        def detected() -> str | None:
+            return None if sys_box is None else sys_box["value"]
+
         with (
             patch.object(mod, "attempt_channel", fake_probe),
             patch.object(mod, "local_row", return_value=local),
-            patch.object(mod, "detect_system_proxy", return_value=None),
+            patch.object(mod, "detect_system_proxy", detected),
+            patch.object(mod, "link_report", report),
             patch.object(mod, "_RETRY_WARMUP", 0.0),
         ):
             yield
@@ -384,6 +394,7 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
             self.assertFalse(await mgr.verify_connectivity())
             self.assertTrue(probes, "首轮应联网探测")
             self.assertIsNotNone(mgr.resolved_proxy, "直连通了应记下生效通道")
+            self.assertTrue(mgr.link_verified, "通道探通即连通已过，本地类型错不牵连")
             probes.clear()
             self.assertFalse(await mgr.verify_connectivity())
 
@@ -392,7 +403,7 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
     async def test_proxy_error_forces_network_retest(self) -> None:
         """上轮代理不通作废免测
 
-        - 生效通道没记下，网络参数没变也要重探
+        - 连通判据没立起，网络参数没变也要重探
         """
         from bot._managers._settings import SettingsManager
 
@@ -408,11 +419,62 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
         with self._patches(mod, dead_then_alive):
             self.assertFalse(await mgr.verify_connectivity())
             self.assertIsNone(mgr.resolved_proxy, "全挂时不该记下生效通道")
+            self.assertFalse(mgr.link_verified, "全挂即连通未过")
             probes.clear()
             reach["ok"] = True
             self.assertTrue(await mgr.verify_connectivity())
+            self.assertTrue(mgr.link_verified, "重探通后连通判据立起")
 
         self.assertTrue(probes, "上轮不通不该免测")
+
+    async def test_link_down_vetoes_local_only(self) -> None:
+        """引擎正断线时作废免测
+
+        - 网络参数一字未改、上轮连通也过了，仍要重探一轮
+        """
+        from bot._managers._settings import SettingsManager
+
+        mgr = SettingsManager(lambda: ("tok", "http://127.0.0.1:7890"))
+        probes: list[str] = []
+
+        async def alive(token: str, proxy: str) -> dict:
+            probes.append(proxy)
+            return {}
+
+        mod = sys.modules["bot._managers._settings"]
+        with self._patches(mod, alive):
+            self.assertTrue(await mgr.verify_connectivity())
+            probes.clear()
+
+        with self._patches(mod, alive, link_down=True):
+            self.assertTrue(await mgr.verify_connectivity())
+
+        self.assertTrue(probes, "断连周期在途时不该只跑本地")
+
+    async def test_sys_proxy_change_forces_network_retest(self) -> None:
+        """系统代理地址一变作废免测
+
+        - 自动模式用得到注册表那一项，开关一拨旧结论就不作数
+        """
+        from bot._managers._settings import SettingsManager
+
+        mgr = SettingsManager(lambda: ("tok", ""))
+        sys_box = {"value": "http://127.0.0.1:7890"}
+        probes: list[str] = []
+
+        async def alive(token: str, proxy: str) -> dict:
+            probes.append(proxy)
+            return {}
+
+        mod = sys.modules["bot._managers._settings"]
+        with self._patches(mod, alive, sys_box=sys_box):
+            self.assertTrue(await mgr.verify_connectivity())
+            self.assertTrue(mgr.link_verified, "首轮探通即连通已过")
+            probes.clear()
+            sys_box["value"] = None
+            self.assertTrue(await mgr.verify_connectivity())
+
+        self.assertTrue(probes, "系统代理消失属网络参数变了")
 
 
 class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
@@ -422,13 +484,15 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
     - 每种模式首轮全挂都等待预热后重检一轮
     - 重检轮开场重发整表，待测行刷回检测中并带头部重测提示
     - 代理行被隐藏的模式，网络错标在看得见的代理模式行上
+    - 用不到系统代理的档位，其地址变化不作废免测
     """
 
     @contextmanager
-    def _mode_patches(self, mod, fake_check, mode, sys_proxy=None):
+    def _mode_patches(self, mod, fake_check, mode, sys_proxy=None, sys_box=None):
         """按模式打桩
 
-        - 内存配置注入 proxy_mode，系统代理可控，重检预热归零
+        - 内存配置注入 proxy_mode，系统代理可控，重检预热归零，链路快照按健康摆
+        - sys_box 传入即 {"value": 地址} 盒子，现取现换用于测系统代理变化
         """
         local_frame = {"id": "local", "status": "ok", "detail": ""}
 
@@ -438,10 +502,15 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
             errors = await fake_check(token, proxy)
             return (proxy, {}) if not errors else (None, errors)
 
+        def detected() -> str | None:
+            return sys_proxy if sys_box is None else sys_box["value"]
+
+        report = SimpleNamespace(snapshot=lambda: SimpleNamespace(down=False))
         with (
             patch.object(mod, "attempt_channel", fake_probe),
             patch.object(mod, "local_row", return_value=(local_frame, {})),
-            patch.object(mod, "detect_system_proxy", return_value=sys_proxy),
+            patch.object(mod, "detect_system_proxy", detected),
+            patch.object(mod, "link_report", report),
             patch.object(mod, "_RETRY_WARMUP", 0.0),
             patch.object(
                 mod.config_manager,
@@ -581,6 +650,54 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(ok)
         self.assertEqual(calls["n"], 0, "缺席单路不应发探测")
         self.assertIn("系统代理未开启", mgr.last_errors["proxy_mode"])
+
+    async def test_cfg_absent_marks_visible_proxy_row(self) -> None:
+        """仅配置代理模式没填地址，红点落在代理项
+
+        - 这一档代理行不隐藏，缺席句该标在用户能改的那一格
+        """
+
+        from bot._managers._settings import SettingsManager
+
+        mgr = SettingsManager(lambda: ("tok", ""))
+        calls = {"n": 0}
+
+        async def probe(token: str, proxy: str) -> dict:
+            calls["n"] += 1
+            return {}
+
+        mod = sys.modules["bot._managers._settings"]
+        with self._mode_patches(mod, probe, "cfg"):
+            ok = await mgr.verify_connectivity()
+
+        self.assertFalse(ok)
+        self.assertEqual(calls["n"], 0, "缺席单路不应发探测")
+        self.assertEqual(list(mgr.last_errors), ["proxy"])
+
+    async def test_direct_mode_ignores_system_proxy_change(self) -> None:
+        """仅直连模式不吃系统代理变化的免测作废
+
+        - 这一档探不到系统通道，注册表开关一拨与本路无关
+        """
+
+        from bot._managers._settings import SettingsManager
+
+        mgr = SettingsManager(lambda: ("tok", ""))
+        sys_box = {"value": "http://127.0.0.1:7890"}
+        seen: list[str] = []
+
+        async def probe(token: str, proxy: str) -> dict:
+            seen.append(proxy)
+            return {}
+
+        mod = sys.modules["bot._managers._settings"]
+        with self._mode_patches(mod, probe, "direct", sys_box=sys_box):
+            self.assertTrue(await mgr.verify_connectivity())
+            seen.clear()
+            sys_box["value"] = None
+            self.assertTrue(await mgr.verify_connectivity())
+
+        self.assertEqual(seen, [], "系统代理变化与仅直连档无关")
 
     async def test_auto_fail_then_retry_passes(self) -> None:
         """自动模式首轮全挂，重检轮通过即算数"""

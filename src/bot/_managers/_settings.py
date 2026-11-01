@@ -29,9 +29,11 @@ from utils.network import (
     RowId,
     RowStatus,
     detect_system_proxy,
+    link_report,
     plan_channels,
     sys_deduped,
     uses_configured_proxy,
+    uses_system_proxy,
     verify_plan,
     via_label,
 )
@@ -71,8 +73,11 @@ class SettingsManager(BaseManager):
         # 三级解析出的生效通道，未通过为 None，空串表示直连
         self.resolved_proxy: str | None = None
 
-        # 上次验证时的网络参数：(配置代理, 代理模式)，变化判定基准
-        self._net_state: tuple[str, str] = ("", "")
+        # 最近一轮网络探测的连通结论，与本地校验错身分开记
+        self.link_verified = False
+
+        # 上次验证时的网络参数：(配置代理, 代理模式, 系统代理)，变化判定基准
+        self._net_state: tuple[str, str, str] = ("", "", "")
 
     async def _execute(self) -> None:
         """加载配置进内存"""
@@ -82,69 +87,80 @@ class SettingsManager(BaseManager):
     async def verify_connectivity(self) -> bool:
         """按字段变化分流的连通校验
 
-        - 网络参数全未变且上轮连通通过时只跑本地校验
-        - 通过则记录生效通道
+        - 网络参数全未变、上轮连通通过且引擎不在断连周期时只跑本地校验
+        - 通过则记录生效通道与连通结论
         - 单路模式只测选定通道，缺席不发探测
         - 每种模式首轮全挂都等待预热后重检一轮
         """
         t0 = time.monotonic()
         schema = get_schema()
         token, raw = self._get_config()
-        prev_state = self._net_state
-        state = self._read_net_state(raw)
-        self._net_state = state
-        configured, mode = state
-
-        # 生效通道记下即上轮网络零错，本地类型错不该拉起重联网轮
-        if state == prev_state and self.resolved_proxy is not None:
-            return self._local_round(schema)
-
         detected = detect_system_proxy()
+        state = self._read_net_state(raw, detected)
+        configured, mode = state[:2]
+
+        # 免测只认连通结论：系统代理一变旧结论就不作数，引擎正断线时更得重探
+        down = link_report.snapshot().down
+        if state == self._net_state and self.link_verified and not down:
+            return self._local_round(schema)
+        self._net_state = state
+
+        # 起联网重探前先清旧结论：探测中途异常不该留下过时的连通账
+        self.link_verified = False
         channels = plan_channels(configured, detected, mode=mode)
         sys_dedup = sys_deduped(configured, detected)
         single = single_row_of(mode)
         type_errors = self._emit_opening(channels, sys_dedup, single, schema)
         if single is not None and not channels:
-            # 单路选路缺地址：缺席句标在模式行，代理行那档可能被整行隐藏
-            type_errors = {**type_errors, ConfigKey.PROXY_MODE: single[2]}
-            self.resolved_proxy = None
-            self.last_errors = cast("dict[str, str]", type_errors)
-            self.logger.info(CheckMessage.ROUND_COST.format(cost=time.monotonic() - t0))
-            return self._emit_advice(schema)
-
-        probe = self._make_probe(token)
-        emit = gui_bridge.verify_progress.emit
-        outcome = await run_channels(channels, probe, emit, via_label)
-        if not outcome.passed:
-            # 首轮全挂多为冷启动握手慢：歇一拍等内核拉起来，再趁热原样重检一轮定性
-            await asyncio.sleep(_RETRY_WARMUP)
-            self.logger.debug(CheckMessage.RETRY_HEAD)
-
-            # 重发整表清场：已定案的行不吃单行帧，不重建则首轮的红行盖不掉
-            self._emit_opening(
-                channels,
-                sys_dedup,
-                single,
-                schema,
-                head=CheckMessage.RETRY_HEAD,
+            # 缺席的选路填不上地址：代理行看得见就红在代理项，被整行藏掉才红模式行
+            key = (
+                FieldKey.PROXY if uses_configured_proxy(mode) else ConfigKey.PROXY_MODE
             )
+            net_errors: dict[str, str] = {key: single[2]}
+            resolved: str | None = None
+        else:
+            probe = self._make_probe(token)
+            emit = gui_bridge.verify_progress.emit
             outcome = await run_channels(channels, probe, emit, via_label)
-        net_errors = self._aggregate_errors(outcome, channels, mode)
+            if not outcome.passed:
+                # 首轮全挂多为冷启动握手慢：歇一拍等内核拉起来，再趁热原样重检一轮定性
+                await asyncio.sleep(_RETRY_WARMUP)
+                self.logger.debug(CheckMessage.RETRY_HEAD)
 
-        self._settle(outcome.resolved, configured, mode == ProxyMode.AUTO)
+                # 重发整表清场：已定案的行不吃单行帧，不重建则首轮的红行盖不掉
+                self._emit_opening(
+                    channels,
+                    sys_dedup,
+                    single,
+                    schema,
+                    head=CheckMessage.RETRY_HEAD,
+                )
+                outcome = await run_channels(channels, probe, emit, via_label)
+            net_errors = self._aggregate_errors(outcome, channels, mode)
+            resolved = outcome.resolved
+
+        self._settle(resolved, configured, mode == ProxyMode.AUTO)
+
+        # 连通判据独立记：探到可用通道才算通，本地类型错不参与
+        self.link_verified = resolved is not None
         self.last_errors = {**net_errors, **type_errors}
         self.logger.info(CheckMessage.ROUND_COST.format(cost=time.monotonic() - t0))
         return self._emit_advice(schema)
 
-    def _read_net_state(self, configured: str) -> tuple[str, str]:
+    def _read_net_state(
+        self, configured: str, sys_proxy: str | None
+    ) -> tuple[str, str, str]:
         """读取连通校验用的网络参数
 
-        - 配置代理串与代理模式两项
+        - 配置代理串、代理模式与系统代理地址三项
+        - 用得到系统代理的档位才计入它，另两档的开关变化与连通校验无关
         """
         proxy = config_manager.get_all().get(ConfigSection.PROXY) or {}
+        mode = str(proxy.get(ConfigKey.PROXY_MODE, ProxyMode.AUTO)).strip()
         return (
             configured.strip(),
-            str(proxy.get(ConfigKey.PROXY_MODE, ProxyMode.AUTO)).strip(),
+            mode,
+            (sys_proxy or "") if uses_system_proxy(mode) else "",
         )
 
     def _local_round(self, schema: AppSchema) -> bool:
