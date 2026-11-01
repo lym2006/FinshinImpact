@@ -35,7 +35,6 @@ class PersonaEditorDialog(BaseDialog):
 
     def __init__(self, text: str, parent: QWidget | None = None) -> None:
         super().__init__(parent=parent, title=SETTINGS_DIALOG.persona_editor_title)
-        self.set_always_on_top()
         self.setStyleSheet(build_settings_dialog_qss())
 
         layout = QVBoxLayout(self)

@@ -40,7 +40,6 @@ class NoticeDialog(BaseDialog):
             title=title
             or (NOTICE_DIALOG.fatal_title if critical else NOTICE_DIALOG.title),
         )
-        self.set_always_on_top()
         self.setStyleSheet(build_notice_dialog_qss())
 
         layout = QVBoxLayout(self)

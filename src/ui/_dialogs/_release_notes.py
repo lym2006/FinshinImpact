@@ -33,7 +33,6 @@ class ReleaseNotesDialog(BaseDialog):
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent=parent, title=RELEASE_NOTES_DIALOG.title)
-        self.set_always_on_top()
         self.setStyleSheet(build_release_notes_dialog_qss())
         self._bodies = tuple(note.body for note in notes)
 

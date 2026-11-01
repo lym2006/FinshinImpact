@@ -1,7 +1,7 @@
 # src/ui/_dialogs/_base.py
 """弹窗基类
 
-- 统一应用模态与置顶的共有窗口行为
+- 统一应用模态的共有窗口行为
 """
 
 from PySide6.QtCore import Qt
@@ -16,14 +16,6 @@ class BaseDialog(QDialog):
 
         self.setWindowTitle(title)  # 基础窗口属性
         self.setWindowModality(Qt.WindowModality.ApplicationModal)
-
-    def set_always_on_top(self) -> None:
-        """置顶模态框
-
-        - 置于检测窗之上，避免模态窗被遮挡锁死输入
-        - 修改 flag 会重建原生窗口，只允许首次显示前调用
-        """
-        self.setWindowFlags(self.windowFlags() | Qt.WindowType.WindowStaysOnTopHint)
 
     def set_closable(self, closable: bool) -> None:
         """切换标题栏关闭按钮可用态

@@ -1,7 +1,7 @@
 # src/ui/_dialogs/_link.py
 """断连计时弹窗
 
-- 非模态置顶展示断线时长与重连次数
+- 非模态浮窗展示断线时长与重连次数
 """
 
 from collections.abc import Callable
@@ -36,7 +36,6 @@ class LinkDialog(BaseDialog):
     ) -> None:
         super().__init__(parent=parent, title=LINK_DIALOG.title)
         self.setWindowModality(Qt.WindowModality.NonModal)
-        self.set_always_on_top()
         self.setStyleSheet(build_link_dialog_qss())
 
         self._on_close = on_close
