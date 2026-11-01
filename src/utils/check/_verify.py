@@ -14,7 +14,10 @@ from core.domain import ConfigKey, FieldKey
 from skin.messages import CheckMessage
 
 from ..config import AppConfigData, AppSchema, validate_types
+from ..logger import get_logger
 from ..network import Channel, RowId, RowStatus
+
+_logger = get_logger("Check")
 
 # 首轮全挂后的预热重检
 _RETRY_WARMUP = 1.5  # 秒，等代理软件把 TUN 内核与监听拉起来再原样重跑
@@ -54,11 +57,12 @@ async def _probe_safe(ch: Channel, probe: _ProbeCallback) -> _Verdict:
         resolved, errors, detail = await probe(ch)
     except asyncio.CancelledError:
         raise
-    except Exception as e:
+    except Exception:
+        _logger.debug("连通探针异常")
         return (
             False,
             None,
-            {FieldKey.PROXY: CheckMessage.SELF_CRASH.format(err=e)},
+            {FieldKey.PROXY: CheckMessage.SELF_CRASH},
             "",
         )
     ok = resolved is not None or bool(errors and FieldKey.PROXY not in errors)
