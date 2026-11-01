@@ -25,7 +25,6 @@ class ConfigSection(StrEnum):
     # Telegram 专属段
     PROXY = "proxy"
 
-    GLOBAL = "global"
     AI = "ai"
     CHORE = "chore"
     DATA = "data"
@@ -41,7 +40,6 @@ class ConfigKey(StrEnum):
     PROXY_MODE = "proxy_mode"
     PROXY = "proxy"
 
-    NETWORK_TIMEOUT = "network_timeout"
     API_KEY = "api_key"
     TEMPERATURE = "temperature"
     OWNER = "owner"

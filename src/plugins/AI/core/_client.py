@@ -55,7 +55,6 @@ class AIClient(BaseClient):
             request_path=ai_config.request_path,
             headers=cls._headers(),
             payload=payload,
-            timeout=ai_config.timeout,
         ):
             if line.startswith("data: "):
                 try:

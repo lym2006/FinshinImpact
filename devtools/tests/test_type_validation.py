@@ -284,7 +284,7 @@ class TestPlatformSchema(unittest.TestCase):
         path.write_text(render_config(PLATFORM), encoding="utf-8")
         data = ConfigIO(path).load()
         self.assertIn("chore", data)
-        self.assertEqual(data["global"]["network_timeout"], 90.0)
+        self.assertEqual(data["data"]["record_keep"], 30.0)
 
 
 if __name__ == "__main__":
