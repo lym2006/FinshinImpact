@@ -371,11 +371,21 @@ class TestAiTriggerLadder(unittest.IsolatedAsyncioTestCase):
     async def test_photo_without_caption_ignored(self) -> None:
         self.assertFalse(await self._hit(_message(chat=_PRIVATE, content_type="photo")))
 
-    async def test_photo_with_caption_ignored(self) -> None:
-        self.assertFalse(
+    async def test_photo_with_caption_triggers(self) -> None:
+        """图带附文即当问话，附文归一时已换成正文"""
+        self.assertTrue(
             await self._hit(
                 _message(chat=_PRIVATE, content_type="photo", caption="看图")
             )
+        )
+
+    async def test_group_caption_needs_trigger(self) -> None:
+        """群里的附文照走三档降级，命中触发词才答"""
+        self.assertFalse(
+            await self._hit(_message(content_type="photo", caption="随手一拍"))
+        )
+        self.assertTrue(
+            await self._hit(_message(content_type="photo", caption="有个触发词"))
         )
 
 
