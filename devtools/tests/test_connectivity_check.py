@@ -1103,5 +1103,60 @@ class TestLiftYieldsToOtherModal(unittest.TestCase):
         top.raise_.assert_not_called()
 
 
+class TestResultWindowOwner(unittest.TestCase):
+    """结果窗该挂谁
+
+    - 有窗在演模态就挂它，结果浮在它上面
+    - 在场的已是报结果的窗时交回 None，等它关闭
+    - 没窗在演时挂回主窗
+    """
+
+    def _owner(self, modal: object, fallback: object) -> object:
+        """按「当前在演模态的窗」取结果窗的父"""
+        from ui._windows import _main_window
+
+        with patch.object(
+            _main_window.QApplication, "activeModalWidget", return_value=modal
+        ):
+            return _main_window._result_owner(fallback)
+
+    def test_parent_is_host_window(self) -> None:
+        """在演的是普通弹窗就挂它"""
+        from unittest.mock import MagicMock
+
+        from ui._dialogs import BaseDialog
+
+        host = MagicMock(spec=BaseDialog)
+        host.RESULT_WINDOW = False
+
+        self.assertIs(self._owner(host, object()), host)
+
+    def test_parent_is_main_window_when_free(self) -> None:
+        """没窗在演时挂回主窗"""
+        main_window = object()
+
+        self.assertIs(self._owner(None, main_window), main_window)
+
+    def test_waits_for_result_window(self) -> None:
+        """报结果的窗在场时交回 None，不叠第二只"""
+        from unittest.mock import MagicMock
+
+        from ui._dialogs import (
+            BaseDialog,
+            NoticeDialog,
+            PersonaResolveDialog,
+            PersonaSyncDialog,
+        )
+
+        self.assertFalse(BaseDialog.RESULT_WINDOW)
+        for window in (NoticeDialog, PersonaResolveDialog, PersonaSyncDialog):
+            self.assertTrue(window.RESULT_WINDOW)
+
+        modal = MagicMock(spec=NoticeDialog)
+        modal.RESULT_WINDOW = True
+
+        self.assertIsNone(self._owner(modal, object()))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
