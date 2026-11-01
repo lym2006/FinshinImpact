@@ -13,7 +13,6 @@ class CheckMessage:
     ROW_CFG = "配置代理通道"
     ROW_SYS = "系统代理通道"
     ROW_DIRECT = "直连通道"
-    ROW_PORT = "本地监听端口"
     ROW_LOCAL = "本地配置"
     ROW_ADVICE = "检查结论"
 
@@ -57,28 +56,8 @@ class CheckMessage:
     # 用：单路模式选系统代理但无可用地址
     MODE_SYS_ABSENT = "系统代理未开启或地址不可解析，请先开启系统代理"
 
-    # 用：端口行——探活符号与默认组标注
-    DIAG_PORT_ALIVE = "✓"
-    DIAG_PORT_DEAD = "✗"
-    DIAG_PORT_FALLBACK = "（默认组，未在配置/系统代理中发现端口）"
-
-    # 用：仅靠端口扫描发现可用通道
-    DIAG_ADVICE_ALT = "当前配置不通：把 {url} 填入代理配置项即可"
-
-    # 用：诊断结论行——复测命中的正是本次刚判失败的那条通道
-    DIAG_ADVICE_FLAP = "代理刚才不通、复测已通，属瞬时抖动，稍后重试即可"
-
     # 用：全链不通
     DIAG_ADVICE_NONE = "未找到可用通道：启动代理软件后重试，或开启 TUN"
-
-    # 用：端口行——复测实测可通的收口句
-    VERIFY_PORT_HIT = "复测通过：{url}"
-
-    # 用：端口行——本机未探到任何存活监听
-    VERIFY_PORT_EMPTY = "未发现存活端口"
-
-    # 用：端口行——存活候选全部实测不可用
-    VERIFY_PORT_NONE = "存活端口均无法出网"
 
     # 用：本地配置行——类型校验全过
     VERIFY_LOCAL_OK = "全部通过"
@@ -92,11 +71,8 @@ class CheckMessage:
     # 用：三通道全挂的聚合句
     ALL_FAIL = "配置代理 / 系统代理 / 直连均无法连通"
 
-    # 用：全挂时引导自查的短尾句
-    DIAGNOSE = "请点「网络诊断」自查"
-
-    # 用：端口扫描发现可用地址的提示尾句
-    PORT_HOVER = "检测到可用端口 {url}，请确认后填入"
+    # 用：代理不通时字段标红的尾句，指向用户自查代理软件
+    PROXY_GUIDE = "请到代理软件里确认监听端口与地址后重试"
 
     # 用：代理协议头为空时的占位描述
     SCHEME_EMPTY = "（空，缺少 :// 协议头）"

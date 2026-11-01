@@ -1,8 +1,9 @@
 # devtools/tests/test_diagnose_flow.py
 """网络诊断轮测试
 
-- 全挂后复测命中本轮已探测的端点，按瞬时抖动通过且不带断链标记
-- 复测命中其他端口，仍判当前配置不通并发断链标记
+- 任一通道可达给通过结论且不带断链标记
+- 全部通道失败给不通结论并标记断链
+- 缺席通道在首帧整表给结论，不发探测
 """
 
 import sys
@@ -23,40 +24,30 @@ from core.domain import FieldKey  # noqa: E402
 from utils.network import FrameKey, RowId, RowStatus  # noqa: E402
 
 _CFG = "http://127.0.0.1:7897"
-_ALT = "http://127.0.0.1:7890"
-_ALT_PORT_SERVER = "127.0.0.1:7890"
-
-
-def _probe(passes: Callable[[str, int], bool]):
-    """构造按 (地址, 该地址第几次被探) 裁决的探测桩"""
-    calls: dict[str, int] = {}
-
-    async def fake(token: str, proxy: str) -> tuple[str | None, dict[str, str]]:
-        calls[proxy] = calls.get(proxy, 0) + 1
-        if passes(proxy, calls[proxy]):
-            return proxy, {}
-        return None, {FieldKey.PROXY: "无法连接到代理服务器"}
-
-    return fake
 
 
 @contextmanager
-def _stubbed_round(cfg: str, registry_server: str, passes: Callable[[str, int], bool]):
-    """桩掉网络与引擎后跑一轮诊断，收集进度帧
+def _stubbed_round(cfg: str, passes: Callable[[str], bool]):
+    """桩掉网络与引擎后跑一轮诊断，收集进度帧与被探地址
 
-    - 系统代理按未开启处理，本机端口一律探活
+    - 系统代理按未开启处理
+    - passes 按代理地址裁决该通道是否可出网
     """
     frames: list[dict] = []
+    seen: list[str] = []
+
+    async def fake(token: str, proxy: str) -> tuple[str | None, dict[str, str]]:
+        seen.append(proxy)
+        if passes(proxy):
+            return proxy, {}
+        return None, {FieldKey.PROXY: "无法连接到代理服务器"}
+
     with (
-        patch.object(diagnose_mod, "attempt_channel", _probe(passes)),
+        patch.object(diagnose_mod, "attempt_channel", fake),
         patch.object(diagnose_mod, "preload_engine"),
         patch.object(diagnose_mod, "detect_system_proxy", return_value=None),
-        patch.object(
-            diagnose_mod, "registry_proxy", return_value={"server": registry_server}
-        ),
-        patch.object(diagnose_mod, "port_alive", return_value=True),
     ):
-        yield frames
+        yield frames, seen
 
 
 def _advice(frames: list[dict]) -> dict:
@@ -64,51 +55,54 @@ def _advice(frames: list[dict]) -> dict:
     return [f for f in frames if f.get("id") == RowId.ADVICE][-1]
 
 
+def _opening_rows(frames: list[dict]) -> dict[str, dict]:
+    """取首帧整表并按行 id 索引"""
+    table = [f for f in frames if FrameKey.ROWS in f][0]
+    return {r["id"]: r for r in table[FrameKey.ROWS]}
+
+
 class TestDiagnoseFlow(unittest.IsolatedAsyncioTestCase):
-    """全挂后的复测收尾"""
+    """通道阶梯的收尾结论"""
 
-    async def test_retest_same_endpoint_is_flap(self) -> None:
-        """配置代理首探失败、复测同端点通过
+    async def test_all_channels_fail_marks_broken(self) -> None:
+        """配置代理与直连均不通
 
-        - 结论行转绿为抖动，不发断链标记
+        - 结论行报未找到可用通道并带断链标记
         """
-        with _stubbed_round(_CFG, "", lambda p, n: p == _CFG and n == 2) as frames:
-            await diagnose_mod.diagnose_flow(_CFG, "123:abc", frames.append)
-
-        advice = _advice(frames)
-        self.assertEqual(advice["status"], RowStatus.OK)
-        self.assertIn("瞬时抖动", advice["detail"])
-        self.assertNotIn(FrameKey.BROKEN, advice)
-
-    async def test_retest_other_endpoint_stays_fail(self) -> None:
-        """配置代理始终不通、另一个本机端口可出网
-
-        - 结论行报出该地址并保留断链标记
-        """
-        with _stubbed_round(_CFG, _ALT_PORT_SERVER, lambda p, _: p == _ALT) as frames:
+        with _stubbed_round(_CFG, lambda p: False) as (frames, seen):
             await diagnose_mod.diagnose_flow(_CFG, "123:abc", frames.append)
 
         advice = _advice(frames)
         self.assertEqual(advice["status"], RowStatus.FAIL)
-        self.assertIn(_ALT, advice["detail"])
+        self.assertIn("未找到可用通道", advice["detail"])
         self.assertTrue(advice.get(FrameKey.BROKEN))
+        self.assertCountEqual(seen, [_CFG, ""], "配置代理与直连两路都该探到")
 
-    async def test_channel_rows_keep_first_round_state(self) -> None:
-        """抖动收尾不翻案通道行
+    async def test_config_channel_alive_settles_ok(self) -> None:
+        """配置代理可出网
 
-        - 配置代理与直连保持首探落红，转绿的只有结论行
+        - 结论行转绿且不发断链标记
         """
-        with _stubbed_round(_CFG, "", lambda p, n: p == _CFG and n == 2) as frames:
+        with _stubbed_round(_CFG, lambda p: p == _CFG) as (frames, _seen):
             await diagnose_mod.diagnose_flow(_CFG, "123:abc", frames.append)
 
-        settled = {
-            f["id"]: f["status"]
-            for f in frames
-            if f.get("id") in (RowId.CFG, RowId.DIRECT)
-        }
-        self.assertEqual(
-            settled, {RowId.CFG: RowStatus.FAIL, RowId.DIRECT: RowStatus.FAIL}
-        )
+        advice = _advice(frames)
+        self.assertEqual(advice["status"], RowStatus.OK)
+        self.assertNotIn(FrameKey.BROKEN, advice)
+
+    async def test_absent_config_row_settles_in_opening(self) -> None:
+        """配置代理留空
+
+        - 首帧把配置行标为未配置
+        - 只探直连一路
+        """
+        with _stubbed_round("", lambda p: False) as (frames, seen):
+            await diagnose_mod.diagnose_flow("", "123:abc", frames.append)
+
+        rows = _opening_rows(frames)
+        self.assertEqual(rows[RowId.CFG]["status"], RowStatus.FAIL)
+        self.assertIn("未配置", rows[RowId.CFG]["detail"])
+        self.assertEqual(seen, [""], "缺席的代理项不该发探测")
 
 
 if __name__ == "__main__":

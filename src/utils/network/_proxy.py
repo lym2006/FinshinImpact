@@ -1,4 +1,4 @@
-# src/utils/network/proxy.py
+# src/utils/network/_proxy.py
 """系统代理探测
 
 - 把注册表系统代理原始值格式化为会话可用 URL
@@ -44,7 +44,7 @@ def _to_url(address: str) -> str | None:
     return f"http://{address}"
 
 
-def registry_proxy() -> dict:
+def _registry_proxy() -> dict:
     """读注册表系统代理开关与地址
 
     - 失败按未开启处理
@@ -58,7 +58,7 @@ def detect_system_proxy() -> str | None:
 
     - ProxyEnable=1 且地址可解析才返回 URL
     """
-    reg = registry_proxy()
+    reg = _registry_proxy()
     if not reg["enable"]:
         return None
     address = _pick_from_entries(str(reg["server"]))
