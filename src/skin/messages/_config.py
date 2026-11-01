@@ -27,6 +27,7 @@ class ConfigMessage:
         "temperature": "温度",
         "owner": "主人",
         "triggers": "触发词",
+        "lost_lines": "停机交代话术",
         "record_keep": "记录保留（天）",
         "waiting": "检测间隔（小时）",
     }
@@ -40,6 +41,7 @@ class ConfigMessage:
         "temperature": "取值范围 0~2，越高越有创造性，越低越稳定",
         "owner": "具有最高权限的用户 ID（注意实例对应的平台）",
         "triggers": "用户消息包含关键词触发 AI 回复，不区分大小写，双击编辑",
+        "lost_lines": "重启时对遗失对话补一句说明，随机取一条，留空交给 AI 现写，双击编辑",
         "record_keep": "闲置超过这个天数的对话记录与群上下文一并删除",
         "waiting": "间隔多久检测一次后台任务",
     }
