@@ -102,6 +102,18 @@ def sys_deduped(configured: str, sys_proxy: str | None) -> bool:
 # 会探到配置通道的模式，即用户填的代理地址派得上用场的两档
 _CFG_TESTED_MODES = (ProxyMode.AUTO, ProxyMode.CFG)
 
+# 会探到系统代理通道的模式，即注册表那一项有关的档位
+_SYS_TESTED_MODES = (ProxyMode.AUTO, ProxyMode.SYS)
+
+
+def uses_system_proxy(mode: str) -> bool:
+    """本模式是否会探测系统代理通道
+
+    - 仅自动与仅系统代理两档用得到系统代理地址
+    - 其余档位用不到它，开关变化与连通校验无关
+    """
+    return mode in _SYS_TESTED_MODES
+
 
 def uses_configured_proxy(mode: str) -> bool:
     """本模式是否会探测配置代理通道
