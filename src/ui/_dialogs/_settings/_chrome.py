@@ -1,7 +1,7 @@
 # src/ui/_dialogs/_settings/_chrome.py
 """骨架装配
 
-- 构建根布局、标签页与底部按钮条
+- 构建根布局、左侧大类列表、上排页签与底部按钮条
 - 承载 EDIT 与 SETUP 两模式的原地拆装
 """
 
@@ -13,14 +13,17 @@ from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
+    QListWidget,
+    QListWidgetItem,
     QPushButton,
     QScrollArea,
+    QStackedWidget,
     QTabWidget,
     QVBoxLayout,
     QWidget,
 )
 
-from core.domain import ConfigKey, ConfigSection, ProxyMode
+from core.domain import ConfigGroup, ConfigKey, ConfigSection, ProxyMode
 from skin.theme import GLOBAL, SETTINGS_DIALOG, ButtonStyle, ObjectName
 from utils.config.models import AppSchema, TabSchema
 
@@ -47,7 +50,8 @@ def _clear_layout(layout: QHBoxLayout) -> None:
 class ChromeBuilder:
     """骨架装配器
 
-    - 持有根布局、页签与按钮条引用，供弹窗跨模式续用
+    - 持有根布局、大类导航、按钮条引用，供弹窗跨模式续用
+    - 页签标题与大类文案按出错段原地挂 ⚠
     """
 
     def __init__(
@@ -75,9 +79,13 @@ class ChromeBuilder:
         self.bottom_layout: QHBoxLayout | None = None
         self.tip_labels: list[QLabel] = []
 
-        # 页签与按钮引用：复验结果原地刷新用（免关窗重开的闪烁）
-        self.tabs: QTabWidget | None = None
-        self.tab_titles: dict[str, tuple[int, str]] = {}
+        # 导航引用：复验结果原地刷新用（免关窗重开的闪烁）
+        # 页段 -> (大类, 页签序号, 无标记标题)，大类 -> (列表项, 无标记文案)
+        self._group_tabs: dict[ConfigGroup, QTabWidget] = {}
+        self._tab_refs: dict[str, tuple[ConfigGroup, int, str]] = {}
+        self._category_items: dict[ConfigGroup, tuple[QListWidgetItem, str]] = {}
+        self._categories = QListWidget()
+        self._pages = QStackedWidget()
         self.save_btn: QPushButton | None = None
         self.save_text: str = ""
         self.proxy_row: QWidget | None = None
@@ -99,15 +107,8 @@ class ChromeBuilder:
             for tip in self.tip_labels:
                 root_layout.addWidget(tip)
 
-        tabs = QTabWidget()
-        for index, tab_schema in enumerate(schema):
-            tabs.addTab(
-                self._create_tab(tab_schema),
-                self._tab_title(tab_schema, error_sections),
-            )
-            self.tab_titles[tab_schema.section] = (index, tab_schema.title)
-        self.tabs = tabs
-        root_layout.addWidget(tabs)
+        root_layout.addLayout(self._build_nav(schema), stretch=1)
+        self.set_error_marks(error_sections)
         self.bottom_layout = self._build_bottom_buttons(is_setup)
         root_layout.addLayout(self.bottom_layout)
 
@@ -129,14 +130,64 @@ class ChromeBuilder:
         self.bottom_layout = self._build_bottom_buttons(is_setup)
         self.root_layout.addLayout(self.bottom_layout)
 
-    @staticmethod
-    def _tab_title(tab_schema: TabSchema, error_sections: set[str]) -> str:
-        """页签标题
+    def _build_nav(self, schema: AppSchema) -> QHBoxLayout:
+        """装配左侧大类与右侧上排页签
 
-        - 出错页前缀 ⚠
+        - 段按 domain 表顺序归组，大类首次出现即定列表行序
+        - 一个大类一本页签，切大类只换堆叠页，已填内容不重建
         """
-        mark = "⚠ " if tab_schema.section in error_sections else ""
-        return f"{mark}{tab_schema.title}"
+        groups: dict[ConfigGroup, list[TabSchema]] = {}
+        for tab in schema:
+            groups.setdefault(tab.group, []).append(tab)
+
+        self._categories.setObjectName(ObjectName.CATEGORY_LIST)
+        self._categories.setFixedWidth(SETTINGS_DIALOG.category_width)
+
+        for group, tabs in groups.items():
+            title = tabs[0].group_title
+            item = QListWidgetItem(title)
+            self._categories.addItem(item)
+            self._category_items[group] = (item, title)
+
+            group_tabs = QTabWidget()
+            for index, tab in enumerate(tabs):
+                group_tabs.addTab(self._create_tab(tab), tab.title)
+                self._tab_refs[tab.section] = (group, index, tab.title)
+            self._group_tabs[group] = group_tabs
+            self._pages.addWidget(group_tabs)
+
+        self._categories.currentRowChanged.connect(self._pages.setCurrentIndex)
+        self._categories.setCurrentRow(0)
+
+        nav = QHBoxLayout()
+        nav.setSpacing(SETTINGS_DIALOG.category_spacing)
+        nav.addWidget(self._categories)
+        nav.addWidget(self._pages, stretch=1)
+        return nav
+
+    def set_error_marks(self, error_sections: set[str]) -> None:
+        """按出错段增撤 ⚠ 标记
+
+        - 出错页签挂标记，其所属大类跟着挂
+        - 只换标题文字，控件与已填内容不动
+        """
+        bad_groups: set[ConfigGroup] = set()
+        for section, (group, index, title) in self._tab_refs.items():
+            marked = section in error_sections
+            if marked:
+                bad_groups.add(group)
+            self._group_tabs[group].setTabText(
+                index, f"{'⚠ ' if marked else ''}{title}"
+            )
+        for group, (item, title) in self._category_items.items():
+            mark = "⚠ " if group in bad_groups else ""
+            item.setText(f"{mark}{title}")
+
+    def lock_nav(self, locked: bool) -> None:
+        """校验期间锁住两级导航，防换页重入"""
+        self._categories.setEnabled(not locked)
+        for group_tabs in self._group_tabs.values():
+            group_tabs.setEnabled(not locked)
 
     def _make_tips(self) -> list[QLabel]:
         """构造 SETUP 模式的两行提示"""

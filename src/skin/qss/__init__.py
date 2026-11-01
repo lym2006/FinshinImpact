@@ -10,8 +10,6 @@ from ._business import (
     build_check_dialog_qss,
     build_error_label_qss,
     build_pending_label_qss,
-    build_settings_dialog_qss,
-    build_settings_list_qss,
 )
 from ._dialog import (
     build_link_dialog_qss,
@@ -22,6 +20,7 @@ from ._dialog import (
 )
 from ._global import build_global_qss
 from ._guide import build_bootstrap_qss
+from ._settings import build_settings_dialog_qss, build_settings_list_qss
 
 __all__ = [
     # QSS 串类型
