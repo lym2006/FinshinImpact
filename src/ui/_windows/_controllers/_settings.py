@@ -189,7 +189,7 @@ class SettingsController(BaseController):
         if self._panel is None:
             return
         if result == self._panel.DialogCode.Rejected:
-            self.logger.info("用户取消了配置修改")
+            self.logger.info("用户取消配置修改")
 
             # 校验在途时关面板即放弃本次操作，候选与后台轮一并掐掉
             self._verify.abort_pending()
