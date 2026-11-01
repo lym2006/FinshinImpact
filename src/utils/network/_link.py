@@ -15,6 +15,7 @@ from ..logger import get_logger
 # 断连判定与上报节流
 _DOWN_THRESHOLD = 2  # 连续失败次数，达到才翻断连，滤掉单条请求抖动
 _FAIL_LOG_EVERY = 3  # 次，重连进度补报间隔
+_RETRY_OFFSET = 1  # 首次失败属正常请求本身，面板的重连计数从其后起算
 
 # 时长换算档位
 _SECONDS_PER_MINUTE = 60  # 秒，一分钟
@@ -55,7 +56,7 @@ class LinkStatus:
 
     down: bool  # 是否处于断连周期
     elapsed: int  # 本次断连已持续秒数
-    retries: int  # 本次断连累计失败次数
+    retries: int  # 本次断连累计的重连尝试次数
 
     @property
     def timer_text(self) -> str:
@@ -90,14 +91,14 @@ class _LinkReport:
             _logger.error(EngineMessage.DOWN)
         elif self._fails > _DOWN_THRESHOLD and self._fails % _FAIL_LOG_EVERY == 0:
             _logger.debug(
-                EngineMessage.RETRYING.format(span=self._span(), n=self._fails)
+                EngineMessage.RETRYING.format(span=self._span(), n=self._retries())
             )
 
     def recovered(self) -> None:
         """记录一次成功，收尾断连周期"""
         if self._fails >= _DOWN_THRESHOLD:
             _logger.info(
-                EngineMessage.RECOVERED.format(span=self._span(), n=self._fails)
+                EngineMessage.RECOVERED.format(span=self._span(), n=self._retries())
             )
         self._fails = 0
 
@@ -115,8 +116,15 @@ class _LinkReport:
         return LinkStatus(
             down=True,
             elapsed=int(time.monotonic() - self._since),
-            retries=self._fails,
+            retries=self._retries(),
         )
+
+    def _retries(self) -> int:
+        """面板口径的重连尝试次数
+
+        - 首次失败属正常请求，不算重连
+        """
+        return self._fails - _RETRY_OFFSET
 
     def _span(self) -> str:
         """本次断连时长面板短串"""

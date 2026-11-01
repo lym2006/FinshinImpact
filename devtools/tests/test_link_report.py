@@ -2,6 +2,7 @@
 """链路状态上报测试
 
 - 连续失败达阈值才报断连短句，单条失败只记明细、恢复零输出
+- 面板与日志的重连计数不含首次失败
 - 快照读数与周期作废各测一组
 """
 
@@ -30,6 +31,7 @@ from adapters.telegram.session import is_link_failure  # noqa: E402
 from utils.network._link import (  # noqa: E402
     _DOWN_THRESHOLD,
     _FAIL_LOG_EVERY,
+    _RETRY_OFFSET,
     LinkStatus,
     _LinkReport,
     _span_of,
@@ -150,7 +152,7 @@ class TestLinkReport(unittest.TestCase):
         records = self._emit(_FAIL_LOG_EVERY)
         last = records[-1].getMessage()
         self.assertEqual(records[-1].levelno, logging.DEBUG)
-        self.assertIn(f"第 {_FAIL_LOG_EVERY} 次尝试", last)
+        self.assertIn(f"第 {_FAIL_LOG_EVERY - _RETRY_OFFSET} 次尝试", last)
         self.assertIn("已断 0 秒", last)
 
     def test_recovery_reports_once_then_quiet(self) -> None:
@@ -159,7 +161,7 @@ class TestLinkReport(unittest.TestCase):
             self.link.recovered()
         panel = [r for r in captured.records if r.levelno >= logging.INFO]
         self.assertEqual(len(panel), 1)
-        self.assertIn("网络恢复成功：断线 0 秒，重试 2 次", panel[0].getMessage())
+        self.assertIn("网络恢复成功：断线 0 秒，重试 1 次", panel[0].getMessage())
         with self.assertNoLogs("Bot.Net", level="INFO"):
             self.link.recovered()
 
@@ -174,11 +176,12 @@ class TestLinkReport(unittest.TestCase):
         self.assertEqual(status.timer_text, "00:00")
 
     def test_snapshot_counts_the_cycle(self) -> None:
+        """弹窗首拍的读数是第 1 次重连，不含那条原始请求"""
         self.link.failed("GetUpdates", OSError("boom"))
         self.link.failed("GetUpdates", OSError("boom"))
         status = self.link.snapshot()
         self.assertTrue(status.down)
-        self.assertEqual(status.retries, 2)
+        self.assertEqual(status.retries, _DOWN_THRESHOLD - _RETRY_OFFSET)
         self.assertEqual(status.elapsed, 0)
         self.assertEqual(status.span_text, "0 秒")
 
