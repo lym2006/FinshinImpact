@@ -55,7 +55,7 @@ class SettingsDialogTheme:
     check_spacing: int = 6  # 指示器与文字间距
 
     # 人设预览
-    persona_preview_height: int = 180  # 预览弹窗正文固定高度
+    persona_preview_height: int = 420  # 预览弹窗正文固定高度
     persona_preview_width: int = 520  # 预览与编辑弹窗正文固定宽度
     persona_editor_height: int = 420  # 编辑弹窗正文固定高度
     persona_resolve_width: int = 900  # 拍板弹窗最小宽度，两栏并排
