@@ -3,12 +3,13 @@
 
 - 断连即弹、逐拍回写、恢复即收
 - 叉号只压本轮，静默压本次运行
-- 配置面板开着时抑制弹窗，关掉后仍断连补弹
+- 面板与检查窗在途时抑制弹窗，收掉后仍断连补弹
 """
 
 import sys
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "src"))
@@ -82,7 +83,7 @@ class TestLinkWatcher(unittest.TestCase):
         )
         self._dialog_patcher = patch("ui._windows._link_watcher.LinkDialog", factory)
         self._cfg_patcher = patch.object(
-            LinkWatcher, "_is_config_open", lambda self: self._test_config_open
+            LinkWatcher, "_is_round_open", lambda self: self._test_round_open
         )
         self.addCleanup(self._report_patcher.stop)
         self.addCleanup(self._dialog_patcher.stop)
@@ -92,7 +93,7 @@ class TestLinkWatcher(unittest.TestCase):
         self._cfg_patcher.start()
 
         self.watcher = LinkWatcher(parent=None)
-        self.watcher._test_config_open = False
+        self.watcher._test_round_open = False
 
     def test_healthy_keeps_dialog_closed(self) -> None:
         self.watcher.poll()
@@ -154,21 +155,53 @@ class TestLinkWatcher(unittest.TestCase):
         self.assertIsNone(self.dialogs[0].parent)
 
     def test_config_open_suppresses_popup(self) -> None:
-        self.watcher._test_config_open = True
+        self.watcher._test_round_open = True
         self.report.status = _down()
         self.watcher.poll()
         self.watcher.poll()
         self.assertEqual(self.dialogs, [])
 
     def test_reopen_after_config_closes(self) -> None:
-        self.watcher._test_config_open = True
+        self.watcher._test_round_open = True
         self.report.status = _down()
         self.watcher.poll()
         self.assertEqual(self.dialogs, [])
 
-        self.watcher._test_config_open = False
+        self.watcher._test_round_open = False
         self.watcher.poll()
         self.assertEqual(len(self.dialogs), 1)
+
+
+class TestRoundOpenProbe(unittest.TestCase):
+    """抑制判据实况
+
+    - 面板与检查进度窗任一在途即不弹，两窗同屏会互踩
+    """
+
+    def _watcher(self, check_window: object | None) -> LinkWatcher:
+        """造一只无面板的轮询器，检查窗替身可控"""
+        watcher = LinkWatcher(parent=None)
+        watcher._host = SimpleNamespace(findChildren=lambda _cls: [])
+        self.check_patcher = patch(
+            "ui._windows._link_watcher.current_check_window",
+            return_value=check_window,
+        )
+        self.check_patcher.start()
+        self.addCleanup(self.check_patcher.stop)
+        return watcher
+
+    def test_no_window_allows_popup(self) -> None:
+        watcher = self._watcher(None)
+        self.assertFalse(watcher._is_round_open())
+
+    def test_visible_check_window_suppresses(self) -> None:
+        watcher = self._watcher(SimpleNamespace(isVisible=lambda: True))
+        self.assertTrue(watcher._is_round_open())
+
+    def test_retained_hidden_check_window_allows(self) -> None:
+        """收窗不销毁的常驻实例不吃抑制"""
+        watcher = self._watcher(SimpleNamespace(isVisible=lambda: False))
+        self.assertFalse(watcher._is_round_open())
 
 
 if __name__ == "__main__":
