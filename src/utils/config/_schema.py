@@ -38,6 +38,8 @@ def _build_tab(tab: SectionSpec) -> TabSchema:
     return TabSchema(
         title=ConfigMessage.TAB_TITLES[tab.section],
         section=tab.section,
+        group=tab.group,
+        group_title=ConfigMessage.GROUP_TITLES[tab.group],
         fields=[_build_field(spec) for spec in tab.fields],
     )
 

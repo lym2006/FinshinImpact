@@ -2,7 +2,7 @@
 """配置结构值对象
 
 - 定义配置值类型别名
-- 定义段名与键名枚举
+- 定义段名、键名与界面大类枚举
 - 定义代理模式取值域
 - 定义字段与段结构体
 """
@@ -28,6 +28,16 @@ class ConfigSection(StrEnum):
     AI = "ai"
     CHORE = "chore"
     DATA = "data"
+
+
+class ConfigGroup(StrEnum):
+    """配置段所属的界面大类
+
+    - 面板左侧大标签，一个大类下挂若干段页签
+    """
+
+    BOT = "bot"
+    AI = "ai"
 
 
 class ConfigKey(StrEnum):
@@ -93,7 +103,9 @@ class SectionSpec:
     """一个配置段的结构定义
 
     - fields 顺序即面板该页字段顺序
+    - group 即面板左侧大标签
     """
 
     section: ConfigSection
+    group: ConfigGroup
     fields: tuple[FieldSpec, ...]

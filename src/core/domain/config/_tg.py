@@ -4,10 +4,18 @@
 - 定义 proxy 段字段表
 """
 
-from ._models import ConfigKey, ConfigSection, FieldSpec, ProxyMode, SectionSpec
+from ._models import (
+    ConfigGroup,
+    ConfigKey,
+    ConfigSection,
+    FieldSpec,
+    ProxyMode,
+    SectionSpec,
+)
 
 PROXY_SECTION = SectionSpec(
     section=ConfigSection.PROXY,
+    group=ConfigGroup.BOT,
     fields=(
         FieldSpec(
             section=ConfigSection.PROXY,

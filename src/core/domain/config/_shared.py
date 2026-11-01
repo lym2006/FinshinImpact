@@ -2,13 +2,15 @@
 """全平台一致的配置段
 
 - 定义 ai、chore、data 三个共享段字段表
+- 三段同属 AI 大类
 """
 
-from ._models import ConfigKey, ConfigSection, FieldSpec, SectionSpec
+from ._models import ConfigGroup, ConfigKey, ConfigSection, FieldSpec, SectionSpec
 
 # AI 配置
 _AI_SECTION = SectionSpec(
     section=ConfigSection.AI,
+    group=ConfigGroup.AI,
     fields=(
         FieldSpec(
             section=ConfigSection.AI,
@@ -30,6 +32,7 @@ _AI_SECTION = SectionSpec(
 # 杂项
 _CHORE_SECTION = SectionSpec(
     section=ConfigSection.CHORE,
+    group=ConfigGroup.AI,
     fields=(
         FieldSpec(
             section=ConfigSection.CHORE,
@@ -57,6 +60,7 @@ _CHORE_SECTION = SectionSpec(
 # 数据维护
 _DATA_SECTION = SectionSpec(
     section=ConfigSection.DATA,
+    group=ConfigGroup.AI,
     fields=(
         FieldSpec(
             section=ConfigSection.DATA,

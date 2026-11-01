@@ -5,9 +5,15 @@
 class ConfigMessage:
     """配置面板文案
 
-    - 页签标题、字段标题与说明
+    - 大类与页签标题、字段标题与说明
     - 必填与前置项失败的占位标记
     """
+
+    # 用：utils/config/_schema.py 组装左侧大类标题
+    GROUP_TITLES = {
+        "bot": "Bot 设置",
+        "ai": "AI 设置",
+    }
 
     # 用：utils/config/_schema.py 组装页签标题
     TAB_TITLES = {
