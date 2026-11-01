@@ -20,7 +20,7 @@ from exceptions import (
     ConfigPathMissingError,
     ProxyError,
 )
-from skin.messages import ConfigMessage
+from skin.messages import ConfigMessage, MiscMessage
 from ui import gui_bridge
 from utils.logger import get_logger
 
@@ -40,7 +40,7 @@ def _setup_errors(exc: BotError) -> dict[str, str]:
 
 
 def _describe(exc: BotError) -> str:
-    """渲染异常详细文案"""
+    """渲染给用户看的定性文案"""
     if isinstance(exc, ConfigError):
         template = MAPS[MAP_KEY_CONFIG].get(type(exc), "")
     else:
@@ -52,7 +52,7 @@ def _describe(exc: BotError) -> str:
     try:
         return template.format(**vars(exc)) or type(exc).__name__
     except (KeyError, IndexError):
-        return str(exc) or type(exc).__name__
+        return type(exc).__name__
 
 
 def _route(exc: BotError, stage: str) -> None:
@@ -62,6 +62,7 @@ def _route(exc: BotError, stage: str) -> None:
         logger.debug(f"关闭流程中忽略异常（{stage}）")
         return
 
+    logger.debug(exc, exc_info=True)
     detail = _describe(exc)
     if exc.fatal:
         logger.error(f"{stage}发生致命错误: {detail}")
@@ -72,14 +73,16 @@ def _route(exc: BotError, stage: str) -> None:
 
 
 def _route_unexpected(exc: Exception, stage: str) -> None:
-    """未知异常致命路由"""
+    """未知异常致命路由
+
+    - 面板只报到哪一步，异常本体与堆栈走调试日志
+    """
     logger = get_logger("ErrorGuard")
     if gui_bridge.is_shutdown_pending():
         logger.debug(f"关闭流程中忽略未知异常（{stage}）")
         return
-    detail = f"{type(exc).__name__}: {exc}"
-    logger.error(f"{stage}发生未预期错误: {detail}")
-    gui_bridge.request_notice.emit(f"{stage}\n{detail}", True)
+    logger.send_error(f"{stage}发生未预期错误", exc)
+    gui_bridge.request_notice.emit(f"{stage}\n{MiscMessage.UNKNOWN_ERROR}", True)
 
 
 def error_guard(
