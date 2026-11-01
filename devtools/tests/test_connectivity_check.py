@@ -38,8 +38,6 @@ class TestRealProbeNoHang(unittest.TestCase):
 
     def test_bad_port_maps_not_escapes(self) -> None:
         """非法端口的真实探测返回 proxy 键错误而非穿透"""
-        import asyncio
-
         from adapters.telegram.probe import _check_config
 
         async def ok_get_me(token: str, proxy: str) -> None:
@@ -158,15 +156,15 @@ class TestCheckConfig(unittest.IsolatedAsyncioTestCase):
 class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
     """回归点
 
-    - 四步通道解析（配置→系统→直连→端口）与错误聚合
+    - 三步通道解析（配置→系统→直连）与错误聚合
     """
 
     @contextmanager
-    def _patches(self, mod, fake_check, types=None, scan=None):
+    def _patches(self, mod, fake_check, types=None):
         """统一打桩
 
-        - 探针、本地校验、系统代理缺席、端口扫描默认空命中
-        - fake_check 沿用旧式返回错误 dict，适配成 attempt_channel 的 (生效址, 错误) 元组
+        - 探针、本地校验、系统代理缺席
+        - fake_check 返回错误 dict，适配成 attempt_channel 的 (生效址, 错误) 元组
         """
 
         local = ({"id": "local", "status": "ok", "detail": ""}, types or {})
@@ -177,21 +175,18 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
             errors = await fake_check(token, proxy)
             return (proxy, {}) if not errors else (None, errors)
 
-        # 端口复测已迁至独立模块，其 attempt_channel 与 scan_proxy_ports 就地打桩
-        port_mod = sys.modules["bot._managers._port_probe"]
         with (
             patch.object(mod, "attempt_channel", fake_probe),
             patch.object(mod, "local_row", return_value=local),
             patch.object(mod, "detect_system_proxy", return_value=None),
-            patch.object(port_mod, "attempt_channel", fake_probe),
-            patch.object(port_mod, "scan_proxy_ports", return_value=scan or []),
         ):
             yield
 
     async def test_all_channels_fail_aggregates(self) -> None:
         """三步全不通
 
-        - 聚合为一句自查引导，token 占位被取代
+        - 聚合为一句跨路汇总，token 占位被取代
+        - 尾句指向代理软件自查
         """
 
         from bot._managers._settings import SettingsManager
@@ -211,7 +206,8 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(ok)
         self.assertIsNone(mgr.resolved_proxy)
         self.assertEqual(list(mgr.last_errors), ["proxy"])
-        self.assertIn("网络诊断", mgr.last_errors["proxy"])
+        self.assertIn("均无法连通", mgr.last_errors["proxy"])
+        self.assertIn("代理软件", mgr.last_errors["proxy"])
 
     async def test_fallback_direct_when_config_dead(self) -> None:
         """配置代理死、直连通
@@ -255,41 +251,11 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(mgr.resolved_proxy)
         self.assertEqual(mgr.last_errors, {"telegram_token": "Token 无效"})
 
-    async def test_port_scan_only_hints(self) -> None:
-        """三步全挂且本机端口实测可通
-
-        - 只提示可填地址不自动采用：resolved 仍 None 且报错含端口
-        """
-
-        from bot._managers._settings import SettingsManager
-
-        mgr = SettingsManager(lambda: ("tok", "http://127.0.0.1:9999"))
-
-        async def only_port(token: str, proxy: str) -> dict:
-            return (
-                {}
-                if proxy == "http://127.0.0.1:7890"
-                else {"proxy": "无法连接到代理服务器"}
-            )
-
-        mod = sys.modules["bot._managers._settings"]
-        with self._patches(
-            mod,
-            only_port,
-            scan=["http://127.0.0.1:7890"],
-        ):
-            ok = await mgr.verify_connectivity()
-
-        self.assertFalse(ok)
-        self.assertIsNone(mgr.resolved_proxy)
-        self.assertIn("127.0.0.1:7890", mgr.last_errors["proxy"])
-        self.assertIn("请确认后填入", mgr.last_errors["proxy"])
-
-    async def test_port_scan_hint_with_single_candidate(self) -> None:
+    async def test_single_candidate_keeps_original_error(self) -> None:
         """仅直连单候选不通
 
-            - 代理留空且无系统代理
-        - 端口提示同样生效，且保留原始网络错误文案
+        - 代理留空且无系统代理
+        - 保留原始网络错误文案，不跨路聚合
         """
 
         from bot._managers._settings import SettingsManager
@@ -297,50 +263,17 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
         mgr = SettingsManager(lambda: ("tok", ""))
 
         async def dead_direct(token: str, proxy: str) -> dict:
-            return (
-                {}
-                if proxy == "http://127.0.0.1:7890"
-                else {"proxy": "直连超时，请开启系统代理或在代理项填写地址"}
-            )
+            return {"proxy": "直连超时，请开启系统代理或在代理项填写地址"}
 
         mod = sys.modules["bot._managers._settings"]
-        with self._patches(
-            mod,
-            dead_direct,
-            scan=["http://127.0.0.1:7890"],
-        ):
+        with self._patches(mod, dead_direct):
             ok = await mgr.verify_connectivity()
 
         self.assertFalse(ok)
         self.assertIsNone(mgr.resolved_proxy)
         self.assertIn("直连超时", mgr.last_errors["proxy"])
-        self.assertIn("127.0.0.1:7890", mgr.last_errors["proxy"])
-
-    async def test_port_retest_same_endpoint_is_flap(self) -> None:
-        """三步全挂但端口复测命中已配置代理
-
-        - 同地址重探即通按抖动采用，不作为配置错误上报
-        """
-
-        from bot._managers._settings import SettingsManager
-
-        cfg = "http://127.0.0.1:7897"
-        mgr = SettingsManager(lambda: ("tok", cfg))
-        hits: dict[str, int] = {}
-
-        async def flap(token: str, proxy: str) -> dict:
-            hits[proxy] = hits.get(proxy, 0) + 1
-            if proxy == cfg and hits[cfg] == 3:
-                return {}
-            return {"proxy": "无法连接到代理服务器"}
-
-        mod = sys.modules["bot._managers._settings"]
-        with self._patches(mod, flap, scan=[cfg]):
-            ok = await mgr.verify_connectivity()
-
-        self.assertTrue(ok)
-        self.assertEqual(mgr.resolved_proxy, cfg)
-        self.assertEqual(mgr.last_errors, {})
+        self.assertNotIn("均无法连通", mgr.last_errors["proxy"])
+        self.assertIn("代理软件", mgr.last_errors["proxy"])
 
     async def test_network_and_type_errors_merged(self) -> None:
         """连通性与类型错误合并上报
@@ -454,60 +387,20 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
 
         self.assertTrue(probes, "上次报过错就不该免测")
 
-    async def test_port_scan_parallel_first_in_order_wins(self) -> None:
-        """端口复测并发化
-
-        - 按列表序首个可通定案，后位陪跑被取消
-        - u1 秒败、u2 慢通、u3 更长慢通——结果必须是 u2，且 u3 收到取消
-        """
-
-        from bot._managers._port_probe import _probe_ports
-
-        cancelled: list[str] = []
-
-        async def staged(token: str, proxy: str) -> tuple[str | None, dict[str, str]]:
-            if proxy == "http://127.0.0.1:7890":
-                return None, {"proxy": "无法连接到代理服务器"}
-            try:
-                await asyncio.sleep(0.2 if proxy.endswith("7897") else 1.0)
-            except asyncio.CancelledError:
-                cancelled.append(proxy)
-                raise
-            return proxy, {}
-
-        port_mod = sys.modules["bot._managers._port_probe"]
-        with (
-            patch.object(port_mod, "attempt_channel", staged),
-            patch.object(
-                port_mod,
-                "scan_proxy_ports",
-                return_value=[
-                    "http://127.0.0.1:7890",
-                    "http://127.0.0.1:7897",
-                    "http://127.0.0.1:7898",
-                ],
-            ),
-        ):
-            hit, alive = await _probe_ports("tok")
-
-        self.assertEqual(hit, "http://127.0.0.1:7897", "应按列表序首个可通定案")
-        self.assertEqual(alive, 3)
-        self.assertEqual(cancelled, ["http://127.0.0.1:7898"], "陪跑端口应被取消")
-
 
 class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
     """回归点
 
-    - 单路模式只探选定通道，失败不扫端口、不跨路聚合、不自动重检
+    - 单路模式只探选定通道，失败不跨路聚合、不自动重检
     - 自动模式全挂先热连接重检一轮再定性
     - 重检轮开场重发整表，待测行刷回检测中并带头部重测提示
     """
 
     @contextmanager
-    def _mode_patches(self, mod, fake_check, mode, sys_proxy=None, scan=None):
+    def _mode_patches(self, mod, fake_check, mode, sys_proxy=None):
         """按模式打桩
 
-        - 内存配置注入 proxy_mode，系统代理与端口扫描可控
+        - 内存配置注入 proxy_mode，系统代理可控
         """
         local_frame = {"id": "local", "status": "ok", "detail": ""}
 
@@ -517,7 +410,6 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
             errors = await fake_check(token, proxy)
             return (proxy, {}) if not errors else (None, errors)
 
-        port_mod = sys.modules["bot._managers._port_probe"]
         with (
             patch.object(mod, "attempt_channel", fake_probe),
             patch.object(mod, "local_row", return_value=(local_frame, {})),
@@ -527,7 +419,6 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
                 "get_all",
                 return_value={"proxy": {"proxy": "", "proxy_mode": mode}},
             ),
-            patch.object(port_mod, "scan_proxy_ports", return_value=scan or []),
         ):
             yield
 
@@ -551,8 +442,8 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(seen, ["http://127.0.0.1:9999"], "单路配置模式不得探测直连")
         self.assertEqual(mgr.resolved_proxy, "http://127.0.0.1:9999")
 
-    async def test_single_cfg_fail_no_scan_no_retry(self) -> None:
-        """单路失败只回本路错，不扫端口不重检"""
+    async def test_single_cfg_fail_reports_own_error(self) -> None:
+        """单路失败只回本路错，不跨路聚合也不重检"""
 
         from bot._managers._settings import SettingsManager
 
@@ -564,13 +455,13 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
             return {"proxy": "无法连接到代理服务器"}
 
         mod = sys.modules["bot._managers._settings"]
-        with self._mode_patches(mod, dead, "cfg", scan=["http://127.0.0.1:7890"]):
+        with self._mode_patches(mod, dead, "cfg"):
             ok = await mgr.verify_connectivity()
 
         self.assertFalse(ok)
         self.assertEqual(calls["n"], 1, "单路模式首轮失败不触发重检")
-        self.assertEqual(mgr.last_errors["proxy"], "无法连接到代理服务器")
-        self.assertNotIn("7890", mgr.last_errors["proxy"])
+        self.assertIn("无法连接到代理服务器", mgr.last_errors["proxy"])
+        self.assertNotIn("均无法连通", mgr.last_errors["proxy"])
 
     async def test_direct_mode_probes_empty_proxy(self) -> None:
         """仅直连模式以空 proxy 探测且不误报降级"""

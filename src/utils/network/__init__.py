@@ -2,25 +2,24 @@
 """网络栈门面
 
 - 代发 HTTP 客户端、链路状态、系统代理与探测协议键符号
-- 底层实现分列 _client/_link/probe/proxy，平台无关的校验编排在 utils.check
+- 底层实现分列 _client/_link/_proxy/probe，平台无关的校验编排在 utils.check
 - 引擎侧的会话类归 Telegram 适配层，本门面不引 aiogram
 """
 
 from ._client import BaseClient
 from ._link import LinkStatus, link_report
+from ._proxy import detect_system_proxy
 from .probe import (
     Channel,
     FrameKey,
     RowId,
     RowStatus,
     plan_channels,
-    scan_proxy_ports,
     sys_deduped,
     verify_plan,
     verify_skeleton,
     via_label,
 )
-from .proxy import detect_system_proxy
 
 __all__ = [
     # HTTP 客户端
@@ -35,9 +34,8 @@ __all__ = [
     "FrameKey",
     "RowId",
     "RowStatus",
-    # 探测规划与端口扫描
+    # 探测规划
     "plan_channels",
-    "scan_proxy_ports",
     "sys_deduped",
     "via_label",
     "verify_plan",

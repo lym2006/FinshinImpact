@@ -1,13 +1,11 @@
 # src/utils/network/probe.py
 """网络探测共享引擎
 
-- 提供候选通道规划、端口探活与进度表行定义
+- 提供候选通道规划与进度表行定义
 - 连通校验与网络诊断共用
 """
 
-import socket
 from collections.abc import Sequence
-from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
 from core.domain import ProxyMode
@@ -37,7 +35,6 @@ class RowId:
     SYS = "sys"
     DIRECT = "direct"
     LOCAL = "local"
-    PORT = "port"
     ADVICE = "advice"
 
 
@@ -52,14 +49,9 @@ class FrameKey:
     BROKEN = "broken"
 
 
-_PORT_TIMEOUT = 0.5  # 回环 TCP 探活上限：本机进程秒回，半秒已极宽
-
 # 通道级探测超时预算（秒）
 _PROBE_BUDGET = 9.0  # 代理通道全程：引擎导入已在起表前预触，窗口内只剩网络时间，TUN 冷启动首连慢取宽避免误判
 _PROBE_BUDGET_DIRECT = 3.0  # 直连被墙时必然等满，预算取短以快速失败
-
-# 常见本地代理软件默认监听端口（Clash/v2rayN/mihomo 等）
-_PROXY_PORTS = (7890, 7897, 7900, 7898, 7893, 10808, 10809, 8118, 20171, 20172)
 
 # 单路模式的配置值 → 通道行 id，缺项值按自动全探处理
 _SINGLE_KINDS: dict[str, str] = {
@@ -94,14 +86,6 @@ def _endpoint_key(url: str) -> tuple[str, str]:
 def _same_endpoint(left: str, right: str) -> bool:
     """两个代理地址是否同一主机与端口"""
     return _endpoint_key(left) == _endpoint_key(right)
-
-
-def is_flap_hit(channels: Sequence[Channel], url: str) -> bool:
-    """复测命中地址是否为本次已探测过的代理通道
-
-    - 同一端点两轮结论相反即代理抖动，不构成配置不通
-    """
-    return any(ch.url and _same_endpoint(ch.url, url) for ch in channels)
 
 
 def sys_deduped(configured: str, sys_proxy: str | None) -> bool:
@@ -171,19 +155,18 @@ def probe_budget(url: str) -> float:
     return _PROBE_BUDGET_DIRECT if not url else _PROBE_BUDGET
 
 
-# 校验表行序：行 id 即 Channel.kind，port/local/advice 为收尾行，与发帧顺序一致
+# 校验表行序：行 id 即 Channel.kind，local/advice 为收尾行，与发帧顺序一致
 _VERIFY_ROWS = (
     (RowId.CFG, CheckMessage.ROW_CFG, RowStatus.FAIL, CheckMessage.CFG_EMPTY),
     (RowId.SYS, CheckMessage.ROW_SYS, RowStatus.FAIL, CheckMessage.SYS_UNAVAILABLE),
     (RowId.DIRECT, CheckMessage.ROW_DIRECT, RowStatus.PENDING, ""),
-    (RowId.PORT, CheckMessage.ROW_PORT, RowStatus.PENDING, ""),
     (RowId.LOCAL, CheckMessage.ROW_LOCAL, RowStatus.PENDING, ""),
     (RowId.ADVICE, CheckMessage.ROW_ADVICE, RowStatus.PENDING, ""),
 )
 
 
 def verify_skeleton() -> list[dict]:
-    """六行等待态占位表
+    """等待态占位表
 
     - 校验计划生成前的初始显示
     """
@@ -193,7 +176,7 @@ def verify_skeleton() -> list[dict]:
     ]
 
 
-_TAIL_ROWS = (RowId.LOCAL, RowId.PORT, RowId.ADVICE)
+_TAIL_ROWS = (RowId.LOCAL, RowId.ADVICE)
 
 
 def single_row_of(mode: str) -> tuple[str, str, str] | None:
@@ -249,44 +232,3 @@ def verify_plan(
             row["budget"] = int(budgets[rid])
         rows.append(row)
     return rows
-
-
-def extract_port(address: str) -> int | None:
-    """从裸地址或分号串里提取端口"""
-    for token in str(address).replace("=", ";").split(";"):
-        # 取第一个合法值
-        item = token.strip().rsplit(":", 1)[-1].split("/")[0]
-        if item.isdigit():
-            return int(item)
-    return None
-
-
-def port_alive(port: int) -> bool:
-    """TCP 能否连上本机端口"""
-    try:
-        with socket.create_connection(("127.0.0.1", port), timeout=_PORT_TIMEOUT):
-            return True
-    except OSError:
-        return False
-
-
-def _probe_ports(ports: Sequence[int]) -> list[bool]:
-    """并发探活一组端口"""
-    if not ports:
-        return []
-    with ThreadPoolExecutor(max_workers=len(ports)) as pool:
-        return list(pool.map(port_alive, ports))
-
-
-def scan_proxy_ports() -> list[str]:
-    """扫描本机常见代理端口
-
-    - 返回存活端口对应的 http URL 列表
-    - TCP 存活只说明端口有进程监听，能否出网须由调用方以真实请求复测
-    """
-    alive = _probe_ports(_PROXY_PORTS)
-    return [
-        f"http://127.0.0.1:{port}"
-        for port, up in zip(_PROXY_PORTS, alive, strict=True)
-        if up
-    ]
