@@ -1028,7 +1028,7 @@ class TestFollowAbove(unittest.TestCase):
             owner.windowHandle()
         )
         owner.installEventFilter.assert_called_once()
-        top.bring_front.assert_called_once_with(False)
+        top.bring_front.assert_called_once_with(False, owner)
 
     def test_repeat_call_installs_one_lift(self) -> None:
         """同一只被跟窗不叠第二层钩子"""
@@ -1062,7 +1062,45 @@ class TestFollowAbove(unittest.TestCase):
         top.bring_front.assert_not_called()
 
         self.assertFalse(send(QEvent.Type.WindowActivate))
-        top.bring_front.assert_called_once_with(False)
+        top.bring_front.assert_called_once_with(False, watched)
+
+
+class TestLiftYieldsToOtherModal(unittest.TestCase):
+    """回归点
+
+    - 被跟窗自己演模态不算拦路，结论窗照样浮
+    - 只有别人的确认框在演才让位
+    """
+
+    def _front(self, modal: object, owner: object) -> object:
+        """按「当前模态窗」与「被跟窗」各喂一次上浮，返回被提的窗"""
+        from unittest.mock import MagicMock
+
+        from ui._dialogs._check import CheckDialog
+
+        top = MagicMock(spec=CheckDialog)
+        top.isVisible.return_value = True
+        win = CheckDialog.bring_front.__get__(top, CheckDialog)
+        with patch.object(
+            sys.modules["ui._dialogs._check"].QApplication,
+            "activeModalWidget",
+            return_value=modal,
+        ):
+            win(False, owner)
+        return top
+
+    def test_owner_modal_still_lifts(self) -> None:
+        """被跟面板自己在演模态也照样浮"""
+        panel = object()
+        top = self._front(panel, panel)
+
+        top.raise_.assert_called_once()
+
+    def test_other_modal_blocks_lift(self) -> None:
+        """别人的确认框在演则让位"""
+        top = self._front(object(), object())
+
+        top.raise_.assert_not_called()
 
 
 if __name__ == "__main__":
