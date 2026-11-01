@@ -13,12 +13,16 @@ from exceptions import MAP_KEY_VERSION, MAPS, NewVersionError, VersionError
 from skin.messages import VersionMessage
 from skin.theme import WAIT_DIALOG
 from utils.check import ReleaseNote, check_updates, release_history
+from utils.logger import get_logger
 
 from ..._dialogs import NoticeDialog, ReleaseNotesDialog, WaitDialog
 from ._base import BaseController
 
+_logger = get_logger("GUI.Version")
+
+# 异常文案表与 release 标签前缀
 _ERR_MAP_VERSION = MAPS[MAP_KEY_VERSION]
-_TAG_PREFIX = "v"  # release 标签相对版本号多出的前缀
+_TAG_PREFIX = "v"
 
 
 class _VersionWorker(QThread):
@@ -44,6 +48,7 @@ class _VersionWorker(QThread):
         except VersionError as e:
             self.done.emit(_ERR_MAP_VERSION[type(e)].format(**vars(e)), [], "", False)
         except Exception as e:
+            _logger.debug("版本检查异常")
             self.done.emit(
                 WAIT_DIALOG.crash_text.format(err=type(e).__name__), [], "", False
             )

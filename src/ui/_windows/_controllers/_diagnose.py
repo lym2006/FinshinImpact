@@ -16,12 +16,14 @@ from core.domain import ConfigKey, ConfigSection, ProxyMode
 from skin.messages import CheckMessage
 from system.profile_env import get_profile, read_token
 from utils import config_manager
+from utils.logger import get_logger
 from utils.network import FrameKey, RowId, RowStatus, fault_row_of, verify_skeleton
 
 from ..._bridge import gui_bridge
 from ..._dialogs import Round, current_check_window, open_check_window
 from ._base import BaseController
 
+_logger = get_logger("GUI.Diagnose")
 _orphans: set["_DiagnoseWorker"] = set()  # 关窗放行的线程暂养于此，finished 后自弃
 
 # 一轮诊断收配置代理、token 与代理模式，逐帧回调，按停止判定中止
@@ -69,12 +71,13 @@ class _DiagnoseWorker(QThread):
                     self.isInterruptionRequested,
                 )
             )
-        except Exception as e:  # 诊断自身异常也变成一行结果
+        except Exception:  # 诊断自身异常也变成一行结果
+            _logger.debug("诊断线程异常")
             self.row_update.emit(
                 {
                     "id": RowId.ADVICE,
                     "status": RowStatus.FAIL,
-                    "detail": CheckMessage.SELF_CRASH.format(err=e),
+                    "detail": CheckMessage.SELF_CRASH,
                 }
             )
 

@@ -35,8 +35,8 @@ class CheckMessage:
     # 用：ui/_dialogs/_check.py 验证回调原地转绿的短句
     VERIFIED_OK = "配置验证通过"
 
-    # 用：检查自身异常兜底句
-    SELF_CRASH = "检查异常: {err}"
+    # 用：检查自身异常兜底句，原文与堆栈只进日志
+    SELF_CRASH = "检查异常，详情见日志"
 
     # 用：ui/_dialogs/_table.py 进行中行独立计时后缀（已测秒/预算秒）
     COUNTDOWN = "检测中 {n}/{budget}s"

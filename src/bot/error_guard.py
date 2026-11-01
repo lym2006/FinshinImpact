@@ -62,7 +62,7 @@ def _route(exc: BotError, stage: str) -> None:
         logger.debug(f"关闭流程中忽略异常（{stage}）")
         return
 
-    logger.debug(exc, exc_info=True)
+    logger.debug(exc)
     detail = _describe(exc)
     if exc.fatal:
         logger.error(f"{stage}发生致命错误: {detail}")
