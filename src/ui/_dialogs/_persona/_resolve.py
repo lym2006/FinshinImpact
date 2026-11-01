@@ -48,7 +48,6 @@ class PersonaResolveDialog(BaseDialog):
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent=parent, title=SETTINGS_DIALOG.persona_resolve_title)
-        self.set_always_on_top()
         self.setStyleSheet(build_change_dialog_qss())
         self.setMinimumSize(
             SETTINGS_DIALOG.persona_resolve_width,
