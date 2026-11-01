@@ -146,7 +146,7 @@ class SettingsController(BaseController):
             else:
                 self._panel.apply_errors(self._field_errors)
                 self.logger.debug("强制向导已打开，原地刷新校验结果")
-            self._verify.attach_transient()
+            self._verify.follow_panel()
             return
 
         self._current_mode = ConfigMode.SETUP
@@ -172,7 +172,7 @@ class SettingsController(BaseController):
         self._panel.show()
 
         # 先面板后跟随窗：面板后出场会反压检测窗，顺序不可颠倒
-        self._verify.attach_transient()
+        self._verify.follow_panel()
 
     def _create_dialog(self) -> SettingsDialog:
         """按当前模式构造配置弹窗"""
