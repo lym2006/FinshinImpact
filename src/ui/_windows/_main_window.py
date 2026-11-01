@@ -36,7 +36,7 @@ _NOTICE_RETRY_DELAY_MS = 800  # 模态占用时 0.8 秒后重弹
 def _result_owner(fallback: QWidget) -> QWidget | None:
     """结果窗该挂的那只窗
 
-    - 有窗在演模态就挂它，结果浮在它上面，也只拦它
+    - 有模态窗开着就挂它，结果浮在它上面，也只拦它
     - 交回 None 表示此刻该等，判据见 BaseDialog.RESULT_WINDOW
     """
     modal = QApplication.activeModalWidget()
