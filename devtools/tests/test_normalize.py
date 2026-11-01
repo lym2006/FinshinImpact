@@ -126,7 +126,20 @@ class TestScopeAndContent(unittest.TestCase):
         photo = PhotoSize(file_id="p", file_unique_id="u", width=90, height=90)
         big = PhotoSize(file_id="p", file_unique_id="u", width=800, height=600)
         event = _event(_update(photo=[photo, big], caption="附言"))
-        self.assertEqual(event.content.text, "附言")
+        self.assertEqual(event.content.text, "[图片]附言")
+        self.assertEqual([m.kind for m in event.content.media], [ContentKind.PHOTO])
+
+    def test_document_caption_carries_kind_mark(self) -> None:
+        """媒体换种类标记，附文照原样留在后头"""
+        document = Document(file_id="d", file_unique_id="du")
+        event = _event(_update(document=document, caption="说明书"))
+        self.assertEqual(event.content.text, "[文档]说明书")
+
+    def test_media_without_caption_has_no_text(self) -> None:
+        """没附文的纯图归一后仍是没正文"""
+        photo = PhotoSize(file_id="p", file_unique_id="u", width=1, height=1)
+        event = _event(_update(photo=[photo]))
+        self.assertEqual(event.content.text, "")
         self.assertEqual([m.kind for m in event.content.media], [ContentKind.PHOTO])
 
     def test_service_message_still_yields_event(self) -> None:
@@ -148,7 +161,7 @@ class TestScopeAndContent(unittest.TestCase):
         )
         event = _event(_update(live_photo=live, caption="live"))
         self.assertEqual([m.kind for m in event.content.media], [ContentKind.UNKNOWN])
-        self.assertEqual(event.content.text, "live")
+        self.assertEqual(event.content.text, "[媒体]live")
 
     def test_dice_is_unknown_media(self) -> None:
         event = _event(_update(dice=Dice(value=3, emoji="🎲")))
@@ -399,7 +412,7 @@ class TestAlbumMerge(unittest.TestCase):
         )
         assert event is not None
         self.assertEqual(event.ref.message_id, "10")
-        self.assertEqual(event.content.text, "图集")
+        self.assertEqual(event.content.text, "[图片]图集")
         self.assertEqual(event.content.media[0].caption, "图集")
         self.assertEqual(event.display_name, "三 张")
 

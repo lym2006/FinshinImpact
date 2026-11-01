@@ -32,7 +32,7 @@ async def _denied_private(ctx: HandlerContext) -> bool:
         return False
     if event.scope != ChatScope.PRIVATE:
         return False
-    if event.content.media or not event.content.text:
+    if not event.content.text:
         return False
     return await role_of(event.principal) == CommandRole.MEMBER
 
@@ -50,9 +50,9 @@ async def _triggers_chat(ctx: HandlerContext) -> bool:
     if command.matched or command.format_error:
         return False
 
-    # 非纯文字或无文本
+    # 无文字，纯图不带附文即不接
     content = event.content
-    if content.media or not content.text:
+    if not content.text:
         return False
 
     match event.scope:

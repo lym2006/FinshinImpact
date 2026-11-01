@@ -3,12 +3,14 @@
 
 - 标注与引用帧是全链路唯一形状，日志与模型侧只差内容
 - 标注与正文直接相接不留空格，引用块同样紧贴正文
+- 媒体一律换成种类占位帧，被引侧与问句侧同形
 - 显示名只留字母数字与间隔符，命中标记词即遮成星号
 """
 
 import re
 import unicodedata
 
+from core.domain import ContentKind
 from core.domain.ids import UserId
 
 # 标注与引用帧，形状与随包人设 §二 逐字一致，改一处必改另一处
@@ -17,6 +19,16 @@ _QUOTE = "（引用 [{slot}]：{text}）"
 
 # 机器人自身的标注位，不带 id
 _ASSISTANT_SLOT = "assistant"
+
+# 媒体种类标签，词表外的种类按媒体占位
+_KIND_LABELS = {
+    ContentKind.PHOTO: "图片",
+    ContentKind.DOCUMENT: "文档",
+    ContentKind.AUDIO: "音频",
+    ContentKind.ANIMATION: "动图",
+    ContentKind.VIDEO: "视频",
+}
+_KIND_DEFAULT = "媒体"
 
 # 名称白名单：Unicode 认定的字母与数字留下，其余逐个去掉
 _NAME_SEPARATORS = "·' -"  # 名称里合法的间隔符
@@ -116,3 +128,11 @@ def bot_quote_block(text: str) -> str:
     if not text:
         return ""
     return _QUOTE.format(slot=_ASSISTANT_SLOT, text=text)
+
+
+def media_mark(kind: ContentKind) -> str:
+    """拼媒体种类占位帧
+
+    - 模型侧只见种类不见内容，未收录的种类按媒体占位
+    """
+    return _MARK.format(slot=_KIND_LABELS.get(kind, _KIND_DEFAULT))

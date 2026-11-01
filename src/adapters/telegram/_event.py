@@ -28,6 +28,7 @@ from ._fields import (
     build_ref,
     display_name,
     kind_of,
+    media_marks,
     reply_text_of,
     scope_of,
     sender_id,
@@ -137,6 +138,15 @@ def _entry_of(message: Message, kind: ContentKind, slot: int = 0) -> MediaEntryD
     )
 
 
+def _body_of(media: tuple[MediaEntryDTO, ...], text: str) -> str:
+    """拼归一正文
+
+    - 带附文的媒体把种类标记打在前头，没附文的纯图算没正文
+    - 文本消息无媒体，标记段为空，正文原样交出
+    """
+    return f"{media_marks(media)}{text}" if text else ""
+
+
 def _event_of(
     message: Message,
     identity: BotIdentity,
@@ -162,7 +172,7 @@ def _event_of(
             container=container,
             user=user_id,
         ),
-        content=ContentDTO(text=text, media=media),
+        content=ContentDTO(text=_body_of(media, text), media=media),
         scope=scope,
         container_name=message.chat.title or message.chat.first_name or "",
         display_name=display_name(message),

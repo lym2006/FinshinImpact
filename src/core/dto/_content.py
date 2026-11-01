@@ -18,7 +18,7 @@ class ContentDTO:
     - 平台负载归一
     """
 
-    text: str = ""  # 文本消息或媒体描述
+    text: str = ""  # 文字正文，媒体消息是种类标记加附文，无附文即空
     file_name: str = ""
     file_token: str = ""  # 平台侧文件标识，惰性下载
     origin_ref: MsgReferenceDTO | None = None  # 媒体所在消息，引用或附带媒体时非空
