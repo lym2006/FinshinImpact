@@ -99,6 +99,19 @@ def sys_deduped(configured: str, sys_proxy: str | None) -> bool:
     return _same_endpoint(cfg, sys_proxy)
 
 
+# 会探到配置通道的模式，即用户填的代理地址派得上用场的两档
+_CFG_TESTED_MODES = (ProxyMode.AUTO, ProxyMode.CFG)
+
+
+def uses_configured_proxy(mode: str) -> bool:
+    """本模式是否会探测配置代理通道
+
+    - 仅自动与仅配置代理两档用得到代理项
+    - 其余档位代理行在面板隐藏，报错也不该落在看不见的那行上
+    """
+    return mode in _CFG_TESTED_MODES
+
+
 def plan_channels(
     configured: str, sys_proxy: str | None, *, mode: str = ProxyMode.AUTO
 ) -> list[Channel]:

@@ -16,6 +16,7 @@ from .probe import (
     RowStatus,
     plan_channels,
     sys_deduped,
+    uses_configured_proxy,
     verify_plan,
     verify_skeleton,
     via_label,
@@ -37,6 +38,7 @@ __all__ = [
     # 探测规划
     "plan_channels",
     "sys_deduped",
+    "uses_configured_proxy",
     "via_label",
     "verify_plan",
     "verify_skeleton",
