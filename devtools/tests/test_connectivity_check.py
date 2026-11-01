@@ -6,7 +6,8 @@
 - _check_config 聚合 proxy 与 token 双探测，两坏同时报
 - token 纯格式校验，坏 token 不联网即标记
 - verify_connectivity 覆盖三步通道解析与错误聚合
-- 网络轮只在参数变化或上次报错时起，其余只跑本地
+- 网络轮只在参数变化或上轮连通未通过时起，其余只跑本地
+- 首轮全挂每种模式都预热后重检一轮，单路模式同样重检本路
 """
 
 import asyncio
@@ -364,10 +365,10 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(probes, [], "token 变动不该起联网轮")
 
-    async def test_last_round_errors_force_network_retest(self) -> None:
-        """上次有报错即作废免测
+    async def test_type_error_alone_keeps_local_only(self) -> None:
+        """上轮只报本地类型错时保持免测
 
-        - 网络参数没变也要联网重测
+        - 网络参数没变且连通已过，类型错走免测轮复查
         """
         from bot._managers._settings import SettingsManager
 
@@ -386,7 +387,32 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
             probes.clear()
             self.assertFalse(await mgr.verify_connectivity())
 
-        self.assertTrue(probes, "上次报过错就不该免测")
+        self.assertEqual(probes, [], "只有类型错时不该重联网")
+
+    async def test_proxy_error_forces_network_retest(self) -> None:
+        """上轮代理不通作废免测
+
+        - 生效通道没记下，网络参数没变也要重探
+        """
+        from bot._managers._settings import SettingsManager
+
+        mgr = SettingsManager(lambda: ("tok", "http://127.0.0.1:9999"))
+        probes: list[str] = []
+        reach = {"ok": False}
+
+        async def dead_then_alive(token: str, proxy: str) -> dict:
+            probes.append(proxy)
+            return {} if reach["ok"] else {"proxy": "无法连接到代理服务器"}
+
+        mod = sys.modules["bot._managers._settings"]
+        with self._patches(mod, dead_then_alive):
+            self.assertFalse(await mgr.verify_connectivity())
+            self.assertIsNone(mgr.resolved_proxy, "全挂时不该记下生效通道")
+            probes.clear()
+            reach["ok"] = True
+            self.assertTrue(await mgr.verify_connectivity())
+
+        self.assertTrue(probes, "上轮不通不该免测")
 
 
 class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
