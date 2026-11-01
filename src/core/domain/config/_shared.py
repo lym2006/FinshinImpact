@@ -59,6 +59,12 @@ _CHORE_SECTION = SectionSpec(
             default=[],
             required=True,
         ),
+        FieldSpec(
+            section=ConfigSection.CHORE,
+            key=ConfigKey.LOST_LINES,
+            value_type=list,
+            default=[],
+        ),
     ),
 )
 
