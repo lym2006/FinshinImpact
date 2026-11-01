@@ -33,6 +33,7 @@ from ._role import ChatRole, CommandRole
 from ._task import TaskKind, TaskPayload, TaskPriority, TaskStatus
 from .config import (
     SECTIONS_BY_PLATFORM,
+    ConfigGroup,
     ConfigKey,
     ConfigSection,
     ConfigValue,
@@ -87,6 +88,7 @@ __all__ = [
     "ConfigValue",
     "ConfigSection",
     "ConfigKey",
+    "ConfigGroup",
     "ProxyMode",
     "FieldSpec",
     "SectionSpec",
