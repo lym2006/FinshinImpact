@@ -454,46 +454,6 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
 
         self.assertTrue(probes, "上次报过错就不该免测")
 
-    async def test_timeout_change_starts_network_round(self) -> None:
-        """只改超时也算网络参数变化
-
-        - 起联网轮并发整表帧，等待窗随之打开
-        """
-        from unittest.mock import MagicMock
-
-        from bot._managers._settings import SettingsManager
-        from utils.network import FrameKey
-
-        mgr = SettingsManager(lambda: ("tok", "http://127.0.0.1:7890"))
-        timeout = {"v": 30.0}
-        probes: list[str] = []
-        frames: list[dict] = []
-
-        async def alive(token: str, proxy: str) -> dict:
-            probes.append(proxy)
-            return {}
-
-        bridge = MagicMock()
-        bridge.verify_progress.emit.side_effect = frames.append
-
-        mod = sys.modules["bot._managers._settings"]
-        with (
-            self._patches(mod, alive),
-            patch.object(mod.config_manager, "get", lambda path, typ: timeout["v"]),
-            patch.object(mod, "gui_bridge", bridge),
-        ):
-            self.assertTrue(await mgr.verify_connectivity())
-            probes.clear()
-            frames.clear()
-            timeout["v"] = 15.0
-            self.assertTrue(await mgr.verify_connectivity())
-
-        self.assertEqual(probes[0], "http://127.0.0.1:7890", "改超时后应联网重测")
-        self.assertTrue(
-            [f for f in frames if FrameKey.ROWS in f],
-            "联网轮要发整表帧供等待窗渲染",
-        )
-
     async def test_port_scan_parallel_first_in_order_wins(self) -> None:
         """端口复测并发化
 
@@ -765,16 +725,15 @@ class TestEnumFieldValidation(unittest.TestCase):
 
     def test_bad_mode_flagged(self) -> None:
         """模式值不在选项表即报错"""
+        from dataclasses import replace
+
         from core.domain import Platform
         from utils.config._schema import build_schema
         from utils.config._validator import validate_types
-        from utils.config.models import TabSchema
 
         proxy_tab = build_schema(Platform.TELEGRAM)[0]
         mode_field = next(f for f in proxy_tab.fields if f.key == "proxy_mode")
-        schema = [
-            TabSchema(title=proxy_tab.title, section="proxy", fields=[mode_field])
-        ]
+        schema = [replace(proxy_tab, fields=[mode_field])]
         self.assertIn(
             "proxy_mode", validate_types(schema, {"proxy": {"proxy_mode": "tun"}})
         )

@@ -35,7 +35,7 @@ class ConfigApplier:
         self.skip_reload = False
 
         # 最近一次生效并重启过引擎的参数指纹：一致则跳过重启防闪断
-        self._last_applied: tuple[str, str, float] | None = None
+        self._last_applied: tuple[str, str] | None = None
 
         # 三级解析出的生效通道，引擎与指纹均以此为准
         self._resolved_proxy: str | None = None
@@ -81,14 +81,7 @@ class ConfigApplier:
         # 配置已加载且验证通过（数据先就位，最后广播）
         gui_bridge.config_ready_changed.emit(True)
         try:
-            token, proxy = self.get_config_func()
-            fingerprint = (
-                token,
-                proxy,
-                config_manager.get(
-                    ConfigKey.NETWORK_TIMEOUT.path(ConfigSection.GLOBAL), float
-                ),
-            )
+            fingerprint = self.get_config_func()
         except Exception:  # 参数不可得：不做跳过优化，照常重启
             fingerprint = None
         if fingerprint is not None and self._last_applied == fingerprint:

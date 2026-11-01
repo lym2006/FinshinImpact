@@ -1,24 +1,10 @@
 # src/core/domain/config/_shared.py
 """全平台一致的配置段
 
-- 定义 global、ai、chore、data 四个共享段字段表
+- 定义 ai、chore、data 三个共享段字段表
 """
 
 from ._models import ConfigKey, ConfigSection, FieldSpec, SectionSpec
-
-# 全局
-_GLOBAL_SECTION = SectionSpec(
-    section=ConfigSection.GLOBAL,
-    fields=(
-        FieldSpec(
-            section=ConfigSection.GLOBAL,
-            key=ConfigKey.NETWORK_TIMEOUT,
-            value_type=float,
-            default=90.0,
-            bounds=(1.0, 600.0),
-        ),
-    ),
-)
 
 # AI 配置
 _AI_SECTION = SectionSpec(
@@ -90,4 +76,4 @@ _DATA_SECTION = SectionSpec(
 )
 
 # 共享配置段
-SHARED_SECTIONS = (_GLOBAL_SECTION, _AI_SECTION, _CHORE_SECTION, _DATA_SECTION)
+SHARED_SECTIONS = (_AI_SECTION, _CHORE_SECTION, _DATA_SECTION)

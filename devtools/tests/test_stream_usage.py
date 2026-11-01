@@ -59,7 +59,6 @@ def _config() -> SimpleNamespace:
         think_mode=(),
         base_url="https://example.test/v1",
         request_path="/chat/completions",
-        timeout=5.0,
         api_key="密钥串",
     )
 

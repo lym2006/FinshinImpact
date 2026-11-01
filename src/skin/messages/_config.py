@@ -12,7 +12,6 @@ class ConfigMessage:
     # 用：utils/config/_schema.py 组装页签标题
     TAB_TITLES = {
         "proxy": "Bot 基础设置",
-        "global": "全局设置",
         "ai": "AI 模型设置",
         "chore": "AI 杂项设置",
         "data": "数据与运维",
@@ -22,7 +21,6 @@ class ConfigMessage:
     LABELS = {
         "proxy_mode": "代理模式",
         "proxy": "代理",
-        "network_timeout": "超时（秒）",
         "api_key": "API Key",
         "temperature": "温度",
         "owner": "主人",
@@ -36,7 +34,6 @@ class ConfigMessage:
     DESCS = {
         "proxy_mode": "自动逐项尝试配置→系统→直连。单路档只校验选定一路，代理软件开 TUN 时选仅直连",
         "proxy": "自动与仅配置代理两档使用该项，其余模式锁定本项",
-        "network_timeout": "控制读取响应、写入请求及连接池等待的最大耗时",
         "api_key": "在千问 AI 平台自行创建并填入",
         "temperature": "取值范围 0~2，越高越有创造性，越低越稳定",
         "owner": "具有最高权限的用户 ID（注意实例对应的平台）",
