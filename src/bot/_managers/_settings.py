@@ -81,7 +81,7 @@ class SettingsManager(BaseManager):
     async def verify_connectivity(self) -> bool:
         """按字段变化分流的连通校验
 
-        - 网络参数全未变且上次没报错时只跑本地校验
+        - 网络参数全未变且上轮连通通过时只跑本地校验
         - 通过则记录生效通道
         - 单路模式只测选定通道，缺席不发探测
         - 每种模式首轮全挂都等待预热后重检一轮
@@ -94,11 +94,8 @@ class SettingsManager(BaseManager):
         self._net_state = state
         configured, mode = state
 
-        if (
-            state == prev_state
-            and self.resolved_proxy is not None
-            and not self.last_errors
-        ):
+        # 生效通道记下即上轮网络零错，本地类型错不该拉起重联网轮
+        if state == prev_state and self.resolved_proxy is not None:
             return self._local_round(schema)
 
         detected = detect_system_proxy()
