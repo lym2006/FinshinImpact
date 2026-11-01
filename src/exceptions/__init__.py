@@ -45,7 +45,16 @@ from ._network import (
     NetworkError,
     RequestTimeoutError,
 )
-from ._plugins import AIError, PluginsError, PluginsMissingError
+from ._plugins import (
+    PLUGINS_MAP,
+    AIError,
+    PluginDependencyError,
+    PluginLoadError,
+    PluginMissingError,
+    PluginsError,
+    PluginsMissingError,
+    PluginSpecError,
+)
 from ._version import (
     VERSION_MAP,
     LocalVersionError,
@@ -60,6 +69,7 @@ MAP_KEY_PROXY = "Proxy"
 MAP_KEY_CONFIG = "Config"
 MAP_KEY_NETWORK = "Network"
 MAP_KEY_VERSION = "Version"
+MAP_KEY_PLUGINS = "Plugins"
 
 MAPS = {
     "GUI": GUI_MAP,
@@ -67,6 +77,7 @@ MAPS = {
     MAP_KEY_VERSION: VERSION_MAP,
     MAP_KEY_NETWORK: NETWORK_MAP,
     MAP_KEY_CONNECTIVITY: CONNECTIVITY_MAP,
+    MAP_KEY_PLUGINS: PLUGINS_MAP,
 }
 
 __all__ = [
@@ -116,5 +127,9 @@ __all__ = [
     # 插件
     "PluginsError",
     "PluginsMissingError",
+    "PluginSpecError",
+    "PluginMissingError",
+    "PluginDependencyError",
+    "PluginLoadError",
     "AIError",
 ]
