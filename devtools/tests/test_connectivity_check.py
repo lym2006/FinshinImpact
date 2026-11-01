@@ -421,6 +421,7 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
     - 单路模式只探选定通道，失败不跨路聚合
     - 每种模式首轮全挂都等待预热后重检一轮
     - 重检轮开场重发整表，待测行刷回检测中并带头部重测提示
+    - 代理行被隐藏的模式，网络错标在看得见的代理模式行上
     """
 
     @contextmanager
@@ -490,6 +491,31 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(calls["n"], 2, "单路配置模式也重检一轮")
         self.assertIn("无法连接到代理服务器", mgr.last_errors["proxy"])
         self.assertNotIn("均无法连通", mgr.last_errors["proxy"])
+
+    async def test_hidden_proxy_mode_takes_the_mark(self) -> None:
+        """代理行隐藏的模式，网络错的标红落在代理模式行
+
+        - 仅系统代理与仅直连两档用不到代理项，面板把那一行整行藏掉
+        """
+
+        from bot._managers._settings import SettingsManager
+
+        for mode, sys_proxy in (("direct", None), ("sys", "http://127.0.0.1:7890")):
+            with self.subTest(mode=mode):
+                mgr = SettingsManager(lambda: ("tok", "http://127.0.0.1:9999"))
+
+                async def dead(token: str, proxy: str) -> dict:
+                    return {"proxy": "连不上"}
+
+                mod = sys.modules["bot._managers._settings"]
+                with self._mode_patches(mod, dead, mode, sys_proxy):
+                    ok = await mgr.verify_connectivity()
+
+                self.assertFalse(ok)
+                self.assertEqual(
+                    list(mgr.last_errors), ["proxy_mode"], "红点要落在看得见的行上"
+                )
+                self.assertIn("连不上", mgr.last_errors["proxy_mode"])
 
     async def test_single_direct_fail_retries(self) -> None:
         """仅直连模式首轮失败同样重检

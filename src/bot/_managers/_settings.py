@@ -31,6 +31,7 @@ from utils.network import (
     detect_system_proxy,
     plan_channels,
     sys_deduped,
+    uses_configured_proxy,
     verify_plan,
     via_label,
 )
@@ -104,7 +105,7 @@ class SettingsManager(BaseManager):
         single = single_row_of(mode)
         type_errors = self._emit_opening(channels, sys_dedup, single, schema)
         if single is not None and not channels:
-            # 单路选路缺地址：代理行被联动隐藏，缺席句标红落在可见的模式行上
+            # 单路选路缺地址：缺席句标在模式行，代理行那档可能被整行隐藏
             type_errors = {**type_errors, ConfigKey.PROXY_MODE: single[2]}
             self.resolved_proxy = None
             self.last_errors = cast("dict[str, str]", type_errors)
@@ -128,7 +129,7 @@ class SettingsManager(BaseManager):
                 head=CheckMessage.RETRY_HEAD,
             )
             outcome = await run_channels(channels, probe, emit, via_label)
-        net_errors = self._aggregate_errors(outcome, channels)
+        net_errors = self._aggregate_errors(outcome, channels, mode)
 
         self._settle(outcome.resolved, configured, mode == ProxyMode.AUTO)
         self.last_errors = {**net_errors, **type_errors}
@@ -209,19 +210,23 @@ class SettingsManager(BaseManager):
         return probe
 
     def _aggregate_errors(
-        self, outcome: ChannelOutcome, channels: list[Channel]
+        self, outcome: ChannelOutcome, channels: list[Channel], mode: str
     ) -> dict[str, str]:
         """聚合代理错误
 
         - 多候选聚合为一句引导，单候选保留原始错误
         - 尾句指引用户自查代理软件
+        - 代理行被联动隐藏的模式，红点落在看得见的模式行上
         """
         errors = dict(outcome.errors)
         if outcome.resolved is None and FieldKey.PROXY in errors:
             base = (
                 CheckMessage.ALL_FAIL if len(channels) > 1 else errors[FieldKey.PROXY]
             )
-            errors = {FieldKey.PROXY: f"{base}\n{CheckMessage.PROXY_GUIDE}"}
+            key = (
+                FieldKey.PROXY if uses_configured_proxy(mode) else ConfigKey.PROXY_MODE
+            )
+            errors = {key: f"{base}\n{CheckMessage.PROXY_GUIDE}"}
         return errors
 
     def _settle(self, resolved: str | None, configured: str, warn_stale: bool) -> None:

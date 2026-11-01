@@ -23,16 +23,14 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from core.domain import ConfigGroup, ConfigKey, ConfigSection, ProxyMode
+from core.domain import ConfigGroup, ConfigKey, ConfigSection
 from skin.theme import GLOBAL, SETTINGS_DIALOG, ButtonStyle, ObjectName
 from utils.config.models import AppSchema, TabSchema
+from utils.network import uses_configured_proxy
 
 from ..._primitives import make_button
 from .._persona import PersonaPreviewRow
 from ._field import FieldBuilder
-
-# 仅这两档用得上代理项，其余模式整行隐藏
-_PROXY_EDITABLE_MODES = (ProxyMode.AUTO, ProxyMode.CFG)
 
 
 def _clear_layout(layout: QHBoxLayout) -> None:
@@ -239,7 +237,7 @@ class ChromeBuilder:
         self.proxy_row = proxy_row
 
         def sync(mode_value: object) -> None:
-            proxy_row.setVisible(str(mode_value) in _PROXY_EDITABLE_MODES)
+            proxy_row.setVisible(uses_configured_proxy(str(mode_value)))
 
             # 切换即重估全部恢复钮，否则按钮显隐停在开窗时的旧值
             self._fields.refresh_resets()
