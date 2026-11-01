@@ -17,6 +17,7 @@ from ..._dialogs import (
     CheckDialog,
     Round,
     current_check_window,
+    follow_above,
     open_check_window,
 )
 
@@ -96,7 +97,7 @@ class VerifyCoordinator:
         for frame in self.pre_frames:
             wait.apply(frame)
         self.pre_frames = []
-        self.attach_transient()
+        self.follow_panel()
         return True
 
     def on_closed(self, result: int) -> None:
@@ -152,19 +153,17 @@ class VerifyCoordinator:
         self.validating = False
         self.discard_pending()
 
-    def attach_transient(self) -> None:
-        """校验窗浮在当前面板之上
+    def follow_panel(self) -> None:
+        """在途的检查窗常驻在当前面板之上
 
+        - 校验轮与诊断轮同挂，强制向导后出场压不住结论
         - 面板重建后需再次调用
+        - 窗已隐藏则不挂，免得凭空逼出原生句柄
         """
-        # 本绑定无 QWidget 级接口，下到 QWindow 挂关系，句柄需 winId 强制具象
-        wait = self.window()
-        if wait is None:
+        wait = current_check_window()
+        if wait is None or not wait.isVisible():
             return
-        owner = self._host._panel or self._host.gui
-        wait.winId()
-        owner.winId()
-        wait.windowHandle().setTransientParent(owner.windowHandle())
+        follow_above(wait, self._host._panel or self._host.gui)
 
     def on_frame(self, frame: dict) -> None:
         """进度帧转发

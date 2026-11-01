@@ -2,6 +2,7 @@
 """弹窗子包门面
 
 - 代发基类、提示、等待、关闭确认与配置、检查、断连、版本变化、人设对账各类业务弹窗
+- 代发自家两窗之间的常驻浮顶件
 """
 
 from ._base import BaseDialog
@@ -11,6 +12,7 @@ from ._check import (
     current_check_window,
     open_check_window,
 )
+from ._follow import follow_above
 from ._link import LinkDialog
 from ._notice import NoticeDialog
 from ._persona import PersonaResolveDialog, PersonaSyncDialog
@@ -36,6 +38,7 @@ __all__ = [
     "CheckDialog",
     "Round",
     "current_check_window",
+    "follow_above",
     "open_check_window",
     "LinkDialog",
 ]

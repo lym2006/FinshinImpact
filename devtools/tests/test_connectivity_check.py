@@ -949,5 +949,121 @@ class TestRoundWindowOpens(unittest.TestCase):
         stale.apply.assert_not_called()
 
 
+class TestConclusionStaysAboveSetup(unittest.TestCase):
+    """回归点
+
+    - 诊断轮的检查窗也挂浮顶关系，强制向导后出场压不住结论
+    - 窗已隐藏则不挂，不给常驻死窗逼出原生句柄
+    """
+
+    def _follow(self, win: object) -> tuple[object, object]:
+        """按给定检查窗挂一次浮顶，返回面板宿主与浮顶桩"""
+        from unittest.mock import MagicMock
+
+        from ui._windows._controllers._verify import VerifyCoordinator
+
+        mod = sys.modules["ui._windows._controllers._verify"]
+        patch.object(mod, "current_check_window", return_value=win).start()
+        self.addCleanup(patch.stopall)
+
+        host = MagicMock()
+        with patch.object(mod, "follow_above") as follow:
+            VerifyCoordinator(host).follow_panel()
+        return host, follow
+
+    def test_diagnose_window_follows_panel(self) -> None:
+        """非校验轮的在途窗同样交给浮顶件"""
+        from unittest.mock import MagicMock
+
+        from ui._dialogs import Round
+
+        win = MagicMock()
+        win.round = Round.DIAGNOSE
+        host, follow = self._follow(win)
+
+        follow.assert_called_once_with(win, host._panel)
+
+    def test_hidden_window_skipped(self) -> None:
+        """隐藏单例不吃浮顶"""
+        from unittest.mock import MagicMock
+
+        win = MagicMock()
+        win.isVisible.return_value = False
+        _, follow = self._follow(win)
+
+        follow.assert_not_called()
+
+    def test_no_window_no_binding(self) -> None:
+        """无窗即返回，不碰宿主"""
+        _, follow = self._follow(None)
+
+        follow.assert_not_called()
+
+
+class TestFollowAbove(unittest.TestCase):
+    """回归点
+
+    - 挂跟随关系同时补一层激活上浮，上浮只在激活事件发生
+    - 同一面板重复调用不重复挂上浮钩子
+    - 上浮只排先后，不抢被跟窗的焦点
+    """
+
+    def _owner(self) -> object:
+        """造一只被跟的窗"""
+        from unittest.mock import MagicMock
+
+        return MagicMock()
+
+    def test_bind_relation_and_lift(self) -> None:
+        """关系挂上、钩子挂上、当场浮一次"""
+        from unittest.mock import MagicMock
+
+        from ui._dialogs._follow import follow_above
+
+        top = MagicMock()
+        owner = self._owner()
+        follow_above(top, owner)
+
+        top.windowHandle().setTransientParent.assert_called_once_with(
+            owner.windowHandle()
+        )
+        owner.installEventFilter.assert_called_once()
+        top.bring_front.assert_called_once_with(False)
+
+    def test_repeat_call_installs_one_lift(self) -> None:
+        """同一只被跟窗不叠第二层钩子"""
+        from unittest.mock import MagicMock
+
+        from ui._dialogs._follow import follow_above
+
+        owner = self._owner()
+        follow_above(MagicMock(), owner)
+        follow_above(MagicMock(), owner)
+
+        owner.installEventFilter.assert_called_once()
+
+    def test_lift_reacts_to_activate_only(self) -> None:
+        """激活事件上浮一次，别的事件不动"""
+        from unittest.mock import MagicMock
+
+        from PySide6.QtCore import QEvent, QObject
+
+        from ui._dialogs._follow import _LiftOnActivate
+
+        top = MagicMock()
+        lift = _LiftOnActivate(top)
+        watched = QObject()
+
+        def send(kind: QEvent.Type) -> bool:
+            """给钩子喂一只真事件，返回它是否吞下"""
+            return lift.eventFilter(watched, QEvent(kind))
+
+        self.assertFalse(send(QEvent.Type.Paint))
+        top.bring_front.assert_not_called()
+
+        self.assertFalse(send(QEvent.Type.WindowActivate))
+        top.bring_front.assert_called_once_with(False)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
