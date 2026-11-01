@@ -20,12 +20,29 @@ from PySide6.QtWidgets import (
 from skin.theme import BodyTheme, FontTheme, ObjectName, ToolbarTheme, WindowTheme
 from utils.logger import get_logger
 
-from .._dialogs import NoticeDialog, PersonaResolveDialog, PersonaSyncDialog
+from .._dialogs import (
+    BaseDialog,
+    NoticeDialog,
+    PersonaResolveDialog,
+    PersonaSyncDialog,
+)
 from .._lifecycle import Ticker
 from ._dashboard import DashboardWidget, TextHandler
 
 # 通知重试
 _NOTICE_RETRY_DELAY_MS = 800  # 模态占用时 0.8 秒后重弹
+
+
+def _result_owner(fallback: QWidget) -> QWidget | None:
+    """结果窗该挂的那只窗
+
+    - 有窗在演模态就挂它，结果浮在它上面，也只拦它
+    - 交回 None 表示此刻该等，判据见 BaseDialog.RESULT_WINDOW
+    """
+    modal = QApplication.activeModalWidget()
+    if isinstance(modal, BaseDialog) and modal.RESULT_WINDOW:
+        return None
+    return modal or fallback
 
 
 class BotGUI(QMainWindow):
@@ -152,10 +169,10 @@ class BotGUI(QMainWindow):
 
         - critical 为致命通知，确认后直接退出
         - bold 加粗正文，给当场生效、容易被看漏的提示用
-        - 已有模态窗时延后重试，防止弹窗被吞
         - 多行长文只进弹窗
         """
-        if QApplication.activeModalWidget() is not None:
+        owner = _result_owner(self)
+        if owner is None:
             Ticker.after(
                 _NOTICE_RETRY_DELAY_MS,
                 lambda: self.show_notice(message, critical, bold),
@@ -165,7 +182,7 @@ class BotGUI(QMainWindow):
         if critical:
             self._logger.error(f"致命错误: {message}")
 
-        box = NoticeDialog(message, critical=critical, parent=self, bold=bold)
+        box = NoticeDialog(message, critical=critical, parent=owner, bold=bold)
         box.raise_()
         box.activateWindow()
         box.exec()
@@ -174,28 +191,24 @@ class BotGUI(QMainWindow):
             self._shutdown_handler()
 
     def show_persona_update(self) -> None:
-        """弹出默认人设更新提示
-
-        - 已有模态窗时延后重试，防止弹窗被吞
-        """
-        if QApplication.activeModalWidget() is not None:
+        """弹出默认人设更新提示"""
+        owner = _result_owner(self)
+        if owner is None:
             Ticker.after(_NOTICE_RETRY_DELAY_MS, self.show_persona_update)
             return
 
-        PersonaSyncDialog.notify_update(parent=self)
+        PersonaSyncDialog.notify_update(parent=owner)
 
     def show_persona_resolve(
         self, old: str, new: str, old_label: str, new_label: str
     ) -> None:
-        """弹出人设拍板窗
-
-        - 已有模态窗时延后重试，防止弹窗被吞
-        """
-        if QApplication.activeModalWidget() is not None:
+        """弹出人设拍板窗"""
+        owner = _result_owner(self)
+        if owner is None:
             Ticker.after(
                 _NOTICE_RETRY_DELAY_MS,
                 lambda: self.show_persona_resolve(old, new, old_label, new_label),
             )
             return
 
-        PersonaResolveDialog(old, new, old_label, new_label, parent=self).exec()
+        PersonaResolveDialog(old, new, old_label, new_label, parent=owner).exec()

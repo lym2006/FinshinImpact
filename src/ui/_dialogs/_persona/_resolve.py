@@ -39,6 +39,8 @@ class PersonaResolveDialog(BaseDialog):
     - 标题栏关闭与 Esc 一律拦下，拍了板才许走
     """
 
+    RESULT_WINDOW = True
+
     def __init__(
         self,
         old: str,

@@ -26,6 +26,8 @@ class NoticeDialog(BaseDialog):
     - bold 只加粗正文，给那种当场不生效、容易被看漏的提示用
     """
 
+    RESULT_WINDOW = True
+
     def __init__(
         self,
         text: str,

@@ -11,6 +11,8 @@ from PySide6.QtWidgets import QDialog, QWidget
 class BaseDialog(QDialog):
     """所有自定义弹窗的基类"""
 
+    RESULT_WINDOW = False  # 契约声明：报结果的窗改 True，同场只出现一只
+
     def __init__(self, parent: QWidget | None = None, title: str = "") -> None:
         super().__init__(parent=parent)
 
