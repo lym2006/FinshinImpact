@@ -5,6 +5,7 @@
 - 提供字段级错误文案供向导标红
 """
 
+import asyncio
 import time
 from collections.abc import Awaitable, Callable
 from typing import cast
@@ -36,6 +37,8 @@ from utils.network import (
 from utils.network.probe import single_row_of
 
 from ._base import BaseManager
+
+_RETRY_WARMUP = 1.5  # 首轮全挂后歇这么久再重检，等代理软件把 TUN 内核与监听拉起来
 
 
 def _label_of(schema: AppSchema, key: str) -> str:
@@ -81,7 +84,7 @@ class SettingsManager(BaseManager):
         - 网络参数全未变且上次没报错时只跑本地校验
         - 通过则记录生效通道
         - 单路模式只测选定通道，缺席不发探测
-        - 自动模式全挂先原地重检一轮再报失败
+        - 每种模式首轮全挂都等待预热后重检一轮
         """
         t0 = time.monotonic()
         schema = get_schema()
@@ -114,8 +117,9 @@ class SettingsManager(BaseManager):
         probe = self._make_probe(token)
         emit = gui_bridge.verify_progress.emit
         outcome = await run_channels(channels, probe, emit, via_label)
-        if not outcome.passed and mode == ProxyMode.AUTO:
-            # 首轮全挂多为冷启动握手慢：趁热连接原地重检一轮再定性
+        if not outcome.passed:
+            # 首轮全挂多为冷启动握手慢：歇一拍等内核拉起来，再趁热原样重检一轮定性
+            await asyncio.sleep(_RETRY_WARMUP)
             self.logger.debug(CheckMessage.RETRY_HEAD)
 
             # 重发整表清场：已定案的行不吃单行帧，不重建则首轮的红行盖不掉
