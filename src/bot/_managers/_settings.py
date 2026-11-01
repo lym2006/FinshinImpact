@@ -5,7 +5,6 @@
 - 提供字段级错误文案供向导标红
 """
 
-import asyncio
 import time
 from collections.abc import Awaitable, Callable
 from typing import cast
@@ -15,7 +14,7 @@ from core.domain import ConfigKey, ConfigSection, FieldKey, ProxyMode
 from skin.messages import CheckMessage
 from ui import gui_bridge
 from utils import config_manager
-from utils.check import ChannelOutcome, local_row, run_channels
+from utils.check import ChannelOutcome, local_row, run_probe_round
 from utils.config import (
     AppSchema,
     FieldErrors,
@@ -29,10 +28,10 @@ from utils.network import (
     RowId,
     RowStatus,
     detect_system_proxy,
+    fault_row_of,
     link_report,
     plan_channels,
     sys_deduped,
-    uses_configured_proxy,
     uses_system_proxy,
     verify_plan,
     via_label,
@@ -40,8 +39,6 @@ from utils.network import (
 from utils.network.probe import single_row_of
 
 from ._base import BaseManager
-
-_RETRY_WARMUP = 1.5  # 首轮全挂后歇这么久再重检，等代理软件把 TUN 内核与监听拉起来
 
 
 def _label_of(schema: AppSchema, key: str) -> str:
@@ -112,30 +109,20 @@ class SettingsManager(BaseManager):
         single = single_row_of(mode)
         type_errors = self._emit_opening(channels, sys_dedup, single, schema)
         if single is not None and not channels:
-            # 缺席的选路填不上地址：代理行看得见就红在代理项，被整行藏掉才红模式行
-            key = (
-                FieldKey.PROXY if uses_configured_proxy(mode) else ConfigKey.PROXY_MODE
-            )
-            net_errors: dict[str, str] = {key: single[2]}
+            # 缺席的选路填不上地址：红点落在看得见的那一行
+            net_errors: dict[str, str] = {fault_row_of(mode): single[2]}
             resolved: str | None = None
         else:
             probe = self._make_probe(token)
-            emit = gui_bridge.verify_progress.emit
-            outcome = await run_channels(channels, probe, emit, via_label)
-            if not outcome.passed:
-                # 首轮全挂多为冷启动握手慢：歇一拍等内核拉起来，再趁热原样重检一轮定性
-                await asyncio.sleep(_RETRY_WARMUP)
-                self.logger.debug(CheckMessage.RETRY_HEAD)
-
-                # 重发整表清场：已定案的行不吃单行帧，不重建则首轮的红行盖不掉
-                self._emit_opening(
-                    channels,
-                    sys_dedup,
-                    single,
-                    schema,
-                    head=CheckMessage.RETRY_HEAD,
-                )
-                outcome = await run_channels(channels, probe, emit, via_label)
+            outcome = await run_probe_round(
+                channels,
+                probe,
+                gui_bridge.verify_progress.emit,
+                via_label,
+                lambda: self._emit_opening(
+                    channels, sys_dedup, single, schema, head=CheckMessage.RETRY_HEAD
+                ),
+            )
             net_errors = self._aggregate_errors(outcome, channels, mode)
             resolved = outcome.resolved
 
@@ -186,7 +173,7 @@ class SettingsManager(BaseManager):
         """发送首帧进度整表
 
         - 本地校验结果随首帧先行显示，不等网络探测
-        - head 非空即同时给出弹窗头部提示
+        - head 非空即重发整表清场，已定案的红行不吃单行帧
         - 返回本地类型错误供后续结论合并
         """
         local_frame, type_errors = local_row(schema, config_manager.get_all())
@@ -200,6 +187,7 @@ class SettingsManager(BaseManager):
         }
         if head:
             frame[FrameKey.HEAD] = head
+            self.logger.debug(head)
         gui_bridge.verify_progress.emit(frame)
         return type_errors
 
@@ -232,17 +220,16 @@ class SettingsManager(BaseManager):
 
         - 多候选聚合为一句引导，单候选保留原始错误
         - 尾句指引用户自查代理软件
-        - 代理行被联动隐藏的模式，红点落在看得见的模式行上
+        - 红点行由档位单源判据给出
         """
         errors = dict(outcome.errors)
         if outcome.resolved is None and FieldKey.PROXY in errors:
             base = (
                 CheckMessage.ALL_FAIL if len(channels) > 1 else errors[FieldKey.PROXY]
             )
-            key = (
-                FieldKey.PROXY if uses_configured_proxy(mode) else ConfigKey.PROXY_MODE
-            )
-            errors = {key: f"{base}\n{CheckMessage.PROXY_GUIDE}"}
+            errors = {
+                fault_row_of(mode): f"{base}\n{CheckMessage.PROXY_GUIDE}",
+            }
         return errors
 
     def _settle(self, resolved: str | None, configured: str, warn_stale: bool) -> None:

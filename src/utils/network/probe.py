@@ -8,7 +8,7 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from core.domain import ProxyMode
+from core.domain import ConfigKey, FieldKey, ProxyMode
 from skin.messages import CheckMessage
 
 
@@ -122,6 +122,16 @@ def uses_configured_proxy(mode: str) -> bool:
     - 其余档位代理行在面板隐藏，报错也不该落在看不见的那行上
     """
     return mode in _CFG_TESTED_MODES
+
+
+def fault_row_of(mode: str) -> str:
+    """代理不通时该标红哪一行
+
+    - 代理项看得见的档位红在代理项
+    - 代理项整行藏掉的档位红在看得见的代理模式行
+    - 校验轮与诊断轮同取这一处判据
+    """
+    return FieldKey.PROXY if uses_configured_proxy(mode) else ConfigKey.PROXY_MODE
 
 
 def plan_channels(

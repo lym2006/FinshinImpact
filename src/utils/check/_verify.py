@@ -2,6 +2,7 @@
 """连通校验公共核心
 
 - 全部通道并发探测，按优先级顺序取首个成功的通道
+- 首轮全挂则预热后重跑一轮再定性
 - 校验窗与诊断窗共用本核心与同款进度帧
 """
 
@@ -15,11 +16,15 @@ from skin.messages import CheckMessage
 from ..config import AppConfigData, AppSchema, validate_types
 from ..network import Channel, RowId, RowStatus
 
+# 首轮全挂后的预热重检
+_RETRY_WARMUP = 1.5  # 秒，等代理软件把 TUN 内核与监听拉起来再原样重跑
+
 # 探针展示句留空时由核心按"称谓：可达/不可用"拼装，缺席句等特例显式覆盖
 _ProbeCallback = Callable[[Channel], Awaitable[tuple[str | None, dict[str, str], str]]]
 _EmitCallback = Callable[[dict], None]
 _StopCheckCallback = Callable[[], bool]
 _ViaLabel = Callable[[Channel], str]
+_ReplayCallback = Callable[[], object]  # 重发整表清场的回调，返回值不吃
 
 # 探针裁决：(通道可走, 生效地址, 字段错误, 表格展示句)
 _Verdict = tuple[bool, str | None, dict[str, str], str]
@@ -77,7 +82,7 @@ def _settle_frame(ch: Channel, verdict: _Verdict, via_label: _ViaLabel) -> dict:
     }
 
 
-async def run_channels(
+async def _run_channels(
     channels: Sequence[Channel],
     probe: _ProbeCallback,
     emit: _EmitCallback,
@@ -161,6 +166,31 @@ async def run_channels(
                 outcome.errors = verdict[2]
                 break
     return outcome
+
+
+async def run_probe_round(
+    channels: Sequence[Channel],
+    probe: _ProbeCallback,
+    emit: _EmitCallback,
+    via_label: _ViaLabel,
+    replay: _ReplayCallback,
+    stop_check: _StopCheckCallback | None = None,
+) -> ChannelOutcome:
+    """全挂则预热重跑的一轮通道探测
+
+    - 校验轮与诊断轮同走本流程，两轮都全挂才定性
+    - 重跑前调 replay 重发整表清场，已定案的红行不吃单行帧
+    - 通道表为空或轮次被中止时不重跑
+    """
+    outcome = await _run_channels(channels, probe, emit, via_label, stop_check)
+    stopped = stop_check is not None and stop_check()
+    if outcome.passed or not channels or stopped:
+        return outcome
+
+    # 首轮全挂多为冷启动握手慢：歇一拍等内核拉起来，再趁热重检一轮定性
+    await asyncio.sleep(_RETRY_WARMUP)
+    replay()
+    return await _run_channels(channels, probe, emit, via_label, stop_check)
 
 
 def local_row(

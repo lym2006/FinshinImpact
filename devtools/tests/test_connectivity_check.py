@@ -28,6 +28,7 @@ set_profile("tg.000000")
 from adapters.telegram import probe as probe_mod  # noqa: E402
 from core.domain import FieldKey  # noqa: E402
 from exceptions import ProxyAddressError, ProxySchemeError, TokenError  # noqa: E402
+from utils.check import _verify as verify_mod  # noqa: E402
 
 _check_config = probe_mod._check_config
 _map_construct_error = probe_mod._map_construct_error
@@ -190,7 +191,7 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
             patch.object(mod, "local_row", return_value=local),
             patch.object(mod, "detect_system_proxy", detected),
             patch.object(mod, "link_report", report),
-            patch.object(mod, "_RETRY_WARMUP", 0.0),
+            patch.object(verify_mod, "_RETRY_WARMUP", 0.0),
         ):
             yield
 
@@ -511,7 +512,7 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
             patch.object(mod, "local_row", return_value=(local_frame, {})),
             patch.object(mod, "detect_system_proxy", detected),
             patch.object(mod, "link_report", report),
-            patch.object(mod, "_RETRY_WARMUP", 0.0),
+            patch.object(verify_mod, "_RETRY_WARMUP", 0.0),
             patch.object(
                 mod.config_manager,
                 "get_all",
@@ -802,6 +803,29 @@ class TestSingleRowPlan(unittest.TestCase):
         from utils.network.probe import single_row_of
 
         self.assertIsNone(single_row_of("auto"))
+
+
+class TestFaultRowPlacement(unittest.TestCase):
+    """回归点
+
+    - 代理不通的红点行按档位单源判据给出，校验轮与诊断轮同取一处
+    """
+
+    def test_visible_proxy_row_gets_the_mark(self) -> None:
+        """代理项看得见的两档红在代理项"""
+        from core.domain import FieldKey, ProxyMode
+        from utils.network import fault_row_of
+
+        self.assertEqual(fault_row_of(ProxyMode.AUTO), FieldKey.PROXY)
+        self.assertEqual(fault_row_of(ProxyMode.CFG), FieldKey.PROXY)
+
+    def test_hidden_proxy_row_moves_to_mode_row(self) -> None:
+        """代理项整行藏掉的两档红在模式行"""
+        from core.domain import ConfigKey, ProxyMode
+        from utils.network import fault_row_of
+
+        self.assertEqual(fault_row_of(ProxyMode.SYS), ConfigKey.PROXY_MODE)
+        self.assertEqual(fault_row_of(ProxyMode.DIRECT), ConfigKey.PROXY_MODE)
 
 
 class TestEnumFieldValidation(unittest.TestCase):
