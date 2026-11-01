@@ -85,8 +85,7 @@ class SettingsDialog(BaseDialog):
             on_save=self.save_requested.emit,
         )
 
-        # 非模态 + 灰×，防误点错觉，EDIT 退出走取消/Esc，SETUP 走 closeEvent 拦截
-        self.setWindowModality(Qt.WindowModality.NonModal)
+        # 灰×防误点错觉：EDIT 退出走取消/Esc，SETUP 走 closeEvent 拦截
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowCloseButtonHint)
 
         self.setMinimumSize(SETTINGS_DIALOG.min_width, SETTINGS_DIALOG.min_height)

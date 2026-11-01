@@ -24,6 +24,9 @@ class ShutdownDialog(BaseDialog):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent=parent, title=SHUTDOWN_DIALOG.title)
 
+        # 退出是全程序的事，这一只仍锁住所有窗
+        self.setWindowModality(Qt.WindowModality.ApplicationModal)
+
         # 固定大小（顶层窗尺寸 QSS 压不过布局，只能在这钉）
         self.setFixedSize(SHUTDOWN_DIALOG.width, SHUTDOWN_DIALOG.height)
 

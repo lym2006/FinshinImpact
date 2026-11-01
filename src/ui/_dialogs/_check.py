@@ -161,14 +161,17 @@ class CheckDialog(BaseDialog):
         self.show()
         self.bring_front()
 
-    def bring_front(self, grab_focus: bool = True) -> None:
+    def bring_front(
+        self, grab_focus: bool = True, owner: QWidget | None = None
+    ) -> None:
         """把本窗提到本程序窗口最前
 
         - 藏着的窗不参与排序，提它没意义
-        - 模态在演则让位：同档插队会把抓握输入的确认框重新盖没
+        - 只让位给抓握输入的确认框：被跟的窗自己演模态不算拦路
         - 只排序不抢焦点填 False：向导里正在打字，不该被浮顶打断
         """
-        if not self.isVisible() or QApplication.activeModalWidget() is not None:
+        modal = QApplication.activeModalWidget()
+        if not self.isVisible() or (modal is not None and modal is not owner):
             return
         self.raise_()
         if grab_focus:

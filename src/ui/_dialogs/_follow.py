@@ -5,7 +5,7 @@
 - 只在自家窗之间排先后，不借跨应用置顶
 """
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 from weakref import WeakKeyDictionary
 
 from PySide6.QtCore import QEvent, QObject
@@ -31,7 +31,7 @@ class _LiftOnActivate(QObject):
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802
         """被跟窗拿到激活即浮回一次，不抢它的焦点"""
         if event.type() == QEvent.Type.WindowActivate:
-            self._top.bring_front(False)
+            self._top.bring_front(False, cast("QWidget", watched))
         return super().eventFilter(watched, event)
 
 
@@ -49,4 +49,4 @@ def follow_above(top: "CheckDialog", owner: QWidget) -> None:
         lift = _LiftOnActivate(top)
         _lifts[owner] = lift
         owner.installEventFilter(lift)
-    top.bring_front(False)
+    top.bring_front(False, owner)

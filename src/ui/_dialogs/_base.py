@@ -1,7 +1,7 @@
 # src/ui/_dialogs/_base.py
 """弹窗基类
 
-- 统一应用模态的共有窗口行为
+- 统一「只锁调出它的窗」的共有窗口行为
 """
 
 from PySide6.QtCore import Qt
@@ -15,7 +15,7 @@ class BaseDialog(QDialog):
         super().__init__(parent=parent)
 
         self.setWindowTitle(title)  # 基础窗口属性
-        self.setWindowModality(Qt.WindowModality.ApplicationModal)
+        self.setWindowModality(Qt.WindowModality.WindowModal)
 
     def set_closable(self, closable: bool) -> None:
         """切换标题栏关闭按钮可用态
