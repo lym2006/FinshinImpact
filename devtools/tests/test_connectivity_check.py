@@ -163,7 +163,7 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
     def _patches(self, mod, fake_check, types=None):
         """统一打桩
 
-        - 探针、本地校验、系统代理缺席
+        - 探针、本地校验、系统代理缺席、重检预热归零
         - fake_check 返回错误 dict，适配成 attempt_channel 的 (生效址, 错误) 元组
         """
 
@@ -179,6 +179,7 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
             patch.object(mod, "attempt_channel", fake_probe),
             patch.object(mod, "local_row", return_value=local),
             patch.object(mod, "detect_system_proxy", return_value=None),
+            patch.object(mod, "_RETRY_WARMUP", 0.0),
         ):
             yield
 
@@ -391,8 +392,8 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
 class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
     """回归点
 
-    - 单路模式只探选定通道，失败不跨路聚合、不自动重检
-    - 自动模式全挂先热连接重检一轮再定性
+    - 单路模式只探选定通道，失败不跨路聚合
+    - 每种模式首轮全挂都等待预热后重检一轮
     - 重检轮开场重发整表，待测行刷回检测中并带头部重测提示
     """
 
@@ -400,7 +401,7 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
     def _mode_patches(self, mod, fake_check, mode, sys_proxy=None):
         """按模式打桩
 
-        - 内存配置注入 proxy_mode，系统代理可控
+        - 内存配置注入 proxy_mode，系统代理可控，重检预热归零
         """
         local_frame = {"id": "local", "status": "ok", "detail": ""}
 
@@ -414,6 +415,7 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
             patch.object(mod, "attempt_channel", fake_probe),
             patch.object(mod, "local_row", return_value=(local_frame, {})),
             patch.object(mod, "detect_system_proxy", return_value=sys_proxy),
+            patch.object(mod, "_RETRY_WARMUP", 0.0),
             patch.object(
                 mod.config_manager,
                 "get_all",
@@ -443,7 +445,7 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(mgr.resolved_proxy, "http://127.0.0.1:9999")
 
     async def test_single_cfg_fail_reports_own_error(self) -> None:
-        """单路失败只回本路错，不跨路聚合也不重检"""
+        """单路失败只回本路错，不跨路聚合"""
 
         from bot._managers._settings import SettingsManager
 
@@ -459,9 +461,34 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
             ok = await mgr.verify_connectivity()
 
         self.assertFalse(ok)
-        self.assertEqual(calls["n"], 1, "单路模式首轮失败不触发重检")
+        self.assertEqual(calls["n"], 2, "单路配置模式也重检一轮")
         self.assertIn("无法连接到代理服务器", mgr.last_errors["proxy"])
         self.assertNotIn("均无法连通", mgr.last_errors["proxy"])
+
+    async def test_single_direct_fail_retries(self) -> None:
+        """仅直连模式首轮失败同样重检
+
+        - TUN 内核冷启动可能只卡住首探
+        """
+
+        from bot._managers._settings import SettingsManager
+
+        mgr = SettingsManager(lambda: ("tok", "http://127.0.0.1:9999"))
+        calls = {"n": 0}
+
+        async def cold_start(token: str, proxy: str) -> dict:
+            calls["n"] += 1
+            if calls["n"] == 1:
+                return {"proxy": "直连超时，请开启系统代理或在代理项填写地址"}
+            return {}
+
+        mod = sys.modules["bot._managers._settings"]
+        with self._mode_patches(mod, cold_start, "direct"):
+            ok = await mgr.verify_connectivity()
+
+        self.assertTrue(ok, "重检轮通过即算数")
+        self.assertEqual(calls["n"], 2, "直连模式应重检一轮")
+        self.assertEqual(mgr.resolved_proxy, "")
 
     async def test_direct_mode_probes_empty_proxy(self) -> None:
         """仅直连模式以空 proxy 探测且不误报降级"""
