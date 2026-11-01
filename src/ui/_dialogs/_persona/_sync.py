@@ -25,6 +25,8 @@ class PersonaSyncDialog(BaseDialog):
     - 覆盖副本由按钮当场授权，点确认才改写并回报结果
     """
 
+    RESULT_WINDOW = True
+
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent=parent, title=NOTICE_DIALOG.persona_title)
         self.setStyleSheet(build_notice_dialog_qss())
