@@ -65,6 +65,7 @@ class _DynamicAIConfig:
             "api_key": (ConfigKey.API_KEY.path(ConfigSection.AI), str),
             "temperature": (ConfigKey.TEMPERATURE.path(ConfigSection.AI), float),
             "group_triggers": (ConfigKey.TRIGGERS.path(ConfigSection.CHORE), list),
+            "lost_lines": (ConfigKey.LOST_LINES.path(ConfigSection.CHORE), list),
             "keep_seconds": (ConfigKey.RECORD_KEEP.path(ConfigSection.DATA), float),
             "waiting_time": (ConfigKey.WAITING.path(ConfigSection.DATA), float),
             "init": (ConfigKey.OWNER.path(ConfigSection.CHORE), str),
@@ -89,6 +90,8 @@ class _DynamicAIConfig:
             match name:
                 case "group_triggers":
                     return tuple(value)
+                case "lost_lines":
+                    return tuple(line for line in value if line.strip())
                 case "keep_seconds":
                     return value * _DAY_SECONDS
                 case "waiting_time":

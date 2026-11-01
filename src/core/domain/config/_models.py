@@ -46,6 +46,7 @@ class ConfigKey(StrEnum):
     TEMPERATURE = "temperature"
     OWNER = "owner"
     TRIGGERS = "triggers"
+    LOST_LINES = "lost_lines"
     RECORD_KEEP = "record_keep"
     WAITING = "waiting"
 

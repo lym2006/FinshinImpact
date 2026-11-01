@@ -44,5 +44,3 @@ class BotMessage:
     # AI 对话
     AI_UNAVAILABLE = "AI 对话服务暂不可用"
     CHAT_PRIVATE_DENIED = "私聊要主人或管理员，群里 @我 或说触发词就能聊"
-    CHAT_LOST_SLEEP = "刚才那条我没接住，中途睡过去了，再说一次我就在"
-    CHAT_LOST_LINK = "不好意思，前会儿我断了线，你的话没听到，再跟我说一次吧"
