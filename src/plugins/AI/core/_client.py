@@ -1,7 +1,7 @@
 # src/plugins/AI/core/_client.py
 """AI 客户端
 
-- 定义鉴权头注入与禁用代理的客户端
+- 鉴权头注入与禁用代理的客户端
 """
 
 import json

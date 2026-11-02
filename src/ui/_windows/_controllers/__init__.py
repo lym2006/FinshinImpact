@@ -1,7 +1,7 @@
 # src/ui/_windows/_controllers/__init__.py
 """控制器门面
 
-- 提供自动实例化与契约打包
+- 自动实例化与契约打包
 """
 
 from collections.abc import Callable

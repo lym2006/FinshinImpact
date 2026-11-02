@@ -1,7 +1,7 @@
 # src/utils/config/_differ.py
 """配置比对
 
-- 实现新旧配置精准 diff
+- 新旧配置的逐项差异
 """
 
 from .models import AppConfigData, AppSchema, ConfigValue

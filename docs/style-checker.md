@@ -24,7 +24,8 @@ python devtools\check_coding_style.py --section 注释
   - `[H]` 硬性，规则明确可判，须改。
   - `[?]` 待核，启发式提示，人工判断后再改。
 - 待核条数与上一轮比对，只许减不许增。基线取登记完豁免清单后的读数，预留待接的项照样报，不算新增。
-- 闸门固定扫三棵树 `src packaging devtools`，都要 0 硬性，漏一棵就有照不到的地方。命令见 [release-workflow.md](release-workflow.md)。
+- 闸门固定扫三棵树 `src packaging devtools`，都要 0 硬性。
+  - 命令见 [release-workflow.md](release-workflow.md)。
 - 措辞类（背景解释、变更叙述、自评句）静态查不出，禁词清单与 grep 兜底见 [coding-style.md](coding-style.md)。
 
 ## 待核豁免清单
@@ -78,7 +79,8 @@ python devtools\check_coding_style.py --section 注释
 devtools 整棵树允许直连 src 的内部实现，这条减免只管 devtools 往 src 伸手那一头：
 
 - `_s5d_access`：`devtools/` 里的文件导入 src 的私有模块，不报越界。
-- `_s5_naming`：src 里某个名字算不算「对外」，只看 src 自己有没有人用它。devtools 用它不算，所以只被工具用到的 src 符号照样报「没消费者，建议加 `_`」。
+- `_s5_naming`：src 里某个名字算不算「对外」，只看 src 自己有没有人用它。
+  - devtools 用它不算，只被工具用到的 src 符号照样报「没消费者，建议加 `_`」。
 - 反过来，devtools 自己文件之间的调用（如 `_registry` 调各检查模块）算真实使用，工具树内部的命名照常判。
 
 ## 符号私有性查哪些名字

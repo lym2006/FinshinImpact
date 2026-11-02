@@ -1,7 +1,7 @@
 # src/adapters/telegram/_interaction.py
 """Telegram 交互端口
 
-- 实现统一发送、存在性探测与提及片段
+- 统一发送、存在性探测与提及片段
 """
 
 import asyncio

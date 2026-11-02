@@ -1,7 +1,7 @@
 # src/ui/_windows/_controllers/_settings.py
 """配置控制器
 
-- 实现向导调度、二次确认与热重载
+- 向导调度、二次确认与热重载
 - 面板全程非模态：EDIT/SETUP 同实例原地切换
 - 保存与落盘交 SaveCoordinator，校验轮交 VerifyCoordinator 协调
 """

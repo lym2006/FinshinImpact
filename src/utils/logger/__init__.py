@@ -1,7 +1,7 @@
 # src/utils/logger/__init__.py
 """日志门面
 
-- 提供日志器与格式器出口
+- 日志器与格式器出口
 """
 
 import logging

@@ -1,7 +1,7 @@
 # src/plugins/AI/services/__init__.py
 """AI 服务门面
 
-- 提供对话分发、任务处理、清理循环与停机交代出口
+- 对话分发、任务处理、清理循环与停机交代出口
 """
 
 from ._ai_chat import chat_task_handler, handle_ai_chat

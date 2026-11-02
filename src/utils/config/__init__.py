@@ -1,7 +1,7 @@
 # src/utils/config/__init__.py
 """配置工具门面
 
-- 提供检查、读写与校验出口
+- 检查、读写与校验出口
 """
 
 from system.atomic_write import write_text_atomic

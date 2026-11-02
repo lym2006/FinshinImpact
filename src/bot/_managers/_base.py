@@ -1,7 +1,7 @@
 # src/bot/_managers/_base.py
 """管理器基类
 
-- 定义业务执行入口的统一格式
+- 业务执行入口的统一格式
 """
 
 from abc import ABC, abstractmethod

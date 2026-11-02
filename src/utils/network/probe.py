@@ -1,7 +1,7 @@
 # src/utils/network/probe.py
 """网络探测共享引擎
 
-- 提供候选通道规划与进度表行定义
+- 候选通道规划与进度表行
 - 连通校验与网络诊断共用
 """
 
@@ -13,10 +13,7 @@ from skin.messages import CheckMessage
 
 
 class RowStatus:
-    """表格行五态
-
-    - 诊断窗与校验窗共用的行状态协议
-    """
+    """表格行五态"""
 
     PENDING = "pending"
     CHECKING = "checking"
@@ -26,10 +23,7 @@ class RowStatus:
 
 
 class RowId:
-    """进度表行协议串
-
-    - 行 id 即通道 kind 或收尾行名，禁止跨模块裸写
-    """
+    """进度表行协议串"""
 
     CFG = "cfg"
     SYS = "sys"
@@ -39,10 +33,7 @@ class RowId:
 
 
 class FrameKey:
-    """进度帧的键协议
-
-    - 整表帧判别键、弹窗头部文案键与断链标记键
-    """
+    """进度帧的键协议"""
 
     ROWS = "rows"
     HEAD = "head"
@@ -65,8 +56,7 @@ _SINGLE_KINDS: dict[str, str] = {
 class Channel:
     """通道候选
 
-    - kind 为 cfg/sys/direct
-    - url 空串表示直连
+    - 地址为空串表示直连
     """
 
     kind: str
@@ -74,10 +64,7 @@ class Channel:
 
 
 def _endpoint_key(url: str) -> tuple[str, str]:
-    """提取代理地址的主机与端口
-
-    - 协议头与结尾斜杠不参与比较
-    """
+    """提取代理地址的主机与端口"""
     body = url.strip().lower().split("://", 1)[-1].rstrip("/")
     host, _, port = body.rpartition(":")
     return host, port
@@ -89,10 +76,7 @@ def _same_endpoint(left: str, right: str) -> bool:
 
 
 def sys_deduped(configured: str, sys_proxy: str | None) -> bool:
-    """配置与系统代理是否同端点
-
-    - 同端点并发双探在同一代理进程与出口互抢
-    """
+    """配置与系统代理是否同端点"""
     cfg = configured.strip()
     if not cfg or not sys_proxy:
         return False
@@ -107,30 +91,18 @@ _SYS_TESTED_MODES = (ProxyMode.AUTO, ProxyMode.SYS)
 
 
 def uses_system_proxy(mode: str) -> bool:
-    """本模式是否会探测系统代理通道
-
-    - 仅自动与仅系统代理两档用得到系统代理地址
-    - 其余档位用不到它，开关变化与连通校验无关
-    """
+    """本模式是否会探测系统代理通道"""
     return mode in _SYS_TESTED_MODES
 
 
 def uses_configured_proxy(mode: str) -> bool:
-    """本模式是否会探测配置代理通道
-
-    - 仅自动与仅配置代理两档用得到代理项
-    - 其余档位代理行在面板隐藏，报错也不该落在看不见的那行上
-    """
+    """本模式是否会探测配置代理通道"""
     return mode in _CFG_TESTED_MODES
 
 
 def fault_row_of(mode: str) -> str:
-    """代理不通时该标红哪一行
-
-    - 代理项看得见的档位红在代理项
-    - 代理项整行藏掉的档位红在看得见的代理模式行
-    - 校验轮与诊断轮同取这一处判据
-    """
+    """代理不通时标红哪一行"""
+    # 代理项藏掉的档位，报错不能落在看不见的那行上
     return FieldKey.PROXY if uses_configured_proxy(mode) else ConfigKey.PROXY_MODE
 
 
@@ -139,18 +111,20 @@ def plan_channels(
 ) -> list[Channel]:
     """规划候选代理通道
 
-    - 单路模式只生成选定通道，缺席即空表由首帧给结论
-    - 模式值非法时按自动处理，坏值由本地类型校验标红
-    - 自动模式顺序为配置代理、系统代理、直连
+    - 单路模式只生成选定通道
+    - 自动模式按配置代理、系统代理、直连排序
     - 配置为空则不生成配置通道
-    - 系统代理与配置同端点时去重，只探配置通道
-    - 直连恒为最后一项
+    - 系统代理与配置同端点时去重
     """
     cfg = configured.strip()
+
+    # 坏值按自动全探处理，标红交给本地类型校验
     single = _SINGLE_KINDS.get(mode)
     if single is not None:
         return _single_channels(single, cfg, sys_proxy)
     channels = [Channel(RowId.CFG, cfg)] if cfg else []
+
+    # 同端点并发双探会在同一个代理进程与出口互抢
     if sys_proxy and not sys_deduped(cfg, sys_proxy):
         channels.append(Channel(RowId.SYS, sys_proxy))
     channels.append(Channel(RowId.DIRECT, ""))
@@ -160,7 +134,7 @@ def plan_channels(
 def _single_channels(kind: str, cfg: str, sys_proxy: str | None) -> list[Channel]:
     """单路模式的候选表
 
-    - 选路缺地址即空表，首帧按缺席给结论
+    - 选路缺地址即空表
     """
     if kind == RowId.CFG:
         return [Channel(RowId.CFG, cfg)] if cfg else []
@@ -170,10 +144,7 @@ def _single_channels(kind: str, cfg: str, sys_proxy: str | None) -> list[Channel
 
 
 def via_label(ch: Channel) -> str:
-    """通道显示名
-
-    - 直连不带地址，代理一律带地址，校验与诊断两轮共用
-    """
+    """通道显示名"""
     if not ch.url:
         return CheckMessage.VIA_DIRECT
     if ch.kind == RowId.CFG:
@@ -182,11 +153,7 @@ def via_label(ch: Channel) -> str:
 
 
 def probe_budget(url: str) -> float:
-    """通道探测预算
-
-    - 直连失败响应快，取较短预算
-    - 代理首次握手慢，取较长预算
-    """
+    """通道探测预算"""
     return _PROBE_BUDGET_DIRECT if not url else _PROBE_BUDGET
 
 
@@ -238,11 +205,10 @@ def verify_plan(
 ) -> list[dict]:
     """生成校验首帧整表
 
-    - 待探测通道标进行中，缺席与免测行直接给出状态
-    - 不探测的通道按原因直接给结论
-    - sys_dedup 为真时系统代理行标同端口去重而非缺席
-    - single 传入即单路模式，表裁剪为该通道行加本地与结论行
-    - local_frame 传入则本地行随首帧先行显示
+    - 待探测通道标进行中，缺席与免测的行按原因直接给出终态
+    - 同端点去重时系统代理行标去重而非缺席
+    - 单路模式只留选定通道行，加本地与结论行
+    - 带本地校验结果时本地行随首帧先行显示
     """
     kinds = {ch.kind for ch in channels}
     budgets = {ch.kind: probe_budget(ch.url) for ch in channels}

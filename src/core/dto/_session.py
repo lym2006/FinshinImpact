@@ -34,7 +34,6 @@ class SessionDTO:
     summary: str = ""  # 压缩摘要，覆盖旧的
     container_name: str = ""
     is_active: bool = False
-    last_active: float = 0.0
 
     @property
     def session_key(self) -> SessionKey:

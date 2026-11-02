@@ -1,8 +1,9 @@
 # src/ui/_bridge/_mediator.py
 """GUI 中介者
 
-- 定义 GUI 与 Bot 的通信协议，信号按流向分组声明
-- 提供跨线程屏障与关闭竞态协调
+- GUI 与 Bot 的通信协议
+- 信号按流向分组声明
+- 跨线程屏障与关闭竞态协调
 """
 
 import threading

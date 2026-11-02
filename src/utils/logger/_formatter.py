@@ -1,8 +1,8 @@
 # src/utils/logger/_formatter.py
 """日志格式器
 
-- 定义统一格式与语义标记规则
-- 实现仪表盘日志按语义注入标记
+- 统一格式与语义标记规则
+- 仪表盘日志按语义注入标记
 """
 
 import logging

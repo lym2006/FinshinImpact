@@ -1,7 +1,7 @@
 # src/utils/middleware.py
 """日志中间件
 
-- 定义访问与异常统一记录管道
+- 访问与异常统一记录管道
 """
 
 import re

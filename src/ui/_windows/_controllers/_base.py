@@ -1,7 +1,7 @@
 # src/ui/_windows/_controllers/_base.py
 """控制器基类
 
-- 定义按钮绑定契约与执行入口
+- 按钮绑定契约与执行入口
 """
 
 from abc import ABC, abstractmethod

@@ -2,7 +2,6 @@
 """任务状态账
 
 - 同一主体的一串问答共记库里一行，入队、开答、落定三处推进
-- 主体行随任务行一起写，外键才有落点
 - 记不进只上报，派发照走
 """
 
@@ -22,8 +21,6 @@ _LedgerFault = Callable[[TaskItem, Exception], None]
 class TaskLedger:
     """主体级粗账
 
-    - 在途计数由零变一才落新行，串内后续入队不写库
-    - 该主体最后一条落定才写终态，库内状态因此只朝一个方向走
     - 库里看不出这一串欠几条，中间某条单独失败只进上报
     """
 
@@ -37,7 +34,10 @@ class TaskLedger:
         self._began: set[PrincipalKey] = set()
 
     async def enqueue(self, item: TaskItem) -> None:
-        """记一条入队，该头一串才落库"""
+        """记一条入队，该头一串才落库
+
+        - 主体行随任务行一起写，外键才有落点
+        """
         key = item.principal_key
         if self._inflight.get(key, 0) > 0:
             self._inflight[key] += 1
@@ -92,10 +92,8 @@ class TaskLedger:
         self._began.clear()
 
     async def _book(self) -> Repositories:
-        """取出仓储集合
-
-        - 首次用时按当前循环装配，之后每次走同一条连接
-        """
+        """取出仓储集合"""
+        # 首次用时按当前事件循环装配，之后每次走同一条连接
         if self._repos is None:
             self._repos = build_repositories(await get_connection(self._db_path))
         return self._repos

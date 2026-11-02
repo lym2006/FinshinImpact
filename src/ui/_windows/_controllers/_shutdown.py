@@ -1,8 +1,8 @@
 # src/ui/_windows/_controllers/_shutdown.py
 """关闭控制器
 
-- 实现退出流程调度
-- 实现关闭与配置弹窗竞态协调
+- 退出流程调度
+- 关闭与配置弹窗竞态协调
 """
 
 import os

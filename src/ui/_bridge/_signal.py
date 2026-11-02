@@ -1,7 +1,7 @@
 # src/ui/_bridge/_signal.py
 """安全信号
 
-- 定义按 tag 防重连的信号包装
+- 按 tag 防重连的信号包装
 """
 
 from typing import Any, overload

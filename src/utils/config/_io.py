@@ -1,7 +1,7 @@
 # src/utils/config/_io.py
 """配置读写
 
-- 实现 TOML 加载与全量保存
+- TOML 加载与全量保存
 """
 
 import shutil

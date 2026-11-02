@@ -2,8 +2,8 @@
 """插件注册表
 
 - 按清单与实例启用集决定加载序列
-- 实现路由注册、常驻协程、历史清理入口、任务处理清单与启动交代协程收集、逐项结果上报
-- 插件只交路由清单，缺 spec 记失败
+- 收集各插件交来的路由、常驻协程与各类入口，逐项上报加载结果
+- 插件不交路由清单即记失败
 """
 
 import importlib
@@ -45,7 +45,7 @@ _RegisterResult = tuple[
     tuple[PluginStartup, ...],
 ]
 
-# 平台侧的清单编译器，注册表只按契约交还对象，不认它的构造
+# 平台侧的清单编译器，由装配层注入
 _RouteBuilder = Callable[[PluginSpec], Any]
 
 
@@ -55,12 +55,10 @@ def register_plugins(
 ) -> _RegisterResult:
     """按启用序列注册插件
 
-    - sink 只被要求提供挂载路由这一个方法
-    - build_router 由平台侧注入，把 PluginSpec 编成引擎要挂的对象
-    - 返回逐项报告、全部插件声明的常驻协程、全部历史清理入口、全部任务处理清单与全部启动交代协程
+    - 交回逐项报告，以及全部插件声明的常驻协程、清理入口、任务处理清单与启动交代入口
     - 未启用的插件不进报告
-    - core 插件加载失败直接上抛，可选插件失败把异常记进报告
-    - 全部失败抛 PluginsMissingError
+    - 必装插件加载失败直接上抛，可选插件失败把异常记进报告
+    - 全部插件加载失败整体上抛
     """
     report: _PluginReport = []
     backgrounds: list[PluginBackground] = []
@@ -105,7 +103,6 @@ def register_plugins(
                 raise
             report.append((plugin_name, PluginLoadError(type(e).__name__)))
 
-    # 如果所有插件都加载失败，抛出异常
     if success_count == 0:
         raise PluginsMissingError() from None
 
@@ -113,20 +110,12 @@ def register_plugins(
 
 
 def _checked_hooks(declared: object, field: str) -> tuple[Any, ...]:
-    """校验插件声明的协程清单
-
-    - 非列表或元组即判形态非法
-    - 非可调用成员直接丢弃
-    """
+    """校验插件声明的协程清单"""
     if not isinstance(declared, (list, tuple)):
         raise TypeError(f"{field} 必须是可调用对象的列表或元组")
     return tuple(hook for hook in declared if callable(hook))
 
 
 def _resolve_plugins() -> list[PluginManifestDTO]:
-    """计算本次注册序列
-
-    - 与帮助聚合共用 enabled_manifests 取序列
-    - 序列为空时走全失败分支抛 PluginsMissingError
-    """
+    """计算本次注册序列"""
     return enabled_manifests(PROFILE_DIR / PluginFileName.STATE)

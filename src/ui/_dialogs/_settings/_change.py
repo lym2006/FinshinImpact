@@ -1,7 +1,7 @@
 # src/ui/_dialogs/_settings/_change.py
 """变更确认弹窗
 
-- 提供配置变更表格 diff 的二次确认
+- 配置变更表格差异的二次确认
 """
 
 from PySide6.QtGui import QFont, QFontMetrics

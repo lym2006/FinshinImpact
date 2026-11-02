@@ -1,8 +1,8 @@
 # src/adapters/telegram/session.py
 """SSL 会话
 
-- 提供代理兼容且免验证的会话
-- 实现 Clash 代理握手兼容
+- 代理兼容且免验证的会话
+- Clash 代理握手兼容
 - 链路失败与恢复转交链路上报器
 """
 

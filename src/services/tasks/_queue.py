@@ -1,9 +1,5 @@
 # src/services/tasks/_queue.py
-"""热队列
-
-- 按容器分串存待派发任务
-- 出队按优先级与到达序取最靠前的一条
-"""
+"""按容器分串的热队列"""
 
 import asyncio
 from dataclasses import dataclass, replace
@@ -18,7 +14,7 @@ from ..context import HandlerContext
 class TaskItem:
     """排队中的一条任务
 
-    - sequence 由队列在入队时按容器到达序补齐
+    - 到达序号由队列在入队时按容器顺序补齐
     """
 
     container_key: SessionKey
@@ -32,7 +28,7 @@ class TaskItem:
 class HotQueue:
     """容器级优先级队列
 
-    - 同容器多项共用一串，按 (priority, sequence) 定序
+    - 同容器多项共用一串，按优先级与到达序定序
     - 串排空即释放该容器的键与到达序计数
     """
 

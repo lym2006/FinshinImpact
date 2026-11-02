@@ -1,7 +1,7 @@
 # src/plugins/AI/services/worker.py
 """对话工作循环
 
-- 实现流式接收、会话落库与记录持久化
+- 流式接收、会话落库与记录持久化
 - 上下文超线即裁窗并投递后台压缩
 """
 
@@ -48,7 +48,6 @@ def _save_conversation_record(
     - 一群一份、一私聊一份，条目内注明发言人
     - 问句一行与交模型的 user 轮逐字相同，含引用块
     - 落盘失败只记错误，不影响本轮应答
-    - 走线程落盘，磁盘慢不冻事件循环
     """
     wrt = (
         f"{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}\n\n"
@@ -68,7 +67,6 @@ async def _handle_ai_message(
     """处理 AI 流式数据
 
     - 产出 (事件类型, 数据)
-    - 端点回的 token 读数随流写入读数容器
     """
     current_msg = ""
 
@@ -90,7 +88,6 @@ async def _collect_reply(
     """收全一轮应答
 
     - 交出正文与是否出错
-    - 端点报的输入 token 数与字符估并排记一行，裁窗判据照旧走字符估
     """
     final_msg = ""
     has_error = False
