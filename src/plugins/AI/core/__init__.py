@@ -1,10 +1,10 @@
 # src/plugins/AI/core/__init__.py
 """AI 核心门面
 
-- 提供网络客户端、会话状态与落库出口
+- 网络客户端、在跑协程台账与落库出口
 """
 
-from ._chat_context import active_tasks, session_guard, session_states
+from ._chat_context import active_tasks
 from ._client import AIClient, StreamUsage
 from ._store import (
     clear_session,
@@ -22,10 +22,8 @@ __all__ = [
     # 网络客户端
     "AIClient",
     "StreamUsage",
-    # 会话状态管理
+    # 在跑协程台账
     "active_tasks",
-    "session_guard",
-    "session_states",
     # 会话落库
     "clear_session",
     "purge_history",
