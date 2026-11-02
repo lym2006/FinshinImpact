@@ -35,7 +35,7 @@ _NAME_SEPARATORS = "·' -"  # 名称里合法的间隔符
 _SPACE_RUN = re.compile(r"\s+")
 
 # 标记词：名称里出现即遮成星号，比对先归一全角并跳过空白
-_MARK_WORDS = ("assistant", "历史摘要", "引用")
+_MARK_WORDS = ("assistant", "历史摘要", "引用", "链接")
 
 # 遮位与连续遮位
 _MASK = "*"
