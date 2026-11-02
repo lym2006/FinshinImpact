@@ -2,7 +2,6 @@
 """上文压缩服务
 
 - 后台协程把交来的问答压成摘要并写回会话
-- 摘要超硬上限按句子边界裁掉前段
 """
 
 from core.domain import ChatRole
@@ -35,7 +34,7 @@ async def compress_history(key: SessionKey, rows: tuple[MessageDTO, ...]) -> Non
 
     - 请求失败或返回空即保持原摘要不动
     - 落笔前先确认会话没被清掉
-    - 异常只记录不外抛，不拖垮对话
+    - 异常只记录不外抛
     """
     text = render_history(rows)
     if not text:
@@ -70,15 +69,12 @@ async def _request_summary(text: str) -> str:
 
 
 def _trim_summary(text: str) -> str:
-    """摘要超硬上限即丢掉前段留尾部
-
-    - 按句子边界切，不留半句
-    - 整段找不到边界时按体量比例硬切
-    """
+    """摘要超硬上限即丢掉前段留尾部"""
     limit = ai_config.summary_hard_limit
     while (size := estimate_tokens(text)) > limit:
         cut = _first_boundary(text)
         if cut is None:
+            # 整段找不到句子边界时按体量比例硬切
             keep = max(len(text) * limit // size, 1)
             return text[-keep:]
         text = text[cut:]

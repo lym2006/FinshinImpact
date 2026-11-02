@@ -85,8 +85,9 @@ python packaging\build.py
 
 两类重复开销已自动免除，正常构建无需额外操作：
 
-- **启动器指纹复用**：编译前比对 `launcher.py` 源码与 `assets\app.ico` 的合并哈希，未变即跳过 PyInstaller 复用旧包，改过两者才重编。用户端不会触发无谓换壳。
-- **原料缓存**：嵌入式 Python 与 `uv` 首次下载后存入 `dist\_cache`，二次构建直接命中，清缓存就删该目录。升级 `_EMBED_VERSION` 或 `_UV_VERSION` 后缓存名带新版本号，自动失效重下。
+- **启动器指纹复用**：编译前比对 `launcher.py` 源码与 `assets\app.ico` 的合并哈希，未变即跳过 PyInstaller 复用旧包，改过两者才重编。
+- **原料缓存**：嵌入式 Python 与 `uv` 首次下载后存入 `dist\_cache`，二次构建直接命中，清缓存就删该目录。
+  - 升级 `_EMBED_VERSION` 或 `_UV_VERSION` 后缓存名带新版本号，自动失效重下。
 
 ## 第三步：本地测试（必做）
 

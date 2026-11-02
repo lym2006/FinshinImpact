@@ -1,7 +1,7 @@
 # src/adapters/telegram/diagnose.py
 """网络连通诊断
 
-- 按代理模式只测选定路线，缺席行首帧直接给结论
+- 按代理模式只测选定路线
 - 全部通道失败给不通结论并标记断链
 """
 
@@ -61,8 +61,8 @@ def _diagnose_plan(
     """生成诊断首帧整表
 
     - 待探测通道标进行中，缺席行直接给结论
-    - sys_dedup 为真时系统代理行标同端点去重而非缺席
-    - single 传入即单路模式，表裁成选定通道行加结论行
+    - 同端点去重时系统代理行标去重而非缺席
+    - 单路模式只留选定通道行加结论行
     """
     present = {ch.kind for ch in channels}
     budgets = {ch.kind: probe_budget(ch.url) for ch in channels}
@@ -100,7 +100,7 @@ def _opening(
 ) -> dict:
     """组装诊断整表帧
 
-    - head 非空即同时给出弹窗头部提示
+    - 带头部文案时一并给出弹窗提示
     """
     frame: dict = {
         FrameKey.ROWS: _diagnose_plan(
@@ -117,7 +117,7 @@ def _diagnose_probe(
 ) -> Callable[[Channel], Awaitable[tuple[str | None, dict[str, str], str]]]:
     """构造诊断探针
 
-    - 与校验轮同走 attempt_channel，用真实 token 探测
+    - 用真实凭证探测
     """
 
     async def probe(ch: Channel) -> tuple[str | None, dict[str, str], str]:
@@ -143,9 +143,8 @@ async def diagnose_flow(
     """执行一轮网络诊断
 
     - 只测本模式用得到的路线，缺席不发探测
-    - 任一通道可用即通过，两轮都全挂才定不通
-    - 全挂给不通结论并标记断链
-    - stop_check 为真时中止并取消在测任务，不输出结论
+    - 两轮都全挂才定不通，给不通结论并标记断链
+    - 收到中止请求时取消在测任务，不输出结论
     """
     frame = emit or _never_emit
     stop = stop_check or _never_stop

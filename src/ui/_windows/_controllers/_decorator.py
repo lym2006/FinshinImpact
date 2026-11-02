@@ -1,7 +1,7 @@
 # src/ui/_windows/_controllers/_decorator.py
 """控制器异常装饰器
 
-- 实现业务异常拦截，保障 GUI 线程存活
+- 业务异常拦截，保障 GUI 线程存活
 """
 
 from collections.abc import Callable

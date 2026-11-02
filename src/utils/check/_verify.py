@@ -3,7 +3,6 @@
 
 - 全部通道并发探测，按优先级顺序取首个成功的通道
 - 首轮全挂则预热后重跑一轮再定性
-- 校验窗与诊断窗共用本核心与同款进度帧
 """
 
 import asyncio
@@ -95,10 +94,10 @@ async def _run_channels(
 ) -> ChannelOutcome:
     """并发探测全部通道
 
-    - 所有通道先标 checking，按优先级取首个成功的通道
-    - 高优先级未出结果时，低优先级成功不提前采用
-    - 选定后取消其余探测，未采用的通道标跳过
-    - stop_check 为真时中止整轮，不发终态帧
+    - 全部通道先标为检测中
+    - 高优先级未出结果时，低优先级的成功不提前采用
+    - 选定后取消其余探测，未采用的标为跳过
+    - 收到中止请求时整轮停下，不发终态帧
     """
     stop = stop_check or _never_stop
     outcome = ChannelOutcome()
@@ -182,8 +181,7 @@ async def run_probe_round(
 ) -> ChannelOutcome:
     """全挂则预热重跑的一轮通道探测
 
-    - 校验轮与诊断轮同走本流程，两轮都全挂才定性
-    - 重跑前调 replay 重发整表清场，已定案的红行不吃单行帧
+    - 重跑前重发整表清场，已定案的失败行不吃单行帧
     - 通道表为空或轮次被中止时不重跑
     """
     outcome = await _run_channels(channels, probe, emit, via_label, stop_check)
@@ -202,7 +200,7 @@ def local_row(
 ) -> tuple[dict, dict[ConfigKey, str]]:
     """本地配置校验
 
-    - 返回 local 行终态帧与类型错误字典
+    - 交回本地行的终态帧与类型错误字典
     - 结果并入整表首帧先行显示，不等网络探测
     """
     errors = validate_types(schema, config)

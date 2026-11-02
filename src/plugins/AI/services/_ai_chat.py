@@ -1,7 +1,7 @@
 # src/plugins/AI/services/_ai_chat.py
 """对话分发服务
 
-- 实现问答入队与单条消费
+- 问答入队与单条消费
 """
 
 from asyncio import CancelledError

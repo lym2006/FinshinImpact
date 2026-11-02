@@ -1,7 +1,7 @@
 # src/ui/_windows/_controllers/_system.py
 """日志控制器
 
-- 提供打开日志目录入口
+- 打开日志目录入口
 """
 
 from skin.messages import MiscMessage
