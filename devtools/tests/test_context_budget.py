@@ -2,6 +2,7 @@
 """上下文预算测试
 
 - 字符折算按中文与其余两套系数
+- 每条消息的打包开销由端点读数倒推
 - 窗口超线切段问答成对不断
 - 压缩文本带上发言人标注
 - 摘要跟人设轮作第一条独立 user 轮
@@ -38,6 +39,16 @@ def _rounds(count: int, text: str = "说一句") -> tuple[MessageDTO, ...]:
     return tuple(rows)
 
 
+def _pair(name: str) -> tuple[MessageDTO, ...]:
+    """按给定显示名构造一轮问答"""
+    return (
+        MessageDTO(
+            role=ChatRole.USER, content="说一句", sender_id="100", sender_name=name
+        ),
+        MessageDTO(role=ChatRole.ASSISTANT, content="回话"),
+    )
+
+
 class TestTokenEstimate(unittest.TestCase):
     def test_cjk_and_ascii_use_different_rates(self) -> None:
         """中文与英文各按自己的系数折算"""
@@ -54,6 +65,35 @@ class TestTokenEstimate(unittest.TestCase):
         only_rows = utils.estimate_window(window, "", "")
         self.assertGreater(only_rows, utils.estimate_window(window[1:], "", ""))
         self.assertGreater(utils.estimate_window(window, "摘要", "新问"), only_rows)
+
+    def test_sender_mark_prices_in_by_length(self) -> None:
+        """正文一字不差，发言人名字越长折算的体量越大"""
+        window = (MessageDTO(role=ChatRole.SYSTEM, content="人设"),)
+        short = utils.estimate_window((*window, *_pair("甲")), "", "问")
+        long = utils.estimate_window((*window, *_pair("甲乙丙丁戊")), "", "问")
+        self.assertGreater(long, short)
+
+    def test_turn_overhead_learns_from_reading(self) -> None:
+        """每条消息的打包开销由端点读数倒推，下一轮按条数补上"""
+        window = (MessageDTO(role=ChatRole.SYSTEM, content="人设"), *_rounds(2))
+        summary, ask = "早前聊过两句", "[人名0|100]说一句"
+        turns = utils.build_turns(
+            persona="人设", summary=summary, history=window[1:], thisinput=ask
+        )
+        content = sum(utils.estimate_tokens(turn["content"]) for turn in turns)
+        actual = content + len(turns) * 8
+        utils.learn_turn_overhead(turns, actual)
+        self.assertEqual(utils.estimate_window(window, summary, ask), actual)
+
+    def test_reading_below_content_keeps_overhead(self) -> None:
+        """读数不大于正文折算即不刷新，倒推不出负数"""
+        window = (MessageDTO(role=ChatRole.SYSTEM, content="人设"), *_rounds(1))
+        before = utils.estimate_window(window, "", "[人名0|100]问")
+        turns = utils.build_turns(
+            persona="人设", summary="", history=window[1:], thisinput="[人名0|100]问"
+        )
+        utils.learn_turn_overhead(turns, 0)
+        self.assertEqual(utils.estimate_window(window, "", "[人名0|100]问"), before)
 
 
 class TestSplitRounds(unittest.TestCase):
