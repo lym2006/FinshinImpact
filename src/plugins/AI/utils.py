@@ -3,7 +3,7 @@
 
 - 消息构建与发言人标注拼装
 - 会话窗口归一与人设版本判定
-- 上下文体量的字符折算
+- 上下文体量折算，每条消息的打包开销由端点读数倒推
 """
 
 import time
@@ -22,9 +22,12 @@ _ROUND_ROWS = 2
 # 问答行的类型别名，窗口切段与渲染共用
 _Rows = tuple[MessageDTO, ...]
 
-# 字符折算系数，官方比例为汉字 0.6、其余 0.3
-_CN_TOKENS_PER_CHAR = 0.6
-_OTHER_TOKENS_PER_CHAR = 0.3
+# 发往模型的消息列表类型别名，体量折算与打包开销倒推共用
+_Turns = list[dict[str, str]]
+
+# 字符折算系数，只折正文
+_CN_TOKENS_PER_CHAR = 0.7
+_OTHER_TOKENS_PER_CHAR = 0.35
 
 # 汉字基本区上下界，即 U+4E00 与 U+9FFF
 _HAN_LOW = "一"
@@ -91,23 +94,73 @@ def split_rounds(rows: _Rows, keep_rounds: int) -> tuple[_Rows, _Rows]:
     return _cut_oldest(rows, keep_rounds * _ROUND_ROWS)
 
 
+class _TurnOverhead:
+    """每条消息的打包开销现值
+
+    - 模型侧拼报文时给每条消息补的角色记号不在正文里，字数公式看不见
+    - 只由端点回报的读数倒推，换模型下一轮就换成新口径
+    - 没拿到过读数即按 0 算，此时窗口只可能刚起头
+    """
+
+    def __init__(self) -> None:
+        self.per_turn = 0
+
+    def refresh(self, content: int, actual: int, turns: int) -> None:
+        """按一轮的正文折算、端点读数与消息条数刷新现值
+
+        - 读数不大于正文折算即视为口径变了，不折进负数
+        """
+        if turns and actual > content:
+            self.per_turn = (actual - content) // turns
+
+
+_turn_overhead = _TurnOverhead()
+
+
 def estimate_tokens(text: str) -> int:
     """按字符估算 token
 
-    - 汉字按 0.6 折算，其余字符按 0.3
+    - 汉字与其余字符各按自己的系数折算
     """
     han = sum(1 for char in text if _HAN_LOW <= char <= _HAN_HIGH)
     other = len(text) - han
     return int(han * _CN_TOKENS_PER_CHAR + other * _OTHER_TOKENS_PER_CHAR)
 
 
+def _estimate_turns(turns: _Turns) -> int:
+    """按实际发出的消息列表折算上下文体量
+
+    - 正文逐条折算，再按条数补现值定的打包开销
+    """
+    return _content_tokens(turns) + len(turns) * _turn_overhead.per_turn
+
+
+def learn_turn_overhead(turns: _Turns, actual: int) -> None:
+    """用端点读数倒推每条消息的打包开销
+
+    - 读数已经含齐发言人标注、引用块与媒体标记，扣掉正文折算就只剩打包那截
+    """
+    _turn_overhead.refresh(_content_tokens(turns), actual, len(turns))
+
+
 def estimate_window(window: _Rows, summary: str, prompt: str) -> int:
     """估算一轮请求的上下文体量
 
-    - 人设行、摘要、历史问答与新问句逐段累加
+    - 走实际发出的那份消息列表折算，人设、摘要、标注与引用块一字不漏
     """
-    total = estimate_tokens(summary) + estimate_tokens(prompt)
-    return total + sum(estimate_tokens(message.content) for message in window)
+    return _estimate_turns(
+        build_turns(
+            persona=window[0].content,
+            summary=summary,
+            history=window[1:],
+            thisinput=prompt,
+        )
+    )
+
+
+def _content_tokens(turns: _Turns) -> int:
+    """逐条折算消息正文"""
+    return sum(estimate_tokens(turn["content"]) for turn in turns)
 
 
 def render_history(rows: _Rows) -> str:

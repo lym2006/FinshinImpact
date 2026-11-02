@@ -112,8 +112,8 @@ class TestStreamUsage(unittest.TestCase):
                 self.assertEqual(usage.prompt_tokens, expected)
 
     def test_collect_reply_logs_usage_pair(self) -> None:
-        """收全一轮应答把估算与端点读数并排记一行，没读数即不记"""
-        cases = [(42, ["tg.000000 上下文估算 3，端点报 42"]), (None, [])]
+        """收全一轮应答把估算、条数与端点读数并排记一行，没读数即不记"""
+        cases = [(42, ["tg.000000 上下文估算 3，1 条，端点报 42"]), (None, [])]
 
         for reading, expected in cases:
             with self.subTest(端点读数=reading):

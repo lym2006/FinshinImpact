@@ -30,6 +30,7 @@ from ..utils import (
     build_turns,
     compose_user_text,
     estimate_window,
+    learn_turn_overhead,
     make_rows,
     make_session_key,
     open_window,
@@ -88,6 +89,7 @@ async def _collect_reply(
     """收全一轮应答
 
     - 交出正文与是否出错
+    - 拿到端点读数即用它倒推每条消息的打包开销，并记一行对账
     """
     final_msg = ""
     has_error = False
@@ -100,7 +102,10 @@ async def _collect_reply(
                 _logger.send_error("流式处理错误", data)
                 has_error = True
     if usage.prompt_tokens is not None:
-        _logger.info(f"{key} 上下文估算 {tokens}，端点报 {usage.prompt_tokens}")
+        learn_turn_overhead(turns, usage.prompt_tokens)
+        _logger.info(
+            f"{key} 上下文估算 {tokens}，{len(turns)} 条，端点报 {usage.prompt_tokens}"
+        )
     return final_msg, has_error
 
 
