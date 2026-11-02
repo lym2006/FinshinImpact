@@ -4,7 +4,7 @@
 - 同群两名成员共用一串会话键
 - 不同容器各占一串
 - 入队走任务服务，同串第二条排在本条之后
-- 停服收尾作废内存态、排队与在途压缩
+- 停服收尾清空排队与在途压缩
 """
 
 import asyncio
@@ -27,8 +27,9 @@ from core.dto import (  # noqa: E402
     MsgReferenceDTO,
     PrincipalDTO,
 )
-from plugins.AI.core import active_tasks, session_guard, session_states  # noqa: E402
+from plugins.AI.core import active_tasks  # noqa: E402
 from plugins.AI.services import _ai_chat, _cleanup  # noqa: E402
+from plugins.AI.utils import make_session_key  # noqa: E402
 from services.tasks import configure_task_service, get_task_service  # noqa: E402
 
 _GROUP_KEY = SessionKey("tg.g100123")
@@ -77,14 +78,8 @@ class _StubLedger:
         self.calls.append("reset")
 
 
-@session_guard
-async def _touch(*, ctx: _Ctx) -> None:
-    """走过会话守卫的空处理"""
-
-
-@session_guard
 async def _enqueue(*, ctx: _Ctx) -> None:
-    """走过会话守卫的入队处理"""
+    """走过对话入口的入队处理"""
     await _ai_chat.handle_ai_chat(ctx)
 
 
@@ -98,26 +93,25 @@ async def _hold(ctx: _Ctx) -> None:
     await asyncio.sleep(30)
 
 
+def _key(user: str, scope: ChatScope) -> SessionKey:
+    """按事件取这条消息落进哪一串"""
+    return make_session_key(_event(user, scope).principal)
+
+
 class TestContainerKeying(unittest.TestCase):
     """会话键按容器分串"""
 
-    def setUp(self) -> None:
-        session_states.clear()
-
     def test_group_members_share_one_key(self) -> None:
         """同群两名成员落进同一串"""
-        asyncio.run(_touch(ctx=_Ctx(_event("111", ChatScope.GROUP))))
-        asyncio.run(_touch(ctx=_Ctx(_event("222", ChatScope.GROUP))))
-
-        self.assertEqual(list(session_states), [_GROUP_KEY])
+        self.assertEqual(
+            {_key("111", ChatScope.GROUP), _key("222", ChatScope.GROUP)}, {_GROUP_KEY}
+        )
 
     def test_private_chats_split_by_container(self) -> None:
         """两名私聊各占一串"""
-        asyncio.run(_touch(ctx=_Ctx(_event("111", ChatScope.PRIVATE))))
-        asyncio.run(_touch(ctx=_Ctx(_event("222", ChatScope.PRIVATE))))
-
         self.assertEqual(
-            sorted(session_states), [SessionKey("tg.u111"), SessionKey("tg.u222")]
+            sorted([_key("111", ChatScope.PRIVATE), _key("222", ChatScope.PRIVATE)]),
+            [SessionKey("tg.u111"), SessionKey("tg.u222")],
         )
 
 
@@ -169,11 +163,10 @@ class TestShutdownRelease(unittest.TestCase):
     """停服收尾"""
 
     def setUp(self) -> None:
-        session_states.clear()
         active_tasks.clear()
 
-    def test_teardown_clears_memory_and_cancels_inflight(self) -> None:
-        """收尾抹平内存态，排队清空，在途压缩收到取消"""
+    def test_teardown_clears_queue_and_cancels_inflight(self) -> None:
+        """收尾清空排队，在途压缩收到取消"""
         box: dict[str, asyncio.Task] = {}
         ledger = _StubLedger()
 
@@ -208,7 +201,6 @@ class TestShutdownRelease(unittest.TestCase):
             queued = asyncio.run(_run())
         configure_task_service([], ledger=_StubLedger(), on_fault=_fault)
 
-        self.assertEqual(session_states, {})
         self.assertEqual(queued, 0)
         self.assertEqual(active_tasks, set())
         self.assertTrue(box["inflight"].cancelled())

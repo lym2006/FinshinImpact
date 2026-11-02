@@ -18,7 +18,7 @@ from ..._shared.access import require_role
 from ..._shared.filters import CommandMatch
 from ..._shared.messages import BotMessage
 from ..config import ai_config
-from ..core import clear_session, purge_stale, session_guard
+from ..core import clear_session, purge_stale
 from ..utils import make_session_key
 
 
@@ -27,7 +27,6 @@ def _get_file_path(key: SessionKey) -> Path:
 
 
 @require_role(CommandRole.ADMIN)
-@session_guard
 async def _show_history(raw: Message, ctx: HandlerContext) -> None:
     """发送历史记录
 
@@ -52,7 +51,6 @@ async def _show_history(raw: Message, ctx: HandlerContext) -> None:
 
 
 @require_role(CommandRole.ADMIN)
-@session_guard
 async def _clear_history(raw: Message, ctx: HandlerContext) -> None:
     """清除记忆"""
     key = make_session_key(ctx.event.principal)

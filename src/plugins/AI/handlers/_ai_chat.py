@@ -2,7 +2,7 @@
 """对话处理
 
 - 拦下无权私聊的成员，其余场景自动应答
-- 提供对话任务入队分发
+- 对话任务入队分发
 """
 
 from aiogram.types import Message
@@ -14,7 +14,6 @@ from utils import get_logger
 from ..._shared.access import role_of
 from ..._shared.messages import BotMessage
 from ..config import ai_config
-from ..core import session_guard
 from ..services import handle_ai_chat
 
 _logger = get_logger("Plg.AI.Chat")
@@ -77,7 +76,6 @@ async def _deny_private(raw: Message, ctx: HandlerContext) -> None:
     await ctx.answer(BotMessage.CHAT_PRIVATE_DENIED)
 
 
-@session_guard
 async def _process_ai_chat(raw: Message, ctx: HandlerContext) -> None:
     """AI 聊天核心处理器"""
     await handle_ai_chat(ctx)
