@@ -2,6 +2,7 @@
 """会话仓储实装
 
 - 按会话键读写 session 与 session_message 两表
+- 会话行删掉时消息行随外键级联走
 """
 
 import aiosqlite
@@ -25,11 +26,11 @@ class SqliteSessionRepository(SessionRepository):
         """加载会话快照
 
         - 会话行不存在返回空快照
-        - limit 取会话尾部若干条
+        - 带条数上限时只取尾部若干条
         """
         platform, container = _split_session_key(session_key)
         async with self._conn.execute(
-            "SELECT container_name, summary, last_active_at, is_active "
+            "SELECT container_name, summary, is_active "
             "FROM session WHERE key = ?",
             (session_key,),
         ) as cursor:
@@ -42,7 +43,6 @@ class SqliteSessionRepository(SessionRepository):
             summary="" if row is None else row["summary"],
             container_name="" if row is None else row["container_name"],
             is_active=bool(row["is_active"]) if row is not None else False,
-            last_active=0.0 if row is None else row["last_active_at"],
         )
 
     async def apply_patch(
@@ -87,12 +87,7 @@ class SqliteSessionRepository(SessionRepository):
         return await self.load(session_key)
 
     async def delete(self, session_key: SessionKey) -> int:
-        """按会话键清除一串会话与消息
-
-        - 消息行随外键级联删除
-        - 键不在库内即零
-        - 返回清除条数
-        """
+        """按会话键清除一串会话与消息"""
         async with self._conn.execute(
             "DELETE FROM session WHERE key = ?", (session_key,)
         ) as cursor:
@@ -101,7 +96,7 @@ class SqliteSessionRepository(SessionRepository):
         return removed
 
     async def delete_all(self) -> None:
-        """清除全部会话，消息行随外键级联删除"""
+        """清除全部会话"""
         await self._conn.execute("DELETE FROM session")
         await self._conn.commit()
 
@@ -109,8 +104,6 @@ class SqliteSessionRepository(SessionRepository):
         """清除最后问答时间早于界限的会话
 
         - 没消息的会话按 0 计，一并清掉
-        - 消息行随外键级联删除
-        - 返回清除条数
         """
         async with self._conn.execute(
             "DELETE FROM session WHERE COALESCE("
