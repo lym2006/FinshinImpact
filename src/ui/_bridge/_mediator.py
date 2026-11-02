@@ -29,6 +29,9 @@ class _GUIBridge(QObject):
     config_ready_changed = SafeSignal(
         bool
     )  # 就绪态变更：True 验证通过，False 加载中或重验中
+    service_restarting = SafeSignal(
+        bool
+    )  # 引擎重启进行中：True 起窗 False 收窗，跳过重启不发这一路
     verify_progress = SafeSignal(
         object
     )  # 校验进度帧，渲染校验表格窗：rows 整表 / id 单行

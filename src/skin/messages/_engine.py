@@ -23,6 +23,9 @@ class EngineMessage:
     # 用：bot/_managers/_service.py 停旧服务前的面板行
     STOPPING = "正在停止引擎..."
 
+    # 用：ui/_dialogs/_restart.py 热重启等待窗正文
+    RESTARTING = "正在重启服务…"
+
     # 用：bot/_service.py 轮询任务开场行
     POLLING_START = "正在启动轮询..."
 
