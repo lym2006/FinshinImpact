@@ -28,3 +28,10 @@ uv.lock
 
 # --- 操作系统文件 ---
 Thumbs.db
+
+# --- 工具脚本，默认忽略，逐项放行入库 ---
+devtools/*
+!devtools/tests/
+!devtools/_style_checks/
+!devtools/check_coding_style.py
+!devtools/style_waivers.toml
