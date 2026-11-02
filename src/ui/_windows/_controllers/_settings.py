@@ -15,7 +15,9 @@ from ..._dialogs import (
     ConfigMode,
     NoticeDialog,
     SettingsDialog,
+    close_restart_wait,
     current_check_window,
+    show_restart_wait,
 )
 from ..._lifecycle import Ticker
 from ._base import BaseController
@@ -63,6 +65,19 @@ class SettingsController(BaseController):
         gui_bridge.verify_progress.connect(
             self._verify.on_frame, "校验进度", queued=True
         )
+        gui_bridge.service_restarting.connect(
+            self._on_service_restarting, "服务重启", queued=True
+        )
+
+    def _on_service_restarting(self, restarting: bool) -> None:
+        """起收热重启等待窗
+
+        - 重启只在保存配置校验通过后发生，窗全程不给用户出口
+        """
+        if restarting:
+            show_restart_wait(self._panel or self.gui)
+            return
+        close_restart_wait()
 
     def _on_config_ready_changed(self, ready: bool) -> None:
         """更新就绪缓存

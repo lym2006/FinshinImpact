@@ -17,6 +17,7 @@ from ._link import LinkDialog
 from ._notice import NoticeDialog
 from ._persona import PersonaResolveDialog, PersonaSyncDialog
 from ._release_notes import ReleaseNotesDialog
+from ._restart import close_restart_wait, show_restart_wait
 from ._settings import ChangeConfirmDialog, ConfigMode, SettingsDialog
 from ._shutdown import ShutdownDialog
 from ._wait import WaitDialog
@@ -40,5 +41,7 @@ __all__ = [
     "current_check_window",
     "follow_above",
     "open_check_window",
+    "close_restart_wait",
+    "show_restart_wait",
     "LinkDialog",
 ]
