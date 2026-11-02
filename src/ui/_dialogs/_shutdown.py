@@ -1,7 +1,7 @@
 # src/ui/_dialogs/_shutdown.py
 """关闭确认弹窗
 
-- 提供退出进度反馈，防强杀泄漏
+- 退出进度反馈防强杀泄漏
 """
 
 from PySide6.QtCore import Qt

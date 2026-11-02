@@ -1,7 +1,7 @@
 # src/ui/_windows/_controllers/_diagnose.py
 """网络诊断控制器
 
-- 提供连通性自助排查入口
+- 连通性自助排查入口
 - 诊断轮驱动进程级唯一 CheckDialog，与他轮互斥不并发
 """
 

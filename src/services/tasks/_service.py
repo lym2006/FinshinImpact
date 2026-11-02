@@ -2,9 +2,6 @@
 """任务排队与调度
 
 - 同容器排一串逐条派发，跨容器共用一把并发闸
-- 每容器一条消费协程，退出即放掉该容器的活跃标记
-- 派发推进的三处同时记状态账，记不进不挡派发
-- 服务实例由装配层交出插件处理清单后落单，业务侧按取用函数拿
 """
 
 import asyncio
@@ -25,7 +22,7 @@ _TaskFault = Callable[[TaskItem, Exception], None]
 class TaskService:
     """容器级任务排队与派发
 
-    - handler 按任务类型取，派发只交处理上下文
+    - 处理函数按任务类型取，派发只交处理上下文
     - 报错交回装配侧上报，整串不因单项失败而停
     """
 
@@ -65,14 +62,12 @@ class TaskService:
         return self._queue.size(container_key)
 
     async def release(self) -> None:
-        """作废全部排队与在途消费协程
-
-        - 队列项揣着停机前那套引擎的连接句柄，新引擎接着答它必撞错
-        - 状态账只抹内存计数，库里那行留给下次启动交代
-        """
+        """作废全部排队与在途消费协程"""
         async with self._book_lock:
             runners = list(self._runners.values())
             self._runners.clear()
+
+        # 队列项揣着停机前那套引擎的连接句柄，新引擎接着答必撞错
         for runner in runners:
             runner.cancel()
         if runners:
@@ -140,7 +135,7 @@ def configure_task_service(
 def get_task_service() -> TaskService:
     """取已装配的服务
 
-    - 未装配即取属装配顺序错，抛内置 RuntimeError
+    - 未装配即取属装配顺序错
     """
     if _service is None:
         raise RuntimeError("任务服务尚未装配")

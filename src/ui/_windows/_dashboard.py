@@ -1,8 +1,8 @@
 # src/ui/_windows/_dashboard.py
 """仪表盘
 
-- 定义日志面板渲染组件
-- 定义日志重定向 Handler
+- 日志面板渲染组件
+- 日志重定向 Handler
 """
 
 import logging

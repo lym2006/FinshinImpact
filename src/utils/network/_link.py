@@ -2,7 +2,7 @@
 """链路状态上报
 
 - 维护断连周期计时与重试计数
-- 提供快照供界面轮询读取
+- 快照供界面轮询读取
 """
 
 import time
@@ -39,7 +39,7 @@ def _timer_of(seconds: int) -> str:
 def _span_of(seconds: int) -> str:
     """时长转面板短串
 
-    - 冒号后只留尾段，分秒两档够用，满一小时改报时
+    - 满一小时报时分，其余报分秒
     """
     hours, rest = divmod(seconds, _SECONDS_PER_HOUR)
     minutes, secs = divmod(rest, _SECONDS_PER_MINUTE)
@@ -70,20 +70,14 @@ class LinkStatus:
 
 
 class _LinkReport:
-    """断连周期状态机
-
-    - 连续失败达阈值才起表记断连，恢复收尾随之，单条抖动零输出
-    """
+    """断连周期状态机"""
 
     def __init__(self) -> None:
         self._fails = 0
         self._since = 0.0
 
     def failed(self, api: str, error: BaseException) -> None:
-        """记录一次网络层失败
-
-        - 连续失败攒够阈值才起表判断连，单条抖动不打扰
-        """
+        """记录一次网络层失败"""
         self._fails += 1
         _logger.debug(f"链路失败：{api} {type(error).__name__}: {error}")
         if self._fails == _DOWN_THRESHOLD:
@@ -107,10 +101,8 @@ class _LinkReport:
         self._fails = 0
 
     def snapshot(self) -> LinkStatus:
-        """当前断连周期快照
-
-        - 未达断连阈值或周期已作废时归零，避免读到陈旧起始点
-        """
+        """当前断连周期快照"""
+        # 未起表或周期已作废时归零，免得界面读到陈旧起始点
         if self._fails < _DOWN_THRESHOLD:
             return LinkStatus(down=False, elapsed=0, retries=0)
         return LinkStatus(
@@ -120,10 +112,7 @@ class _LinkReport:
         )
 
     def _retries(self) -> int:
-        """面板口径的重连尝试次数
-
-        - 首次失败属正常请求，不算重连
-        """
+        """面板口径的重连尝试次数"""
         return self._fails - _RETRY_OFFSET
 
     def _span(self) -> str:

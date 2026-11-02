@@ -1,8 +1,8 @@
 # src/utils/network/_client.py
 """HTTP 基类客户端
 
-- 定义会话生命周期与 GET/POST 封装
-- 实现 SSE 解析与代理注入
+- 会话生命周期与 GET/POST 封装
+- SSE 解析与代理注入
 """
 
 import asyncio

@@ -1,8 +1,8 @@
 # src/bot/_managers/_service.py
 """服务管理器
 
-- 实现 BotService 生命周期管理
-- 提供组件构建与停止清理入口
+- BotService 生命周期管理
+- 组件构建与停止清理入口
 """
 
 from __future__ import annotations

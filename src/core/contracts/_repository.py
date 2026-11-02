@@ -73,7 +73,7 @@ class SessionRepository(ABC):
 class TaskRepository(ABC):
     """任务仓储
 
-    - 按 task_id 寻址单任务，按主体键筛任务集
+    - 单任务按任务号寻址，任务集按主体键筛
     """
 
     @abstractmethod
@@ -126,7 +126,7 @@ class MediaRepository(ABC):
 class GrantRepository(ABC):
     """命令授权仓储
 
-    - owner 名单在 config，不进本表
+    - 主人名单不靠本表判定
     - 键为用户在本平台的 id，库随实例分开
     """
 
@@ -140,7 +140,7 @@ class GrantRepository(ABC):
         """授予权限
 
         - 返回是否新增
-        - expires_at 为 None 即永久
+        - 到期时间留空即永久
         """
 
     @abstractmethod

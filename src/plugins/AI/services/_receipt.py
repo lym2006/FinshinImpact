@@ -1,7 +1,7 @@
 # src/plugins/AI/services/_receipt.py
 """停机交代服务
 
-- 实现重启时对欠答问答的逐主体补说
+- 重启时对欠答问答逐主体补说
 - 说完才结算这批任务行
 """
 
@@ -50,16 +50,12 @@ _LINE_CHAR_LIMIT = 40
 
 
 async def report_lost_tasks(interaction: InteractionPort) -> None:
-    """引擎开跑前把停机期间欠下的问答按会话各补一句
+    """补说停机期间欠下的问答
 
-    - 库里一行活账即一个主体欠的一串，同会话多人只补一句，取第一个欠答者当收件人
-    - 话术取配置 chore.lost_lines，填了即随机取一句，留空即现写
-    - 现写按会话各跑一次模型往返，排在新消息之前，指令并到人设那条系统轮尾
-    - 一次现写要几句候选，随机取一句，同一次启动里说过的不再重复取
-    - 补说只说自己回来了、来陪对方了，不讲刚才去了哪里做什么，不报欠了几条，也不引用漏掉的话
-    - 补的那句不进历史，欠答的消息本身也没入库，追问走正常问答那一轮
-    - 没欠账即一句不说，判死也不跑
-    - 说不出去的记进面板，整批照旧判死，防下次启动重说一遍
+    - 引擎开跑前逐会话各补一句，没欠账即一句不说
+    - 配置填了话术即随机取一句，留空即交模型现写
+    - 补的那句不进历史，欠答的消息本身也没入库
+    - 说不出去的记一笔错误，欠下的账整批判死
     """
     conn = await get_connection(DB_FILE)
     rows = await build_repositories(conn).task.list_all_unfinished()
@@ -93,9 +89,9 @@ def _one_per_container(rows: tuple[TaskDTO, ...]) -> list[PrincipalDTO]:
 
 
 async def _compose_line(used: set[str]) -> str:
-    """现写候选里随机挑一句说，同一次启动里说过的不再重复
+    """现写候选里随机挑一句说，本次启动说过的那句不重取
 
-    - 候选全说过时照旧随机取，宁可重说也不漏掉这个会话
+    - 候选全说过时随机重取，这个会话不漏
     """
     candidates = await _compose_candidates()
     if not candidates:
@@ -107,11 +103,10 @@ async def _compose_line(used: set[str]) -> str:
 
 
 async def _compose_candidates() -> list[str]:
-    """交当前人设现写一轮，把几句候选拆开交出
-
-    - 指令并到人设那条系统轮尾，走用户轮会被人设的抗注入条款当成外人使唤
-    """
+    """交当前人设现写一轮，把几句候选拆开交出"""
     persona = ai_config.init[0]["content"]
+
+    # 指令并进用户轮会被人设的抗注入条款当成外人使唤
     turns = [
         build_message(ChatRole.SYSTEM, f"{persona}\n\n{_COMPOSE_PROMPT}"),
         build_message(ChatRole.USER, _COMPOSE_ASK),
@@ -126,10 +121,7 @@ async def _compose_candidates() -> list[str]:
 
 
 def _split_candidates(raw: str) -> list[str]:
-    """把现写的候选按行拆开，去掉编号、项目符号与包裹的引号
-
-    - 长过一句交代该说的量即不当候选，拒答与铺陈整段就此丢掉
-    """
+    """把现写的候选按行拆开，去掉编号、项目符号与包裹的引号"""
     lines: list[str] = []
     for chunk in raw.splitlines():
         text = _LIST_MARK_RE.sub("", chunk).strip().strip(_QUOTE_CHARS).strip()
