@@ -6,6 +6,7 @@
 - 上下文体量折算，每条消息的打包开销由端点读数倒推
 """
 
+import re
 import time
 
 from core.domain import ChatRole
@@ -35,6 +36,12 @@ _HAN_HIGH = "鿿"
 
 # 摘要轮的行首标记，格式与随包人设 §二 逐字一致，改一处必改另一处
 _SUMMARY_MARK = "[历史摘要] "
+
+# 网址占位标记，格式与随包人设 §二 逐字一致，改一处必改另一处
+_LINK_MARK = "[链接]"
+
+# 网址形状，只认带协议的与 www 起头的，按 URI 合法字符收边
+_URL_RUN = re.compile(r"(?:https?://|www\.)[A-Za-z0-9:/?#@!$&'*+,;=~.%_-]+")
 
 
 def build_message(role: str, content: str) -> dict[str, str]:
@@ -186,15 +193,18 @@ def build_turns(
 
     - 人设轮按当前正文现取，库里那行人设不重复发
     - 摘要固定作第一条独立 user 轮紧跟人设，后面不配 assistant 回复
+    - 交出去的正文与摘要里的网址换成占位标记，库里与落盘记录留着原文
     """
     turns = [build_message(ChatRole.SYSTEM, persona)]
     if summary:
-        turns.append(build_message(ChatRole.USER, f"{_SUMMARY_MARK}{summary}"))
+        turns.append(
+            build_message(ChatRole.USER, f"{_SUMMARY_MARK}{_strip_links(summary)}")
+        )
 
     turns.extend(
         _render_turn(message) for message in history if message.role != ChatRole.SYSTEM
     )
-    turns.append(build_message(ChatRole.USER, thisinput))
+    turns.append(build_message(ChatRole.USER, _strip_links(thisinput)))
     return turns
 
 
@@ -206,7 +216,12 @@ def _render_turn(message: MessageDTO) -> dict[str, str]:
     if message.role == ChatRole.ASSISTANT:
         return build_message(message.role, message.content)
     mark = speaker_mark(message.sender_id, message.sender_name)
-    return build_message(message.role, f"{mark}{message.content}")
+    return build_message(message.role, f"{mark}{_strip_links(message.content)}")
+
+
+def _strip_links(text: str) -> str:
+    """把正文里的网址换成占位标记"""
+    return _URL_RUN.sub(_LINK_MARK, text)
 
 
 def make_rows(event: InboundEventDTO, reply: str) -> tuple[MessageDTO, MessageDTO]:
