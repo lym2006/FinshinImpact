@@ -12,6 +12,7 @@
 - 回归点 7：token 报错一律走致命通知退出，不弹配置向导
 - 回归点 8：起轮询撞链路故障退避重试，非链路异常仍外抛
 - 回归点 9：人设正文或主人变更后立即清掉会话与落盘记录
+- 回归点 10：真重启那一路发一对起收窗信号，跳过重启不发
 """
 
 import asyncio
@@ -134,6 +135,30 @@ class TestApplyConfig(ManagerFlowTestBase):
         self.assertEqual(self.verify_calls, 2, "保存后必须重新校验")
         self.assertEqual(self.service_starts["n"], 1, "通过应启动服务")
         self.assertEqual(len(self.force_events), 1, "通过后不得再弹窗")
+
+    async def test_restart_signals_open_and_close_wait(self) -> None:
+        """真重启那一路发一对信号，等待窗的开与关都由它说
+
+        - 指纹一致跳过重启时不发这一路
+        """
+        restarts: list[bool] = []
+        signal = gui_bridge.service_restarting
+        signal.connect(restarts.append, f"test-restart-{self.id()}")
+        self.addCleanup(signal._instance.disconnect, restarts.append)
+
+        with patch.object(
+            _apply.ConfigApplier, "get_config_func", return_value=("t", "p")
+        ):
+            self.verify_results = [True]
+            await self.manager._applier.apply_config()
+            self.assertEqual(restarts, [True, False])
+            self.assertEqual(self.service_starts["n"], 1)
+
+            restarts.clear()
+            self.verify_results = [True]
+            await self.manager._applier.apply_config()
+            self.assertEqual(restarts, [], "跳过重启不该起窗")
+            self.assertEqual(self.service_starts["n"], 1)
 
     async def test_concurrent_saves_deduplicated(self) -> None:
         """校验挂起期间连续保存

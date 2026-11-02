@@ -88,8 +88,13 @@ class ConfigApplier:
             # 生效通道与引擎参数未变：验证通过即保持引擎运行，不闪断重启
             host._logger.info("配置验证通过，运行参数未变，跳过重启")
             return
-        host.stop_service()
-        await host._service_manager.execute()
+        gui_bridge.service_restarting.emit(True)
+        try:
+            host.stop_service()
+            await host._service_manager.execute()
+        finally:
+            # 重启半路报错也要收窗，异常照原样交护栏
+            gui_bridge.service_restarting.emit(False)
         self._last_applied = fingerprint
         host._logger.info("配置验证通过，服务运行中")
 
