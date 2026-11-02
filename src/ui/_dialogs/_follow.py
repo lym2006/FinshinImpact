@@ -2,7 +2,7 @@
 """自家两窗之间的常驻浮顶
 
 - 系统层挂跟随关系，再盯住被跟窗的激活事件补上浮
-- 只在自家窗之间排先后，不借跨应用置顶
+- 只在自家窗之间排先后
 """
 
 from typing import TYPE_CHECKING, cast
@@ -19,10 +19,7 @@ _lifts: "WeakKeyDictionary[QWidget, QObject]" = WeakKeyDictionary()
 
 
 class _LiftOnActivate(QObject):
-    """被跟窗一动就把上面那只窗提回来
-
-    - 只盯激活事件，其余事件原样放行
-    """
+    """被跟窗激活时的上浮钩子"""
 
     def __init__(self, top: "CheckDialog") -> None:
         super().__init__()
@@ -36,16 +33,14 @@ class _LiftOnActivate(QObject):
 
 
 def follow_above(top: "CheckDialog", owner: QWidget) -> None:
-    """让 top 常驻在 owner 上面，只排先后不抢焦点
-
-    - 可见窗改跟随关系不当场生效，故再加一层激活上浮
-    - 句柄需 winId 强制具象，QWindow 层才有关系可挂
-    """
+    """让一只窗常驻在另一只上面"""
+    # 原生句柄要先具象，系统层才有关系可挂
     top.winId()
     owner.winId()
     top.windowHandle().setTransientParent(owner.windowHandle())
     lift = _lifts.get(owner)
     if lift is None:
+        # 跟随关系对已可见的窗不当场生效，补一层激活上浮
         lift = _LiftOnActivate(top)
         _lifts[owner] = lift
         owner.installEventFilter(lift)

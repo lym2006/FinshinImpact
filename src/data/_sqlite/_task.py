@@ -1,7 +1,6 @@
 # src/data/_sqlite/_task.py
 """任务仓储实装
 
-- 按任务 id 与主体键读写 task 表
 - 状态推进按迁移表判定合法性
 """
 
@@ -168,10 +167,7 @@ class SqliteTaskRepository(TaskRepository):
         return tuple(self._to_dto(row) for row in rows)
 
     async def list_all_unfinished(self) -> tuple[TaskDTO, ...]:
-        """列出全部主体的未完成任务
-
-        - 按主体键与入队序升序，同主体的挨在一起
-        """
+        """列出全部主体的未完成任务"""
         async with self._conn.execute(
             f"SELECT {_TASK_COLUMNS} FROM task WHERE status IN (?, ?)"
             " ORDER BY principal, sequence",

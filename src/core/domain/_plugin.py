@@ -1,11 +1,9 @@
 # src/core/domain/_plugin.py
 """插件对象
 
-- 定义插件加载优先级词表
-- 定义插件相关文件名词表
-- 定义插件数据契约的键名词表
+- 定义插件加载优先级、相关文件与清单键名的词表
 - 定义插件清单标量字段的类型、必填与默认
-- 定义插件路由清单、常驻协程、历史清理协程、任务处理清单与启动交代协程的签名
+- 定义路由清单、常驻协程与各类入口的签名
 - 定义平台侧的路由挂载口
 """
 
@@ -41,7 +39,7 @@ PluginStartup = Callable[..., Awaitable[None]]
 class TaskHandler:
     """一条任务处理声明
 
-    - kind 是派发依据，同一类型只认最先交出来的那个
+    - 同一类型只认最先交出来的那个
     """
 
     kind: TaskKind
@@ -63,11 +61,8 @@ class PluginRoute:
 class PluginSpec:
     """插件交平台装配的清单
 
-    - routes 的顺序即匹配优先级
-    - backgrounds 随 Bot 服务起停
-    - history_reset 交出本插件的对话历史清理入口，不涉历史的插件留空
-    - task_handlers 交出本插件能吃下的任务类型与处理协程，不排队的插件留空
-    - startups 交出引擎起来后要主动说一句的入口，收外发端口作唯一形参
+    - 路由的先后即匹配优先级
+    - 不涉历史、不排队的插件对应条目留空
     """
 
     routes: tuple[PluginRoute, ...] = ()
@@ -78,10 +73,7 @@ class PluginSpec:
 
 
 class RouteSink(Protocol):
-    """平台引擎的路由挂载口
-
-    - 注册表只交还编好的路由对象，不认它的类型与构造
-    """
+    """平台引擎的路由挂载口"""
 
     def include_router(self, router: Any) -> Any:
         """挂上一份路由"""
@@ -90,8 +82,7 @@ class RouteSink(Protocol):
 class CommandPriority(IntEnum):
     """插件加载优先级
 
-    - 数值越小越优先，同值按 name 字典序
-    - 新插件一律取 NORMAL，禁止在现有档位之间插值
+    - 数值越小越优先，同值按名字典序
     """
 
     FIRST = 0  # help 独占
@@ -100,20 +91,14 @@ class CommandPriority(IntEnum):
 
 
 class PluginFileName(StrEnum):
-    """插件相关文件名
-
-    - 文件名单源，禁止在别处重复定义
-    """
+    """插件相关文件名"""
 
     MANIFEST = "plugin.toml"  # 位于各插件目录，存插件自描述清单
     STATE = "plugins.toml"  # 位于实例目录，存启用集与 catalog 指纹
 
 
 class ManifestKey(StrEnum):
-    """插件清单键名
-
-    - 与 plugin.toml 字段一一对应
-    """
+    """插件清单键名"""
 
     NAME = "name"
     TITLE = "title"
@@ -151,11 +136,7 @@ class StateKey(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class ManifestFieldSpec:
-    """插件清单标量字段规格
-
-    - deps/assets 值类型为 list，成员一律 str
-    - order 值类型为 int，取值须落在 CommandPriority 档位
-    """
+    """插件清单标量字段规格"""
 
     key: ManifestKey
     value_type: type

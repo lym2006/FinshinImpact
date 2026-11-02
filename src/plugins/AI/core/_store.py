@@ -1,9 +1,8 @@
 # src/plugins/AI/core/_store.py
 """会话落库
 
-- 按会话键读写消息，仓储首次用时装配
-- 摘要按会话键覆盖写入
-- 人设或主人变更后清掉全部会话与落盘记录，动手前落记号、断在半途由下次启动补完
+- 按会话键读写消息与摘要
+- 人设或主人变更后清掉全部会话与落盘记录
 - 闲置够久的会话按最后问答时间清除
 """
 
@@ -137,7 +136,7 @@ def _set_pending_mark(pending: bool) -> None:
 def _purge_records() -> bool:
     """删净落盘记录，交出是否一个不剩
 
-    - 单个删不掉继续删其他的，留下的靠记号在下一次启动重试
+    - 单个删不掉继续删其他的
     """
     cleared = True
     for path in ai_config.record_dir.glob("*.md"):

@@ -39,7 +39,8 @@ python -m pytest devtools/tests/test_grant_access.py -v
 
 风格上免三处，跑得过这条没免：ruff 其余规则照查，pytest 照跑，改名或漏文件照样红。
 
-- 规范扫描器：`tests` 目录整体跳过，devtools 整树允许直连 src 的内部实现。机制与理由见 [style-checker.md](style-checker.md)。
+- 规范扫描器：`tests` 目录整体跳过，devtools 整树允许直连 src 的内部实现。
+  - 机制与理由见 [style-checker.md](style-checker.md)。
 - 类型检查（pyright）在 `pyproject.toml` 的 `[tool.pyright]` 里管两层。
   - `exclude` 让闸门跳过本目录。
   - 编辑器单开一个用例文件时 `exclude` 拦不住分析，所以另按目录配一套环境：`extraPaths` 补 `src` 与 `devtools`（用例运行时自己挂路径，静态层不补就整片报缺导入）。

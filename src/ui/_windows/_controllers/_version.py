@@ -1,7 +1,7 @@
 # src/ui/_windows/_controllers/_version.py
 """版本控制器
 
-- 提供版本检查入口与结果透出
+- 版本检查入口与结果透出
 - 探测走独立线程，不占 GUI 线程
 """
 

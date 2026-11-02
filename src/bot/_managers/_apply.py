@@ -2,7 +2,6 @@
 """配置应用
 
 - 校验当前配置并决定是否重启引擎
-- 持有候选轮标记、生效通道、运行参数指纹与对话身份标记
 """
 
 from typing import TYPE_CHECKING
@@ -23,11 +22,7 @@ if TYPE_CHECKING:
 
 
 class ConfigApplier:
-    """配置应用器
-
-    - 与 BotManager 一对一绑定，启停与子管理器由 host 持有
-    - 持有生效通道与运行参数指纹，供引擎读取与跳过重启判定
-    """
+    """配置应用器"""
 
     def __init__(self, host: "BotManager") -> None:
         self._host = host
@@ -109,11 +104,12 @@ class ConfigApplier:
     async def commit_persona(self, text: str, source: str) -> None:
         """人设正文一次独立落盘
 
-        - 文件与存档都写成才换正文，写坏一次不会出现正文新文件旧
+        - 文件与存档都写成才换正文
         - 正文与生效值相同即只结清文件，不动历史
         - 换了正文才清历史，清完把新身份记成基准
         - 来源词只写进换版那条，正文没变即无来源可报
         """
+        # 写坏一次不能出现正文新、文件旧
         if not save_persona_text(text) or not save_applied_persona(text):
             gui_bridge.request_notice.emit(
                 DialogMessage.SETUP_PERSONA_FILE_CREATE_FAIL, False
@@ -131,9 +127,8 @@ class ConfigApplier:
         gui_bridge.request_persona_applied.emit(tip)
 
     async def reset_identity(self) -> bool:
-        """清掉全部会话与落盘记录并把当前身份记成基准
+        """清掉全部会话与落盘记录
 
-        - 清理入口由插件声明，本层只按身份变化调用
         - 入口为空即不清也不落基准，下一轮或读取侧对账补上
         """
         resets = self._host._service_manager.history_resets
@@ -161,10 +156,8 @@ class ConfigApplier:
         gui_bridge.request_force_setup.emit(field_errors or {})
 
     def _is_token_fatal(self, errors: dict[str, str]) -> bool:
-        """判定是否 token 致命错
-
-        - token 报错即致命：面板改不了 token，只会拦在配置向导里出不去
-        """
+        """判定是否凭证致命错"""
+        # 面板改不了凭证，拦在配置向导里出不去，故报错即致命
         return FieldKey.TOKEN in errors
 
     def get_config_func(self) -> tuple[str, str]:
@@ -182,7 +175,7 @@ class ConfigApplier:
     def get_raw_config_func() -> tuple[str, str]:
         """读取校验专用的凭证与代理原值
 
-        - token 只从实例自描述文件读
+        - 凭证从实例自描述文件读
         """
         return read_token(get_profile()), config_manager.get(
             ConfigKey.PROXY.path(ConfigSection.PROXY), str

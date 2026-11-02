@@ -1,7 +1,7 @@
 # src/utils/logger/_handler.py
 """文件日志处理器
 
-- 定义轮转与编码统一的文件写入
+- 轮转与编码统一的文件写入
 """
 
 import logging
