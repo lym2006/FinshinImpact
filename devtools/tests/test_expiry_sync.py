@@ -5,6 +5,7 @@
 - 按键清上下文逐键累加，键不在库内即零
 - 清理循环一轮把到期记录与同键上下文一起作废
 - 历史清理起手落记号，删不净即留着它，记号在才补一遍
+- 配置生效那一叫让清理循环提前醒，没人叫就睡满间隔
 - 真库的外键级联由 devtools/tests/test_data_layer.py 自证
 """
 
@@ -191,7 +192,7 @@ class TestCleanupRound(unittest.IsolatedAsyncioTestCase):
             patch.object(_cleanup, "purge_sessions", _purge_sessions),
             patch.object(_cleanup, "purge_idle_sessions", _purge_idle),
             patch.object(_cleanup, "purge_pending", _resume),
-            patch.object(_cleanup.asyncio, "sleep", _stop_sleep),
+            patch.object(_cleanup, "_sleep_or_wake", _stop_sleep),
         ]
         for patcher in self.patchers:
             patcher.start()
@@ -282,6 +283,33 @@ class TestPurgeHistoryMark(unittest.IsolatedAsyncioTestCase):
         await _store.purge_pending()
 
         self.assertEqual(self.repo.deleted_all, 0)
+
+
+class TestCleanupWakeup(unittest.IsolatedAsyncioTestCase):
+    """配置生效那一叫让清理循环提前醒"""
+
+    def setUp(self) -> None:
+        self.wake = asyncio.Event()
+        patcher = patch.object(_cleanup, "_wakeup", self.wake)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    async def test_wake_shortens_sleep(self) -> None:
+        """叫醒即结束等待，不必睡满间隔"""
+        waiter = asyncio.create_task(_cleanup._sleep_or_wake(60.0))
+        await asyncio.sleep(0.02)
+
+        await _cleanup.wake_cleanup()
+
+        await asyncio.wait_for(waiter, timeout=2.0)
+
+    async def test_unwoken_sleeps_full_interval(self) -> None:
+        """没人叫就睡满间隔"""
+        waiter = asyncio.create_task(_cleanup._sleep_or_wake(0.2))
+        await asyncio.sleep(0.02)
+        self.assertFalse(waiter.done())
+
+        await asyncio.wait_for(waiter, timeout=2.0)
 
 
 if __name__ == "__main__":
