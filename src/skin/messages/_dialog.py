@@ -1,6 +1,8 @@
 # src/skin/messages/_dialog.py
 """弹窗装配文案"""
 
+from ._misc import MiscMessage
+
 
 class DialogMessage:
     """弹窗装配文案
@@ -10,7 +12,7 @@ class DialogMessage:
     """
 
     # 用：theme SettingsDialogTheme 文案字段
-    SETUP_TITLE = "修改配置"
+    SETUP_TITLE = MiscMessage.ENTRY_SETTINGS
     SETUP_TIP = "检测到配置有误，请修正后继续"
     SETUP_HINT = "留意带 ⚠ 的标签页，标题标红的即为出错字段"
     SETUP_VERIFIED_OK = "配置已验证通过"
@@ -88,7 +90,7 @@ class DialogMessage:
     PERSONA_KEEP = "保留我的人设"
 
     # 用：theme ReleaseNotesDialogTheme 文案字段
-    RELEASE_NOTES_TITLE = "版本变化"
+    RELEASE_NOTES_TITLE = MiscMessage.ENTRY_NOTES
     RELEASE_NOTES_LOADING = "正在拉取发布内容..."
     RELEASE_NOTES_READY = "已取到 {count} 个版本的发布说明"
 
@@ -103,7 +105,7 @@ class DialogMessage:
     CHECK_VERIFY_HEAD_FAIL = "连通性校验未通过"
 
     # 用：theme CheckDialogTheme 诊断轮字段
-    CHECK_DIAG_TITLE = "网络诊断"
+    CHECK_DIAG_TITLE = MiscMessage.ENTRY_DIAGNOSE
     CHECK_DIAG_HEAD = "正在网络诊断..."
     CHECK_DIAG_HEAD_PASS = "网络诊断完成"
     CHECK_DIAG_HEAD_FAIL = "网络诊断未通过"

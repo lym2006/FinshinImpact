@@ -1,6 +1,8 @@
 # src/skin/messages/_version.py
 """版本检测文案"""
 
+from ._misc import MiscMessage
+
 
 class VersionMessage:
     """版本检测文案
@@ -9,7 +11,7 @@ class VersionMessage:
     """
 
     # 用：ui/_windows/_controllers/_version.py 回执通知窗标题
-    CHECK_TITLE = "版本检查"
+    CHECK_TITLE = MiscMessage.ENTRY_VERSION
 
     # 用：skin/theme/_dialogs.py WaitDialogTheme 回执字段
     UP_TO_DATE = "已是最新版本：v{ver}"

@@ -17,9 +17,16 @@ class MiscMessage:
     OPEN_LOGS_FAIL = "打开日志目录失败"
     UNKNOWN_ERROR = "发生未知错误"
 
+    # 功能入口名：工具栏按钮与它打开的窗口标题共用一词
+    ENTRY_SETTINGS = "修改配置"
+    ENTRY_DIAGNOSE = "网络诊断"
+    ENTRY_VERSION = "版本检查"
+    ENTRY_NOTES = "版本变化"
+
     # 用：bootstrap 单实例冲突弹窗
     ALREADY_RUNNING = (
-        "机器人已在运行，请勿重复启动\n请先关闭已开的窗口，或使用「网络诊断」查看状态"
+        "机器人已在运行，请勿重复启动\n"
+        f"请先关闭已开的窗口，或使用「{ENTRY_DIAGNOSE}」查看状态"
     )
 
     # 用：ui/_dialogs 人设对账判不出未改动时的一键覆盖弹窗正文
@@ -40,11 +47,11 @@ class MiscMessage:
 
     # 用：ui/_windows/_assembly.py 主窗口工具栏（文案, 按钮键）
     TOOLBAR_BUTTONS: list[tuple[str, str]] = [
-        ("修改配置", "settings"),
-        ("网络诊断", "diagnose"),
+        (ENTRY_SETTINGS, "settings"),
+        (ENTRY_DIAGNOSE, "diagnose"),
         ("查看日志", "log"),
-        ("版本检查", "version"),
-        ("版本变化", "release_notes"),
+        (ENTRY_VERSION, "version"),
+        (ENTRY_NOTES, "release_notes"),
         ("清空仪表盘", "clear"),
         ("关闭机器人", "shutdown"),  # 该按钮应被隐藏
     ]
