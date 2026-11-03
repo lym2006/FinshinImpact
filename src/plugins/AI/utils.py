@@ -12,7 +12,13 @@ import time
 from core.domain import ChatRole
 from core.domain.ids import KEY_SEP, SessionKey
 from core.dto import InboundEventDTO, MessageDTO, PrincipalDTO
-from utils.speaker import bot_quote_block, quote_block, speaker_mark
+from utils.speaker import (
+    bot_quote_block,
+    link_mark,
+    quote_block,
+    speaker_mark,
+    summary_mark,
+)
 
 # 会话窗口条数上限，含人设首行，条数只当兜底
 _MAX_CONTEXT_MESSAGES = 120
@@ -33,12 +39,6 @@ _OTHER_TOKENS_PER_CHAR = 0.35
 # 汉字基本区上下界，即 U+4E00 与 U+9FFF
 _HAN_LOW = "一"
 _HAN_HIGH = "鿿"
-
-# 摘要轮的行首标记，格式与随包人设 §二 逐字一致，改一处必改另一处
-_SUMMARY_MARK = "[历史摘要] "
-
-# 网址占位标记，格式与随包人设 §二 逐字一致，改一处必改另一处
-_LINK_MARK = "[链接]"
 
 # 网址形状，只认带协议的与 www 起头的，按 URI 合法字符收边
 _URL_RUN = re.compile(r"(?:https?://|www\.)[A-Za-z0-9:/?#@!$&'*+,;=~.%_-]+")
@@ -198,7 +198,7 @@ def build_turns(
     turns = [build_message(ChatRole.SYSTEM, persona)]
     if summary:
         turns.append(
-            build_message(ChatRole.USER, f"{_SUMMARY_MARK}{_strip_links(summary)}")
+            build_message(ChatRole.USER, f"{summary_mark()} {_strip_links(summary)}")
         )
 
     turns.extend(
@@ -221,7 +221,7 @@ def _render_turn(message: MessageDTO) -> dict[str, str]:
 
 def _strip_links(text: str) -> str:
     """把正文里的网址换成占位标记"""
-    return _URL_RUN.sub(_LINK_MARK, text)
+    return _URL_RUN.sub(link_mark(), text)
 
 
 def make_rows(event: InboundEventDTO, reply: str) -> tuple[MessageDTO, MessageDTO]:
