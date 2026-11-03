@@ -99,7 +99,7 @@ type(scope): 主题
 | build | 版本与打包定稿 |
 | revert | 回退，标题注明回退什么、恢复什么语义 |
 
-- scope 用模块域小写：`gui` `bot` `launcher` `messages` `utils` `packaging` `instance` `release`。
+- scope 用模块域小写，取它改的那一块的名字。
 - 正文要点禁用分号：一段一要点，逐行 `-` 起头。
 - 标题与正文要点行尾均不带句号（标签式列举，与 docstring 详情行同口径）。
 - 一组提交为一个主题，不按文件凑数。同主题跨层（如消息+工具+bot）合为一组。
