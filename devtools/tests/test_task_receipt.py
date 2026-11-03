@@ -24,6 +24,7 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
+from core.contracts import CapabilityCall  # noqa: E402
 from core.domain import (  # noqa: E402
     Platform,
     TaskKind,
@@ -39,7 +40,6 @@ from core.domain.ids import (  # noqa: E402
 )
 from core.dto import (  # noqa: E402
     MsgReferenceDTO,
-    OutboundPayloadDTO,
     PrincipalDTO,
     TaskPatchDTO,
     TaskRequestDTO,
@@ -56,8 +56,8 @@ from plugins.AI.services._receipt import report_lost_tasks  # noqa: E402
 from utils import config_manager  # noqa: E402
 
 
-class _FakeInteraction:
-    """只记录发出的外发端口
+class _FakeSayer:
+    """只记录说出去的话
 
     - raise_on 点名某个用户 id，发给他的那一句当场抛
     """
@@ -66,12 +66,15 @@ class _FakeInteraction:
         self.sent: list[tuple[str, str]] = []
         self._raise_on = raise_on
 
-    async def send_message(
-        self, principal: PrincipalDTO, content: OutboundPayloadDTO
-    ) -> None:
+    @property
+    def call(self) -> CapabilityCall:
+        """平台交出去的那份交代，说话这一路换成记录"""
+        return CapabilityCall(say=self._say)
+
+    async def _say(self, principal: PrincipalDTO, text: str) -> None:
         if self._raise_on and self._raise_on in principal.user:
             raise ConnectionError("送不出去")
-        self.sent.append((principal.key, content.text))
+        self.sent.append((principal.key, text))
 
 
 def _fake_client(*, reply: str = "", fail: bool = False):
@@ -157,38 +160,38 @@ class TestReportLostTasks(unittest.IsolatedAsyncioTestCase):
 
     async def test_no_debt_says_nothing(self) -> None:
         """库里干净即一句不说"""
-        interaction = _FakeInteraction()
+        sayer = _FakeSayer()
 
-        await report_lost_tasks(interaction)  # type: ignore[arg-type]
+        await report_lost_tasks(sayer.call)
 
-        self.assertEqual(interaction.sent, [])
+        self.assertEqual(sayer.sent, [])
 
     async def test_same_container_shares_one_line(self) -> None:
         """同群两人各欠一串，只补一句，收件人是先记上的那位"""
         await self._owe("111")
         await self._owe("222", running=True)
-        interaction = _FakeInteraction()
+        sayer = _FakeSayer()
 
-        await report_lost_tasks(interaction)  # type: ignore[arg-type]
+        await report_lost_tasks(sayer.call)
 
-        self.assertEqual(len(interaction.sent), 1)
-        self.assertEqual(interaction.sent[0][0], _principal("111").key)
-        self.assertIn(interaction.sent[0][1], self.cfg.lost_lines)
+        self.assertEqual(len(sayer.sent), 1)
+        self.assertEqual(sayer.sent[0][0], _principal("111").key)
+        self.assertIn(sayer.sent[0][1], self.cfg.lost_lines)
         self.assertEqual(await self.repos.task.list_all_unfinished(), ())
 
     async def test_each_container_gets_a_line(self) -> None:
         """两个会话各欠一串，各补一句"""
         await self._owe("111")
         await self._owe("222", running=True, container="g200456")
-        interaction = _FakeInteraction()
+        sayer = _FakeSayer()
 
-        await report_lost_tasks(interaction)  # type: ignore[arg-type]
+        await report_lost_tasks(sayer.call)
 
         self.assertEqual(
-            [key for key, _ in interaction.sent],
+            [key for key, _ in sayer.sent],
             [_principal("111").key, _principal("222", "g200456").key],
         )
-        for _, text in interaction.sent:
+        for _, text in sayer.sent:
             self.assertIn(text, self.cfg.lost_lines)
 
     async def test_empty_config_lets_model_write(self) -> None:
@@ -203,15 +206,15 @@ class TestReportLostTasks(unittest.IsolatedAsyncioTestCase):
                 "3. 刚才不在，现在在呢"
             )
         )
-        interaction = _FakeInteraction()
+        sayer = _FakeSayer()
 
         with patch.object(_receipt, "AIClient", client):
-            await report_lost_tasks(interaction)  # type: ignore[arg-type]
+            await report_lost_tasks(sayer.call)
 
         self.assertEqual(len(seen), 1)
-        self.assertEqual([key for key, _ in interaction.sent], [_principal("111").key])
+        self.assertEqual([key for key, _ in sayer.sent], [_principal("111").key])
         self.assertIn(
-            interaction.sent[0][1],
+            sayer.sent[0][1],
             (
                 "刚才我睡过去了，现在我在呢",
                 "我在看草，这就回来啦",
@@ -232,25 +235,25 @@ class TestReportLostTasks(unittest.IsolatedAsyncioTestCase):
         await self._owe("222", running=True, container="g200456")
         self.cfg.lost_lines = ()
         client, seen = _fake_client(reply="甲句\n乙句")
-        interaction = _FakeInteraction()
+        sayer = _FakeSayer()
 
         with patch.object(_receipt, "AIClient", client):
-            await report_lost_tasks(interaction)  # type: ignore[arg-type]
+            await report_lost_tasks(sayer.call)
 
         self.assertEqual(len(seen), 2)
-        self.assertEqual({text for _, text in interaction.sent}, {"甲句", "乙句"})
+        self.assertEqual({text for _, text in sayer.sent}, {"甲句", "乙句"})
 
     async def test_compose_failure_still_marks_dead(self) -> None:
         """模型没通即那句不说，照常判死"""
         await self._owe("111")
         self.cfg.lost_lines = ()
         client, _ = _fake_client(fail=True)
-        interaction = _FakeInteraction()
+        sayer = _FakeSayer()
 
         with patch.object(_receipt, "AIClient", client):
-            await report_lost_tasks(interaction)  # type: ignore[arg-type]
+            await report_lost_tasks(sayer.call)
 
-        self.assertEqual(interaction.sent, [])
+        self.assertEqual(sayer.sent, [])
         dead = await self.repos.task.find(_chat_id(_principal("111")))
         assert dead is not None
         self.assertEqual(dead.status, TaskStatus.FAILED)
@@ -258,11 +261,11 @@ class TestReportLostTasks(unittest.IsolatedAsyncioTestCase):
     async def test_send_failure_still_marks_dead(self) -> None:
         """送不出去也判死，下次启动不重说"""
         await self._owe("111")
-        interaction = _FakeInteraction(raise_on="111")
+        sayer = _FakeSayer(raise_on="111")
 
-        await report_lost_tasks(interaction)  # type: ignore[arg-type]
+        await report_lost_tasks(sayer.call)
 
-        self.assertEqual(interaction.sent, [])
+        self.assertEqual(sayer.sent, [])
         dead = await self.repos.task.find(_chat_id(_principal("111")))
         assert dead is not None
         self.assertEqual(dead.status, TaskStatus.FAILED)
