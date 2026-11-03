@@ -43,8 +43,8 @@ class ConfigApplier:
     async def apply_config(self) -> None:
         """应用当前配置
 
-        - 失败弹向导等待再次保存，通过则重启服务
-        - 代理不通导致的失败作废断连周期，配置问题只由向导说话
+        - 校验通过才重启服务，引擎只吃验过的值
+        - 没过即把内存回退并交向导说话
         """
         host = self._host
         if host._shutdown:
@@ -52,25 +52,14 @@ class ConfigApplier:
 
         # 重验期间先收回就绪，阻止 EDIT 弹窗读到半新半旧的配置
         gui_bridge.config_ready_changed.emit(False)
-        if self.skip_reload:
-            # 候选轮：内存已是候选值，从盘重载会把它冲掉
-            self.skip_reload = False
-        else:
+
+        # 候选轮的内存已装候选值，开头从盘重载会冲掉它
+        from_candidate = self.skip_reload
+        self.skip_reload = False
+        if not from_candidate:
             await host._settings_manager.execute()
         if not await host._settings_manager.verify_connectivity():
-            if not host._settings_manager.link_verified:
-                # 代理不通或没探成：引擎失败源于代理，作废链路账，断连窗不踩配置向导
-                link_report.reset()
-            self._resolved_proxy = None
-
-            errors = host._settings_manager.last_errors
-            if self._is_token_fatal(errors):
-                host._logger.error("Token 探测失败，弹窗引导退出")
-                gui_bridge.request_notice.emit(CheckMessage.TOKEN_FATAL, True)
-                return
-
-            # 保持不就绪：数据修复完成前 EDIT 一律拦截
-            self._request_setup(errors)
+            await self._settle_failure(from_candidate)
             return
 
         # 生效通道接引擎：配置不通时自动落到系统代理/直连
@@ -105,6 +94,29 @@ class ConfigApplier:
 
         # 配置已加载且引擎已就位，最后广播：结果由界面写进重启那只窗
         await self._announce_config_ready()
+
+    async def _settle_failure(self, from_candidate: bool) -> None:
+        """校验没过的收尾
+
+        - 候选轮把内存退回盘上的可信值，非候选轮内存本就和盘一致
+        - 代理不通作废断连周期，配置问题只由向导说话
+        """
+        host = self._host
+        if from_candidate:
+            await host._settings_manager.execute()
+        if not host._settings_manager.link_verified:
+            # 代理不通或没探成：引擎失败源于代理，作废链路账，断连窗不踩配置向导
+            link_report.reset()
+        self._resolved_proxy = None
+
+        errors = host._settings_manager.last_errors
+        if self._is_token_fatal(errors):
+            host._logger.error("Token 探测失败，弹窗引导退出")
+            gui_bridge.request_notice.emit(CheckMessage.TOKEN_FATAL, True)
+            return
+
+        # 保持不就绪：数据修复完成前 EDIT 一律拦截
+        self._request_setup(errors)
 
     async def _announce_config_ready(self) -> None:
         """向订阅了配置生效时机的件交代
