@@ -26,11 +26,8 @@ _TABLES: tuple[str, ...] = (
     "CREATE INDEX IF NOT EXISTS idx_principal_stale ON principal(last_active_at, is_active)",
     """
     CREATE TABLE IF NOT EXISTS session(
-        key            TEXT PRIMARY KEY,
-        container_name TEXT NOT NULL DEFAULT '',
-        summary        TEXT NOT NULL DEFAULT '',
-        last_active_at REAL NOT NULL DEFAULT 0,
-        is_active      INTEGER NOT NULL DEFAULT 0
+        key     TEXT PRIMARY KEY,
+        summary TEXT NOT NULL DEFAULT ''
     )
     """,
     """
