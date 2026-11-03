@@ -5,12 +5,14 @@
 - Bot 对话话术收敛进 plugins/_shared/messages.py，插件内长中文提示裸写提示
 - 运行日志不收敛：logger/print 调用内中文不报
 - 日志器禁用长级别名，面板列宽只容五字符
+- 日志消息串禁 `%s` 占位传参，要求就地拼好
 - theme 令牌文件禁持有话术字面量
 """
 
 from __future__ import annotations
 
 import ast
+import re
 from typing import TYPE_CHECKING
 
 from ._common import Finding, has_cjk
@@ -40,6 +42,9 @@ _BANNED_LEVELS: frozenset[str] = frozenset({"warning", "warn", "critical", "fata
 # 日志器对象名尾缀，避开 QMessageBox.warning 这类同名控件方法
 _LOGGER_SUFFIXES: tuple[str, ...] = ("logger", "log")
 
+# 旧式惰性占位：%(名)s 与 %s/%d/%f/%r 一类，出现即说明消息串没就地拼好
+_LAZY_PLACEHOLDER = re.compile(r"%\(|%[-+ #0]*\d*(?:\.\d+)?[sdifgr]")
+
 
 def check(files: list[FileData]) -> list[Finding]:
     """扫描日志与文案违规"""
@@ -48,6 +53,7 @@ def check(files: list[FileData]) -> list[Finding]:
         if file.parse_error:
             continue
         findings.extend(_check_log_levels(file))
+        findings.extend(_check_lazy_log_args(file))
         if file.module.startswith("ui"):
             findings.extend(_check_gui_text(file))
         if file.module.startswith("plugins") and file.rel not in (
@@ -79,6 +85,38 @@ def _check_log_levels(file: FileData) -> list[Finding]:
                 hard=True,
             )
         )
+    return findings
+
+
+def _lazy_log_message(node: ast.Call, attr_ok: bool, owner_ok: bool) -> str | None:
+    """判断是否日志器调用，并交出带占位的首参文案"""
+    if not (attr_ok and owner_ok):
+        return None
+    if len(node.args) < 2 or not isinstance(node.args[0], ast.Constant):
+        return None
+    text = node.args[0].value
+    if not isinstance(text, str) or not _LAZY_PLACEHOLDER.search(text):
+        return None
+    return text
+
+
+def _check_lazy_log_args(file: FileData) -> list[Finding]:
+    """日志消息串用占位符往后传参"""
+    findings: list[Finding] = []
+    for node in ast.walk(file.tree):
+        if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
+            continue
+        owner = node.func.value
+        name = getattr(owner, "id", "") or getattr(owner, "attr", "")
+        message = _lazy_log_message(
+            node,
+            node.func.attr in _GUI_LOG_CALLS,
+            name.lower().endswith(_LOGGER_SUFFIXES),
+        )
+        if message is None:
+            continue
+        shown = f"日志消息串 `{message[:30]}…` 留占位往后传参，改就地 f-string 拼好"
+        findings.append(_f(file, node.lineno, shown, hard=True))
     return findings
 
 

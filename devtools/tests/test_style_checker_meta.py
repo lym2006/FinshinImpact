@@ -4,6 +4,7 @@
 - 十二个分节各备一份故意违规的样本，防判据空转与包路径搬家后静默失效
 - 违规条目的分节名必须在 SECTIONS 内，防字面量改写错位
 - 回调形参四条判据各命中一次，业务协程与已合规写法不误报
+- 日志消息串留占位往后传参判硬性，就地拼好与百分号当单位不误报
 - 模块级别名按消费者定私有性，类型构造与被他模块取用的别名不判
 - 豁免清单只罩待核，条目须可解析且每条都在命中，失效即红
 - devtools 树可直连私有模块：不报越界，其引用不把 src 公共名算成对外
@@ -278,6 +279,51 @@ class TestCallbackParams(unittest.TestCase):
         self.assertEqual(
             _scan([("src/plugins/_probe_cb.py", source)]).get("回调形参", []), []
         )
+
+
+class TestLazyLogArgs(unittest.TestCase):
+    """日志消息串留占位往后传参判硬性，就地拼好的写法不误报"""
+
+    def test_placeholder_with_args_flagged(self) -> None:
+        """两种占位写法都命中"""
+        head = (
+            _skeleton("src/ui/_probe_lazy.py")
+            + "from utils import get_logger\n\n_logger = get_logger('Probe')\n\n\n"
+        )
+        bucket = _scan(
+            [
+                (
+                    "src/ui/_probe_lazy.py",
+                    head
+                    + f"def _a() -> None:\n{_FUNC_DOC}    _logger.info('按下 %s', n)\n",
+                ),
+                (
+                    "src/ui/_probe_lazy2.py",
+                    _skeleton("src/ui/_probe_lazy2.py")
+                    + "from utils import get_logger\n\n_logger = get_logger('P')\n\n\n"
+                    + f"def _b() -> None:\n{_FUNC_DOC}    _logger.debug('窗 %(t)s 空', t)\n",
+                ),
+            ]
+        )
+        self.assertEqual(len(bucket.get("日志与文案", [])), 2)
+
+    def test_compliant_calls_pass(self) -> None:
+        """f-string 现拼、百分号只当单位、非日志器调用都不报"""
+        bucket = _scan(
+            [
+                (
+                    "src/ui/_probe_ok.py",
+                    _skeleton("src/ui/_probe_ok.py")
+                    + "from utils import get_logger\n\n_logger = get_logger('Probe')\n\n\n"
+                    + f"def _a(x: int) -> None:\n{_FUNC_DOC}"
+                    + "    _logger.info(f'占用 {x}%')\n"
+                    + "    _logger.debug('按下', x)\n"
+                    + "    _logger.info('占用 80%')\n"
+                    + "    box.warning(self, '标题 %s', x)\n",
+                )
+            ]
+        )
+        self.assertIsNone(bucket.get("日志与文案"))
 
 
 class TestAliasPrivacy(unittest.TestCase):
