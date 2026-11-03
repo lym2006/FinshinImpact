@@ -390,7 +390,7 @@ class TestAIPluginDeclares(unittest.TestCase):
                 PluginTiming(
                     PlatformTiming.IDENTITY_CHANGED, purge_on_identity_changed
                 ),
-                PluginTiming(PlatformTiming.CONFIG_APPLIED, wake_cleanup),
+                PluginTiming(PlatformTiming.CONFIG_VERIFIED, wake_cleanup),
             ),
         )
 

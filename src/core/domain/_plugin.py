@@ -41,7 +41,9 @@ class PlatformTiming(StrEnum):
 
     BEFORE_ENGINE_RUN = auto()
     IDENTITY_CHANGED = auto()
-    CONFIG_APPLIED = auto()
+
+    # 校验通过即说出口，落盘排在随后由界面动手
+    CONFIG_VERIFIED = auto()
 
 
 @dataclass(frozen=True, slots=True)
