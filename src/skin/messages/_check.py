@@ -121,7 +121,7 @@ class CheckMessage:
     PASS = "连通校验通过：生效通道 {via}"
 
     # 用：字段级失败的日志句
-    FAIL = "连通校验失败：{fields}"
+    FAIL = "校验失败：{fields}"
 
     # 用：校验通过后的真正落盘（文案避"配置"与结果词，归 💾）
     WRITTEN = "新值已写入磁盘"
