@@ -32,8 +32,6 @@ class SessionDTO:
     container: ContainerKey
     messages: tuple[MessageDTO, ...] = ()
     summary: str = ""  # 压缩摘要，覆盖旧的
-    container_name: str = ""
-    is_active: bool = False
 
     @property
     def session_key(self) -> SessionKey:
