@@ -13,6 +13,7 @@
 - 回归点 8：起轮询撞链路故障退避重试，非链路异常仍外抛
 - 回归点 9：人设正文或主人变更后立即清掉会话与落盘记录
 - 回归点 10：真重启那一路发一对起收窗信号，跳过重启不发
+- 回归点 11：候选校验没过时内存退回盘上的可信值
 """
 
 import asyncio
@@ -122,7 +123,7 @@ class ManagerFlowTestBase(unittest.IsolatedAsyncioTestCase):
 
 
 class TestApplyConfig(ManagerFlowTestBase):
-    """回归点 1/3
+    """回归点 1/3/11
 
     - 应用-弹窗-重验闭环
     """
@@ -144,6 +145,30 @@ class TestApplyConfig(ManagerFlowTestBase):
         self.assertEqual(self.verify_calls, 2, "保存后必须重新校验")
         self.assertEqual(self.service_starts["n"], 1, "通过应启动服务")
         self.assertEqual(len(self.force_events), 1, "通过后不得再弹窗")
+
+    async def test_failed_candidate_round_reverts_memory(self) -> None:
+        """回归点 11：候选没过要把内存退回盘上的可信值
+
+        - 候选轮开头跳过重载，失败收尾补一次
+        - 候选通过不动内存，非候选轮开头载一次即够
+        """
+        reloads = AsyncMock()
+        with patch.object(self.manager._settings_manager, "execute", new=reloads):
+            self.manager._applier.skip_reload = True
+            self.verify_results = [False]
+            await self.manager._applier.apply_config()
+            self.assertEqual(reloads.await_count, 1, "候选没过要补一次重载")
+
+            reloads.reset_mock()
+            self.manager._applier.skip_reload = True
+            self.verify_results = [True]
+            await self.manager._applier.apply_config()
+            self.assertEqual(reloads.await_count, 0, "候选通过不该动内存")
+
+            reloads.reset_mock()
+            self.verify_results = [False]
+            await self.manager._applier.apply_config()
+            self.assertEqual(reloads.await_count, 1, "非候选轮只开头载一次")
 
     async def test_restart_wait_opens_once_and_closes_only_on_fault(self) -> None:
         """等待窗的开与关都由这一路信号说
