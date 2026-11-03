@@ -254,7 +254,7 @@ class TestPurgeHistoryMark(unittest.IsolatedAsyncioTestCase):
         record = self.root / "tg.g100123.md"
         record.write_text("旧问答", encoding="utf8")
 
-        await _store.purge_history()
+        await _store._purge_history()
 
         self.assertFalse(record.exists())
         self.assertFalse(self.mark.exists())
@@ -264,7 +264,7 @@ class TestPurgeHistoryMark(unittest.IsolatedAsyncioTestCase):
         """记录删不掉即留着记号，下次启动照着它补"""
         (self.root / "tg.g999.md").mkdir()
 
-        await _store.purge_history()
+        await _store._purge_history()
 
         self.assertTrue(self.mark.exists())
 

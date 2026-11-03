@@ -3,13 +3,13 @@
 
 - 定义插件加载优先级、相关文件与清单键名的词表
 - 定义插件清单标量字段的类型、必填与默认
-- 定义路由清单、常驻协程与各类入口的签名
+- 定义路由清单、常驻协程、任务处理与时机订阅的签名
 - 定义平台侧的路由挂载口
 """
 
 from collections.abc import Awaitable, Callable, Coroutine
 from dataclasses import dataclass
-from enum import IntEnum, StrEnum
+from enum import IntEnum, StrEnum, auto
 from typing import Any, Protocol
 
 from ._task import TaskKind
@@ -18,9 +18,6 @@ PLUGINS_PKG = "plugins"  # 插件树顶层包名，find_spec 与动态导入路�
 
 # 插件声明的无参常驻协程，随 Bot 服务起停
 PluginBackground = Callable[[], Coroutine[Any, Any, None]]
-
-# 插件声明的无参历史清理协程，平台判定身份变更后调用
-PluginReset = Callable[[], Coroutine[Any, Any, None]]
 
 # 路由谓词，只吃归一后的处理上下文，返回是否接管这条事件
 PluginPredicate = Callable[..., Awaitable[bool]]
@@ -31,8 +28,19 @@ _PluginHandler = Callable[..., Awaitable[None]]
 # 任务处理函数，只吃归一后的处理上下文，报错自行收干净再交回调度
 TaskRun = Callable[..., Awaitable[None]]
 
-# 启动交代函数，只吃外发端口，引擎起来后随轮询开跑前调用一次
-PluginStartup = Callable[..., Awaitable[None]]
+# 时机订阅的处理函数，收平台召唤时交代的那一份能力
+PluginTimingRun = Callable[..., Awaitable[None]]
+
+
+class PlatformTiming(StrEnum):
+    """平台会说出口的机会
+
+    - 加新机会在这里加一名，不在 PluginSpec 上加字段
+    - 名字只说平台发生了什么，不说插件该干什么
+    """
+
+    BEFORE_ENGINE_RUN = auto()
+    IDENTITY_CHANGED = auto()
 
 
 @dataclass(frozen=True, slots=True)
@@ -58,18 +66,31 @@ class PluginRoute:
 
 
 @dataclass(frozen=True, slots=True)
+class PluginTiming:
+    """一条时机订阅
+
+    - timing 决定什么时候轮到，run 收平台交代的那一份能力
+    - 同一时机交多条即按交出的顺序跑
+    """
+
+    timing: PlatformTiming
+    run: PluginTimingRun
+
+
+@dataclass(frozen=True, slots=True)
 class PluginSpec:
     """插件交平台装配的清单
 
-    - 路由的先后即匹配优先级
-    - 不涉历史、不排队的插件对应条目留空
+    - routes 的先后即匹配优先级
+    - backgrounds 随 Bot 服务起停
+    - task_handlers 按任务类型派发
+    - timings 交出本插件订阅的平台机会，没订阅即空
     """
 
     routes: tuple[PluginRoute, ...] = ()
     backgrounds: tuple[PluginBackground, ...] = ()
-    history_reset: PluginReset | None = None
     task_handlers: tuple[TaskHandler, ...] = ()
-    startups: tuple[PluginStartup, ...] = ()
+    timings: tuple[PluginTiming, ...] = ()
 
 
 class RouteSink(Protocol):

@@ -33,9 +33,18 @@ from aiogram.methods import GetMe  # noqa: E402
 
 from bot._managers import BotManager, _apply  # noqa: E402
 from bot._service import BotService  # noqa: E402
-from core.domain import FieldKey  # noqa: E402
+from core.contracts import CapabilityCall  # noqa: E402
+from core.domain import FieldKey, PlatformTiming  # noqa: E402
 from skin.messages import DialogMessage  # noqa: E402
 from ui import gui_bridge  # noqa: E402
+
+
+async def _say(principal: object, text: str) -> None:
+    """占位的外发出口，测试里说话不碰真端口"""
+    await asyncio.sleep(0)
+
+
+_CAPABILITY = CapabilityCall(say=_say)  # 召唤插件时交出去的那份交代
 
 
 class ManagerFlowTestBase(unittest.IsolatedAsyncioTestCase):
@@ -352,16 +361,16 @@ class TestIdentityReset(ManagerFlowTestBase):
     """回归点 9
 
     - 校验通过时按对话身份决定要不要清历史
-    - 没有清理入口的那轮不落基准，下一轮补上
+    - 没件订阅「身份变了」的那轮不落基准，下一轮补上
     """
 
     def _stage(
         self, text: dict, owner: dict, with_reset: bool = True
     ) -> tuple[list[int], object]:
-        """把正文、主人与清理入口换成可控值，交出调用记录与清理桩"""
+        """把正文、主人与「身份变了」的订阅换成可控值，交出调用记录与清理桩"""
         calls: list[int] = []
 
-        async def _reset() -> None:
+        async def _reset(call: object) -> None:
             calls.append(1)
 
         def _read(path: str, expected_type: type):
@@ -373,8 +382,8 @@ class TestIdentityReset(ManagerFlowTestBase):
         for patcher in (
             patch.object(
                 self.manager._service_manager,
-                "_history_resets",
-                (_reset,) if with_reset else (),
+                "_timing_hooks",
+                {PlatformTiming.IDENTITY_CHANGED: (_reset,)} if with_reset else {},
             ),
             patch.object(_apply, "applied_persona_text", lambda: text["v"]),
             patch.object(_apply.config_manager, "get", _read),
@@ -421,7 +430,7 @@ class TestIdentityReset(ManagerFlowTestBase):
         self.assertEqual(calls, [1], "主人变更应清一次")
 
     async def test_missing_entry_retries_next_round(self) -> None:
-        """插件没交清理入口时不落基准，下一轮接着清"""
+        """没件订阅「身份变了」时不落基准，下一轮接着清"""
         text, owner = {"v": "旧正文"}, {"v": "456"}
         calls, reset = self._stage(text, owner, with_reset=False)
         applier = self.manager._applier
@@ -431,7 +440,11 @@ class TestIdentityReset(ManagerFlowTestBase):
         await applier.apply_config()
         self.assertEqual(calls, [], "没有入口不该假装清过")
 
-        with patch.object(self.manager._service_manager, "_history_resets", (reset,)):
+        with patch.object(
+            self.manager._service_manager,
+            "_timing_hooks",
+            {PlatformTiming.IDENTITY_CHANGED: (reset,)},
+        ):
             await applier.apply_config()
 
         self.assertEqual(calls, [1], "入口到位即补上这次清理")
@@ -451,7 +464,7 @@ class TestCommitPersona(ManagerFlowTestBase):
         calls: list[int] = []
         saved = {"v": applied["v"]}
 
-        async def _reset() -> None:
+        async def _reset(call: object) -> None:
             calls.append(1)
 
         def _save_text(_text: str) -> bool:
@@ -471,7 +484,11 @@ class TestCommitPersona(ManagerFlowTestBase):
             patch.object(_apply.gui_bridge, "request_persona_applied")
         )
         for patcher in (
-            patch.object(self.manager._service_manager, "_history_resets", (_reset,)),
+            patch.object(
+                self.manager._service_manager,
+                "_timing_hooks",
+                {PlatformTiming.IDENTITY_CHANGED: (_reset,)},
+            ),
             patch.object(_apply, "save_persona_text", _save_text),
             patch.object(_apply, "save_applied_persona", _save_cache),
             patch.object(_apply, "load_persona_cache", _load),
@@ -639,7 +656,7 @@ class TestStopPollingIsAwaited(unittest.IsolatedAsyncioTestCase):
                 self.stop_called.set()
 
         adapter = FakeAdapter()
-        service = BotService(adapter)  # type: ignore[arg-type]
+        service = BotService(adapter, _CAPABILITY)  # type: ignore[arg-type]
         service._loop = asyncio.get_running_loop()
 
         class _FakeThread:
@@ -680,7 +697,7 @@ class TestStopPollingIsAwaited(unittest.IsolatedAsyncioTestCase):
             async def stop(self) -> None:
                 pass
 
-        service = BotService(_FakeAdapter())  # type: ignore[arg-type]
+        service = BotService(_FakeAdapter(), _CAPABILITY)  # type: ignore[arg-type]
 
         with self.assertRaises(RuntimeError):
             await service._polling_task()
@@ -717,7 +734,7 @@ class TestHandshakeRetry(unittest.IsolatedAsyncioTestCase):
     async def test_link_failure_retries_until_up(self) -> None:
         """断两次后起上：三次握手，协程正常返回"""
         adapter = _FlakyAdapter([self._network_error()] * 2)
-        service = BotService(adapter)  # type: ignore[arg-type]
+        service = BotService(adapter, _CAPABILITY)  # type: ignore[arg-type]
         with patch("bot._service._POLL_RETRY_DELAY", 0.0):
             await service._start_polling()
         self.assertEqual(adapter.calls, 3)
@@ -725,7 +742,7 @@ class TestHandshakeRetry(unittest.IsolatedAsyncioTestCase):
     async def test_non_link_error_propagates(self) -> None:
         """配置类异常不退避，照旧外抛给线程兜底"""
         adapter = _FlakyAdapter([ValueError("bad config")])
-        service = BotService(adapter)  # type: ignore[arg-type]
+        service = BotService(adapter, _CAPABILITY)  # type: ignore[arg-type]
         with patch("bot._service._POLL_RETRY_DELAY", 0.0):
             with self.assertRaises(ValueError):
                 await service._start_polling()
@@ -734,7 +751,7 @@ class TestHandshakeRetry(unittest.IsolatedAsyncioTestCase):
     async def test_stop_event_ends_retry(self) -> None:
         """退避期间收到停服：立即收尾，不再握手"""
         adapter = _FlakyAdapter([self._network_error()])
-        service = BotService(adapter)  # type: ignore[arg-type]
+        service = BotService(adapter, _CAPABILITY)  # type: ignore[arg-type]
         task = asyncio.create_task(service._start_polling())
         await asyncio.sleep(0.2)
         service._stop_event.set()

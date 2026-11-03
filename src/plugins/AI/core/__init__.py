@@ -8,8 +8,8 @@ from ._chat_context import active_tasks
 from ._client import AIClient, StreamUsage
 from ._store import (
     clear_session,
-    purge_history,
     purge_idle_sessions,
+    purge_on_identity_changed,
     purge_pending,
     purge_sessions,
     purge_stale,
@@ -26,8 +26,8 @@ __all__ = [
     "active_tasks",
     # 会话落库
     "clear_session",
-    "purge_history",
     "purge_idle_sessions",
+    "purge_on_identity_changed",
     "purge_pending",
     "purge_sessions",
     "purge_stale",

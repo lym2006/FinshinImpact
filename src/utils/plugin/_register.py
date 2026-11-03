@@ -2,7 +2,7 @@
 """插件注册表
 
 - 按清单与实例启用集决定加载序列
-- 收集各插件交来的路由、常驻协程与各类入口，逐项上报加载结果
+- 收集各插件交来的路由、常驻协程、任务处理与时机订阅，逐项上报加载结果
 - 插件不交路由清单即记失败
 """
 
@@ -12,11 +12,12 @@ from typing import Any, cast
 
 from core.domain import (
     PLUGINS_PKG,
+    PlatformTiming,
     PluginBackground,
     PluginFileName,
-    PluginReset,
     PluginSpec,
-    PluginStartup,
+    PluginTiming,
+    PluginTimingRun,
     RouteSink,
     TaskHandler,
 )
@@ -36,13 +37,12 @@ from ._manifest import enabled_manifests
 # 逐项报告：(插件名, 失败异常)，成功那项异常记 None
 _PluginReport = list[tuple[str, PluginsError | None]]
 
-# 注册结果：逐项报告、待启动的常驻协程、待挂载的历史清理入口、任务处理清单与启动交代协程
+# 注册结果：逐项报告、待启动的常驻协程、任务处理清单、按时机归组的订阅
 _RegisterResult = tuple[
     _PluginReport,
     tuple[PluginBackground, ...],
-    tuple[PluginReset, ...],
     tuple[TaskHandler, ...],
-    tuple[PluginStartup, ...],
+    dict[PlatformTiming, tuple[PluginTimingRun, ...]],
 ]
 
 # 平台侧的清单编译器，由装配层注入
@@ -55,16 +55,15 @@ def register_plugins(
 ) -> _RegisterResult:
     """按启用序列注册插件
 
-    - 交回逐项报告，以及全部插件声明的常驻协程、清理入口、任务处理清单与启动交代入口
+    - 交回逐项报告，以及全部插件声明的常驻协程、任务处理清单与按时机归组的订阅
     - 未启用的插件不进报告
     - 必装插件加载失败直接上抛，可选插件失败把异常记进报告
     - 全部插件加载失败整体上抛
     """
     report: _PluginReport = []
     backgrounds: list[PluginBackground] = []
-    resets: list[PluginReset] = []
     handlers: list[TaskHandler] = []
-    startups: list[PluginStartup] = []
+    timings: dict[PlatformTiming, list[PluginTimingRun]] = {}
     success_count = 0
 
     for manifest in _resolve_plugins():
@@ -82,9 +81,9 @@ def register_plugins(
             sink.include_router(build_router(spec))
             backgrounds.extend(declared)
             handlers.extend(spec.task_handlers)
-            startups.extend(_checked_hooks(spec.startups, "startups"))
-            if spec.history_reset is not None:
-                resets.append(spec.history_reset)
+            for timing, runs in _grouped_timings(spec.timings).items():
+                for run in _checked_hooks(runs, f"timings.{timing}"):
+                    timings.setdefault(timing, []).append(run)
             report.append((plugin_name, None))
             success_count += 1
 
@@ -106,7 +105,29 @@ def register_plugins(
     if success_count == 0:
         raise PluginsMissingError() from None
 
-    return report, tuple(backgrounds), tuple(resets), tuple(handlers), tuple(startups)
+    return (
+        report,
+        tuple(backgrounds),
+        tuple(handlers),
+        {timing: tuple(runs) for timing, runs in timings.items()},
+    )
+
+
+def _grouped_timings(
+    declared: object,
+) -> dict[PlatformTiming, tuple[PluginTimingRun, ...]]:
+    """把插件交出的时机订阅按时机名归组
+
+    - 不是时机订阅的条目直接报错，装配期就出声
+    """
+    if not isinstance(declared, (list, tuple)):
+        raise TypeError("timings 必须是时机订阅的列表或元组")
+    grouped: dict[PlatformTiming, list[PluginTimingRun]] = {}
+    for item in declared:
+        if not isinstance(item, PluginTiming):
+            raise TypeError(f"timings 里混进了非时机订阅的条目: {item!r}")
+        grouped.setdefault(item.timing, []).append(item.run)
+    return {timing: tuple(runs) for timing, runs in grouped.items()}
 
 
 def _checked_hooks(declared: object, field: str) -> tuple[Any, ...]:
