@@ -68,7 +68,7 @@ class BotService:
             _logger.error(EngineMessage.ALREADY_RUNNING)
             return
 
-        _logger.info(EngineMessage.STARTING)
+        _logger.debug(EngineMessage.STARTING)
         self._stop_event.clear()
         self._idle_event.clear()
         ready = threading.Event()
