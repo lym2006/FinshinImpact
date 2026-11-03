@@ -13,8 +13,6 @@ from concurrent.futures import Future
 from functools import partial
 from typing import cast
 
-from adapters.telegram.diagnose import diagnose_flow
-from adapters.telegram.probe import preload_engine
 from skin.messages import CheckMessage
 from skin.theme import WINDOW
 from system.profile_env import get_profile
@@ -29,8 +27,10 @@ from ui import (
 )
 from utils import get_logger
 from utils.lifecycle import shutdown_all
+from utils.paths import PLATFORM
 
 from ._managers import BotManager
+from ._registry import entry_for
 
 # 退出清理
 _LOOP_JOIN_TIMEOUT = 5  # 等事件循环线程退出最多 5 秒
@@ -58,10 +58,12 @@ class Main:
             # 实例锁由 bootstrap 统一抢占
             app = ensure_app()
 
-            # 引擎重依赖已由引导层后台线程预热，此处命中模块缓存
-            preload_engine()
+            platform_entry = entry_for(PLATFORM)
 
-            window, instances = create_gui(diagnose_flow)
+            # 引擎重依赖已由引导层后台线程预热，此处命中模块缓存
+            platform_entry.engine_preload()
+
+            window, instances = create_gui(platform_entry.diagnose)
 
             # 多实例任务栏区分：标题带身份码，无身份码维持原标题
             profile = get_profile()

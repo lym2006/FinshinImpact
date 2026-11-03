@@ -65,4 +65,18 @@ class BaseAdapter(ABC):
 
     @abstractmethod
     async def stop(self) -> None:
-        """停止并释放连接"""
+        """停止事件接收"""
+
+    @abstractmethod
+    async def close(self) -> None:
+        """释放连接资源
+
+        - 轮询收尾必调，进程退出兜底再调一次
+        """
+
+    @abstractmethod
+    def is_link_failure(self, exc: BaseException) -> bool:
+        """判定异常属不属于链路故障
+
+        - 链路故障按退避重试，其余异常直接上抛
+        """
