@@ -41,6 +41,7 @@ class PlatformTiming(StrEnum):
 
     BEFORE_ENGINE_RUN = auto()
     IDENTITY_CHANGED = auto()
+    CONFIG_APPLIED = auto()
 
 
 @dataclass(frozen=True, slots=True)

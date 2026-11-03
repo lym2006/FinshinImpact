@@ -84,8 +84,8 @@ class ConfigApplier:
             fingerprint = None
         if fingerprint is not None and self._last_applied == fingerprint:
             # 生效通道与引擎参数未变：验证通过即保持引擎运行，不闪断重启
-            gui_bridge.config_ready_changed.emit(True)
             host._logger.info("配置验证通过，运行参数未变，跳过重启")
+            await self._announce_config_ready()
             return
 
         # 只有换掉在跑的服务才叫重启：首次起服务由启动日志说话，不弹重启窗
@@ -104,7 +104,19 @@ class ConfigApplier:
             raise
 
         # 配置已加载且引擎已就位，最后广播：结果由界面写进重启那只窗
+        await self._announce_config_ready()
+
+    async def _announce_config_ready(self) -> None:
+        """向订阅了配置生效时机的件交代
+
+        - 同时发就绪旗，界面据此收尾
+        - 跳过重启与真重启两支都走这里，订阅侧不必自己分辨
+        """
         gui_bridge.config_ready_changed.emit(True)
+        hooks = self._host._service_manager.hooks_for(PlatformTiming.CONFIG_APPLIED)
+        call = self._host._service_manager.capability_call()
+        for hook in hooks:
+            await hook(call)
 
     def _current_identity(self) -> tuple[str, str]:
         """取当前对话身份
