@@ -371,13 +371,14 @@ class TestAIPluginDeclares(unittest.TestCase):
     """回归点 6"""
 
     def test_cleanup_loop_is_declared(self) -> None:
-        """AI 插件把过期清理协程、问答任务处理与两个平台机会的订阅交进契约"""
+        """AI 插件把过期清理协程、问答任务处理与三个平台机会的订阅交进契约"""
         from plugins.AI import spec
         from plugins.AI.core import purge_on_identity_changed
         from plugins.AI.services import (
             chat_task_handler,
             cleanup_loop,
             report_lost_tasks,
+            wake_cleanup,
         )
 
         self.assertEqual(spec.backgrounds, (cleanup_loop,))
@@ -389,6 +390,7 @@ class TestAIPluginDeclares(unittest.TestCase):
                 PluginTiming(
                     PlatformTiming.IDENTITY_CHANGED, purge_on_identity_changed
                 ),
+                PluginTiming(PlatformTiming.CONFIG_APPLIED, wake_cleanup),
             ),
         )
 

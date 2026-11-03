@@ -2,9 +2,11 @@
 """会话清理服务
 
 - 过期记录与闲置会话按保留期后台清理
+- 清理轮间隔改了当轮即按新值重排
 """
 
 import asyncio
+import contextlib
 import time
 from typing import NoReturn
 
@@ -21,6 +23,21 @@ from ..core import (
 )
 
 _logger = get_logger("Plg.AI.Cleanup")
+
+# 配置生效那一叫的旗，醒了就按新间隔重排
+_wakeup = asyncio.Event()
+
+
+async def _sleep_or_wake(seconds: float) -> None:
+    """睡到点，或被配置生效提前叫醒"""
+    _wakeup.clear()
+    with contextlib.suppress(TimeoutError):
+        await asyncio.wait_for(_wakeup.wait(), timeout=seconds)
+
+
+async def wake_cleanup(*_args: object) -> None:
+    """叫醒清理循环，配置生效时机被召唤"""
+    _wakeup.set()
 
 
 def _purge_records(deadline: float) -> tuple[SessionKey, ...]:
@@ -71,6 +88,6 @@ async def cleanup_loop() -> NoReturn:
                 _logger.info(f"清理过期上下文: {purged} 串")
 
             # 扫完再睡，启动即扫一遍重启前攒下的记录
-            await asyncio.sleep(ai_config.waiting_time)
+            await _sleep_or_wake(ai_config.waiting_time)
     finally:
         await _release_inflight()
