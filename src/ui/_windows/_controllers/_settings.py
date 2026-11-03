@@ -3,6 +3,7 @@
 
 - 向导调度、二次确认与热重载
 - 面板全程非模态：EDIT/SETUP 同实例原地切换
+- 重启等待窗原地换成结果，一路只出这一只窗
 - 保存与落盘交 SaveCoordinator，校验轮交 VerifyCoordinator 协调
 """
 
@@ -17,6 +18,7 @@ from ..._dialogs import (
     SettingsDialog,
     close_restart_wait,
     current_check_window,
+    finish_restart_wait,
     show_restart_wait,
 )
 from ..._lifecycle import Ticker
@@ -73,9 +75,10 @@ class SettingsController(BaseController):
         """起收热重启等待窗
 
         - 重启只在保存配置校验通过后发生，窗全程不给用户出口
+        - 成功不收窗，结果由就绪那条写进同一只窗
         """
         if restarting:
-            show_restart_wait(self._panel or self.gui)
+            show_restart_wait(self.gui)
             return
         close_restart_wait()
 
@@ -103,29 +106,36 @@ class SettingsController(BaseController):
             and candidate is not None
             and not self._save.write_pending(candidate)
         ):
+            close_restart_wait()  # 落盘没成：重启窗不收，成功话术也不能说
             return
+        outcome = (
+            SETTINGS_DIALOG.history_reset
+            if self._save.identity_changed
+            else SETTINGS_DIALOG.verified_ok
+        )
+
+        # 重启过就把结果写进那只等待窗，收场交给用户点确定
+        landed = finish_restart_wait(outcome)
         if self._panel is not None:
             if was_pending or was_validating:
-                self._close_panel_verified(
-                    SETTINGS_DIALOG.history_reset
-                    if self._save.identity_changed
-                    else SETTINGS_DIALOG.verified_ok
-                )
+                self._close_panel_verified(outcome, landed)
             else:
                 # 取消回退引发的重验轮：与本次编辑无关，解除忙碌即可
                 self._panel.set_busy(False)
         elif was_pending:
             self._is_dialog_open = False  # 面板已被用户关掉：复位防卡死
 
-    def _close_panel_verified(self, text: str = SETTINGS_DIALOG.verified_ok) -> None:
-        """关闭面板并弹一条结果提示
+    def _close_panel_verified(self, text: str, landed: bool) -> None:
+        """关闭面板并报出结果
 
         - 先关窗再提示，标红残留随窗消失
+        - 结果已落在重启那只窗上即不再另跳提示窗
         """
         if self._panel is None:
             return
         self._panel.accept()
-        NoticeDialog.notify(text, parent=self.gui)
+        if not landed:
+            NoticeDialog.notify(text, parent=self.gui)
 
     def _execute(self) -> None:
         """用户点击按钮进入编辑模式"""

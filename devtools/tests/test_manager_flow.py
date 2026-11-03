@@ -145,10 +145,12 @@ class TestApplyConfig(ManagerFlowTestBase):
         self.assertEqual(self.service_starts["n"], 1, "通过应启动服务")
         self.assertEqual(len(self.force_events), 1, "通过后不得再弹窗")
 
-    async def test_restart_signals_open_and_close_wait(self) -> None:
-        """真重启那一路发一对信号，等待窗的开与关都由它说
+    async def test_restart_wait_opens_once_and_closes_only_on_fault(self) -> None:
+        """等待窗的开与关都由这一路信号说
 
-        - 指纹一致跳过重启时不发这一路
+        - 首次起服务不发这一路，指纹一致跳过重启也不发
+        - 重启成功只起窗，收场交给就绪那条写进同一只窗
+        - 半路报错才当场收窗，异常照原样交护栏
         """
         restarts: list[bool] = []
         signal = gui_bridge.service_restarting
@@ -160,7 +162,7 @@ class TestApplyConfig(ManagerFlowTestBase):
         ):
             self.verify_results = [True]
             await self.manager._applier.apply_config()
-            self.assertEqual(restarts, [True, False])
+            self.assertEqual(restarts, [], "首次起服务不起重启窗")
             self.assertEqual(self.service_starts["n"], 1)
 
             restarts.clear()
@@ -168,6 +170,70 @@ class TestApplyConfig(ManagerFlowTestBase):
             await self.manager._applier.apply_config()
             self.assertEqual(restarts, [], "跳过重启不该起窗")
             self.assertEqual(self.service_starts["n"], 1)
+
+        with patch.object(
+            _apply.ConfigApplier, "get_config_func", return_value=("t2", "p")
+        ):
+            self.verify_results = [True]
+            await self.manager._applier.apply_config()
+            self.assertEqual(restarts, [True], "重启成功只起窗，不收窗")
+            self.assertEqual(self.service_starts["n"], 2)
+
+            restarts.clear()
+            self.verify_results = [True]
+            with (
+                patch.object(
+                    _apply.ConfigApplier, "get_config_func", return_value=("t3", "p")
+                ),
+                patch.object(
+                    self.manager, "stop_service", side_effect=ConnectionError("停不掉")
+                ),
+                self.assertRaises(ConnectionError),
+            ):
+                await self.manager._applier.apply_config()
+            self.assertEqual(restarts, [True, False], "半路报错当场收窗")
+            self.assertEqual(self.service_starts["n"], 2, "报错那趟没起成新服务")
+
+    async def test_ready_broadcast_follows_restart_wait(self) -> None:
+        """重启起窗之后才广播就绪
+
+        - 首次起服务那一路只报就绪，不报重启
+        - 重启成功那一路报完就绪仍未收窗
+        """
+        seen: list[tuple[str, bool]] = []
+        restarting = gui_bridge.service_restarting
+        ready = gui_bridge.config_ready_changed
+
+        def _mark_restarting(value: bool) -> None:
+            seen.append(("重启窗", value))
+
+        def _mark_ready(value: bool) -> None:
+            seen.append(("就绪", value))
+
+        restarting.connect(_mark_restarting, f"test-order-a-{self.id()}")
+        ready.connect(_mark_ready, f"test-order-b-{self.id()}")
+        self.addCleanup(restarting._instance.disconnect, _mark_restarting)
+        self.addCleanup(ready._instance.disconnect, _mark_ready)
+
+        with patch.object(
+            _apply.ConfigApplier, "get_config_func", return_value=("t", "p")
+        ):
+            self.verify_results = [True]
+            await self.manager._applier.apply_config()
+            self.assertEqual(seen, [("就绪", False), ("就绪", True)], "首次不发重启窗")
+
+        with patch.object(
+            _apply.ConfigApplier, "get_config_func", return_value=("t2", "p")
+        ):
+            seen.clear()
+            self.verify_results = [True]
+            await self.manager._applier.apply_config()
+
+        self.assertEqual(
+            seen,
+            [("就绪", False), ("重启窗", True), ("就绪", True)],
+            "起窗之后才广播就绪，中间不收窗",
+        )
 
     async def test_concurrent_saves_deduplicated(self) -> None:
         """校验挂起期间连续保存

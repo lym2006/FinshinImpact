@@ -73,7 +73,7 @@ class ServiceManager(BaseManager):
 
         self.stop_service()  # 停掉旧服务（如果有）
 
-        self.logger.info(EngineMessage.CREATING)
+        self.logger.debug(EngineMessage.CREATING)
         adapter, backgrounds, handlers, timing_hooks = self._create_components()
         self._timing_hooks = timing_hooks
         configure_task_service(
@@ -89,7 +89,7 @@ class ServiceManager(BaseManager):
         )
 
         await asyncio.to_thread(self._service.start)
-        self.logger.info(EngineMessage.STARTED)
+        self.logger.debug(EngineMessage.STARTED)
 
     def _create_components(
         self,
@@ -121,7 +121,7 @@ class ServiceManager(BaseManager):
         self.logger.info(EngineMessage.PLUGINS_DONE.format(n=total))
         for index, (name, error) in enumerate(report, 1):
             if error is None:
-                self.logger.info(
+                self.logger.debug(
                     EngineMessage.PLUGIN_OK.format(index=index, n=total, name=name)
                 )
                 continue
@@ -155,7 +155,7 @@ class ServiceManager(BaseManager):
         """停止 Bot 服务"""
         if not self._service:
             return
-        self.logger.info(EngineMessage.STOPPING)
+        self.logger.debug(EngineMessage.STOPPING)
         service = self._service
         self._service = None
         service.stop()
