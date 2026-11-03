@@ -3,7 +3,7 @@
 
 - 对话与记忆命令入口
 - 声明随 Bot 起停的过期记录清理协程与问答任务处理
-- 订阅引擎开跑前、身份变更与配置生效三个平台机会
+- 订阅引擎开跑前、身份变更与配置校验通过三个平台机会
 """
 
 from core.domain import PlatformTiming, PluginSpec, PluginTiming
@@ -20,7 +20,7 @@ spec = PluginSpec(
     timings=(
         PluginTiming(PlatformTiming.BEFORE_ENGINE_RUN, report_lost_tasks),
         PluginTiming(PlatformTiming.IDENTITY_CHANGED, purge_on_identity_changed),
-        PluginTiming(PlatformTiming.CONFIG_APPLIED, wake_cleanup),
+        PluginTiming(PlatformTiming.CONFIG_VERIFIED, wake_cleanup),
     ),
 )
 

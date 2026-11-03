@@ -119,13 +119,13 @@ class ConfigApplier:
         self._request_setup(errors)
 
     async def _announce_config_ready(self) -> None:
-        """向订阅了配置生效时机的件交代
+        """向订阅了配置校验通过时机的件交代
 
         - 同时发就绪旗，界面据此收尾
         - 跳过重启与真重启两支都走这里，订阅侧不必自己分辨
         """
         gui_bridge.config_ready_changed.emit(True)
-        hooks = self._host._service_manager.hooks_for(PlatformTiming.CONFIG_APPLIED)
+        hooks = self._host._service_manager.hooks_for(PlatformTiming.CONFIG_VERIFIED)
         call = self._host._service_manager.capability_call()
         for hook in hooks:
             await hook(call)
