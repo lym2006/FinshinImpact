@@ -30,8 +30,7 @@ class SqliteSessionRepository(SessionRepository):
         """
         platform, container = _split_session_key(session_key)
         async with self._conn.execute(
-            "SELECT container_name, summary, is_active "
-            "FROM session WHERE key = ?",
+            "SELECT summary FROM session WHERE key = ?",
             (session_key,),
         ) as cursor:
             row = await cursor.fetchone()
@@ -41,8 +40,6 @@ class SqliteSessionRepository(SessionRepository):
             container=container,
             messages=await self._messages(session_key, limit),
             summary="" if row is None else row["summary"],
-            container_name="" if row is None else row["container_name"],
-            is_active=bool(row["is_active"]) if row is not None else False,
         )
 
     async def apply_patch(
