@@ -78,25 +78,33 @@ class ConfigApplier:
 
         await self._reset_stale_identity()
 
-        # 配置已加载且验证通过（数据先就位，最后广播）
-        gui_bridge.config_ready_changed.emit(True)
         try:
             fingerprint = self.get_config_func()
         except Exception:  # 参数不可得：不做跳过优化，照常重启
             fingerprint = None
         if fingerprint is not None and self._last_applied == fingerprint:
             # 生效通道与引擎参数未变：验证通过即保持引擎运行，不闪断重启
+            gui_bridge.config_ready_changed.emit(True)
             host._logger.info("配置验证通过，运行参数未变，跳过重启")
             return
-        gui_bridge.service_restarting.emit(True)
+
+        # 只有换掉在跑的服务才叫重启：首次起服务由启动日志说话，不弹重启窗
+        hot_restart = self._last_applied is not None
+        if hot_restart:
+            gui_bridge.service_restarting.emit(True)
         try:
             host.stop_service()
             await host._service_manager.execute()
-        finally:
-            # 重启半路报错也要收窗，异常照原样交护栏
-            gui_bridge.service_restarting.emit(False)
-        self._last_applied = fingerprint
-        host._logger.info("配置验证通过，服务运行中")
+            self._last_applied = fingerprint
+            host._logger.info("配置验证通过，服务运行中")
+        except Exception:
+            if hot_restart:
+                # 重启半路报错：收掉等待窗，结论交护栏那条路说
+                gui_bridge.service_restarting.emit(False)
+            raise
+
+        # 配置已加载且引擎已就位，最后广播：结果由界面写进重启那只窗
+        gui_bridge.config_ready_changed.emit(True)
 
     def _current_identity(self) -> tuple[str, str]:
         """取当前对话身份
