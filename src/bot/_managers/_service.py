@@ -1,7 +1,7 @@
 # src/bot/_managers/_service.py
 """服务管理器
 
-- BotService 生命周期管理
+- 引擎运行时的生命周期管理
 - 组件构建、插件时机订阅与停止清理入口
 """
 
@@ -14,18 +14,19 @@ from typing import TYPE_CHECKING
 from core.contracts import CapabilityCall
 from core.domain import ContentKind, PlatformTiming
 from core.dto import OutboundPayloadDTO
-from exceptions import MAP_KEY_PLUGINS, MAPS
+from exceptions import MAP_KEY_PLUGINS, MAPS, PluginsError
 from skin.messages import EngineMessage
+from utils.paths import PLATFORM
 
+from .._registry import PlatformAssembly, entry_for
 from ._base import BaseManager
 
 if TYPE_CHECKING:
-    from adapters.telegram.adapter import TelegramAdapter
-    from core.domain import PluginBackground, PluginTimingRun, TaskHandler
+    from core.domain import PluginTimingRun
     from core.dto import PrincipalDTO
     from services.tasks import TaskItem
 
-    from .._service import BotService
+    from .._service import AdapterRuntime
 
 _ERR_MAP_PLUGIN = MAPS[MAP_KEY_PLUGINS]
 
@@ -41,7 +42,7 @@ class ServiceManager(BaseManager):
     ) -> None:
         super().__init__()
         self._get_config = get_config_func
-        self._service: BotService | None = None
+        self._service: AdapterRuntime | None = None
 
         # 插件订阅的平台机会，随本次注册收集
         self._timing_hooks: dict[PlatformTiming, tuple[PluginTimingRun, ...]] = {}
@@ -69,54 +70,36 @@ class ServiceManager(BaseManager):
         from services.tasks import TaskLedger, configure_task_service
         from utils.paths import DB_FILE
 
-        from .._service import BotService
+        from .._service import AdapterRuntime
 
         self.stop_service()  # 停掉旧服务（如果有）
 
         self.logger.debug(EngineMessage.CREATING)
-        adapter, backgrounds, handlers, timing_hooks = self._create_components()
-        self._timing_hooks = timing_hooks
+        parts = self._create_components()
+        self._timing_hooks = parts.timings
+        self._log_plugin_report(parts.report)
         configure_task_service(
-            handlers,
+            parts.handlers,
             ledger=TaskLedger(DB_FILE, on_fault=self._report_ledger_fault),
             on_fault=self._report_task_fault,
         )
-        self._service = BotService(
-            adapter,
+        self._service = AdapterRuntime(
+            parts.adapter,
             self.capability_call(),
-            backgrounds,
+            parts.backgrounds,
             self.hooks_for(PlatformTiming.BEFORE_ENGINE_RUN),
         )
 
         await asyncio.to_thread(self._service.start)
         self.logger.debug(EngineMessage.STARTED)
 
-    def _create_components(
-        self,
-    ) -> tuple[
-        TelegramAdapter,
-        tuple[PluginBackground, ...],
-        tuple[TaskHandler, ...],
-        dict[PlatformTiming, tuple[PluginTimingRun, ...]],
-    ]:
-        """按配置构建适配器、插件常驻协程、任务处理清单与按时机归组的订阅
-
-        - aiogram 重依赖此刻才入场，主窗启动不受其拖累
-        """
-        from adapters.telegram.adapter import TelegramAdapter
-        from adapters.telegram.router_bridge import build_router
-        from utils.middleware import LoggingMiddleware
-        from utils.plugin import register_plugins
-
+    def _create_components(self) -> PlatformAssembly:
+        """按配置装配本实例平台的适配器与插件清单"""
         token, proxy = self._get_config()
-        adapter = TelegramAdapter(token=token, proxy=proxy)
-        dispatcher = adapter.dispatcher
+        return entry_for(PLATFORM).assemble(token, proxy)
 
-        # 注册中间件和路由
-        dispatcher.update.outer_middleware(LoggingMiddleware())
-        report, backgrounds, handlers, timing_hooks = register_plugins(
-            dispatcher, build_router
-        )
+    def _log_plugin_report(self, report: list[tuple[str, PluginsError | None]]) -> None:
+        """逐条落插件加载结果，失败行带映射文案"""
         total = len(report)
         self.logger.info(EngineMessage.PLUGINS_DONE.format(n=total))
         for index, (name, error) in enumerate(report, 1):
@@ -134,8 +117,6 @@ class ServiceManager(BaseManager):
                 ),
                 error,
             )
-
-        return adapter, backgrounds, handlers, timing_hooks
 
     def _report_task_fault(self, item: TaskItem, error: Exception) -> None:
         """任务派发失败的行落在面板，异常本体下沉调试日志"""

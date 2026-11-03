@@ -29,10 +29,11 @@ from system.profile_env import set_profile  # noqa: E402
 set_profile("tg.000000")
 
 from bot import _service as service_module  # noqa: E402
-from bot._service import BotService  # noqa: E402
+from bot._service import AdapterRuntime  # noqa: E402
 from core.contracts import CapabilityCall  # noqa: E402
 from core.domain import (  # noqa: E402
     PLUGINS_PKG,
+    Platform,
     PlatformTiming,
     PluginRoute,
     PluginSpec,
@@ -260,24 +261,25 @@ class TestCollectBackgrounds(unittest.TestCase):
         self.assertIsNone(report[1][1])
 
 
-class _FakeSession:
+class _FakeAdapter:
+    """只喂 _polling_task 需要的 start 协程、释放连接与外发端口"""
+
     def __init__(self) -> None:
         self.closed = 0
-
-    async def close(self) -> None:
-        self.closed += 1
-
-
-class _FakeAdapter:
-    """只喂 _polling_task 需要的 start 协程、session 与外发端口"""
-
-    def __init__(self) -> None:
-        self.bot = SimpleNamespace(session=_FakeSession())
         self.interaction = SimpleNamespace(name="外发端口")
+        self.platform = Platform.TELEGRAM
 
     async def start(self) -> None:
         """让出一轮调度后结束本轮轮询"""
         await asyncio.sleep(0)
+
+    async def close(self) -> None:
+        """释放连接，记一笔次数"""
+        self.closed += 1
+
+    def is_link_failure(self, exc: BaseException) -> bool:
+        """假适配器不判链路，异常一律不退避"""
+        return False
 
 
 class TestServiceRunsHooks(unittest.IsolatedAsyncioTestCase):
@@ -295,7 +297,7 @@ class TestServiceRunsHooks(unittest.IsolatedAsyncioTestCase):
                 seen["cancelled"] = True
                 raise
 
-        service = BotService(_FakeAdapter(), _CAPABILITY, (hook,))  # type: ignore[arg-type]
+        service = AdapterRuntime(_FakeAdapter(), _CAPABILITY, (hook,))  # type: ignore[arg-type]
         await service._polling_task()
 
         self.assertEqual(seen["ran"], 1, "常驻协程未随轮询启动")
@@ -311,20 +313,20 @@ class TestServiceRunsHooks(unittest.IsolatedAsyncioTestCase):
         async def boom() -> None:
             raise ValueError("boom")
 
-        service = BotService(_FakeAdapter(), _CAPABILITY, (boom,))  # type: ignore[arg-type]
+        service = AdapterRuntime(_FakeAdapter(), _CAPABILITY, (boom,))  # type: ignore[arg-type]
         with patch.object(service_module._logger, "send_error", new=_send_error):
             await service._polling_task()
 
         self.assertEqual(len(sent), 1, "协程异常应记录一次")
         self.assertIsInstance(sent[0][1], ValueError)
 
-    async def test_no_hooks_still_closes_session(self) -> None:
-        """未声明协程时收尾路径一字不动"""
+    async def test_no_hooks_still_releases_connection(self) -> None:
+        """未声明协程时收尾路径照常释放连接"""
         adapter = _FakeAdapter()
-        service = BotService(adapter, _CAPABILITY)  # type: ignore[arg-type]
+        service = AdapterRuntime(adapter, _CAPABILITY)  # type: ignore[arg-type]
         await service._polling_task()
 
-        self.assertEqual(adapter.bot.session.closed, 1)
+        self.assertEqual(adapter.closed, 1)
 
 
 class TestServiceRunsBeforeRun(unittest.IsolatedAsyncioTestCase):
@@ -342,13 +344,13 @@ class TestServiceRunsBeforeRun(unittest.IsolatedAsyncioTestCase):
             seen.append(call)
 
         adapter = _OrderedAdapter()
-        service = BotService(adapter, _CAPABILITY, (), (before_run,))  # type: ignore[arg-type]
+        service = AdapterRuntime(adapter, _CAPABILITY, (), (before_run,))  # type: ignore[arg-type]
         await service._polling_task()
 
         self.assertEqual(seen, [_CAPABILITY, "轮询开跑"])
 
     async def test_before_run_crash_is_logged_and_polling_runs(self) -> None:
-        """订阅了引擎开跑前的件抛错只落日志，轮询照常开跑、收尾照常关会话"""
+        """订阅了引擎开跑前的件抛错只落日志，轮询照常开跑、收尾照常释放连接"""
         sent: list[tuple[str, BaseException]] = []
 
         def _send_error(desc: str, exc: BaseException) -> None:
@@ -358,13 +360,13 @@ class TestServiceRunsBeforeRun(unittest.IsolatedAsyncioTestCase):
             raise ValueError("交代失败")
 
         adapter = _FakeAdapter()
-        service = BotService(adapter, _CAPABILITY, (), (boom,))  # type: ignore[arg-type]
+        service = AdapterRuntime(adapter, _CAPABILITY, (), (boom,))  # type: ignore[arg-type]
         with patch.object(service_module._logger, "send_error", new=_send_error):
             await service._polling_task()
 
         self.assertEqual(len(sent), 1, "引擎开跑前的件异常应记录一次")
         self.assertIsInstance(sent[0][1], ValueError)
-        self.assertEqual(adapter.bot.session.closed, 1)
+        self.assertEqual(adapter.closed, 1)
 
 
 class TestAIPluginDeclares(unittest.TestCase):
