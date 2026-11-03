@@ -39,6 +39,7 @@ $env:PYTHONUTF8 = 1; $env:PYTHONPATH = "src"
 
 - 一轮改动五项闸门全绿即分组 commit，本地攒着不 push，半成品不入库。
 - 未 push 期间随便整历史：改动按行折回它原来那笔（`git commit --fixup` 配 `rebase --autosquash`）、同主题并笔、reword 修措辞，不留「先写后改」的碎笔。
+  - CHANGELOG 条目跟着它那条行为改动的笔一起交。
 - 整完必验 `git diff 整备前位置 HEAD` 为空，内容零变化才算整对。已 push 的笔不改写。
 - push、tag 只在发布日动。
 
