@@ -10,7 +10,7 @@ import asyncio
 from collections import defaultdict
 from pathlib import Path
 
-from core.contracts import SessionRepository
+from core.contracts import CapabilityCall, SessionRepository
 from core.domain.ids import SessionKey
 from core.dto import MessageDTO, SessionDTO, SessionPatchDTO
 from data import build_repositories, get_connection
@@ -90,7 +90,7 @@ async def clear_session(session_key: SessionKey) -> None:
         )
 
 
-async def purge_history() -> None:
+async def _purge_history() -> None:
     """清空全部会话与落盘记录
 
     - 换过人设或主人后所有人的历史一并作废
@@ -102,6 +102,14 @@ async def purge_history() -> None:
         _set_pending_mark(False)
 
 
+async def purge_on_identity_changed(call: CapabilityCall) -> None:
+    """轮到「身份变了」这个平台机会，清掉全部会话与落盘记录
+
+    - 交来的交代用不上，清历史不需要对外说话
+    """
+    await _purge_history()
+
+
 async def purge_pending() -> None:
     """按记号补完上次没做完的历史清理
 
@@ -110,7 +118,7 @@ async def purge_pending() -> None:
     if not _pending_mark().exists():
         return
     _logger.info("上次历史清理未做完，本次补完")
-    await purge_history()
+    await _purge_history()
 
 
 def _pending_mark() -> Path:
@@ -157,7 +165,7 @@ async def purge_stale(persona: str, session_key: SessionKey) -> SessionDTO:
     snapshot = await read_session(session_key)
     if snapshot.messages and not matches_persona(persona, snapshot.messages):
         _logger.info("库内人设与生效正文不符，按兜底清全部历史与记录")
-        await purge_history()
+        await _purge_history()
         snapshot = await read_session(session_key)
     return snapshot
 

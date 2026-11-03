@@ -8,10 +8,10 @@
 import random
 import re
 
-from core.contracts import InteractionPort
-from core.domain import ChatRole, ContentKind
+from core.contracts import CapabilityCall
+from core.domain import ChatRole
 from core.domain.ids import ContainerKey
-from core.dto import OutboundPayloadDTO, PrincipalDTO, TaskDTO
+from core.dto import PrincipalDTO, TaskDTO
 from data import build_repositories, get_connection, purge_dead_tasks
 from utils import get_logger
 from utils.paths import DB_FILE
@@ -49,7 +49,7 @@ _QUOTE_CHARS = "\"'“”‘’「」『』"
 _LINE_CHAR_LIMIT = 40
 
 
-async def report_lost_tasks(interaction: InteractionPort) -> None:
+async def report_lost_tasks(call: CapabilityCall) -> None:
     """补说停机期间欠下的问答
 
     - 引擎开跑前逐会话各补一句，没欠账即一句不说
@@ -71,8 +71,7 @@ async def report_lost_tasks(interaction: InteractionPort) -> None:
             if not text:
                 _logger.error(f"{principal.key} 交代现写为空，本条不补说")
                 continue
-            payload = OutboundPayloadDTO(kind=ContentKind.TEXT, text=text)
-            await interaction.send_message(principal, payload)
+            await call.say(principal, text)
         except Exception as e:
             _logger.send_error(f"停机交代失败: {principal.key}", e)
 
