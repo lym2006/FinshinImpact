@@ -134,8 +134,12 @@ class BotGUI(QMainWindow):
         """响应按钮点击事件"""
         action = self.action_map.get(btn_id)
 
-        if action:
-            action()
+        if not action:
+            self._logger.debug(f"按钮 {btn_id} 没接动作")
+            return
+
+        self._logger.debug(f"按钮 {btn_id} 按下")
+        action()
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
         """拦截窗口关闭"""
