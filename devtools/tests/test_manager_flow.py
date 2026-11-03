@@ -20,7 +20,6 @@ import asyncio
 import sys
 import unittest
 from pathlib import Path
-from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "src"))
@@ -32,10 +31,11 @@ set_profile("tg.000000")
 from aiogram.exceptions import TelegramNetworkError  # noqa: E402
 from aiogram.methods import GetMe  # noqa: E402
 
+from adapters.telegram.session import is_link_failure  # noqa: E402
 from bot._managers import BotManager, _apply  # noqa: E402
-from bot._service import BotService  # noqa: E402
+from bot._service import AdapterRuntime  # noqa: E402
 from core.contracts import CapabilityCall  # noqa: E402
-from core.domain import FieldKey, PlatformTiming  # noqa: E402
+from core.domain import FieldKey, Platform, PlatformTiming  # noqa: E402
 from skin.messages import DialogMessage  # noqa: E402
 from ui import gui_bridge  # noqa: E402
 
@@ -728,18 +728,8 @@ class TestStopPollingIsAwaited(unittest.IsolatedAsyncioTestCase):
 
     async def test_stop_awaits_stop_polling(self) -> None:
         """Stop 必须 await 适配器 stop 协程"""
-        from bot._service import BotService
-
-        class FakeSession:
-            async def close(self) -> None:
-                pass
-
-        class FakeBot:
-            session = FakeSession()
 
         class FakeAdapter:
-            bot = FakeBot()
-
             def __init__(self) -> None:
                 self.stop_called = asyncio.Event()
 
@@ -747,7 +737,7 @@ class TestStopPollingIsAwaited(unittest.IsolatedAsyncioTestCase):
                 self.stop_called.set()
 
         adapter = FakeAdapter()
-        service = BotService(adapter, _CAPABILITY)  # type: ignore[arg-type]
+        service = AdapterRuntime(adapter, _CAPABILITY)  # type: ignore[arg-type]
         service._loop = asyncio.get_running_loop()
 
         class _FakeThread:
@@ -775,12 +765,8 @@ class TestStopPollingIsAwaited(unittest.IsolatedAsyncioTestCase):
     async def test_polling_exit_sets_idle_flag(self) -> None:
         """轮询协程退出即挂上收尾完成旗"""
 
-        class _FakeSession:
-            async def close(self) -> None:
-                pass
-
         class _FakeAdapter:
-            bot = SimpleNamespace(session=_FakeSession())
+            platform = Platform.TELEGRAM
 
             async def start(self) -> None:
                 raise RuntimeError("非链路故障")
@@ -788,7 +774,13 @@ class TestStopPollingIsAwaited(unittest.IsolatedAsyncioTestCase):
             async def stop(self) -> None:
                 pass
 
-        service = BotService(_FakeAdapter(), _CAPABILITY)  # type: ignore[arg-type]
+            async def close(self) -> None:
+                pass
+
+            def is_link_failure(self, exc: BaseException) -> bool:
+                return False
+
+        service = AdapterRuntime(_FakeAdapter(), _CAPABILITY)  # type: ignore[arg-type]
 
         with self.assertRaises(RuntimeError):
             await service._polling_task()
@@ -799,7 +791,7 @@ class TestStopPollingIsAwaited(unittest.IsolatedAsyncioTestCase):
 class _FlakyAdapter:
     """按脚本抛错的假适配器
 
-    - 只喂 _start_polling 需要的 start 协程
+    - 只喂 _start_polling 需要的 start 协程与链路判定
     """
 
     def __init__(self, errors: list[Exception]) -> None:
@@ -810,6 +802,10 @@ class _FlakyAdapter:
         self.calls += 1
         if self._errors:
             raise self._errors.pop(0)
+
+    def is_link_failure(self, exc: BaseException) -> bool:
+        """链路判定走真判据，不退避的异常才算非链路"""
+        return is_link_failure(exc)
 
 
 class TestHandshakeRetry(unittest.IsolatedAsyncioTestCase):
@@ -825,7 +821,7 @@ class TestHandshakeRetry(unittest.IsolatedAsyncioTestCase):
     async def test_link_failure_retries_until_up(self) -> None:
         """断两次后起上：三次握手，协程正常返回"""
         adapter = _FlakyAdapter([self._network_error()] * 2)
-        service = BotService(adapter, _CAPABILITY)  # type: ignore[arg-type]
+        service = AdapterRuntime(adapter, _CAPABILITY)  # type: ignore[arg-type]
         with patch("bot._service._POLL_RETRY_DELAY", 0.0):
             await service._start_polling()
         self.assertEqual(adapter.calls, 3)
@@ -833,7 +829,7 @@ class TestHandshakeRetry(unittest.IsolatedAsyncioTestCase):
     async def test_non_link_error_propagates(self) -> None:
         """配置类异常不退避，照旧外抛给线程兜底"""
         adapter = _FlakyAdapter([ValueError("bad config")])
-        service = BotService(adapter, _CAPABILITY)  # type: ignore[arg-type]
+        service = AdapterRuntime(adapter, _CAPABILITY)  # type: ignore[arg-type]
         with patch("bot._service._POLL_RETRY_DELAY", 0.0):
             with self.assertRaises(ValueError):
                 await service._start_polling()
@@ -842,7 +838,7 @@ class TestHandshakeRetry(unittest.IsolatedAsyncioTestCase):
     async def test_stop_event_ends_retry(self) -> None:
         """退避期间收到停服：立即收尾，不再握手"""
         adapter = _FlakyAdapter([self._network_error()])
-        service = BotService(adapter, _CAPABILITY)  # type: ignore[arg-type]
+        service = AdapterRuntime(adapter, _CAPABILITY)  # type: ignore[arg-type]
         task = asyncio.create_task(service._start_polling())
         await asyncio.sleep(0.2)
         service._stop_event.set()

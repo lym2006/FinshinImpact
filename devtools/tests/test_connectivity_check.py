@@ -169,7 +169,7 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
         """统一打桩
 
         - 探针、本地校验、系统代理缺席、链路快照与健康档、重检预热归零
-        - fake_check 返回错误 dict，适配成 attempt_channel 的 (生效址, 错误) 元组
+        - fake_check 返回错误 dict，适配成通道探测的 (生效址, 错误) 元组
         - sys_box 传入即 {"value": 地址} 盒子，现取现换用于测系统代理变化
         """
 
@@ -187,7 +187,7 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
             return None if sys_box is None else sys_box["value"]
 
         with (
-            patch.object(mod, "attempt_channel", fake_probe),
+            patch.object(mod, "_CHANNEL_PROBE", fake_probe),
             patch.object(mod, "local_row", return_value=local),
             patch.object(mod, "detect_system_proxy", detected),
             patch.object(mod, "link_report", report),
@@ -508,7 +508,7 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
 
         report = SimpleNamespace(snapshot=lambda: SimpleNamespace(down=False))
         with (
-            patch.object(mod, "attempt_channel", fake_probe),
+            patch.object(mod, "_CHANNEL_PROBE", fake_probe),
             patch.object(mod, "local_row", return_value=(local_frame, {})),
             patch.object(mod, "detect_system_proxy", detected),
             patch.object(mod, "link_report", report),

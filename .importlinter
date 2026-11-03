@@ -102,6 +102,18 @@ layers =
     skin
     system
 
+# 引擎侧只按平台标识取装配件，链条穿过 bot._registry 属正常，故只禁直接导入
+[importlinter:contract:bot-platform-neutral]
+name = bot pieces stay platform neutral
+type = forbidden
+source_modules =
+    bot._managers
+    bot._main
+    bot._service
+forbidden_modules =
+    adapters
+allow_indirect_imports = True
+
 # 引导窗在身份码写入前加载，utils 的路径常量导入即按身份码冻结，故禁引
 # ui._dialogs 与 ui._windows 同样引 utils，一并禁
 [importlinter:contract:guide-pre-profile-safe]

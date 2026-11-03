@@ -9,7 +9,6 @@ import time
 from collections.abc import Awaitable, Callable
 from typing import cast
 
-from adapters.telegram.probe import attempt_channel
 from core.domain import ConfigKey, ConfigSection, FieldKey, ProxyMode
 from skin.messages import CheckMessage
 from ui import gui_bridge
@@ -37,8 +36,13 @@ from utils.network import (
     via_label,
 )
 from utils.network.probe import single_row_of
+from utils.paths import PLATFORM
 
+from .._registry import entry_for
 from ._base import BaseManager
+
+# 实例平台冻结的单通道探测入口
+_CHANNEL_PROBE = entry_for(PLATFORM).channel_probe
 
 
 def _label_of(schema: AppSchema, key: str) -> str:
@@ -201,7 +205,7 @@ class SettingsManager(BaseManager):
 
         async def probe(ch: Channel) -> tuple[str | None, dict[str, str], str]:
             start = time.monotonic()
-            resolved, errors = await attempt_channel(token, ch.url)
+            resolved, errors = await _CHANNEL_PROBE(token, ch.url)
             self.logger.debug(
                 CheckMessage.COST.format(
                     via=via_label(ch), cost=time.monotonic() - start

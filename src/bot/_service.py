@@ -1,5 +1,5 @@
 # src/bot/_service.py
-"""Bot 服务
+"""引擎运行时
 
 - 后台线程跑事件循环，托管轮询的启停与日志
 - 插件常驻协程随轮询起停，订阅了「引擎开跑前」的件在轮询开跑前调完
@@ -15,8 +15,7 @@ from utils import get_logger, register_lifecycle, unregister_lifecycle
 from utils.network import link_report
 
 if TYPE_CHECKING:
-    from adapters.telegram.adapter import TelegramAdapter
-    from core.contracts import CapabilityCall, InteractionPort
+    from core.contracts import BaseAdapter, CapabilityCall, InteractionPort
 
 
 # 引擎线程握手
@@ -28,12 +27,12 @@ _IDLE_WAIT_TIMEOUT = 3.0  # 等引擎收尾跑完最多 3 秒
 _logger = get_logger("Service")
 
 
-class BotService:
-    """Bot 服务线程"""
+class AdapterRuntime:
+    """适配器运行时，一个平台一条线程一个事件循环"""
 
     def __init__(
         self,
-        adapter: "TelegramAdapter",
+        adapter: "BaseAdapter",
         capability: "CapabilityCall",
         backgrounds: tuple[PluginBackground, ...] = (),
         before_run: tuple[PluginTimingRun, ...] = (),
@@ -49,7 +48,7 @@ class BotService:
 
     @property
     def interaction(self) -> "InteractionPort":
-        """这套服务对外说话的出口"""
+        """这套运行时对外说话的出口"""
         return self._adapter.interaction
 
     @property
@@ -73,14 +72,14 @@ class BotService:
         self._idle_event.clear()
         ready = threading.Event()
         self._thread = threading.Thread(
-            target=self._run_loop, args=(ready,), name="BotService", daemon=True
+            target=self._run_loop, args=(ready,), name="AdapterRuntime", daemon=True
         )
-        register_lifecycle(target=self._thread, desc="BotService", type_="thread")
+        register_lifecycle(target=self._thread, desc="AdapterRuntime", type_="thread")
         self._thread.start()
 
         # 阻塞等待 loop 创建完成，超时保护
         if not ready.wait(timeout=_LOOP_READY_TIMEOUT):
-            raise RuntimeError("BotService event loop 启动超时")
+            raise RuntimeError("AdapterRuntime event loop 启动超时")
         _logger.debug("引擎线程已运行")
 
     def stop(self) -> None:
@@ -98,7 +97,7 @@ class BotService:
 
         if self._loop and not self._loop.is_closed():
             try:
-                # stop_polling 是协程：threadsafe 投递才会 await，同步调度传协程不会真停
+                # 适配器的停止是协程：threadsafe 投递才会 await，同步调度传协程不会真停
                 asyncio.run_coroutine_threadsafe(self._adapter.stop(), self._loop)
 
                 # polling 停止后收尾关闭 loop（轮询协程退出时自行处理）
@@ -120,9 +119,9 @@ class BotService:
         except RuntimeError as e:
             # stop() 里 loop.stop() 属正常收尾，不是故障
             if "stopped before Future completed" not in str(e):
-                _logger.send_error("BotService loop 异常", e)
+                _logger.send_error("AdapterRuntime loop 异常", e)
         except Exception as e:
-            _logger.send_error("BotService loop 异常", e)
+            _logger.send_error("AdapterRuntime loop 异常", e)
         finally:
             link_report.reset()  # 线程收尾即作废断连周期，防弹窗挂着走表
             try:
@@ -138,7 +137,7 @@ class BotService:
         - 常驻协程与轮询同一条命
         """
         register_lifecycle(
-            self._adapter.bot.session.close, "Telegram Session", "hook_async"
+            self._adapter.close, f"{self._adapter.platform} session", "hook_async"
         )
 
         # 引擎开跑前交代的话要落在新回答前面
@@ -154,10 +153,10 @@ class BotService:
 
             # 只清自己并按对象注销：全局清理留给进程退出，防热重载互踩注册表
             try:
-                await self._adapter.bot.session.close()
+                await self._adapter.close()
             except Exception as e:
-                _logger.send_error("关闭 Session 失败", e)
-            unregister_lifecycle(self._adapter.bot.session.close, "hook_async")
+                _logger.send_error("释放连接资源失败", e)
+            unregister_lifecycle(self._adapter.close, "hook_async")
             unregister_lifecycle(self._thread, "thread")
             self._idle_event.set()
 
@@ -197,8 +196,6 @@ class BotService:
 
         - 链路故障时退避重试到连上或收到停服，非链路异常外抛
         """
-        from adapters.telegram.session import is_link_failure
-
         _logger.info(EngineMessage.POLLING_START)
         try:
             while not self._stop_event.is_set():
@@ -209,7 +206,7 @@ class BotService:
                     _logger.info(EngineMessage.POLLING_CANCELLED)
                     return
                 except Exception as exc:
-                    if not is_link_failure(exc):
+                    if not self._adapter.is_link_failure(exc):
                         raise
                     if await asyncio.to_thread(
                         self._stop_event.wait, _POLL_RETRY_DELAY
