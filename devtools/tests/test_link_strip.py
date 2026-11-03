@@ -5,6 +5,7 @@
 - 摘要与历史轮同样剥，人设轮不动
 - 网址后面的中文与全角标点不吃进占位段
 - 不带协议的写法不算网址，照原样交出去
+- 期望值写逐字串不引常量，标记被改坏这条用例就红
 """
 
 import sys
@@ -27,7 +28,6 @@ from core.dto import (  # noqa: E402
     PrincipalDTO,
 )
 from plugins.AI.utils import (  # noqa: E402
-    _LINK_MARK,
     build_turns,
     compose_user_text,
     estimate_window,
@@ -62,7 +62,7 @@ class TestLinkStrip(unittest.TestCase):
         """问句里的网址换成占位标记，前后中文留在原位"""
         self.assertEqual(
             self._turn("看看 https://example.com/a?b=1 讲了啥"),
-            f"看看 {_LINK_MARK} 讲了啥",
+            "看看 [链接] 讲了啥",
         )
 
     def test_bare_host_stays(self) -> None:
@@ -71,9 +71,7 @@ class TestLinkStrip(unittest.TestCase):
 
     def test_fullwidth_tail_not_eaten(self) -> None:
         """全角标点与中文不算网址的一部分"""
-        self.assertEqual(
-            self._turn("见 www.example.com，就这样"), f"见 {_LINK_MARK}，就这样"
-        )
+        self.assertEqual(self._turn("见 www.example.com，就这样"), "见 [链接]，就这样")
 
     def test_summary_url_stripped(self) -> None:
         """摘要轮的网址换成占位标记，行首标记照旧"""
@@ -83,9 +81,7 @@ class TestLinkStrip(unittest.TestCase):
             history=(),
             thisinput="一句",
         )
-        self.assertEqual(
-            turns[1]["content"], "[历史摘要] 早前聊到 " + _LINK_MARK + " 的事"
-        )
+        self.assertEqual(turns[1]["content"], "[历史摘要] 早前聊到 [链接] 的事")
 
     def test_persona_turn_untouched(self) -> None:
         """人设轮一个字不改"""
@@ -108,7 +104,7 @@ class TestLinkStrip(unittest.TestCase):
             persona="人设正文", summary="", history=history, thisinput="再说一句"
         )
         self.assertEqual(
-            turns[1]["content"], f"[张三|111]（引用 [王五|999]：{_LINK_MARK}）正文"
+            turns[1]["content"], "[张三|111]（引用 [王五|999]：[链接]）正文"
         )
         self.assertEqual(turns[2]["content"], "回一句 https://example.com")
 

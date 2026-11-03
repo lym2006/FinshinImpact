@@ -13,7 +13,7 @@ from core.dto import InboundEventDTO
 from services.context import HandlerContext
 
 from .logger import get_logger
-from .speaker import bot_quote_block, clean_name, quote_block, speaker_mark
+from .speaker import KIND_LABELS, bot_quote_block, clean_name, quote_block, speaker_mark
 
 # 会话作用域与内容种类的中文标签，词表外按未知计
 _SCOPE_LABELS = {
@@ -23,11 +23,7 @@ _SCOPE_LABELS = {
 }
 _KIND_LABELS = {
     ContentKind.TEXT: "文本",
-    ContentKind.PHOTO: "图片",
-    ContentKind.DOCUMENT: "文档",
-    ContentKind.AUDIO: "音频",
-    ContentKind.ANIMATION: "动图",
-    ContentKind.VIDEO: "视频",
+    **KIND_LABELS,
     ContentKind.UNKNOWN: "未知",
 }
 
