@@ -2,20 +2,21 @@
 """Bot 服务
 
 - 后台线程跑事件循环，托管轮询的启停与日志
-- 插件常驻协程随轮询起停，启动交代在轮询开跑前调完
+- 插件常驻协程随轮询起停，订阅了「引擎开跑前」的件在轮询开跑前调完
 """
 
 import asyncio
 import threading
 from typing import TYPE_CHECKING
 
-from core.domain import PluginBackground, PluginStartup
+from core.domain import PluginBackground, PluginTimingRun
 from skin.messages import EngineMessage
 from utils import get_logger, register_lifecycle, unregister_lifecycle
 from utils.network import link_report
 
 if TYPE_CHECKING:
     from adapters.telegram.adapter import TelegramAdapter
+    from core.contracts import CapabilityCall, InteractionPort
 
 
 # 引擎线程握手
@@ -33,16 +34,23 @@ class BotService:
     def __init__(
         self,
         adapter: "TelegramAdapter",
+        capability: "CapabilityCall",
         backgrounds: tuple[PluginBackground, ...] = (),
-        startups: tuple[PluginStartup, ...] = (),
+        before_run: tuple[PluginTimingRun, ...] = (),
     ) -> None:
         self._adapter = adapter
+        self._capability = capability
         self._backgrounds = backgrounds
-        self._startups = startups
+        self._before_run = before_run
         self._loop: asyncio.AbstractEventLoop | None = None
         self._thread: threading.Thread | None = None
         self._stop_event = threading.Event()
         self._idle_event = threading.Event()
+
+    @property
+    def interaction(self) -> "InteractionPort":
+        """这套服务对外说话的出口"""
+        return self._adapter.interaction
 
     @property
     def is_running(self) -> bool:
@@ -133,8 +141,8 @@ class BotService:
             self._adapter.bot.session.close, "Telegram Session", "hook_async"
         )
 
-        # 启动交代排在轮询前面，解释的话要落在新回答之前
-        await self._run_startups()
+        # 引擎开跑前交代的话要落在新回答前面
+        await self._run_before_run()
         tasks = [asyncio.create_task(hook()) for hook in self._backgrounds]
 
         try:
@@ -153,16 +161,16 @@ class BotService:
             unregister_lifecycle(self._thread, "thread")
             self._idle_event.set()
 
-    async def _run_startups(self) -> None:
-        """逐个调插件交出的启动交代入口
+    async def _run_before_run(self) -> None:
+        """轮到「引擎开跑前」，逐个跑订阅了它的件
 
-        - 报错的入口记一笔后接着跑下一个
+        - 报错的件记一笔后接着跑下一个
         """
-        for hook in self._startups:
+        for hook in self._before_run:
             try:
-                await hook(self._adapter.interaction)
+                await hook(self._capability)
             except Exception as e:
-                _logger.send_error("插件启动交代入口出错", e)
+                _logger.send_error("插件在引擎开跑前的件出错", e)
 
     async def _stop_backgrounds(self, tasks: list[asyncio.Task]) -> None:
         """收掉插件常驻协程

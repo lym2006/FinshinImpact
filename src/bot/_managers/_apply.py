@@ -6,7 +6,7 @@
 
 from typing import TYPE_CHECKING
 
-from core.domain import ConfigKey, ConfigSection, FieldKey
+from core.domain import ConfigKey, ConfigSection, FieldKey, PlatformTiming
 from skin.messages import CheckMessage, DialogMessage
 from system.profile_env import get_profile, read_token
 from ui import gui_bridge
@@ -134,13 +134,14 @@ class ConfigApplier:
     async def reset_identity(self) -> bool:
         """清掉全部会话与落盘记录
 
-        - 入口为空即不清也不落基准，下一轮或读取侧对账补上
+        - 没件订阅「身份变了」即不清也不落基准，下一轮或读取侧对账补上
         """
-        resets = self._host._service_manager.history_resets
-        if not resets:
+        hooks = self._host._service_manager.hooks_for(PlatformTiming.IDENTITY_CHANGED)
+        if not hooks:
             return False
-        for reset in resets:
-            await reset()
+        call = self._host._service_manager.capability_call()
+        for hook in hooks:
+            await hook(call)
         self._last_identity = self._current_identity()
         return True
 
