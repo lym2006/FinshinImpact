@@ -21,10 +21,10 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
+from bundled._shared.messages import BotMessage  # noqa: E402
+from bundled.help import _services  # noqa: E402
 from core.domain import HelpKey  # noqa: E402
 from core.dto import HelpCommandDTO, HelpFlagDTO  # noqa: E402
-from plugins._shared.messages import BotMessage  # noqa: E402
-from plugins.help import _services  # noqa: E402
 from utils.plugin import _manifest  # noqa: E402
 
 

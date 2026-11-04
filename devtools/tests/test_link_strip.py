@@ -18,6 +18,11 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
+from bundled.AI.utils import (  # noqa: E402
+    build_turns,
+    compose_user_text,
+    estimate_window,
+)
 from core.domain import ChatRole, ChatScope, Platform  # noqa: E402
 from core.domain.ids import ContainerKey, MessageId, UserId  # noqa: E402
 from core.dto import (  # noqa: E402
@@ -26,11 +31,6 @@ from core.dto import (  # noqa: E402
     MessageDTO,
     MsgReferenceDTO,
     PrincipalDTO,
-)
-from plugins.AI.utils import (  # noqa: E402
-    build_turns,
-    compose_user_text,
-    estimate_window,
 )
 
 

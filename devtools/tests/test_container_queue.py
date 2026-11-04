@@ -19,6 +19,9 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
+from bundled.AI.core import active_tasks  # noqa: E402
+from bundled.AI.services import _ai_chat, _cleanup  # noqa: E402
+from bundled.AI.utils import make_session_key  # noqa: E402
 from core.domain import ChatScope, Platform, TaskHandler, TaskKind  # noqa: E402
 from core.domain.ids import ContainerKey, MessageId, SessionKey, UserId  # noqa: E402
 from core.dto import (  # noqa: E402
@@ -27,9 +30,6 @@ from core.dto import (  # noqa: E402
     MsgReferenceDTO,
     PrincipalDTO,
 )
-from plugins.AI.core import active_tasks  # noqa: E402
-from plugins.AI.services import _ai_chat, _cleanup  # noqa: E402
-from plugins.AI.utils import make_session_key  # noqa: E402
 from services.tasks import configure_task_service, get_task_service  # noqa: E402
 
 _GROUP_KEY = SessionKey("tg.g100123")

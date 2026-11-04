@@ -14,7 +14,7 @@ from typing import Any, Protocol
 
 from ._task import TaskKind
 
-PLUGINS_PKG = "plugins"  # 插件树顶层包名，find_spec 与动态导入路径共用同值
+PLUGINS_PKG = "bundled"  # 插件树顶层包名，find_spec 与动态导入路径共用同值
 
 # 插件声明的无参常驻协程，随 Bot 服务起停
 PluginBackground = Callable[[], Coroutine[Any, Any, None]]

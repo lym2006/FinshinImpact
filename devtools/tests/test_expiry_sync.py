@@ -25,9 +25,9 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
+from bundled.AI.core import _store  # noqa: E402
+from bundled.AI.services import _cleanup  # noqa: E402
 from core.domain.ids import SessionKey  # noqa: E402
-from plugins.AI.core import _store  # noqa: E402
-from plugins.AI.services import _cleanup  # noqa: E402
 
 _DAY = 86400.0
 _KEEP = 30 * _DAY

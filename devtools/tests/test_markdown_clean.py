@@ -17,7 +17,7 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
-from plugins.AI.markdown import strip_model_marks  # noqa: E402
+from bundled.AI.markdown import strip_model_marks  # noqa: E402
 
 
 class TestEmphasis(unittest.TestCase):

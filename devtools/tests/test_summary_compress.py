@@ -20,6 +20,7 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
+from bundled.AI.services import _summary, worker  # noqa: E402
 from core.domain import ChatRole, ChatScope, Platform  # noqa: E402
 from core.domain.ids import ContainerKey, MessageId, SessionKey, UserId  # noqa: E402
 from core.dto import (  # noqa: E402
@@ -29,7 +30,6 @@ from core.dto import (  # noqa: E402
     MsgReferenceDTO,
     PrincipalDTO,
 )
-from plugins.AI.services import _summary, worker  # noqa: E402
 
 _PERSONA = "人设正文"
 _KEY = SessionKey("tg.g100123")
@@ -276,7 +276,7 @@ class TestTrimSummary(unittest.TestCase):
 class TestStoreSummary(unittest.TestCase):
     def test_clear_session_empties_summary(self) -> None:
         """清空会话连摘要一起抹掉"""
-        from plugins.AI.core import _store
+        from bundled.AI.core import _store
 
         patched: list[object] = []
 
@@ -293,7 +293,7 @@ class TestStoreSummary(unittest.TestCase):
 
     def test_save_summary_skips_cleared_session(self) -> None:
         """会话已清即不把摘要回填进去"""
-        from plugins.AI.core import _store
+        from bundled.AI.core import _store
 
         saved: list[str] = []
 

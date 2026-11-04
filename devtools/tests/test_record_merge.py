@@ -20,6 +20,8 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
+from bundled.AI.services import worker  # noqa: E402
+from bundled.AI.utils import make_session_key  # noqa: E402
 from core.domain import ChatScope, Platform  # noqa: E402
 from core.domain.ids import ContainerKey, MessageId, UserId  # noqa: E402
 from core.dto import (  # noqa: E402
@@ -28,8 +30,6 @@ from core.dto import (  # noqa: E402
     MsgReferenceDTO,
     PrincipalDTO,
 )
-from plugins.AI.services import worker  # noqa: E402
-from plugins.AI.utils import make_session_key  # noqa: E402
 
 
 def _event(
