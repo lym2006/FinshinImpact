@@ -35,7 +35,7 @@ from core.dto import (  # noqa: E402
     PluginManifestDTO,
 )
 from exceptions import PluginRoleError  # noqa: E402
-from utils.plugin import _manifest, _register  # noqa: E402
+from utils.plugin import _manifest, _manifest_help, _register  # noqa: E402
 
 
 def _section(raw_command: dict[str, Any]) -> list[dict[str, Any]]:
@@ -43,6 +43,11 @@ def _section(raw_command: dict[str, Any]) -> list[dict[str, Any]]:
     return [
         {HelpKey.SECTION: "工具", HelpKey.NOTE: "", HelpKey.COMMANDS: [raw_command]}
     ]
+
+
+def _read(sections: list[dict[str, Any]]) -> tuple[HelpSectionDTO, ...]:
+    """按固定插件名读帮助段"""
+    return _manifest_help.read_help_sections(sections, "demo")
 
 
 def _manifest_of(cmd: str, role: CommandRole) -> PluginManifestDTO:
@@ -70,19 +75,19 @@ class TestRoleParse(unittest.TestCase):
     """清单里权限档的解析口径"""
 
     def test_owner_word_parsed(self) -> None:
-        command = _manifest._read_help_sections(
+        command = _read(
             _section({HelpKey.CMD: "wipe", HelpKey.DESC: "清空", "role": "owner"})
         )[0].commands[0]
         self.assertEqual(command.role, CommandRole.OWNER)
 
     def test_missing_role_defaults_to_member(self) -> None:
-        command = _manifest._read_help_sections(
-            _section({HelpKey.CMD: "say", HelpKey.DESC: "说话"})
-        )[0].commands[0]
+        command = _read(_section({HelpKey.CMD: "say", HelpKey.DESC: "说话"}))[
+            0
+        ].commands[0]
         self.assertEqual(command.role, CommandRole.MEMBER)
 
     def test_word_out_of_table_drops_the_command(self) -> None:
-        sections = _manifest._read_help_sections(
+        sections = _read(
             _section({HelpKey.CMD: "say", HelpKey.DESC: "说话", "role": "boss"})
         )
         self.assertEqual(sections[0].commands, ())
