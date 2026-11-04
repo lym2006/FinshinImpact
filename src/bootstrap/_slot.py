@@ -196,8 +196,8 @@ def _pump_imports() -> threading.Thread:
     """后台预热打底，主线程分步导入装配链并步间泵事件
 
     - utils 与引擎交后台线程，主线程泵到 utils 落位才续导 GUI 链
-    - GUI 链与 aiogram 预热并行，拆步顺序与 bot._main 顶层导入对齐
-    - preload_engine 幂等，Main.main 内原调用兜底
+    - GUI 链与 aiogram 预热并行，拆步顺序与机器人入口的顶层导入对齐
+    - 引擎预热可重复调用，入口里原着那一次留着兜底
     """
     preload = _preload_engine_async()
     while not _UTILS_READY.is_set():

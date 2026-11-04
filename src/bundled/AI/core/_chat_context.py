@@ -6,5 +6,5 @@
 
 import asyncio
 
-# 跑完由 done_callback 自行摘除，不靠清理轮
+# 跑完自行摘除，不靠清理轮
 active_tasks: set[asyncio.Task] = set()

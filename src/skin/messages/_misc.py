@@ -12,7 +12,7 @@ class MiscMessage:
     CTRL_BIND_FAIL = "控制器绑定失败: 发现未在 UI 层定义的按钮标识 -> {keys}"
     CTRL_MISSING = "控制器缺失: UI 层定义了按钮，但缺少对应的 Controller -> {keys}"
 
-    # 用：gui_guard 装饰器与日志控制器的面板报错
+    # 用：bot/error_guard.py 与界面控制器包的报错正文
     GUARD_EXEC_ERROR = "执行 [{name}] 时发生错误"
     OPEN_LOGS_FAIL = "打开日志目录失败"
     UNKNOWN_ERROR = "发生未知错误"

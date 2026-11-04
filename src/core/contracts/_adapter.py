@@ -46,7 +46,7 @@ class InteractionPort(ABC):
 class BaseAdapter(ABC):
     """平台适配器基类
 
-    - 一个平台一个实例，生命周期由 AdapterRuntime 托管
+    - 一个平台一个实例，生命周期归装载侧托管
     """
 
     @property
