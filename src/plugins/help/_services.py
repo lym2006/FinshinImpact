@@ -46,7 +46,7 @@ class _HelpRenderConfig:
     font_size: int = 30
     line_spacing: int = 18  # 行间距
     padding: int = 15  # 画布边距
-    cmd_desc_gap: int = 20  # 命令与描述间距
+    column_gap: int = 60  # 左列与说明列的像素间距
     flag_indent: int = 4  # 开关行缩进字符数
     color_mode: str = "RGB"  # PIL 色彩模式
     bg_color: str = "#FFFFFF"  # 背景色
@@ -154,7 +154,7 @@ def _layout_stamp() -> str:
         _HELP.font_size,
         _HELP.line_spacing,
         _HELP.padding,
-        _HELP.cmd_desc_gap,
+        _HELP.column_gap,
         _HELP.flag_indent,
     )
     return "layout|" + "|".join(str(size) for size in sizes)
@@ -246,52 +246,51 @@ def generate_image() -> Path:
         return _render_menu(digest)
 
 
-def _entry_line(entry: _MenuEntry) -> str:
-    """把菜单条目拼成一行文本
-
-    - 命令与开关各占左列，说明同列对齐
-    - 段名与备注整行是文本，无左列
-    """
-    item_type, label, note = entry
-    if item_type == "command":
-        prefix = f"/{label}"
-    elif item_type == "flag":
-        prefix = f"{'':<{_HELP.flag_indent}}{label}"
-    else:
-        return label
-    return f"{prefix:<{_HELP.cmd_desc_gap}}{note}"
-
-
 def _render_menu(digest: str) -> Path:
     """绘制菜单图片并写指纹文件
 
     - 仅缓存未命中时调用
-    - 空行条目绘成整行留白，与文字行等高
+    - 左列取最宽一条定列宽，说明列按像素对齐
+    - 段名与空行不分列，空行绘成整行留白
     """
-    # 使用字体对象获取真实的像素宽度
     font = ImageFont.truetype(_FONT_PATH, _HELP.font_size)
+    cells: list[tuple[str, str | None]] = []
+    for item_type, label, note in _display_order:
+        if item_type == "command":
+            cells.append((f"/{label}", note))
+        elif item_type == "flag":
+            cells.append((f"{'':<{_HELP.flag_indent}}{label}", note))
+        else:
+            cells.append((label, None))
 
-    # 预计算所有行的文本和最大宽度
-    lines: list[str] = []
-    max_width: float = 0.0
-
-    for entry in _display_order:
-        line = _entry_line(entry)
-        lines.append(line)
-        max_width = max(max_width, font.getlength(line))
-
-    # 创建画布并绘制
-    line_height = _HELP.line_spacing + _HELP.font_size
     padding = _HELP.padding
-    img_width = int(max_width) + padding * 2
-    img_height = len(lines) * line_height + padding * 2
-    img = Image.new(_HELP.color_mode, (img_width, img_height), _HELP.bg_color)
+    left_width = max(
+        (font.getlength(left) for left, note in cells if note is not None), default=0.0
+    )
+    desc_x = padding + left_width + _HELP.column_gap
+    max_width = max(
+        (
+            desc_x + font.getlength(note) if note is not None else font.getlength(left)
+            for left, note in cells
+        ),
+        default=0.0,
+    )
+
+    line_height = _HELP.line_spacing + _HELP.font_size
+    img = Image.new(
+        _HELP.color_mode,
+        (int(max_width) + padding * 2, len(cells) * line_height + padding * 2),
+        _HELP.bg_color,
+    )
     dr = ImageDraw.Draw(img)
 
-    for i, line in enumerate(lines):
-        dr.text(
-            (padding, padding + i * line_height), line, font=font, fill=_HELP.text_color
-        )
+    for i, (left, note) in enumerate(cells):
+        y = padding + i * line_height
+        if note is None:
+            dr.text((padding, y), left, font=font, fill=_HELP.text_color)
+            continue
+        dr.text((padding, y), left, font=font, fill=_HELP.text_color)
+        dr.text((desc_x, y), note, font=font, fill=_HELP.text_color)
 
     # 图与指纹成对落盘，缺一即判缓存未命中
     _SAVE_PATH.parent.mkdir(parents=True, exist_ok=True)

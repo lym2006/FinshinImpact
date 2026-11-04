@@ -8,7 +8,7 @@ assets = []
 
 [[help]]
 section = "AI 部分"
-note = "私聊要授权，群里 @我 或说触发词就能聊"
+note = "私聊要授权，群里喊我一声或说触发词就能聊"
 
 [[help.commands]]
 cmd = "history"
