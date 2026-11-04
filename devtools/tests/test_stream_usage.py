@@ -87,7 +87,7 @@ async def _collect_with_reading(
 
     with (
         patch.object(worker.AIClient, "stream_chat", _fake_stream),
-        patch.object(worker, "_logger", SimpleNamespace(info=logged.append)),
+        patch.object(worker, "_logger", SimpleNamespace(debug=logged.append)),
     ):
         final_msg, has_error = await worker._collect_reply(
             _TURN, SessionKey("tg.000000"), 3

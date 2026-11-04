@@ -103,7 +103,7 @@ async def _collect_reply(
                 has_error = True
     if usage.prompt_tokens is not None:
         learn_turn_overhead(turns, usage.prompt_tokens)
-        _logger.info(
+        _logger.debug(
             f"{key} 上下文估算 {tokens}，{len(turns)} 条，端点报 {usage.prompt_tokens}"
         )
     return final_msg, has_error
