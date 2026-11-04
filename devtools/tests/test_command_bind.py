@@ -17,7 +17,7 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
-from plugins.help import _commands  # noqa: E402
+from bundled.help import _commands  # noqa: E402
 from core.domain import BoundCommand, bind_command  # noqa: E402
 from core.dto import CommandDTO, HelpCommandDTO, HelpFlagDTO  # noqa: E402
 

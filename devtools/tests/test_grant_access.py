@@ -22,6 +22,10 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
+from bundled._shared import access, grants  # noqa: E402
+from bundled._shared.messages import BotMessage  # noqa: E402
+from bundled.AI.handlers import _ai_chat, _history  # noqa: E402
+from bundled.grant import _commands  # noqa: E402
 from core.domain import ChatScope, CommandRole, ContentKind, Platform  # noqa: E402
 from core.domain.ids import (  # noqa: E402
     ContainerKey,
@@ -37,10 +41,6 @@ from core.dto import (  # noqa: E402
     OutboundPayloadDTO,
     PrincipalDTO,
 )
-from plugins._shared import access, grants  # noqa: E402
-from plugins._shared.messages import BotMessage  # noqa: E402
-from plugins.AI.handlers import _ai_chat, _history  # noqa: E402
-from plugins.grant import _commands  # noqa: E402
 from services.context import HandlerContext  # noqa: E402
 
 _CONTAINER = ContainerKey("g100123")
