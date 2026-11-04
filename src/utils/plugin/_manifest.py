@@ -3,7 +3,7 @@
 
 - 扫描插件目录聚合各插件自描述清单
 - 读取实例状态文件并计算启用序列
-- 引导期另有一份精简实现，见 services/env_setup/deps_manifest.py 互注
+- 引导期另有一份只取最小字段集的精简实现
 """
 
 import importlib.util

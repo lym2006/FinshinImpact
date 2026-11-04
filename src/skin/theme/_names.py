@@ -2,7 +2,7 @@
 """控件对象名词表
 
 - 收创建端 setObjectName 与 QSS 选择器两端共用的对象名
-- 按钮类样式名另立 ButtonStyle，本表只收非按钮控件
+- 按钮类样式名另立一张表，本表只收非按钮控件
 """
 
 from enum import StrEnum
