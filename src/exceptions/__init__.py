@@ -47,7 +47,6 @@ from ._network import (
 )
 from ._plugins import (
     PLUGINS_MAP,
-    AIError,
     PluginDependencyError,
     PluginLoadError,
     PluginMissingError,
@@ -133,5 +132,4 @@ __all__ = [
     "PluginDependencyError",
     "PluginLoadError",
     "PluginRoleError",
-    "AIError",
 ]
