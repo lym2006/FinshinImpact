@@ -132,13 +132,17 @@ def _reject_text(command: CommandDTO) -> str:
 async def _reject_command(raw: Message, ctx: HandlerContext) -> None:
     """回绝写法不对的命令
 
-    - 私聊直接给，群里 @ 发起人再给
+    - 私聊直接给，群里引用发起人那条消息
     - 频道静默无视
     """
     scope = ctx.event.scope
     if scope == ChatScope.UNKNOWN:
         return
-    await ctx.answer(_reject_text(ctx.event.command), mention=scope == ChatScope.GROUP)
+    text = _reject_text(ctx.event.command)
+    if scope == ChatScope.GROUP:
+        await ctx.reply(text)
+        return
+    await ctx.answer(text)
 
 
 async def _show_single_help(raw: Message, ctx: HandlerContext) -> None:
