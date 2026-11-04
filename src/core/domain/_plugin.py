@@ -109,9 +109,17 @@ class CommandPriority(IntEnum):
     - 数值越小越优先，同值按名字典序
     """
 
-    FIRST = 0  # help 独占
-    NORMAL = 10  # 常规与新增默认
-    LAST = 50  # AI 独占
+    FIRST = 0  # 最先档
+    NORMAL = 10  # 常规档，表外插件一律这档
+    LAST = 50  # 最后档
+
+
+# 随包插件的恒启用与加载档位，清单写什么都改不了，表外插件一律常规档
+CORE_PLUGIN_PRIORITY: dict[str, CommandPriority] = {
+    "help": CommandPriority.FIRST,
+    "grant": CommandPriority.NORMAL,
+    "AI": CommandPriority.LAST,
+}
 
 
 class PluginFileName(StrEnum):
@@ -127,8 +135,6 @@ class ManifestKey(StrEnum):
     NAME = "name"
     TITLE = "title"
     SUMMARY = "summary"
-    CORE = "core"
-    ORDER = "order"
     DEPS = "deps"
     ASSETS = "assets"
     HELP = "help"
@@ -184,11 +190,6 @@ MANIFEST_FIELDS: tuple[ManifestFieldSpec, ...] = (
     ManifestFieldSpec(ManifestKey.NAME, str, "", required=True),
     ManifestFieldSpec(ManifestKey.TITLE, str, "", required=True),
     ManifestFieldSpec(ManifestKey.SUMMARY, str, "", required=True),
-    ManifestFieldSpec(ManifestKey.CORE, bool, False),
-    ManifestFieldSpec(ManifestKey.ORDER, int, CommandPriority.NORMAL),
     ManifestFieldSpec(ManifestKey.DEPS, list, ()),
     ManifestFieldSpec(ManifestKey.ASSETS, list, ()),
 )
-
-# order 合法取值域，越界拒收
-ORDER_TIERS = frozenset(CommandPriority)

@@ -12,8 +12,8 @@ from pathlib import Path
 from typing import Any, TypeGuard
 
 from core.domain import (
+    CORE_PLUGIN_PRIORITY,
     MANIFEST_FIELDS,
-    ORDER_TIERS,
     PLUGINS_PKG,
     CommandPriority,
     CommandRole,
@@ -115,11 +115,6 @@ def _read_manifest(path: Path, dir_name: str) -> PluginManifestDTO | None:
         return None
     if kwargs[ManifestKey.NAME] != dir_name:
         return None
-
-    if (raw_order := data.get(ManifestKey.ORDER)) is not None:
-        if not isinstance(raw_order, int) or raw_order not in ORDER_TIERS:
-            return None
-        kwargs[ManifestKey.ORDER] = CommandPriority(raw_order)
 
     if raw_sections := data.get(ManifestKey.HELP):
         kwargs["help_section"] = _read_help_sections(raw_sections)
@@ -228,7 +223,7 @@ def _is_flag_item(raw_flag: object) -> TypeGuard[list[str]]:
 def _load_instance_enabled(state_path: Path) -> frozenset[str] | None:
     """读取实例启用集
 
-    - 只取 enabled 键，core 并入与回落由 _resolve_enabled 处理
+    - 只取 enabled 键，随包插件恒启用与回落由 _resolve_enabled 处理
     - 文件不存在或解析失败返回 None，前者即实例从未保存过插件选择
     """
     if not state_path.is_file():
@@ -264,16 +259,23 @@ def _resolve_enabled(
 ) -> list[PluginManifestDTO]:
     """计算启用插件序列
 
-    - core 恒启用
-    - enabled 为 None 表示从未保存过选择，只用 core
-    - 按 (order, name) 升序，同值按 name 字典序
+    - 随包表里的插件恒启用
+    - enabled 为 None 表示从未保存过选择，只用随包插件
+    - 先按随包表定档，表外插件一律常规档，同档按 name 字典序
     """
     picked = [
         manifest
         for manifest in manifests.values()
-        if manifest.core or (enabled is not None and manifest.name in enabled)
+        if manifest.name in CORE_PLUGIN_PRIORITY
+        or (enabled is not None and manifest.name in enabled)
     ]
-    return sorted(picked, key=lambda m: (m.order, m.name))
+    return sorted(
+        picked,
+        key=lambda m: (
+            CORE_PLUGIN_PRIORITY.get(m.name, CommandPriority.NORMAL),
+            m.name,
+        ),
+    )
 
 
 def enabled_manifests(state_path: Path) -> list[PluginManifestDTO]:

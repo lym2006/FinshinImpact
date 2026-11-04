@@ -10,8 +10,8 @@ from ._content import ContentKind
 from ._fields import FieldKey
 from ._platform import ChatScope, Platform, make_profile_code, platform_of_profile
 from ._plugin import (
+    CORE_PLUGIN_PRIORITY,
     MANIFEST_FIELDS,
-    ORDER_TIERS,
     PLUGINS_PKG,
     CommandPriority,
     HelpKey,
@@ -68,7 +68,7 @@ __all__ = [
     "ManifestKey",
     "ManifestFieldSpec",
     "MANIFEST_FIELDS",
-    "ORDER_TIERS",
+    "CORE_PLUGIN_PRIORITY",
     "HelpKey",
     "StateKey",
     "RouteSink",

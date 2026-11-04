@@ -11,7 +11,7 @@
 
 from PySide6.QtWidgets import QMessageBox
 
-from core.domain import ManifestKey, StateKey
+from core.domain import CORE_PLUGIN_PRIORITY, ManifestKey, StateKey
 from services.env_setup.assets import install_assets, is_asset_installed
 from services.env_setup.deps_install import install_deps
 from services.env_setup.deps_manifest import (
@@ -46,7 +46,8 @@ def _target_manifests(code: str) -> list[dict]:
     return [
         manifest
         for manifest in load_manifests(root)
-        if manifest[ManifestKey.CORE] or manifest[ManifestKey.NAME] in enabled
+        if manifest[ManifestKey.NAME] in CORE_PLUGIN_PRIORITY
+        or manifest[ManifestKey.NAME] in enabled
     ]
 
 
