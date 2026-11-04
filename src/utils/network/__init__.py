@@ -10,12 +10,14 @@ from ._client import BaseClient
 from ._link import LinkStatus, link_report
 from ._proxy import detect_system_proxy
 from .probe import (
+    NETWORK_ROWS,
     Channel,
     FrameKey,
     RowId,
     RowStatus,
     fault_row_of,
     plan_channels,
+    probe_budget,
     sys_deduped,
     uses_configured_proxy,
     uses_system_proxy,
@@ -33,12 +35,14 @@ __all__ = [
     # 系统代理
     "detect_system_proxy",
     # 通道与协议键
+    "NETWORK_ROWS",
     "Channel",
     "FrameKey",
     "RowId",
     "RowStatus",
     # 探测规划
     "plan_channels",
+    "probe_budget",
     "sys_deduped",
     "uses_configured_proxy",
     "uses_system_proxy",
