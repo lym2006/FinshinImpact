@@ -86,9 +86,7 @@ def _register_modules(modules: dict[str, object], names: list[str]):
         return found
 
     dispatcher = _FakeDispatcher()
-    manifests = [
-        SimpleNamespace(name=name, core=False, help_section=()) for name in names
-    ]
+    manifests = [SimpleNamespace(name=name, help_section=()) for name in names]
 
     with (
         patch.object(_register, "_resolve_plugins", lambda: manifests),
@@ -254,9 +252,9 @@ class TestCollectBackgrounds(unittest.TestCase):
 
     def test_non_plugin_timing_entry_rejected(self) -> None:
         """timings 里混进非订阅条目即整条插件记失败"""
-        modules = {"AI": _plugin(timings=(_noop,)), "help": _plugin()}
+        modules = {"alpha": _plugin(timings=(_noop,)), "beta": _plugin()}
 
-        (report, _, _, timings), _ = _register_modules(modules, ["AI", "help"])
+        (report, _, _, timings), _ = _register_modules(modules, ["alpha", "beta"])
 
         self.assertEqual(timings, {})
         self.assertIsInstance(report[0][1], PluginLoadError)

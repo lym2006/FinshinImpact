@@ -7,7 +7,7 @@
 
 from dataclasses import dataclass
 
-from ..domain import CommandPriority, CommandRole
+from ..domain import CommandRole
 
 
 @dataclass(frozen=True, slots=True)
@@ -66,8 +66,6 @@ class PluginManifestDTO:
     name: str
     title: str
     summary: str
-    core: bool = False
-    order: CommandPriority = CommandPriority.NORMAL
     deps: tuple[str, ...] = ()
     assets: tuple[str, ...] = ()
     help_section: tuple[HelpSectionDTO, ...] = ()

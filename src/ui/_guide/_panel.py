@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from core.domain import ManifestKey, StateKey
+from core.domain import CORE_PLUGIN_PRIORITY, ManifestKey, StateKey
 from services.env_setup.deps_manifest import (
     catalog_digest,
     load_manifests,
@@ -103,7 +103,7 @@ class _PluginPanelDialog(QDialog):
 
     def _make_row(self, manifest: dict[str, Any], checked: bool) -> QWidget:
         """拼插件单行三列控件"""
-        core = manifest[ManifestKey.CORE]
+        core = manifest[ManifestKey.NAME] in CORE_PLUGIN_PRIORITY
         title = manifest[ManifestKey.TITLE] or manifest[ManifestKey.NAME]
         middle = manifest[ManifestKey.SUMMARY]
 
@@ -162,7 +162,10 @@ class _PluginPanelDialog(QDialog):
         for row in range(self._list.count()):
             item = self._list.item(row)
             manifest = item.data(_ROLE_MANIFEST)
-            if not isinstance(manifest, dict) or manifest[ManifestKey.CORE]:
+            if (
+                not isinstance(manifest, dict)
+                or manifest[ManifestKey.NAME] in CORE_PLUGIN_PRIORITY
+            ):
                 continue
             if self._row_checked(item):
                 names.append(manifest[ManifestKey.NAME])
