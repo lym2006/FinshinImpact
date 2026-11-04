@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from aiogram.enums import MessageEntityType
 from aiogram.types import Message, Update
 
-from core.domain import ContentKind, Platform, make_container
+from core.domain import ContentKind, Platform, is_flag_name, make_container
 from core.domain.ids import ChatId, MessageId, UserId
 from core.dto import (
     CommandDTO,
@@ -40,9 +40,8 @@ _COMMAND_PREFIX = "/"
 _BOT_PREFIX = "@"
 _FLAG_PREFIX = "-"
 
-# Telegram 侧命令名与 flag 的形状
+# Telegram 侧命令名的形状，开关名形状归 core.domain
 _COMMAND_NAME_RE = re.compile(r"[A-Za-z][A-Za-z0-9_]{0,31}")
-_FLAG_RE = re.compile(r"-[A-Za-z][A-Za-z0-9_-]*")
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,12 +59,12 @@ _UNKNOWN_IDENTITY = BotIdentity()
 
 
 def _parse_command(text: str) -> CommandDTO:
-    """解析命令三段
+    """解析命令头与其后的片段
 
     - 首个空格前的片段算命令头，须写成 /命令名
     - 命令名按 Telegram 字符集校验，带 @ 段判非法
-    - 空格之后 `-` 开头的片段算 flag，其余落 args
-    - flag 只校验形状，支持哪些开关由插件清单声明
+    - 其余片段按原顺序交出，哪一段是开关、哪一段是参数由读清单的那一步绑
+    - 短横开头的片段只校验形状，支持哪些开关由插件清单声明
     - 命令名保留原大小写
     """
     if not text.startswith(_COMMAND_PREFIX):
@@ -76,22 +75,11 @@ def _parse_command(text: str) -> CommandDTO:
     if not _COMMAND_NAME_RE.fullmatch(head):
         return CommandDTO(format_error=True)
 
-    flags: list[str] = []
-    args: list[str] = []
     for piece in pieces[1:]:
-        if piece.startswith(_FLAG_PREFIX):
-            if not _FLAG_RE.fullmatch(piece):
-                return CommandDTO(format_error=True)
-            flags.append(piece)
-            continue
-        args.append(piece)
+        if piece.startswith(_FLAG_PREFIX) and not is_flag_name(piece):
+            return CommandDTO(format_error=True)
 
-    return CommandDTO(
-        matched=True,
-        head=head,
-        flags=tuple(flags),
-        args=tuple(args),
-    )
+    return CommandDTO(matched=True, head=head, pieces=tuple(pieces[1:]))
 
 
 def _mentions_bot(message: Message, identity: BotIdentity) -> bool:

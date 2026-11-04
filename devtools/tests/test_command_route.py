@@ -40,7 +40,12 @@ from adapters.telegram._event import BotIdentity, normalize_update  # noqa: E402
 from adapters.telegram._normalize import NormalizeMiddleware  # noqa: E402
 from adapters.telegram.router_bridge import build_router  # noqa: E402
 from core.domain import ContentKind, PluginRoute, PluginSpec  # noqa: E402
-from core.dto import HelpCommandDTO, MsgReferenceDTO, OutboundPayloadDTO  # noqa: E402
+from core.dto import (  # noqa: E402
+    HelpCommandDTO,
+    HelpFlagDTO,
+    MsgReferenceDTO,
+    OutboundPayloadDTO,
+)
 from plugins._shared.filters import CommandMatch  # noqa: E402
 from plugins._shared.messages import BotMessage  # noqa: E402
 from plugins.help import _commands  # noqa: E402
@@ -48,12 +53,18 @@ from services.context import HandlerContext  # noqa: E402
 
 _GROUP = Chat(id=-100123, type="supergroup", title="测试群")
 _PRIVATE = Chat(id=456, type="private")
+_CHANNEL = Chat(id=-100999, type="channel", title="测试频道")
 _USER = User(id=456, is_bot=False, first_name="三")
 _BOT = User(id=777, is_bot=True, first_name="机器人", username="MyBot")
 _IDENTITY = BotIdentity(user_id="777", username="MyBot")
 
 # 参与判定的菜单项，与实例启用集解耦
-_MENU = {"help": "帮助", "history": "显示历史记录", "md": "图片输出"}
+_MENU = {
+    "help": "帮助",
+    "history": "显示历史记录",
+    "md": "图片输出",
+    "convert": "格式转换",
+}
 
 
 class _FakeBot:
@@ -77,15 +88,19 @@ class _RecordingInteraction:
     def __init__(self) -> None:
         self.sent: list[str] = []
         self.payloads: list[OutboundPayloadDTO] = []
+        self.mentions: list[bool] = []
 
     async def send_message(
         self,
         principal: Any,
         payload: OutboundPayloadDTO,
+        *,
+        mention: bool = False,
         reply_ref: MsgReferenceDTO | None = None,
     ) -> MsgReferenceDTO | None:
         self.sent.append(payload.text)
         self.payloads.append(payload)
+        self.mentions.append(mention)
         return None
 
     def mention_fragment(self, principal: Any) -> str:
@@ -249,7 +264,13 @@ class TestCommandFlagSpec(_VerdictMixin, unittest.IsolatedAsyncioTestCase):
     def setUp(self) -> None:
         specs = {
             "md": HelpCommandDTO(
-                cmd="md", desc="图片输出", flags=(("-i", "图片输入"),)
+                cmd="md", desc="图片输出", flags=(HelpFlagDTO("-i", "图片输入"),)
+            ),
+            "convert": HelpCommandDTO(
+                cmd="convert",
+                desc="格式转换",
+                flags=(HelpFlagDTO("-t", "输出速度", "秒数"),),
+                args="文件名",
             ),
             "history": HelpCommandDTO(cmd="history", desc="显示历史记录"),
         }
@@ -289,6 +310,33 @@ class TestCommandFlagSpec(_VerdictMixin, unittest.IsolatedAsyncioTestCase):
         rejected, listed = await self._verdict("/md -i -i")
         self.assertTrue(rejected)
         self.assertFalse(listed)
+
+    async def test_value_flag_with_value_yields_to_command(self) -> None:
+        rejected, listed = await self._verdict("/convert -t 5")
+        self.assertFalse(rejected)
+        self.assertFalse(listed)
+
+    async def test_value_flag_without_value_taken(self) -> None:
+        for text in ("/convert -t", "/convert -t -h"):
+            with self.subTest(text=text):
+                rejected, listed = await self._verdict(text)
+                self.assertTrue(rejected)
+                self.assertFalse(listed)
+
+    async def test_value_flag_takes_next_piece_before_args(self) -> None:
+        for text in ("/convert -t 5 文件名", "/convert -t 文件名"):
+            with self.subTest(text=text):
+                rejected, _ = await self._verdict(text)
+                self.assertFalse(rejected)
+
+    async def test_value_flag_with_help_lists(self) -> None:
+        rejected, listed = await self._verdict("/convert -t 5 -h")
+        self.assertFalse(rejected)
+        self.assertTrue(listed)
+
+    async def test_group_value_flag_without_value_taken(self) -> None:
+        rejected, _ = await self._verdict("/convert -t", chat=_GROUP)
+        self.assertTrue(rejected)
 
     async def test_trailing_text_taken_as_stray(self) -> None:
         for text in ("/md 20", "/md -h 20", "/md 20 30"):
@@ -397,6 +445,7 @@ class TestCtxReachesHandlers(unittest.IsolatedAsyncioTestCase):
             ("help_list", _MENU),
             ("generate_image", lambda: Path("help.png")),
             ("resolve_single_help", lambda head: f"单命令:{head}"),
+            ("resolve_usage_hint", lambda head: f"用法:{head}"),
         ):
             patcher = patch.object(_commands, name, value)
             patcher.start()
@@ -418,7 +467,13 @@ class TestCtxReachesHandlers(unittest.IsolatedAsyncioTestCase):
         self.dispatcher.include_router(build_router(other))
 
     async def _answer(self, text: str, chat: Chat = _PRIVATE) -> list[str]:
-        """跑一条消息并回传外发文本"""
+        """跑一条消息并回传外发文本
+
+        - 每次先清空，多条用例互不攒账
+        """
+        self.interaction.sent.clear()
+        self.interaction.payloads.clear()
+        self.interaction.mentions.clear()
         update = Update(update_id=1, message=_message(chat=chat, text=text))
         await self.dispatcher.feed_update(_FakeBot(), update)  # type: ignore[arg-type]
         return self.interaction.sent
@@ -434,22 +489,36 @@ class TestCtxReachesHandlers(unittest.IsolatedAsyncioTestCase):
             await self._answer("/nope@otherbot"), [BotMessage.CMD_FORMAT_ERROR]
         )
 
-    async def test_stray_flag_replies_format_error(self) -> None:
-        self.assertEqual(await self._answer("/help -x"), [BotMessage.CMD_FORMAT_ERROR])
+    async def test_stray_flag_replies_usage(self) -> None:
+        self.assertEqual(await self._answer("/help -x"), ["用法:help"])
 
-    async def test_group_chat_swallows_replies(self) -> None:
-        for text in ("/nope", "/ nope", "/nope@otherbot", "/help -x"):
+    async def test_unknown_name_quiet_outside_private(self) -> None:
+        for text in ("/nope", "/ nope", "/nope@otherbot"):
+            for chat in (_GROUP, _CHANNEL):
+                with self.subTest(text=text, scope=chat.type):
+                    self.assertEqual(await self._answer(text, chat=chat), [])
+
+    async def test_group_stray_replies_with_mention(self) -> None:
+        cases = (
+            ("/md 20", "用法:md"),
+            ("/md -v", "用法:md"),
+            ("/help -x", "用法:help"),
+        )
+        for text, expected in cases:
             with self.subTest(text=text):
-                self.assertEqual(await self._answer(text, chat=_GROUP), [])
+                self.assertEqual(await self._answer(text, chat=_GROUP), [expected])
+                self.assertEqual(self.ran, [])
+                self.assertEqual(self.interaction.mentions, [True])
 
-    async def test_group_stray_never_reaches_command(self) -> None:
+    async def test_channel_stray_stays_quiet(self) -> None:
         for text in ("/md 20", "/md -v"):
             with self.subTest(text=text):
-                self.assertEqual(await self._answer(text, chat=_GROUP), [])
+                self.assertEqual(await self._answer(text, chat=_CHANNEL), [])
                 self.assertEqual(self.ran, [])
 
     async def test_private_stray_never_reaches_command(self) -> None:
-        self.assertEqual(await self._answer("/md 20"), [BotMessage.CMD_FORMAT_ERROR])
+        self.assertEqual(await self._answer("/md 20"), ["用法:md"])
+        self.assertEqual(self.interaction.mentions, [False])
         self.assertEqual(self.ran, [])
 
     async def test_bare_command_reaches_command(self) -> None:

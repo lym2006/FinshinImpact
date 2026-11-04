@@ -41,6 +41,17 @@ class PluginLoadError(PluginsError):
         super().__init__()
 
 
+class PluginRoleError(PluginsError):
+    """命令权限声明与守卫不一致
+
+    - cmd 记对不上的命令名，本体走调试日志
+    """
+
+    def __init__(self, cmd: str) -> None:
+        self.cmd = cmd
+        super().__init__()
+
+
 class AIError(PluginsError):
     """AI 插件异常基类"""
 
@@ -50,4 +61,5 @@ PLUGINS_MAP = {
     PluginMissingError: "未找到（检查目录结构）",
     PluginDependencyError: "内部依赖缺失",
     PluginLoadError: "加载失败：{kind}",
+    PluginRoleError: "命令权限说明与实际拦截对不上",
 }

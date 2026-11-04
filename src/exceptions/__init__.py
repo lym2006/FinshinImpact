@@ -51,6 +51,7 @@ from ._plugins import (
     PluginDependencyError,
     PluginLoadError,
     PluginMissingError,
+    PluginRoleError,
     PluginsError,
     PluginsMissingError,
     PluginSpecError,
@@ -131,5 +132,6 @@ __all__ = [
     "PluginMissingError",
     "PluginDependencyError",
     "PluginLoadError",
+    "PluginRoleError",
     "AIError",
 ]

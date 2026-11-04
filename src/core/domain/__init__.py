@@ -4,7 +4,7 @@
 - 定义业务类型，将不同平台的原始类型归一化
 """
 
-from ._command import CommandFlag, StepInput
+from ._command import BoundCommand, CommandFlag, StepInput, bind_command, is_flag_name
 from ._container import make_container
 from ._content import ContentKind
 from ._fields import FieldKey
@@ -20,6 +20,7 @@ from ._plugin import (
     PlatformTiming,
     PluginBackground,
     PluginFileName,
+    PluginMark,
     PluginPredicate,
     PluginRoute,
     PluginSpec,
@@ -63,6 +64,7 @@ __all__ = [
     "PluginTimingRun",
     "CommandPriority",
     "PluginFileName",
+    "PluginMark",
     "ManifestKey",
     "ManifestFieldSpec",
     "MANIFEST_FIELDS",
@@ -79,6 +81,9 @@ __all__ = [
     # 命令
     "CommandFlag",
     "StepInput",
+    "BoundCommand",
+    "bind_command",
+    "is_flag_name",
     # 任务
     "TaskPayload",
     "TaskKind",

@@ -1,7 +1,7 @@
 # src/core/domain/_plugin.py
 """插件对象
 
-- 定义插件加载优先级、相关文件与清单键名的词表
+- 定义插件加载优先级、相关文件、清单键名与对象记号的词表
 - 定义插件清单标量字段的类型、必填与默认
 - 定义路由清单、常驻协程、任务处理与时机订阅的签名
 - 定义平台侧的路由挂载口
@@ -146,6 +146,18 @@ class HelpKey(StrEnum):
     CMD = "cmd"
     DESC = "desc"
     FLAGS = "flags"
+    ARGS = "args"
+    ROLE = "role"
+
+
+class PluginMark(StrEnum):
+    """插件交来的对象上挂的记号
+
+    - 命令名挂在路由谓词上，权限档挂在处理函数上
+    """
+
+    COMMAND_NAME = "command_name"
+    COMMAND_ROLE = "command_role"
 
 
 class StateKey(StrEnum):

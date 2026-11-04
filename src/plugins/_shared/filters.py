@@ -11,7 +11,7 @@ from services.context import HandlerContext
 
 def _has_help_flag(command: CommandDTO) -> bool:
     """判定命令带 -h"""
-    return CommandFlag.HELP in command.flags
+    return CommandFlag.HELP in command.pieces
 
 
 class CommandMatch:
@@ -23,6 +23,11 @@ class CommandMatch:
 
     def __init__(self, name: str) -> None:
         self._name = name
+
+    @property
+    def command_name(self) -> str:
+        """这一条认的命令头"""
+        return self._name
 
     async def __call__(self, ctx: HandlerContext) -> bool:
         """判定命令是否命中"""
