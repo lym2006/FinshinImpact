@@ -177,18 +177,18 @@ class TestCommandParsing(unittest.TestCase):
     def test_plain_command(self) -> None:
         event = _event(_update(text="/history"))
         self.assertTrue(event.command.matched)
-        self.assertEqual(
-            (event.command.head, event.command.flags, event.command.args),
-            ("history", (), ()),
-        )
+        self.assertEqual((event.command.head, event.command.pieces), ("history", ()))
 
-    def test_flag_and_args_split(self) -> None:
+    def test_pieces_keep_order(self) -> None:
         event = _event(_update(text="/history -h 20"))
         self.assertTrue(event.command.matched)
         self.assertEqual(
-            (event.command.head, event.command.flags, event.command.args),
-            ("history", ("-h",), ("20",)),
+            (event.command.head, event.command.pieces), ("history", ("-h", "20"))
         )
+
+    def test_double_space_keeps_one_gap(self) -> None:
+        event = _event(_update(text="/history  -h   20"))
+        self.assertEqual(event.command.pieces, ("-h", "20"))
 
     def test_mention_is_format_error(self) -> None:
         for text in ("/history@mybot -h", "/history@Fool"):
@@ -198,7 +198,7 @@ class TestCommandParsing(unittest.TestCase):
                 self.assertTrue(event.command.format_error)
 
     def test_stray_flag_shape_is_format_error(self) -> None:
-        for text in ("/history -", "/history --x", "/history -9x"):
+        for text in ("/history -", "/history --x", "/history -9x", "/history -1"):
             with self.subTest(text=text):
                 event = _event(_update(text=text))
                 self.assertFalse(event.command.matched)
@@ -207,14 +207,13 @@ class TestCommandParsing(unittest.TestCase):
     def test_unknown_flag_keeps_shape(self) -> None:
         event = _event(_update(text="/history -x"))
         self.assertTrue(event.command.matched)
-        self.assertEqual(event.command.flags, ("-x",))
+        self.assertEqual(event.command.pieces, ("-x",))
 
     def test_space_not_stripped(self) -> None:
         event = _event(_update(text="/hist ory -h"))
         self.assertTrue(event.command.matched)
         self.assertEqual(
-            (event.command.head, event.command.flags, event.command.args),
-            ("hist", ("-h",), ("ory",)),
+            (event.command.head, event.command.pieces), ("hist", ("ory", "-h"))
         )
 
     def test_gap_after_prefix_is_format_error(self) -> None:

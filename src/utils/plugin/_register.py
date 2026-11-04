@@ -4,6 +4,7 @@
 - 按清单与实例启用集决定加载序列
 - 收集各插件交来的路由、常驻协程、任务处理与时机订阅，逐项上报加载结果
 - 插件不交路由清单即记失败
+- 清单声明的命令权限与实际拦截对不上即记失败
 """
 
 import importlib
@@ -12,9 +13,12 @@ from typing import Any, cast
 
 from core.domain import (
     PLUGINS_PKG,
+    CommandRole,
     PlatformTiming,
     PluginBackground,
     PluginFileName,
+    PluginMark,
+    PluginRoute,
     PluginSpec,
     PluginTiming,
     PluginTimingRun,
@@ -26,6 +30,7 @@ from exceptions import (
     PluginDependencyError,
     PluginLoadError,
     PluginMissingError,
+    PluginRoleError,
     PluginsError,
     PluginsMissingError,
     PluginSpecError,
@@ -77,6 +82,7 @@ def register_plugins(
                 report.append((plugin_name, PluginSpecError()))
                 continue
 
+            _check_roles(manifest, spec)
             declared = _checked_hooks(spec.backgrounds, "backgrounds")
             sink.include_router(build_router(spec))
             backgrounds.extend(declared)
@@ -96,6 +102,11 @@ def register_plugins(
             if manifest.core:
                 raise
             report.append((plugin_name, error))
+
+        except PluginRoleError as e:
+            if manifest.core:
+                raise
+            report.append((plugin_name, e))
 
         except Exception as e:
             if manifest.core:
@@ -140,3 +151,31 @@ def _checked_hooks(declared: object, field: str) -> tuple[Any, ...]:
 def _resolve_plugins() -> list[PluginManifestDTO]:
     """计算本次注册序列"""
     return enabled_manifests(PROFILE_DIR / PluginFileName.STATE)
+
+
+def _check_roles(manifest: PluginManifestDTO, spec: PluginSpec) -> None:
+    """校验清单声明的命令权限与实际拦截一致
+
+    - 清单写了要什么档，路由上必须有同档守卫
+    - 清单写用户档的命令，路由上不带守卫
+    """
+    guarded = _guarded_roles(spec.routes)
+    for section in manifest.help_section:
+        for command in section.commands:
+            if guarded.get(command.cmd, CommandRole.MEMBER) != command.role:
+                raise PluginRoleError(command.cmd)
+
+
+def _guarded_roles(routes: tuple[PluginRoute, ...]) -> dict[str, CommandRole]:
+    """取出路由上认得的命令名与守卫档位
+
+    - 命令名读自谓词，守卫档位读自处理函数
+    - 两者缺任一的条目不进表
+    """
+    guarded: dict[str, CommandRole] = {}
+    for route in routes:
+        name = getattr(route.predicate, PluginMark.COMMAND_NAME, None)
+        limit = getattr(route.handler, PluginMark.COMMAND_ROLE, None)
+        if isinstance(name, str) and isinstance(limit, CommandRole):
+            guarded[name] = limit
+    return guarded

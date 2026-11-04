@@ -8,14 +8,16 @@ assets = []
 
 [[help]]
 section = "AI 部分"
-note = "独立会话和思考过程，私聊要管理员以上"
+note = "私聊要授权，群里 @我 或说触发词就能聊"
 
 [[help.commands]]
 cmd = "history"
 desc = "显示历史记录"
 flags = []
+role = "admin"
 
 [[help.commands]]
 cmd = "clear"
 desc = "清空记忆"
 flags = []
+role = "admin"

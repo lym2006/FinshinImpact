@@ -16,7 +16,9 @@ class BotMessage:
     # 命令
     CMD_NOT_FOUND = "命令不存在，请使用 /help "
     CMD_FORMAT_ERROR = "格式错误"
-    CMD_USAGE = "可用输入：{inputs}"
+    CMD_USAGE_FLAGS = "可用开关：{flags}"
+    CMD_USAGE_ARGS = "可用参数：{args}"
+    CMD_USAGE_HINT = "/{cmd} 用法错误"
     CMD_NO_PERMISSION = "没有权限使用该命令"
 
     # 命令授权

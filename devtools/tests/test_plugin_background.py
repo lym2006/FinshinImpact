@@ -86,7 +86,9 @@ def _register_modules(modules: dict[str, object], names: list[str]):
         return found
 
     dispatcher = _FakeDispatcher()
-    manifests = [SimpleNamespace(name=name, core=False) for name in names]
+    manifests = [
+        SimpleNamespace(name=name, core=False, help_section=()) for name in names
+    ]
 
     with (
         patch.object(_register, "_resolve_plugins", lambda: manifests),

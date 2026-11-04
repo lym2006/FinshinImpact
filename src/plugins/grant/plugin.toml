@@ -8,19 +8,23 @@ assets = []
 
 [[help]]
 section = "授权部分"
-note = "授权与撤销只有主人能使"
 
 [[help.commands]]
 cmd = "grant"
-desc = "授予该 id 管理员权限（仅主人）"
+desc = "授予该 id 管理员权限"
 flags = []
+args = "用户 id"
+role = "owner"
 
 [[help.commands]]
 cmd = "ungrant"
-desc = "撤销该 id 管理员权限（仅主人）"
+desc = "撤销该 id 管理员权限"
 flags = []
+args = "用户 id"
+role = "owner"
 
 [[help.commands]]
 cmd = "admin"
-desc = "查看授权名单（仅主人）"
+desc = "查看授权名单"
 flags = []
+role = "owner"

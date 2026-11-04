@@ -29,15 +29,16 @@ class OutboundPayloadDTO:
 class CommandDTO:
     """命令片段
 
-    - matched 为真时 head 与 flags、args 才有效
-    - flags 只报形状，支持哪些开关由插件清单声明
+    - matched 为真时 head 与 pieces 才有效
+    - pieces 是命令头之后的片段，顺序原样保留
+    - 哪一段是开关、哪一段是参数要按插件清单才判得出，绑定交给读清单的那一步
+    - 短横开头的片段只校验形状，支持哪些开关由插件清单声明
     - format_error 标记以命令前缀开头但形态非法的消息
     """
 
     matched: bool = False
     head: str = ""
-    flags: tuple[str, ...] = ()
-    args: tuple[str, ...] = ()
+    pieces: tuple[str, ...] = ()
     format_error: bool = False
 
 

@@ -120,9 +120,9 @@ def _ctx(
     return HandlerContext(event=event, interaction=port), port
 
 
-def _grant_ctx(user_id: str, args: tuple[str, ...]):
+def _grant_ctx(user_id: str, pieces: tuple[str, ...]):
     """构造一条授权命令事件"""
-    return _ctx(user_id, command=CommandDTO(matched=True, head="grant", args=args))
+    return _ctx(user_id, command=CommandDTO(matched=True, head="grant", pieces=pieces))
 
 
 def _admin_ctx(user_id: str, scope: ChatScope):
@@ -310,7 +310,7 @@ class TestGrantCommands(AccessCase):
         """主人撤销后名单里没了"""
         asyncio.run(self._grant_user("12345"))
         ctx, port = _ctx(
-            "456", command=CommandDTO(matched=True, head="ungrant", args=("12345",))
+            "456", command=CommandDTO(matched=True, head="ungrant", pieces=("12345",))
         )
         asyncio.run(_commands._drop_grant(raw=None, ctx=ctx))
 
@@ -320,7 +320,7 @@ class TestGrantCommands(AccessCase):
     def test_revoke_unknown_id(self) -> None:
         """撤销不在名单里的 id，提示后继续等重发"""
         ctx, port = _ctx(
-            "456", command=CommandDTO(matched=True, head="ungrant", args=("777",))
+            "456", command=CommandDTO(matched=True, head="ungrant", pieces=("777",))
         )
         asyncio.run(_commands._drop_grant(raw=None, ctx=ctx))
 
