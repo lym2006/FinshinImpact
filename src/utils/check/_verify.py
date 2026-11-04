@@ -3,6 +3,7 @@
 
 - 全部通道并发探测，按优先级顺序取首个成功的通道
 - 首轮全挂则预热后重跑一轮再定性
+- 每轮逐档记耗时、上限与跳过，只落调试日志
 """
 
 import asyncio
@@ -14,7 +15,7 @@ from skin.messages import CheckMessage
 
 from ..config import AppConfigData, AppSchema, validate_types
 from ..logger import get_logger
-from ..network import Channel, RowId, RowStatus
+from ..network import NETWORK_ROWS, Channel, RowId, RowStatus, probe_budget
 
 _logger = get_logger("Check")
 
@@ -47,17 +48,39 @@ def _never_stop() -> bool:
     return False
 
 
-async def _probe_safe(ch: Channel, probe: _ProbeCallback) -> _Verdict:
+def _probe_tag(round_no: int, ch: Channel, started: float, budget: float) -> str:
+    """通道耗时行"""
+    cost = asyncio.get_running_loop().time() - started
+    return f"探测第{round_no}轮 {ch.kind} 跑了 {cost:.1f}s 上限 {budget:.1f}s"
+
+
+def _log_skipped_rows(round_no: int, channels: Sequence[Channel]) -> None:
+    """未起表的档位逐行标跳过"""
+    kinds = {ch.kind for ch in channels}
+    for rid in NETWORK_ROWS:
+        if rid not in kinds:
+            _logger.debug(f"探测第{round_no}轮 {rid} 未起表 跳过")
+
+
+async def _probe_safe(
+    ch: Channel, probe: _ProbeCallback, round_no: int, budget: float
+) -> _Verdict:
     """执行单通道探针
 
     - 探针异常记为该通道失败，不上抛
+    - 耗时与终局逐行落调试日志
     """
+    started = asyncio.get_running_loop().time()
     try:
         resolved, errors, detail = await probe(ch)
     except asyncio.CancelledError:
+        # 陪跑被取消属正常清场，不附堆栈
+        _logger.debug(
+            f"{_probe_tag(round_no, ch, started, budget)} 未采用 跳过", exc_info=False
+        )
         raise
     except Exception:
-        _logger.debug("连通探针异常")
+        _logger.debug(f"{_probe_tag(round_no, ch, started, budget)} 探针异常")
         return (
             False,
             None,
@@ -65,6 +88,8 @@ async def _probe_safe(ch: Channel, probe: _ProbeCallback) -> _Verdict:
             "",
         )
     ok = resolved is not None or bool(errors and FieldKey.PROXY not in errors)
+    state = "过" if ok else f"不通 {detail or errors.get(FieldKey.PROXY, '')}"
+    _logger.debug(f"{_probe_tag(round_no, ch, started, budget)} {state}")
     return ok, resolved, errors, detail
 
 
@@ -87,6 +112,7 @@ def _settle_frame(ch: Channel, verdict: _Verdict, via_label: _ViaLabel) -> dict:
 
 async def _run_channels(
     channels: Sequence[Channel],
+    round_no: int,
     probe: _ProbeCallback,
     emit: _EmitCallback,
     via_label: _ViaLabel,
@@ -102,12 +128,18 @@ async def _run_channels(
     stop = stop_check or _never_stop
     outcome = ChannelOutcome()
     order = list(channels)
+    _log_skipped_rows(round_no, order)
     if not order:
         return outcome
     for ch in order:
         emit({"id": ch.kind, "status": RowStatus.CHECKING, "detail": ""})
 
-    tasks = {asyncio.ensure_future(_probe_safe(ch, probe)): ch for ch in order}
+    tasks = {
+        asyncio.ensure_future(
+            _probe_safe(ch, probe, round_no, probe_budget(ch.url))
+        ): ch
+        for ch in order
+    }
     pending = set(tasks)
     verdicts: dict[str, _Verdict] = {}
     winner: Channel | None = None
@@ -184,15 +216,16 @@ async def run_probe_round(
     - 重跑前重发整表清场，已定案的失败行不吃单行帧
     - 通道表为空或轮次被中止时不重跑
     """
-    outcome = await _run_channels(channels, probe, emit, via_label, stop_check)
+    outcome = await _run_channels(channels, 1, probe, emit, via_label, stop_check)
     stopped = stop_check is not None and stop_check()
     if outcome.passed or not channels or stopped:
         return outcome
 
     # 首轮全挂多为冷启动握手慢：歇一拍等内核拉起来，再趁热重检一轮定性
+    _logger.debug(f"探测首轮全不通 预热 {_RETRY_WARMUP}s 后重跑第二轮")
     await asyncio.sleep(_RETRY_WARMUP)
     replay()
-    return await _run_channels(channels, probe, emit, via_label, stop_check)
+    return await _run_channels(channels, 2, probe, emit, via_label, stop_check)
 
 
 def local_row(
