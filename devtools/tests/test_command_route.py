@@ -39,6 +39,9 @@ from aiogram.types import (  # noqa: E402
 from adapters.telegram._event import BotIdentity, normalize_update  # noqa: E402
 from adapters.telegram._normalize import NormalizeMiddleware  # noqa: E402
 from adapters.telegram.router_bridge import build_router  # noqa: E402
+from plugins._shared.filters import CommandMatch  # noqa: E402
+from plugins._shared.messages import BotMessage  # noqa: E402
+from plugins.help import _commands  # noqa: E402
 from core.domain import ContentKind, PluginRoute, PluginSpec  # noqa: E402
 from core.dto import (  # noqa: E402
     HelpCommandDTO,
@@ -46,9 +49,6 @@ from core.dto import (  # noqa: E402
     MsgReferenceDTO,
     OutboundPayloadDTO,
 )
-from plugins._shared.filters import CommandMatch  # noqa: E402
-from plugins._shared.messages import BotMessage  # noqa: E402
-from plugins.help import _commands  # noqa: E402
 from services.context import HandlerContext  # noqa: E402
 
 _GROUP = Chat(id=-100123, type="supergroup", title="测试群")
@@ -62,8 +62,7 @@ _IDENTITY = BotIdentity(user_id="777", username="MyBot")
 _MENU = {
     "help": "帮助",
     "history": "显示历史记录",
-    "md": "图片输出",
-    "convert": "格式转换",
+    "demo": "演示命令",
 }
 
 
@@ -88,7 +87,7 @@ class _RecordingInteraction:
     def __init__(self) -> None:
         self.sent: list[str] = []
         self.payloads: list[OutboundPayloadDTO] = []
-        self.mentions: list[bool] = []
+        self.replies: list[MsgReferenceDTO | None] = []
 
     async def send_message(
         self,
@@ -100,7 +99,7 @@ class _RecordingInteraction:
     ) -> MsgReferenceDTO | None:
         self.sent.append(payload.text)
         self.payloads.append(payload)
-        self.mentions.append(mention)
+        self.replies.append(reply_ref)
         return None
 
     def mention_fragment(self, principal: Any) -> str:
@@ -263,14 +262,14 @@ class TestCommandFlagSpec(_VerdictMixin, unittest.IsolatedAsyncioTestCase):
 
     def setUp(self) -> None:
         specs = {
-            "md": HelpCommandDTO(
-                cmd="md", desc="图片输出", flags=(HelpFlagDTO("-i", "图片输入"),)
-            ),
-            "convert": HelpCommandDTO(
-                cmd="convert",
-                desc="格式转换",
-                flags=(HelpFlagDTO("-t", "输出速度", "秒数"),),
-                args="文件名",
+            "demo": HelpCommandDTO(
+                cmd="demo",
+                desc="演示命令",
+                flags=(
+                    HelpFlagDTO("-i", "不带值的开关"),
+                    HelpFlagDTO("-t", "带值的开关", "秒数"),
+                ),
+                args="要带的内容",
             ),
             "history": HelpCommandDTO(cmd="history", desc="显示历史记录"),
         }
@@ -282,78 +281,78 @@ class TestCommandFlagSpec(_VerdictMixin, unittest.IsolatedAsyncioTestCase):
         self.keyword = _commands._is_single_help
 
     async def test_help_flag_lists(self) -> None:
-        rejected, listed = await self._verdict("/md -h")
+        rejected, listed = await self._verdict("/demo -h")
         self.assertFalse(rejected)
         self.assertTrue(listed)
 
     async def test_registered_flag_with_help_lists(self) -> None:
-        rejected, listed = await self._verdict("/md -h -i")
+        rejected, listed = await self._verdict("/demo -h -i")
         self.assertFalse(rejected)
         self.assertTrue(listed)
 
     async def test_registered_flag_alone_yields_to_command(self) -> None:
-        rejected, listed = await self._verdict("/md -i")
+        rejected, listed = await self._verdict("/demo -i")
         self.assertFalse(rejected)
         self.assertFalse(listed)
 
     async def test_unregistered_flag_with_help_taken(self) -> None:
-        rejected, listed = await self._verdict("/md -h -v")
+        rejected, listed = await self._verdict("/demo -h -v")
         self.assertTrue(rejected)
         self.assertFalse(listed)
 
     async def test_two_flags_without_help_taken(self) -> None:
-        rejected, listed = await self._verdict("/md -i -t")
+        rejected, listed = await self._verdict("/demo -i -t")
         self.assertTrue(rejected)
         self.assertFalse(listed)
 
     async def test_repeated_registered_flag_taken(self) -> None:
-        rejected, listed = await self._verdict("/md -i -i")
+        rejected, listed = await self._verdict("/demo -i -i")
         self.assertTrue(rejected)
         self.assertFalse(listed)
 
     async def test_value_flag_with_value_yields_to_command(self) -> None:
-        rejected, listed = await self._verdict("/convert -t 5")
+        rejected, listed = await self._verdict("/demo -t 5")
         self.assertFalse(rejected)
         self.assertFalse(listed)
 
     async def test_value_flag_without_value_taken(self) -> None:
-        for text in ("/convert -t", "/convert -t -h"):
+        for text in ("/demo -t", "/demo -t -h"):
             with self.subTest(text=text):
                 rejected, listed = await self._verdict(text)
                 self.assertTrue(rejected)
                 self.assertFalse(listed)
 
     async def test_value_flag_takes_next_piece_before_args(self) -> None:
-        for text in ("/convert -t 5 文件名", "/convert -t 文件名"):
+        for text in ("/demo -t 5 要回显的文字", "/demo -t 要回显的文字"):
             with self.subTest(text=text):
                 rejected, _ = await self._verdict(text)
                 self.assertFalse(rejected)
 
     async def test_value_flag_with_help_lists(self) -> None:
-        rejected, listed = await self._verdict("/convert -t 5 -h")
+        rejected, listed = await self._verdict("/demo -t 5 -h")
         self.assertFalse(rejected)
         self.assertTrue(listed)
 
     async def test_group_value_flag_without_value_taken(self) -> None:
-        rejected, _ = await self._verdict("/convert -t", chat=_GROUP)
+        rejected, _ = await self._verdict("/demo -t", chat=_GROUP)
         self.assertTrue(rejected)
 
     async def test_trailing_text_taken_as_stray(self) -> None:
-        for text in ("/md 20", "/md -h 20", "/md 20 30"):
+        for text in ("/history 20", "/history -h 20", "/history 20 30"):
             with self.subTest(text=text):
                 rejected, listed = await self._verdict(text)
                 self.assertTrue(rejected)
                 self.assertFalse(listed)
 
-    async def test_group_chat_takes_stray_without_reply(self) -> None:
-        for text in ("/md -h -v", "/md -i -t", "/md 20 30"):
+    async def test_group_chat_takes_stray(self) -> None:
+        for text in ("/history -h -v", "/history -i -t", "/history 20 30"):
             with self.subTest(text=text):
                 rejected, listed = await self._verdict(text, chat=_GROUP)
                 self.assertTrue(rejected)
                 self.assertFalse(listed)
 
     async def test_group_help_still_lists(self) -> None:
-        rejected, listed = await self._verdict("/md -h -i", chat=_GROUP)
+        rejected, listed = await self._verdict("/demo -h -i", chat=_GROUP)
         self.assertFalse(rejected)
         self.assertTrue(listed)
 
@@ -366,16 +365,16 @@ class TestCommandMatchYield(unittest.IsolatedAsyncioTestCase):
         return await CommandMatch(name)(_ctx(message))
 
     async def test_head_match_takes(self) -> None:
-        self.assertTrue(await self._hit("md", "/md"))
+        self.assertTrue(await self._hit("history", "/history"))
 
-    async def test_registered_flag_takes(self) -> None:
-        self.assertTrue(await self._hit("md", "/md -i"))
+    async def test_other_flag_takes(self) -> None:
+        self.assertTrue(await self._hit("history", "/history -a"))
 
     async def test_help_flag_yields(self) -> None:
-        self.assertFalse(await self._hit("md", "/md -h"))
+        self.assertFalse(await self._hit("history", "/history -h"))
 
     async def test_other_head_yields(self) -> None:
-        self.assertFalse(await self._hit("md", "/history"))
+        self.assertFalse(await self._hit("history", "/demo"))
 
 
 class TestAiTriggerLadder(unittest.IsolatedAsyncioTestCase):
@@ -460,10 +459,10 @@ class TestCtxReachesHandlers(unittest.IsolatedAsyncioTestCase):
         # 帮助插件按清单编译成引擎对象，与另一只业务路由同台
         self.dispatcher.include_router(build_router(_commands.spec))
 
-        async def run_md(raw: Message, *, ctx: HandlerContext) -> None:
-            self.ran.append("md")
+        async def run_history(raw: Message, *, ctx: HandlerContext) -> None:
+            self.ran.append("history")
 
-        other = PluginSpec(routes=(PluginRoute(CommandMatch("md"), run_md),))
+        other = PluginSpec(routes=(PluginRoute(CommandMatch("history"), run_history),))
         self.dispatcher.include_router(build_router(other))
 
     async def _answer(self, text: str, chat: Chat = _PRIVATE) -> list[str]:
@@ -473,7 +472,7 @@ class TestCtxReachesHandlers(unittest.IsolatedAsyncioTestCase):
         """
         self.interaction.sent.clear()
         self.interaction.payloads.clear()
-        self.interaction.mentions.clear()
+        self.interaction.replies.clear()
         update = Update(update_id=1, message=_message(chat=chat, text=text))
         await self.dispatcher.feed_update(_FakeBot(), update)  # type: ignore[arg-type]
         return self.interaction.sent
@@ -498,36 +497,36 @@ class TestCtxReachesHandlers(unittest.IsolatedAsyncioTestCase):
                 with self.subTest(text=text, scope=chat.type):
                     self.assertEqual(await self._answer(text, chat=chat), [])
 
-    async def test_group_stray_replies_with_mention(self) -> None:
+    async def test_group_stray_replies_quoting_sender(self) -> None:
         cases = (
-            ("/md 20", "用法:md"),
-            ("/md -v", "用法:md"),
+            ("/history 20", "用法:history"),
+            ("/history -v", "用法:history"),
             ("/help -x", "用法:help"),
         )
         for text, expected in cases:
             with self.subTest(text=text):
                 self.assertEqual(await self._answer(text, chat=_GROUP), [expected])
                 self.assertEqual(self.ran, [])
-                self.assertEqual(self.interaction.mentions, [True])
+                self.assertIsNotNone(self.interaction.replies[0])
 
     async def test_channel_stray_stays_quiet(self) -> None:
-        for text in ("/md 20", "/md -v"):
+        for text in ("/history 20", "/history -v"):
             with self.subTest(text=text):
                 self.assertEqual(await self._answer(text, chat=_CHANNEL), [])
                 self.assertEqual(self.ran, [])
 
     async def test_private_stray_never_reaches_command(self) -> None:
-        self.assertEqual(await self._answer("/md 20"), ["用法:md"])
-        self.assertEqual(self.interaction.mentions, [False])
+        self.assertEqual(await self._answer("/history 20"), ["用法:history"])
+        self.assertEqual(self.interaction.replies, [None])
         self.assertEqual(self.ran, [])
 
     async def test_bare_command_reaches_command(self) -> None:
-        self.assertEqual(await self._answer("/md", chat=_GROUP), [])
-        self.assertEqual(self.ran, ["md"])
+        self.assertEqual(await self._answer("/history", chat=_GROUP), [])
+        self.assertEqual(self.ran, ["history"])
 
     async def test_help_flag_takes_single_help(self) -> None:
         """带 -h 让给单命令帮助，命令侧拿不到"""
-        self.assertEqual(await self._answer("/md -h"), ["单命令:md"])
+        self.assertEqual(await self._answer("/history -h"), ["单命令:history"])
         self.assertEqual(self.ran, [])
 
     async def test_menu_command_sends_photo(self) -> None:
