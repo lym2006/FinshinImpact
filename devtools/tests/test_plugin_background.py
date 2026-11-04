@@ -374,9 +374,9 @@ class TestAIPluginDeclares(unittest.TestCase):
 
     def test_cleanup_loop_is_declared(self) -> None:
         """AI 插件把过期清理协程、问答任务处理与三个平台机会的订阅交进契约"""
-        from plugins.AI import spec
-        from plugins.AI.core import purge_on_identity_changed
-        from plugins.AI.services import (
+        from bundled.AI import spec
+        from bundled.AI.core import purge_on_identity_changed
+        from bundled.AI.services import (
             chat_task_handler,
             cleanup_loop,
             report_lost_tasks,

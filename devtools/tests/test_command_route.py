@@ -25,7 +25,7 @@ _AI_SEED = {
 }
 
 with patch.object(config_manager, "get", lambda path, _type: _AI_SEED[path]):
-    from plugins.AI.handlers import _ai_chat  # noqa: E402
+    from bundled.AI.handlers import _ai_chat  # noqa: E402
 
 from aiogram import Dispatcher  # noqa: E402
 from aiogram.types import (  # noqa: E402
@@ -39,9 +39,9 @@ from aiogram.types import (  # noqa: E402
 from adapters.telegram._event import BotIdentity, normalize_update  # noqa: E402
 from adapters.telegram._normalize import NormalizeMiddleware  # noqa: E402
 from adapters.telegram.router_bridge import build_router  # noqa: E402
-from plugins._shared.filters import CommandMatch  # noqa: E402
-from plugins._shared.messages import BotMessage  # noqa: E402
-from plugins.help import _commands  # noqa: E402
+from bundled._shared.filters import CommandMatch  # noqa: E402
+from bundled._shared.messages import BotMessage  # noqa: E402
+from bundled.help import _commands  # noqa: E402
 from core.domain import ContentKind, PluginRoute, PluginSpec  # noqa: E402
 from core.dto import (  # noqa: E402
     HelpCommandDTO,

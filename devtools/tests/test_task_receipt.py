@@ -24,6 +24,9 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
+from bundled.AI.config import ai_config  # noqa: E402
+from bundled.AI.services import _receipt  # noqa: E402
+from bundled.AI.services._receipt import report_lost_tasks  # noqa: E402
 from core.contracts import CapabilityCall  # noqa: E402
 from core.domain import (  # noqa: E402
     Platform,
@@ -50,9 +53,6 @@ from data import (  # noqa: E402
     get_connection,
     run_migrations,
 )
-from plugins.AI.config import ai_config  # noqa: E402
-from plugins.AI.services import _receipt  # noqa: E402
-from plugins.AI.services._receipt import report_lost_tasks  # noqa: E402
 from utils import config_manager  # noqa: E402
 
 

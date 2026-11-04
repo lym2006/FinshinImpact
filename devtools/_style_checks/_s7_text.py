@@ -2,7 +2,7 @@
 """日志与文案分节检查
 
 - GUI 可见文案收敛进 skin/messages/，ui 下 f-string 裸写业务话术提示
-- Bot 对话话术收敛进 plugins/_shared/messages.py，插件内长中文提示裸写提示
+- Bot 对话话术收敛进 bundled/_shared/messages.py，插件内长中文提示裸写提示
 - 运行日志不收敛：logger/print 调用内中文不报
 - 日志器禁用长级别名，面板列宽只容五字符
 - 日志消息串禁 `%s` 占位传参，要求就地拼好
@@ -56,8 +56,8 @@ def check(files: list[FileData]) -> list[Finding]:
         findings.extend(_check_lazy_log_args(file))
         if file.module.startswith("ui"):
             findings.extend(_check_gui_text(file))
-        if file.module.startswith("plugins") and file.rel not in (
-            "src/plugins/_shared/messages.py",
+        if file.module.startswith("bundled") and file.rel not in (
+            "src/bundled/_shared/messages.py",
         ):
             findings.extend(_check_bot_text(file))
         if file.module.startswith("skin.theme"):

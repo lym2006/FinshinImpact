@@ -137,8 +137,8 @@ _SAMPLES: dict[str, tuple[tuple[str, str], ...]] = {
     ),
     "回调形参": (
         (
-            "src/plugins/_probe_cb.py",
-            _skeleton("src/plugins/_probe_cb.py")
+            "src/bundled/_probe_cb.py",
+            _skeleton("src/bundled/_probe_cb.py")
             + "from aiogram.types import Message\n\n\n"
             + f"async def _go(message: Message) -> None:\n{_FUNC_DOC}",
         ),
@@ -164,7 +164,7 @@ _SAMPLES: dict[str, tuple[tuple[str, str], ...]] = {
 _PKG_INITS: tuple[str, ...] = (
     "src/ui/__init__.py",
     "src/core/__init__.py",
-    "src/plugins/__init__.py",
+    "src/bundled/__init__.py",
     "src/skin/__init__.py",
     "src/skin/messages/__init__.py",
 )
@@ -223,37 +223,37 @@ class TestCallbackParams(unittest.TestCase):
     def test_event_param_must_be_first_and_named_raw(self) -> None:
         """事件形参不在首位或改名都判硬性"""
         source = (
-            _skeleton("src/plugins/_probe_cb.py")
+            _skeleton("src/bundled/_probe_cb.py")
             + "from aiogram.types import Message\n\n\n"
             + "async def _go(ctx: object, message: Message) -> None:\n"
             + '    """定位\n\n    - 说明\n    """\n'
         )
-        hits = _scan([("src/plugins/_probe_cb.py", source)]).get("回调形参", [])
+        hits = _scan([("src/bundled/_probe_cb.py", source)]).get("回调形参", [])
         self.assertEqual(len(hits), 2, hits)
 
     def test_middleware_signature(self) -> None:
         """中间件 __call__ 形参序列不对即判硬性"""
         source = (
-            _skeleton("src/plugins/_probe_cb.py")
+            _skeleton("src/bundled/_probe_cb.py")
             + "from aiogram import BaseMiddleware\n\n\n"
             + "class _EchoMiddleware(BaseMiddleware):\n"
             + _CLASS_DOC
             + "    async def __call__(self, event: object, handler: object) -> None:\n"
             + '        """定位\n\n        - 说明\n        """\n'
         )
-        hits = _scan([("src/plugins/_probe_cb.py", source)]).get("回调形参", [])
+        hits = _scan([("src/bundled/_probe_cb.py", source)]).get("回调形参", [])
         self.assertTrue(any("handler, event, data" in text for text in hits), hits)
 
     def test_injected_context_rename(self) -> None:
         """回调里上下文形参改名即注入不到，判硬性"""
         source = (
-            _skeleton("src/plugins/_probe_cb.py")
+            _skeleton("src/bundled/_probe_cb.py")
             + "from aiogram.types import Message\n"
             + "from services import HandlerContext\n\n\n"
             + "async def _go(raw: Message, host: HandlerContext) -> None:\n"
             + '    """定位\n\n    - 说明\n    """\n'
         )
-        hits = _scan([("src/plugins/_probe_cb.py", source)]).get("回调形参", [])
+        hits = _scan([("src/bundled/_probe_cb.py", source)]).get("回调形参", [])
         self.assertTrue(any("改名 `ctx`" in text for text in hits), hits)
 
     def test_swappable_optional_pair(self) -> None:
@@ -271,13 +271,13 @@ class TestCallbackParams(unittest.TestCase):
     def test_business_coroutine_not_flagged(self) -> None:
         """业务协程收上下文对象当数据不算注入位，不报"""
         source = (
-            _skeleton("src/plugins/_probe_cb.py")
+            _skeleton("src/bundled/_probe_cb.py")
             + "from services import HandlerContext\n\n\n"
             + "async def _push(task: HandlerContext) -> None:\n"
             + '    """定位\n\n    - 说明\n    """\n'
         )
         self.assertEqual(
-            _scan([("src/plugins/_probe_cb.py", source)]).get("回调形参", []), []
+            _scan([("src/bundled/_probe_cb.py", source)]).get("回调形参", []), []
         )
 
 

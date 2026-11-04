@@ -19,6 +19,9 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
+from bundled._shared.access import require_role  # noqa: E402
+from bundled._shared.filters import CommandMatch  # noqa: E402
+from bundled.help import _services  # noqa: E402
 from core.domain import (  # noqa: E402
     PLUGINS_PKG,
     CommandRole,
@@ -32,9 +35,6 @@ from core.dto import (  # noqa: E402
     PluginManifestDTO,
 )
 from exceptions import PluginRoleError  # noqa: E402
-from plugins._shared.access import require_role  # noqa: E402
-from plugins._shared.filters import CommandMatch  # noqa: E402
-from plugins.help import _services  # noqa: E402
 from utils.plugin import _manifest, _register  # noqa: E402
 
 

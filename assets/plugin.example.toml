@@ -1,4 +1,4 @@
-# 插件清单模板 — 复制到 src/plugins/<目录名>/plugin.toml 后按需改值
+# 插件清单模板 — 复制到 src/bundled/<目录名>/plugin.toml 后按需改值
 
 # 与插件目录名一致
 name = "name"
