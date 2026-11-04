@@ -11,7 +11,7 @@ from functools import wraps
 from typing import ParamSpec, cast
 
 from bot.error_guard import error_guard
-from core.domain import CommandRole, ConfigKey, ConfigSection
+from core.domain import CommandRole, ConfigKey, ConfigSection, PluginMark
 from core.dto import PrincipalDTO
 from services.context import HandlerContext
 from utils import config_manager, get_logger
@@ -53,6 +53,7 @@ def require_role(
     """权限守卫装饰器
 
     - 档位低于要求的直接答无权限，不进处理函数
+    - 挂上的档位由装配期与清单声明比对
     """
 
     def decorator(
@@ -67,6 +68,7 @@ def require_role(
                 return
             await func(*args, **kwargs)
 
+        setattr(wrapper, PluginMark.COMMAND_ROLE, limit)
         return wrapper
 
     return decorator

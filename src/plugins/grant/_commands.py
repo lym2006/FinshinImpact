@@ -103,7 +103,7 @@ async def _take_command(ctx: HandlerContext, step: _GrantStep, usage: str) -> No
     - 没带参数挂起待输入
     - 参数多于一个只报用法
     """
-    args = ctx.event.command.args
+    args = ctx.event.command.pieces
     if len(args) == 1:
         if not await _apply(ctx, step, args[0]):
             _hold_target(ctx, step)
