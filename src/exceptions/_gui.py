@@ -39,14 +39,3 @@ class FontRegisterError(FontError):
 
 class FontFamilyError(FontError):
     """字体家族名获取异常"""
-
-
-GUI_MAP = {
-    DashboardWriteError: "GUI 写入日志错误",
-    "Font": {
-        FontMissingError: "字体缺失：{path}",
-        FontLoadError: "字体加载异常：{path}",
-        FontRegisterError: "字体注册异常：{path}",
-        FontFamilyError: "字体家族名获取异常：{path}",
-    },
-}

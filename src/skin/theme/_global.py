@@ -55,7 +55,6 @@ class BodyTheme:
     hover_color: str = PALETTE.hover_color  # 悬停文字色
     selection_bg: str = PALETTE.sel_bg  # 选中背景色
     selection_color: str = PALETTE.sel_color  # 选中文字色
-    disabled_color: str = PALETTE.disabled_color  # 置灰文字色
     padding: int = 8  # 仪表盘内边距
 
 

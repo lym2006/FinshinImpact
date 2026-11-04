@@ -23,7 +23,7 @@ def is_blank(value: object) -> bool:
     """必填项空值判定
 
     - 空白字符串与空列表视为未填写
-    - 数值与布尔无空态，0 和 False 都是合法填写
+    - 数值无空态，0 是合法填写
     """
     if isinstance(value, str):
         return not value.strip()
