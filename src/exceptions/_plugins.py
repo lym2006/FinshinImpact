@@ -52,10 +52,6 @@ class PluginRoleError(PluginsError):
         super().__init__()
 
 
-class AIError(PluginsError):
-    """AI 插件异常基类"""
-
-
 PLUGINS_MAP = {
     PluginSpecError: "缺少 spec 属性（检查 __init__.py）",
     PluginMissingError: "未找到（检查目录结构）",
