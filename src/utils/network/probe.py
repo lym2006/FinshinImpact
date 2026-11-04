@@ -180,6 +180,9 @@ def verify_skeleton() -> list[dict]:
 
 _TAIL_ROWS = (RowId.LOCAL, RowId.ADVICE)
 
+# 三路网络通道的行 id，未起表的档位按它点名
+NETWORK_ROWS = tuple(rid for rid, *_ in _VERIFY_ROWS if rid not in _TAIL_ROWS)
+
 
 def single_row_of(mode: str) -> tuple[str, str, str] | None:
     """单路模式的通道行
