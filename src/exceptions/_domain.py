@@ -26,11 +26,3 @@ class MessageVanishedError(DomainError):
         self.platform = ref.platform
         self.message_id = ref.message_id
         super().__init__()
-
-
-class TaskAbortedError(DomainError):
-    """任务被主动终止"""
-
-
-class PrincipalNotFoundError(DomainError):
-    """未找到用户或群组"""

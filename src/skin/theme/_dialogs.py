@@ -223,7 +223,6 @@ class ChangeDialogTheme:
     # 尺寸配置
     min_width: int = 560  # 最小宽度
     min_height: int = 280  # 最小高度
-    row_height: int = 28  # 表格行高（防内容换行挤压）
     row_min_lines: int = 2  # 单元格最小显示行数
     row_max_lines: int = 6  # 单元格最大显示行数，超出内部滚动
     row_pad: int = 24  # 行高额外留白（含横向滚动条占位）

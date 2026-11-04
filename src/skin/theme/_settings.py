@@ -50,9 +50,6 @@ class SettingsDialogTheme:
     btn_hover_bg: str = "#2B5A8A"  # 主按钮悬停背景色
     btn_pressed_bg: str = "#1A4060"  # 主按钮按下背景色
 
-    # 勾选框
-    check_spacing: int = 6  # 指示器与文字间距
-
     # 人设预览
     persona_preview_height: int = 420  # 预览弹窗正文固定高度
     persona_preview_width: int = 520  # 预览与编辑弹窗正文固定宽度
