@@ -29,15 +29,10 @@ class HandlerContext:
             reply_ref=self.event.ref,
         )
 
-    async def answer(
-        self, content: str | OutboundPayloadDTO, *, mention: bool = False
-    ) -> MsgReferenceDTO | None:
-        """发到当前会话，不引用原消息
-
-        - mention 为真时正文前拼上发起人，用于群里点名回执
-        """
+    async def answer(self, content: str | OutboundPayloadDTO) -> MsgReferenceDTO | None:
+        """发到当前会话，不引用原消息"""
         return await self.interaction.send_message(
-            self.event.principal, _to_payload(content), mention=mention
+            self.event.principal, _to_payload(content)
         )
 
     def mention_fragment(self) -> str:
