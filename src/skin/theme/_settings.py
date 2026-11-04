@@ -51,7 +51,7 @@ class SettingsDialogTheme:
     btn_pressed_bg: str = "#1A4060"  # 主按钮按下背景色
 
     # 勾选框
-    check_size: int = 18  # 指示器边长，与 bootstrap PANEL.check_size 同步
+    check_size: int = 18  # 勾选框指示器边长，与全局那份同值
     check_spacing: int = 6  # 指示器与文字间距
 
     # 人设预览

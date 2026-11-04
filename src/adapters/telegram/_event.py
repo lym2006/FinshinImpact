@@ -3,7 +3,7 @@
 
 - 把 Telegram 消息与相册转为平台无关事件
 - 命令切分、点名与引用归属按 Telegram 协议判定
-- 作用域、种类与显示名的取值归在同目录 _fields 里，这里只组装事件
+- 作用域、种类与显示名的取值在同目录的字段模块里，这里只组装事件
 - 只认单条消息与整组两种来源，缓冲与放行不归这里
 """
 
@@ -40,7 +40,7 @@ _COMMAND_PREFIX = "/"
 _BOT_PREFIX = "@"
 _FLAG_PREFIX = "-"
 
-# Telegram 侧命令名的形状，开关名形状归 core.domain
+# Telegram 侧命令名的形状，开关名形状另有平台无关单源
 _COMMAND_NAME_RE = re.compile(r"[A-Za-z][A-Za-z0-9_]{0,31}")
 
 

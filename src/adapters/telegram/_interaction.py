@@ -34,7 +34,6 @@ _PROBE_TEXT = "dummy"  # 探测占位文本，仅用于触发服务端错误串
 def _chat_id_of(container: ContainerKey) -> int:
     """容器段反推会话 id
 
-    - 容器段格式由 core.domain.make_container 定义
     - 群聊 g 前缀补负号，私聊 u 前缀即用户 id
     """
     if not container:

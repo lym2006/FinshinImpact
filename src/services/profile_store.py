@@ -35,7 +35,7 @@ _PERSONA_TEMPLATE = ASSETS_DIR / ASSET_PERSONA_EXAMPLE_NAME
 # 实例判定只认自描述文件，引导期必写，新建实例此刻还没有 config.toml
 _INSTANCE_MARK = INSTANCE_PROFILE_NAME
 
-# 备注名在自描述文件里的键名，token 键名由 profile_env 单源提供
+# 备注名在自描述文件里的键名，token 键名另有单源常量
 _REMARK_KEY = "remark"
 
 # 最近使用时间（创建或启动）在自描述文件里的键名，选窗列表按它降序置顶
