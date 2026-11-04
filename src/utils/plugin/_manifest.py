@@ -9,42 +9,23 @@
 import importlib.util
 import tomllib
 from pathlib import Path
-from typing import Any, TypeGuard
+from typing import Any
 
 from core.domain import (
     CORE_PLUGIN_PRIORITY,
     MANIFEST_FIELDS,
     PLUGINS_PKG,
     CommandPriority,
-    CommandRole,
-    HelpKey,
     ManifestKey,
     PluginFileName,
     StateKey,
-    is_flag_name,
 )
-from core.dto import HelpCommandDTO, HelpFlagDTO, HelpSectionDTO, PluginManifestDTO
+from core.dto import PluginManifestDTO
+
+from ._manifest_help import read_help_sections
 
 # 清单标量字段与期望类型，deps/assets 列表成员一律 str
 _SCALAR_TYPES: dict[str, type] = {spec.key: spec.value_type for spec in MANIFEST_FIELDS}
-
-# 帮助贡献键名白名单，未知键段整段拒收
-_HELP_SECTION_KEYS = frozenset({HelpKey.SECTION, HelpKey.NOTE, HelpKey.COMMANDS})
-_HELP_COMMAND_KEYS = frozenset({HelpKey.CMD, HelpKey.DESC})
-_HELP_COMMAND_ALLOWED = _HELP_COMMAND_KEYS | frozenset(
-    {HelpKey.FLAGS, HelpKey.ARGS, HelpKey.ROLE}
-)
-
-# 清单权限档词表，只认这三个词
-_ROLE_WORDS: dict[str, CommandRole] = {
-    "owner": CommandRole.OWNER,
-    "admin": CommandRole.ADMIN,
-    "member": CommandRole.MEMBER,
-}
-
-# 清单开关项的段数：两段是「开关 说明」，第三段是带值开关的值名
-_FLAG_ITEM_MIN_LEN = 2
-_FLAG_ITEM_MAX_LEN = 3
 
 # 清单必填项，缺任一拒收
 _REQUIRED_KEYS = tuple(spec.key for spec in MANIFEST_FIELDS if spec.required)
@@ -117,107 +98,9 @@ def _read_manifest(path: Path, dir_name: str) -> PluginManifestDTO | None:
         return None
 
     if raw_sections := data.get(ManifestKey.HELP):
-        kwargs["help_section"] = _read_help_sections(raw_sections)
+        kwargs["help_section"] = read_help_sections(raw_sections, dir_name)
 
     return PluginManifestDTO(**kwargs)
-
-
-def _read_help_sections(
-    raw_sections: object,
-) -> tuple[HelpSectionDTO, ...]:
-    """解析帮助贡献段列表
-
-    - 非列表入参视为无贡献
-    - 段含未知键或类型错误时整段跳过
-    - 单条命令键集或类型不符时该条跳过
-    """
-    if not isinstance(raw_sections, list):
-        return ()
-
-    sections: list[HelpSectionDTO] = []
-    for raw_section in raw_sections:
-        if not isinstance(raw_section, dict):
-            continue
-        if not _HELP_SECTION_KEYS.issuperset(raw_section):
-            continue
-
-        section = raw_section.get(HelpKey.SECTION, "")
-        note = raw_section.get(HelpKey.NOTE, "")
-        raw_commands = raw_section.get(HelpKey.COMMANDS, [])
-        if not isinstance(section, str) or not isinstance(note, str):
-            continue
-        if not isinstance(raw_commands, list):
-            continue
-
-        commands = tuple(
-            command
-            for command in map(_parse_help_command, raw_commands)
-            if command is not None
-        )
-        sections.append(HelpSectionDTO(section=section, note=note, commands=commands))
-
-    return tuple(sections)
-
-
-def _parse_help_command(raw: object) -> HelpCommandDTO | None:
-    """解析单条命令贡献
-
-    - 键集超出清单口径或必填类型不符时返回 None
-    - flags 可缺省，缺省为空元组
-    - 每项须是「开关 说明」两段非空文本，带值的开关再补一段值名
-    - args 可缺省，缺省即命令后面不带内容
-    - role 可缺省，缺省即用户档，词表外的值整条拒收
-    """
-    if not isinstance(raw, dict):
-        return None
-    if not _HELP_COMMAND_KEYS.issubset(raw) or not _HELP_COMMAND_ALLOWED.issuperset(
-        raw
-    ):
-        return None
-    if not all(isinstance(raw[key], str) for key in _HELP_COMMAND_KEYS):
-        return None
-
-    raw_flags = raw.get(HelpKey.FLAGS, [])
-    if not isinstance(raw_flags, list):
-        return None
-    flags: list[HelpFlagDTO] = []
-    for raw_flag in raw_flags:
-        if not _is_flag_item(raw_flag):
-            return None
-        value = (
-            raw_flag[_FLAG_ITEM_MIN_LEN] if len(raw_flag) > _FLAG_ITEM_MIN_LEN else ""
-        )
-        flags.append(HelpFlagDTO(name=raw_flag[0], desc=raw_flag[1], value=value))
-
-    raw_role = raw.get(HelpKey.ROLE, "")
-    if not isinstance(raw_role, str) or (raw_role and raw_role not in _ROLE_WORDS):
-        return None
-
-    raw_args = raw.get(HelpKey.ARGS, "")
-    if not isinstance(raw_args, str):
-        return None
-
-    return HelpCommandDTO(
-        cmd=raw[HelpKey.CMD],
-        desc=raw[HelpKey.DESC],
-        flags=tuple(flags),
-        args=raw_args,
-        role=_ROLE_WORDS.get(raw_role, CommandRole.MEMBER),
-    )
-
-
-def _is_flag_item(raw_flag: object) -> TypeGuard[list[str]]:
-    """判定开关项段数与形状合法
-
-    - 段数、类型或空串任一不符即判否
-    - 首段按开关名形状校验，与命令解析共用一条规则
-    """
-    return (
-        isinstance(raw_flag, list)
-        and _FLAG_ITEM_MIN_LEN <= len(raw_flag) <= _FLAG_ITEM_MAX_LEN
-        and all(isinstance(part, str) and part for part in raw_flag)
-        and is_flag_name(raw_flag[0])
-    )
 
 
 def _load_instance_enabled(state_path: Path) -> frozenset[str] | None:
