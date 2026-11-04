@@ -12,8 +12,10 @@ from pathlib import Path
 from typing import Any
 
 from core.domain import (
+    CORE_PLUGIN_PRIORITY,
     MANIFEST_FIELDS,
     PLUGINS_PKG,
+    CommandPriority,
     ManifestKey,
     PluginFileName,
     StateKey,
@@ -57,7 +59,7 @@ def load_manifests(plugins_path: Path) -> list[dict[str, Any]]:
     """扫描插件目录聚合最小清单
 
     - 无清单或 name 非法的子目录跳过
-    - 按 (order, name) 升序返回 dict 列表
+    - 先按随包表定档，表外插件一律常规档，同档按 name 字典序
     """
     manifests: list[dict[str, Any]] = []
 
@@ -70,7 +72,12 @@ def load_manifests(plugins_path: Path) -> list[dict[str, Any]]:
             continue
         manifests.append({key: data.get(key, _DEFAULTS[key]) for key in _MINIMAL_KEYS})
 
-    manifests.sort(key=lambda item: (item[ManifestKey.ORDER], item[ManifestKey.NAME]))
+    manifests.sort(
+        key=lambda item: (
+            CORE_PLUGIN_PRIORITY.get(item[ManifestKey.NAME], CommandPriority.NORMAL),
+            item[ManifestKey.NAME],
+        )
+    )
     return manifests
 
 

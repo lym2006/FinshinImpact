@@ -25,13 +25,11 @@ from ui._guide import _startup  # noqa: E402
 _SENTINEL = Path("plugins-sentinel")
 _RENDER = {
     ManifestKey.NAME: "AI_render",
-    ManifestKey.CORE: False,
     ManifestKey.DEPS: ["markdown==3.10.2", "playwright==1.62.0"],
     ManifestKey.ASSETS: ["playwright chromium-headless-shell"],
 }
 _AI = {
     ManifestKey.NAME: "AI",
-    ManifestKey.CORE: True,
     ManifestKey.DEPS: [],
     ManifestKey.ASSETS: [],
 }
@@ -100,7 +98,6 @@ class TestCollectMissing(_StartupBase):
         self.m["load_state"].return_value = {StateKey.ENABLED: []}
         core = {
             ManifestKey.NAME: "help",
-            ManifestKey.CORE: True,
             ManifestKey.DEPS: ["foo==1.0"],
             ManifestKey.ASSETS: [],
         }
@@ -191,7 +188,6 @@ class TestDisableFailed(_StartupBase):
         self.m["load_state"].return_value = {StateKey.ENABLED: ["AI_render", "other"]}
         other = {
             ManifestKey.NAME: "other",
-            ManifestKey.CORE: False,
             ManifestKey.DEPS: ["foo==1.0"],
             ManifestKey.ASSETS: [],
         }

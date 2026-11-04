@@ -9,11 +9,7 @@ title = "title"
 # 面板一行说明
 summary = "summary"
 
-# true 为必装，面板不可取消（核心插件用）
-core = false
-
-# 档位三选一：0 最先(help专用) / 10 常规 / 50 最后(AI专用)，同档按 name 排序
-order = 10
+# 恒启用与加载档位由本体随包表决定，清单不写 core/order
 
 # 本插件独有的库，核心插件依赖及公共库走 pyproject
 deps = ["markdown==3.10.2"]

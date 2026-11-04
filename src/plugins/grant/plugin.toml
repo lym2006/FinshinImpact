@@ -1,8 +1,6 @@
 name = "grant"
 title = "权限授权"
 summary = "管理命令的授权名单"
-core = true
-order = 10  # 常规档：与新增插件默认同值
 deps = []
 assets = []
 
