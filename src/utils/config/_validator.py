@@ -14,7 +14,6 @@ _TYPE_NAMES = {
     float: "float",
     str: "str",
     list: "list",
-    bool: "bool",
 }
 
 
@@ -66,8 +65,6 @@ def _match(value: object, expected: type) -> bool:
     if value is None:
         return False
 
-    if expected is bool:
-        return isinstance(value, bool)
     if expected is float:
         return isinstance(value, (int, float)) and not isinstance(value, bool)
     if expected is list:

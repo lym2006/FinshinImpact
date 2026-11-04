@@ -29,7 +29,6 @@ from ._connectivity import (
 )
 from ._domain import DomainError, MessageVanishedError
 from ._gui import (
-    GUI_MAP,
     DashboardWriteError,
     FontError,
     FontFamilyError,
@@ -72,7 +71,6 @@ MAP_KEY_VERSION = "Version"
 MAP_KEY_PLUGINS = "Plugins"
 
 MAPS = {
-    "GUI": GUI_MAP,
     MAP_KEY_CONFIG: CONFIG_MAP,
     MAP_KEY_VERSION: VERSION_MAP,
     MAP_KEY_NETWORK: NETWORK_MAP,

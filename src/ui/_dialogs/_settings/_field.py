@@ -10,7 +10,6 @@ from copy import deepcopy
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QFontMetrics
 from PySide6.QtWidgets import (
-    QCheckBox,
     QComboBox,
     QFormLayout,
     QLabel,
@@ -32,7 +31,7 @@ from utils.config.models import (
     is_blank,
 )
 
-from ..._primitives import TickedCheckBox, make_combo
+from ..._primitives import make_combo
 from ._list_widget import ConfigListRow
 from ._reset import Inputs, ResetRegistry
 
@@ -43,8 +42,6 @@ _LABEL_WIDTH_MAX_EM = 8  # 标签列宽上限为 8 倍「M」字宽
 # 必填项空态渲染值：按默认值类型呈现"未填写"的样子
 _BLANK_BY_TYPE: dict[type, ConfigValue] = {
     str: "",
-    float: "",
-    bool: False,
     list: [],
 }
 
@@ -110,8 +107,6 @@ class FieldBuilder:
         match widget:
             case ConfigListRow():
                 return widget.get_values()
-            case QCheckBox():
-                return widget.isChecked()
             case QComboBox():
                 return widget.currentData()
             case QTextEdit():
@@ -192,10 +187,9 @@ class FieldBuilder:
 
     def _build_input(
         self, field: FieldSchema, current_value: ConfigValue
-    ) -> QCheckBox | QComboBox | QTextEdit | QLineEdit | ConfigListRow:
+    ) -> QComboBox | QTextEdit | QLineEdit | ConfigListRow:
         """按值形态选控件
 
-        - bool 项用勾选框且不挂文字，标签与说明走通用右侧结构
         - 枚举项渲染下拉，显示文案挂 userData 取键值
         - 列表项收成入口行，内容在弹窗里改
         - 含换行的字符串走多行编辑
@@ -203,10 +197,6 @@ class FieldBuilder:
         if isinstance(field.default, list):
             items = current_value if isinstance(current_value, list) else []
             return ConfigListRow(field.label, items)
-        if isinstance(field.default, bool):
-            bool_box = TickedCheckBox(GLOBAL.check_size, SETTINGS_DIALOG.check_spacing)
-            bool_box.setChecked(bool(current_value))
-            return bool_box
         if field.options:
             combo = make_combo(field.options)
             index = combo.findData(current_value)

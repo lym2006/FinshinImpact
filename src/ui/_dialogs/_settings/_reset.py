@@ -10,7 +10,6 @@ from typing import TypeAlias
 
 from PySide6.QtCore import SignalInstance
 from PySide6.QtWidgets import (
-    QCheckBox,
     QComboBox,
     QHBoxLayout,
     QLineEdit,
@@ -25,7 +24,7 @@ from utils.config.models import ConfigValue, FieldSchema
 from ..._primitives import make_button
 from ._list_widget import ConfigListRow
 
-_InputWidget: TypeAlias = ConfigListRow | QLineEdit | QTextEdit | QCheckBox | QComboBox
+_InputWidget: TypeAlias = ConfigListRow | QLineEdit | QTextEdit | QComboBox
 Inputs: TypeAlias = dict[str, _InputWidget]
 
 # Qt 布局四边
@@ -41,8 +40,6 @@ def _value_signal(widget: _InputWidget) -> SignalInstance | None:
     match widget:
         case ConfigListRow():
             return widget.items_changed
-        case QCheckBox():
-            return widget.toggled
         case QTextEdit():
             return widget.textChanged
         case QLineEdit():
@@ -127,8 +124,6 @@ class ResetRegistry:
             case ConfigListRow():
                 items = list(restore_target) if isinstance(restore_target, list) else []
                 widget.set_items(items)
-            case QCheckBox():
-                widget.setChecked(bool(restore_target))
             case QTextEdit():
                 widget.setPlainText(text)
             case QLineEdit():

@@ -13,7 +13,7 @@ from enum import StrEnum
 from ..ids import ConfigPath
 
 # 单个 TOML 配置值
-ConfigValue = str | bool | float | list[str] | None
+ConfigValue = str | float | list[str] | None
 
 
 class ConfigSection(StrEnum):
