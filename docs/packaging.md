@@ -70,7 +70,7 @@ python packaging\build.py
 - 编译启动器。
 - 白名单组装，排除 `*.egg-info` 等开发残留。
 - 下载嵌入式 `Python` 与 `uv`，镜像优先、官方兜底，zip 逐条目校验，`uv` 另比对官方 sha256，不过会中止。
-- 用随包嵌入式解释器预编暂存区 `src` 与 `main.py` 的字节码，取认内容不认时间的 checked-hash 模式，用户解压即热、首启不再现场编译。
+- 用随包嵌入式解释器预编暂存区 `src` 与 `main.py` 的字节码，取认内容不认时间的 checked-hash 模式，用户解压即热，首启不必现场编译。
 
 成功标志：末行打印 `完成：dist\FinshinImpact-vX.Y.Z.zip`。
 第三步测试与第四步上传用的都是这个包，不要再重跑构建。

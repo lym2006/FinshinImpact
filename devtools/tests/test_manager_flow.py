@@ -644,7 +644,7 @@ class TestCommitPersona(ManagerFlowTestBase):
 class TestFatalRouting(ManagerFlowTestBase):
     """回归点 4
 
-    - 未预期异常经 catch_all 路由到致命通知，不再上抛杀进程
+    - 未预期异常经 catch_all 路由到致命通知，不上抛杀进程
     """
 
     async def test_start_guard_catches_unexpected(self) -> None:
