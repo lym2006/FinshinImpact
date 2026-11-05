@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from core.domain import (
-    CORE_PLUGIN_PRIORITY,
+    BUNDLED_PLUGIN_PRIORITY,
     MANIFEST_FIELDS,
     PLUGINS_PKG,
     CommandPriority,
@@ -149,13 +149,13 @@ def _resolve_enabled(
     picked = [
         manifest
         for manifest in manifests.values()
-        if manifest.name in CORE_PLUGIN_PRIORITY
+        if manifest.name in BUNDLED_PLUGIN_PRIORITY
         or (enabled is not None and manifest.name in enabled)
     ]
     return sorted(
         picked,
         key=lambda m: (
-            CORE_PLUGIN_PRIORITY.get(m.name, CommandPriority.NORMAL),
+            BUNDLED_PLUGIN_PRIORITY.get(m.name, CommandPriority.NORMAL),
             m.name,
         ),
     )

@@ -207,7 +207,7 @@ QListWidget::item:hover {{
     color: {SURFACE.hover_color};
 }}
 
-QLabel#{ObjectName.ROW_CORE_MARK} {{
+QLabel#{ObjectName.ROW_BUNDLED_MARK} {{
     color: {SURFACE.disabled_color};
     background-color: transparent;
 }}"""

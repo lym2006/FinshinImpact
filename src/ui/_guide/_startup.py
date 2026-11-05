@@ -11,7 +11,7 @@
 
 from PySide6.QtWidgets import QMessageBox
 
-from core.domain import CORE_PLUGIN_PRIORITY, ManifestKey, StateKey
+from core.domain import BUNDLED_PLUGIN_PRIORITY, ManifestKey, StateKey
 from services.env_setup.assets import install_assets, is_asset_installed
 from services.env_setup.deps_install import install_deps
 from services.env_setup.deps_manifest import (
@@ -36,8 +36,8 @@ _Pending = tuple[str, list[str], list[str]]
 def _target_manifests(code: str) -> list[dict]:
     """取本实例应结算的插件清单
 
-    - 范围为核心插件与本实例启用集
-    - core 插件读取侧恒并入
+    - 范围是随包插件与本实例启用集
+    - 随包插件不看勾选，读取侧恒并入
     """
     root = plugins_root()
     if root is None:
@@ -46,7 +46,7 @@ def _target_manifests(code: str) -> list[dict]:
     return [
         manifest
         for manifest in load_manifests(root)
-        if manifest[ManifestKey.NAME] in CORE_PLUGIN_PRIORITY
+        if manifest[ManifestKey.NAME] in BUNDLED_PLUGIN_PRIORITY
         or manifest[ManifestKey.NAME] in enabled
     ]
 

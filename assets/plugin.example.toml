@@ -9,9 +9,7 @@ title = "title"
 # 面板一行说明
 summary = "summary"
 
-# 恒启用与加载档位由本体随包表决定，清单不写 core/order
-
-# 本插件独有的库，核心插件依赖及公共库走 pyproject
+# 本插件独有的库，随包插件的库与公共库走 pyproject
 deps = ["markdown==3.10.2"]
 
 # 非 pip 资源，两段式「模块名 资源名」，启用时面板装、取消无主即卸，无则留空

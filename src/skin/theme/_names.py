@@ -28,5 +28,5 @@ class ObjectName(StrEnum):
     DASHBOARD = "dashboard"
     LAUNCH_TEXT = "launch_text"
     LAUNCH_NOTE = "launch_note"
-    ROW_CORE_MARK = "row_core_mark"
+    ROW_BUNDLED_MARK = "row_bundled_mark"
     PROGRESS_LOG = "progress_log"
