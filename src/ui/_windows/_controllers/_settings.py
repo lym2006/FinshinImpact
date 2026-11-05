@@ -108,11 +108,13 @@ class SettingsController(BaseController):
         ):
             close_restart_wait()  # 落盘没成：重启窗不收，成功话术也不能说
             return
-        outcome = (
-            SETTINGS_DIALOG.history_reset
-            if self._save.identity_changed
-            else SETTINGS_DIALOG.verified_ok
-        )
+        if was_validating and not was_pending:
+            # 复验轮一个字节也没落盘，值仍是文件里那份
+            outcome = SETTINGS_DIALOG.recheck_ok
+        elif self._save.identity_changed:
+            outcome = SETTINGS_DIALOG.history_reset
+        else:
+            outcome = SETTINGS_DIALOG.verified_ok
 
         # 重启过就把结果写进那只等待窗，收场交给用户点确定
         landed = finish_restart_wait(outcome)
