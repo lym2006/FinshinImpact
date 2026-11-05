@@ -132,29 +132,23 @@ def _reject_text(command: CommandDTO) -> str:
 async def _reject_command(raw: Message, ctx: HandlerContext) -> None:
     """回绝写法不对的命令
 
-    - 私聊直接给，群里引用发起人那条消息
     - 频道静默无视
     """
-    scope = ctx.event.scope
-    if scope == ChatScope.UNKNOWN:
+    if ctx.event.scope == ChatScope.UNKNOWN:
         return
-    text = _reject_text(ctx.event.command)
-    if scope == ChatScope.GROUP:
-        await ctx.reply(text)
-        return
-    await ctx.answer(text)
+    await ctx.respond(_reject_text(ctx.event.command))
 
 
 async def _show_single_help(raw: Message, ctx: HandlerContext) -> None:
     """发送单个命令的帮助说明"""
-    await ctx.answer(resolve_single_help(ctx.event.command.head))
+    await ctx.respond(resolve_single_help(ctx.event.command.head))
 
 
 async def _show_menu(raw: Message, ctx: HandlerContext) -> None:
     """以图片形式发送帮助菜单"""
     # 渲染可能触发绘制，放线程池防卡事件循环
     path = await asyncio.to_thread(generate_image)
-    await ctx.answer(OutboundPayloadDTO(kind=ContentKind.PHOTO, local_path=str(path)))
+    await ctx.respond(OutboundPayloadDTO(kind=ContentKind.PHOTO, local_path=str(path)))
 
 
 spec = PluginSpec(

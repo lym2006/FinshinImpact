@@ -75,9 +75,9 @@ async def _apply(ctx: HandlerContext, step: _GrantStep, raw_id: str) -> bool:
             text = BotMessage.UNGRANT_REMOVED if done else BotMessage.UNGRANT_MISSING
     except Exception as e:
         _logger.send_error("授权名单写入失败", e)
-        await ctx.answer(BotMessage.GRANT_RETRY_TARGET)
+        await ctx.respond(BotMessage.GRANT_RETRY_TARGET)
         return False
-    await ctx.answer(text.format(id=raw_id))
+    await ctx.respond(text.format(id=raw_id))
     return done
 
 
@@ -109,9 +109,9 @@ async def _take_command(ctx: HandlerContext, step: _GrantStep, usage: str) -> No
             _hold_target(ctx, step)
         return
     if not args:
-        await ctx.answer(_ask_target(ctx, step))
+        await ctx.respond(_ask_target(ctx, step))
         return
-    await ctx.answer(usage)
+    await ctx.respond(usage)
 
 
 @require_role(CommandRole.OWNER)
@@ -136,16 +136,16 @@ async def _show_admins(raw: Message, ctx: HandlerContext) -> None:
         keys = await list_admins()
     except Exception as e:
         _logger.send_error("授权名单读取失败", e)
-        await ctx.answer(BotMessage.ADMIN_READ_FAILED)
+        await ctx.respond(BotMessage.ADMIN_READ_FAILED)
         return
 
     if not keys:
-        await ctx.answer(BotMessage.ADMIN_EMPTY)
+        await ctx.respond(BotMessage.ADMIN_EMPTY)
         return
     if ctx.event.scope != ChatScope.PRIVATE:
-        await ctx.answer(BotMessage.ADMIN_COUNT.format(count=len(keys)))
+        await ctx.respond(BotMessage.ADMIN_COUNT.format(count=len(keys)))
         return
-    await ctx.answer(
+    await ctx.respond(
         BotMessage.ADMIN_LIST.format(
             count=len(keys), ids="\n".join(f"- {key}" for key in keys)
         )
@@ -162,10 +162,10 @@ async def _finish_grant(raw: Message, ctx: HandlerContext) -> None:
 
     if target == StepInput.STOP:
         _pending.pop(key, None)
-        await ctx.answer(BotMessage.GRANT_CANCELED)
+        await ctx.respond(BotMessage.GRANT_CANCELED)
         return
     if not _is_id(target):
-        await ctx.answer(BotMessage.GRANT_BAD_TARGET)
+        await ctx.respond(BotMessage.GRANT_BAD_TARGET)
         return
 
     if await _apply(ctx, step, target):
