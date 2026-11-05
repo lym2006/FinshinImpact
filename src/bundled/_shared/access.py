@@ -64,7 +64,7 @@ def require_role(
             ctx = cast(HandlerContext, kwargs["ctx"])
             if await role_of(ctx.event.principal) > limit:
                 _logger.info(f"{ctx.event.principal.key} 无权执行命令")
-                await ctx.answer(BotMessage.CMD_NO_PERMISSION)
+                await ctx.respond(BotMessage.CMD_NO_PERMISSION)
                 return
             await func(*args, **kwargs)
 

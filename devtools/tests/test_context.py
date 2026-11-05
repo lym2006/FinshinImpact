@@ -2,11 +2,12 @@
 """处理上下文样例测试
 
 - 文字入参自动包成外发负载
-- reply 带当前事件引用，answer 不带
+- reply 带当前事件引用，answer 不带，respond 只群里带
 """
 
 import sys
 import unittest
+from dataclasses import replace
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "src"))
@@ -93,6 +94,14 @@ class TestHandlerContext(unittest.IsolatedAsyncioTestCase):
     async def test_reply_passes_event_ref(self) -> None:
         await self.ctx.reply("收到")
         self.assertEqual(self.port.calls[0]["reply_ref"], self.ctx.event.ref)
+
+    async def test_respond_quotes_group_only(self) -> None:
+        await self.ctx.respond("在的")
+        self.assertIsNone(self.port.calls[0]["reply_ref"])
+
+        group = replace(self.ctx.event, scope=ChatScope.GROUP)
+        await HandlerContext(event=group, interaction=self.port).respond("在的")
+        self.assertEqual(self.port.calls[1]["reply_ref"], group.ref)
 
     async def test_payload_passed_through(self) -> None:
         payload = OutboundPayloadDTO(

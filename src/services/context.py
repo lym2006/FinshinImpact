@@ -7,7 +7,7 @@
 from dataclasses import dataclass
 
 from core.contracts import InteractionPort
-from core.domain import ContentKind
+from core.domain import ChatScope, ContentKind
 from core.dto import InboundEventDTO, MsgReferenceDTO, OutboundPayloadDTO
 
 
@@ -34,6 +34,17 @@ class HandlerContext:
         return await self.interaction.send_message(
             self.event.principal, _to_payload(content)
         )
+
+    async def respond(
+        self, content: str | OutboundPayloadDTO
+    ) -> MsgReferenceDTO | None:
+        """按场合回话
+
+        - 群里引用当前事件，其余直接发
+        """
+        if self.event.scope == ChatScope.GROUP:
+            return await self.reply(content)
+        return await self.answer(content)
 
     def mention_fragment(self) -> str:
         """取当前主体的提及片段"""
