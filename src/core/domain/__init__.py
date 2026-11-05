@@ -32,7 +32,7 @@ from ._plugin import (
     TaskRun,
 )
 from ._role import ChatRole, CommandRole
-from ._task import TaskKind, TaskPayload, TaskPriority, TaskStatus
+from ._task import TaskKind, TaskPayload, TaskStatus
 from .config import (
     SECTIONS_BY_PLATFORM,
     ConfigGroup,
@@ -88,7 +88,6 @@ __all__ = [
     "TaskPayload",
     "TaskKind",
     "TaskStatus",
-    "TaskPriority",
     # 探测字段键
     "FieldKey",
     # 配置结构

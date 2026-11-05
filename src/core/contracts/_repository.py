@@ -30,10 +30,6 @@ class PrincipalRepository(ABC):
     async def find_by_key(self, key: PrincipalKey) -> PrincipalDTO | None:
         """按唯一键查询"""
 
-    @abstractmethod
-    async def list_stale(self, before: float) -> tuple[PrincipalDTO, ...]:
-        """列出失活主体"""
-
 
 class SessionRepository(ABC):
     """会话仓储"""
@@ -73,7 +69,7 @@ class SessionRepository(ABC):
 class TaskRepository(ABC):
     """任务仓储
 
-    - 单任务按任务号寻址，任务集按主体键筛
+    - 主体与类型合起来定一行，读写都按任务号
     """
 
     @abstractmethod
@@ -89,22 +85,11 @@ class TaskRepository(ABC):
         """按 ID 查询"""
 
     @abstractmethod
-    async def list_unfinished(self, key: PrincipalKey) -> tuple[TaskDTO, ...]:
-        """列出主体未完成任务
-
-        - /clear 圈定范围与 /status 展示共用
-        """
-
-    @abstractmethod
     async def list_all_unfinished(self) -> tuple[TaskDTO, ...]:
         """列出全部主体的未完成任务
 
         - 按主体键与入队序升序，同主体的挨在一起
         """
-
-    @abstractmethod
-    async def delete_by_principal(self, key: PrincipalKey) -> int:
-        """清除主体全部任务"""
 
 
 class MediaRepository(ABC):

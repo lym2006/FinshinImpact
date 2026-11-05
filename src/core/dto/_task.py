@@ -6,7 +6,7 @@
 
 from dataclasses import dataclass
 
-from ..domain import TaskKind, TaskPayload, TaskPriority, TaskStatus
+from ..domain import TaskKind, TaskPayload, TaskStatus
 from ..domain.ids import KEY_SEP, TaskId
 from ._identity import MsgReferenceDTO, PrincipalDTO
 
@@ -18,14 +18,9 @@ class TaskDTO:
     principal: PrincipalDTO
     kind: TaskKind
     status: TaskStatus
-    priority: TaskPriority
     source_ref: MsgReferenceDTO  # 任务创建源消息
 
     payload: TaskPayload = ()
-    created_at: float = 0.0
-    started_at: float | None = None
-    finished_at: float | None = None
-    error_text: str = ""
 
     @property
     def task_id(self) -> TaskId:
@@ -40,8 +35,6 @@ class TaskRequestDTO:
     kind: TaskKind
     source_ref: MsgReferenceDTO
 
-    priority: TaskPriority = TaskPriority.NORMAL
-    dedupe_key: str = ""  # 防重复提交
     payload: TaskPayload = ()
 
 
@@ -54,4 +47,3 @@ class TaskPatchDTO:
     """
 
     status: TaskStatus | None = None
-    error_text: str | None = None

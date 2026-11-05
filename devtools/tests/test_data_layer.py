@@ -3,7 +3,7 @@
 
 - 建表、版本行与 WAL 外键一次验完
 - 主体、会话、任务、授权、媒体索引逐条往返
-- 迁移重跑幂等、备份只留三份、高版本拒读、启动清死行同批查
+- 迁移重跑幂等、老库补做、备份只留三份、高版本拒读、启动清死行同批查
 """
 
 import sys
@@ -21,7 +21,6 @@ from core.domain import (  # noqa: E402
     Platform,
     TaskKind,
     TaskPayload,
-    TaskPriority,
     TaskStatus,
 )
 from core.domain.ids import (  # noqa: E402
@@ -43,6 +42,7 @@ from core.dto import (  # noqa: E402
     TaskRequestDTO,
 )
 from data import (  # noqa: E402
+    SUPPORTED_SCHEMA,
     build_repositories,
     check_schema_compatible,
     close_all,
@@ -70,7 +70,6 @@ _EXPECTED_OBJECTS = frozenset(
         "media_asset",
         "grant",
         "schema_version",
-        "idx_task_dedupe",
         "idx_message_seq",
         "idx_groupmsg_msg",
         "idx_media_container",
@@ -78,12 +77,21 @@ _EXPECTED_OBJECTS = frozenset(
 )
 
 
-def _principal(group: bool = True) -> PrincipalDTO:
+def _principal() -> PrincipalDTO:
     """构造测试主体"""
     return PrincipalDTO(
         platform=Platform.TELEGRAM,
-        container=ContainerKey("g100123" if group else "u456"),
+        container=ContainerKey("g100123"),
         user=UserId("456"),
+    )
+
+
+def _other() -> PrincipalDTO:
+    """构造第二个测试主体，任务号按主体分行"""
+    return PrincipalDTO(
+        platform=Platform.TELEGRAM,
+        container=ContainerKey("g200456"),
+        user=UserId("789"),
     )
 
 
@@ -157,10 +165,37 @@ class TestSchema(_RealDb):
             rows = list(await cursor.fetchall())
 
         self.assertLessEqual(_EXPECTED_OBJECTS, names)
-        self.assertEqual([row["version"] for row in rows], [1])
+        self.assertEqual([row["version"] for row in rows], [1, 2, 3])
         self.assertTrue(rows[0]["checksum"])
         self.assertEqual((await _one(self.conn, "PRAGMA journal_mode"))[0], "wal")
         self.assertEqual((await _one(self.conn, "PRAGMA foreign_keys"))[0], 1)
+
+    async def test_surplus_columns_are_dropped(self) -> None:
+        """任务、主体、会话三表只剩在用的列"""
+        async with self.conn.execute("PRAGMA table_info(task)") as cursor:
+            task_columns = {row["name"] for row in await cursor.fetchall()}
+        async with self.conn.execute("PRAGMA table_info(principal)") as cursor:
+            principal_columns = {row["name"] for row in await cursor.fetchall()}
+        async with self.conn.execute("PRAGMA table_info(session)") as cursor:
+            session_columns = {row["name"] for row in await cursor.fetchall()}
+
+        self.assertEqual(
+            task_columns,
+            {
+                "id",
+                "principal",
+                "kind",
+                "sequence",
+                "status",
+                "payload",
+                "source_ref",
+            },
+        )
+        self.assertEqual(
+            principal_columns,
+            {"key", "platform", "container", "user", "display_name", "created_at"},
+        )
+        self.assertEqual(session_columns, {"key", "summary"})
 
     async def test_rerun_is_idempotent(self) -> None:
         """整库删净重跑，对象数与版本行一致"""
@@ -175,12 +210,14 @@ class TestSchema(_RealDb):
         after = (await _one(self.conn, "SELECT COUNT(*) FROM sqlite_master"))[0]
         self.assertEqual(before, after)
         versions = await _one(self.conn, "SELECT COUNT(*) FROM schema_version")
-        self.assertEqual(versions[0], 1)
+        self.assertEqual(versions[0], 3)
+        # 新库一行数据都没有，没什么可丢
+        self.assertEqual(list(self.backup_dir.glob("bot-*.db")), [])
 
     async def test_backup_keeps_three(self) -> None:
-        """重跑迁移四次只留三份备份"""
+        """同一支脚本反复补做只留三份备份"""
         for _ in range(4):
-            await self.conn.execute("DELETE FROM schema_version")
+            await self.conn.execute("DELETE FROM schema_version WHERE version > 1")
             await self.conn.commit()
             await run_migrations(self.conn, self.db, self.backup_dir)
 
@@ -188,13 +225,68 @@ class TestSchema(_RealDb):
 
     async def test_higher_version_is_rejected(self) -> None:
         """库版本高于支持即拒读，改回本版本可读"""
-        await self.conn.execute("UPDATE schema_version SET version = 999")
+        await self.conn.execute("DELETE FROM schema_version")
+        await self.conn.execute(
+            "INSERT INTO schema_version(version, applied_at, checksum)"
+            " VALUES(?, 0.0, '')",
+            (SUPPORTED_SCHEMA + 1,),
+        )
         await self.conn.commit()
         self.assertFalse(await check_schema_compatible(self.conn))
 
-        await self.conn.execute("UPDATE schema_version SET version = 1")
+        await self.conn.execute(
+            "UPDATE schema_version SET version = ?", (SUPPORTED_SCHEMA,)
+        )
         await self.conn.commit()
         self.assertTrue(await check_schema_compatible(self.conn))
+
+
+class TestLegacyDb(unittest.IsolatedAsyncioTestCase):
+    """没有版本行的老库补做迁移
+
+    - 会话表按老结构建，带一行数据
+    - 补完之后空列抹掉、正文留着、备份落一份
+    """
+
+    _LEGACY_SESSION = """
+    CREATE TABLE session(
+        key            TEXT PRIMARY KEY,
+        container_name TEXT NOT NULL DEFAULT '',
+        summary        TEXT NOT NULL DEFAULT '',
+        last_active_at REAL NOT NULL DEFAULT 0,
+        is_active      INTEGER NOT NULL DEFAULT 0
+    )
+    """
+
+    async def asyncSetUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory(prefix="finshin-legacy-")
+        self.root = Path(self.tmp.name)
+        self.db = self.root / "bot.db"
+        self.backup_dir = self.root / "backups"
+        self.backup_dir.mkdir()
+        self.addCleanup(self.tmp.cleanup)
+        self.addAsyncCleanup(close_all)
+        self.conn = await get_connection(self.db)
+        await self.conn.execute(self._LEGACY_SESSION)
+        await self.conn.execute(
+            "INSERT INTO session(key, container_name, summary, last_active_at, is_active)"
+            " VALUES(?, ?, ?, ?, ?)",
+            ("telegram.g100123", "某个群", "老摘要", 1.0, 1),
+        )
+        await self.conn.commit()
+        await run_migrations(self.conn, self.db, self.backup_dir)
+
+    async def test_legacy_columns_dropped_and_rows_kept(self) -> None:
+        """空列抹掉且会话正文没丢"""
+        async with self.conn.execute("PRAGMA table_info(session)") as cursor:
+            columns = {row["name"] for row in await cursor.fetchall()}
+        row = await _one(
+            self.conn, "SELECT summary FROM session WHERE key = ?", "telegram.g100123"
+        )
+
+        self.assertEqual(columns, {"key", "summary"})
+        self.assertEqual(row[0], "老摘要")
+        self.assertEqual(len(list(self.backup_dir.glob("bot-*.db"))), 1)
 
 
 class TestPrincipal(_RealDb):
@@ -387,39 +479,30 @@ class TestSession(_RealDb):
 
 
 class TestTask(_RealDb):
-    """任务去重、状态机与清死行"""
+    """任务状态机与清死行"""
 
     async def asyncSetUp(self) -> None:
         # task 外键指向 principal，先落一行主体，否则入队当场拒
         await super().asyncSetUp()
         await self.repos.principal.upsert(_principal(), "张三")
+        await self.repos.principal.upsert(_other(), "李四")
 
-    async def test_dedupe_returns_existing(self) -> None:
-        """同一去重键命中未完成任务即回原任务"""
-        request = self._request(dedupe_key="k-1", payload=_CHAT_PAYLOAD)
-
-        first = await self.repos.task.insert(request)
-        again = await self.repos.task.insert(request)
-
-        self.assertEqual(first.task_id, again.task_id)
-        self.assertEqual(first.status, TaskStatus.PENDING)
-
-    async def test_empty_dedupe_never_collides(self) -> None:
-        """空去重键不得互相挡住"""
-        hist = await self.repos.task.insert(
-            self._request(kind=TaskKind.HISTORY, priority=TaskPriority.HIGH)
-        )
-        clear = await self.repos.task.insert(
-            self._request(kind=TaskKind.CLEAR, priority=TaskPriority.IMMEDIATE)
+    async def test_reinsert_overwrites_the_same_row(self) -> None:
+        """同主体重复入队盖住那一行，状态退回排队"""
+        first = await self.repos.task.insert(self._request(payload=_CHAT_PAYLOAD))
+        await self.repos.task.patch(
+            first.task_id, TaskPatchDTO(status=TaskStatus.RUNNING)
         )
 
-        self.assertNotEqual(hist.task_id, clear.task_id)
+        again = await self.repos.task.insert(self._request())
 
-    async def test_patch_records_started_at(self) -> None:
-        """转执行中写回开始时刻，载荷与主体原样读回"""
-        first = await self.repos.task.insert(
-            self._request(dedupe_key="k-1", payload=_CHAT_PAYLOAD)
-        )
+        self.assertEqual(again.task_id, first.task_id)
+        self.assertEqual(again.status, TaskStatus.PENDING)
+        self.assertEqual((await _one(self.conn, "SELECT COUNT(*) FROM task"))[0], 1)
+
+    async def test_patch_moves_to_running(self) -> None:
+        """转执行中，载荷与主体原样读回"""
+        first = await self.repos.task.insert(self._request(payload=_CHAT_PAYLOAD))
 
         running = await self.repos.task.patch(
             first.task_id, TaskPatchDTO(status=TaskStatus.RUNNING)
@@ -427,14 +510,13 @@ class TestTask(_RealDb):
 
         assert running is not None
         self.assertEqual(running.status, TaskStatus.RUNNING)
-        self.assertIsNotNone(running.started_at)
         self.assertEqual(running.payload, _CHAT_PAYLOAD)
         self.assertEqual(running.source_ref, _ref())
         self.assertEqual(running.principal, _principal())
 
     async def test_illegal_transition_is_refused(self) -> None:
         """执行中不得退回排队，库内状态不动"""
-        first = await self.repos.task.insert(self._request(dedupe_key="k-1"))
+        first = await self.repos.task.insert(self._request())
         await self.repos.task.patch(
             first.task_id, TaskPatchDTO(status=TaskStatus.RUNNING)
         )
@@ -449,19 +531,18 @@ class TestTask(_RealDb):
         self.assertEqual(current.status, TaskStatus.RUNNING)
 
     async def test_final_state_has_no_exit(self) -> None:
-        """终态写错误串与结束时刻，且不得复活"""
-        first = await self.repos.task.insert(self._request(dedupe_key="k-1"))
+        """落定之后不得复活"""
+        first = await self.repos.task.insert(self._request())
         await self.repos.task.patch(
             first.task_id, TaskPatchDTO(status=TaskStatus.RUNNING)
         )
 
         failed = await self.repos.task.patch(
-            first.task_id, TaskPatchDTO(status=TaskStatus.FAILED, error_text="炸了")
+            first.task_id, TaskPatchDTO(status=TaskStatus.FAILED)
         )
 
         assert failed is not None
-        self.assertIsNotNone(failed.finished_at)
-        self.assertEqual(failed.error_text, "炸了")
+        self.assertEqual(failed.status, TaskStatus.FAILED)
         self.assertIsNone(
             await self.repos.task.patch(
                 first.task_id, TaskPatchDTO(status=TaskStatus.RUNNING)
@@ -476,41 +557,10 @@ class TestTask(_RealDb):
             )
         )
 
-    async def test_list_unfinished_orders_by_priority(self) -> None:
-        """未完成任务按优先级升序、同档按入队序"""
-        principal = _principal()
-        await self.repos.principal.upsert(principal, "张三")
-        await self.repos.task.insert(self._request())
-        await self.repos.task.insert(
-            self._request(kind=TaskKind.HISTORY, priority=TaskPriority.HIGH)
-        )
-        await self.repos.task.insert(
-            self._request(kind=TaskKind.CLEAR, priority=TaskPriority.IMMEDIATE)
-        )
-
-        unfinished = await self.repos.task.list_unfinished(principal.key)
-
-        self.assertEqual(
-            [task.kind for task in unfinished],
-            [TaskKind.CLEAR, TaskKind.HISTORY, TaskKind.CHAT],
-        )
-
     async def test_list_all_unfinished_groups_by_principal(self) -> None:
         """跨主体全量筛未完成，同主体的挨在一起且落定的不进"""
-        other = _principal(group=False)
-        await self.repos.principal.upsert(other, "李四")
-        settled = await self.repos.task.insert(self._request(dedupe_key="k-1"))
-        await self.repos.task.insert(
-            self._request(kind=TaskKind.HISTORY, dedupe_key="k-2")
-        )
-        await self.repos.task.insert(
-            TaskRequestDTO(
-                principal=other,
-                kind=TaskKind.CHAT,
-                source_ref=_ref(),
-                priority=TaskPriority.IMMEDIATE,
-            )
-        )
+        settled = await self.repos.task.insert(self._request())
+        await self.repos.task.insert(self._request(_other()))
         await self.repos.task.patch(
             settled.task_id, TaskPatchDTO(status=TaskStatus.RUNNING)
         )
@@ -520,53 +570,36 @@ class TestTask(_RealDb):
 
         all_unfinished = await self.repos.task.list_all_unfinished()
 
-        self.assertEqual(
-            [(task.principal, task.kind) for task in all_unfinished],
-            [(_principal(), TaskKind.HISTORY), (other, TaskKind.CHAT)],
-        )
-        self.assertEqual((await _one(self.conn, "SELECT COUNT(*) FROM task"))[0], 3)
+        self.assertEqual([task.principal for task in all_unfinished], [_other()])
+        self.assertEqual((await _one(self.conn, "SELECT COUNT(*) FROM task"))[0], 2)
 
     async def test_startup_marks_every_open_task_dead(self) -> None:
         """启动清死行把排队中与执行中一并判死"""
-        chat = await self.repos.task.insert(self._request(dedupe_key="k-1"))
-        await self.repos.task.insert(self._request(kind=TaskKind.CLEAR))
+        chat = await self.repos.task.insert(self._request())
+        await self.repos.task.insert(self._request(_other()))
         await self.repos.task.patch(
             chat.task_id, TaskPatchDTO(status=TaskStatus.RUNNING)
         )
 
         self.assertEqual(await purge_dead_tasks(self.conn), 2)
 
-        self.assertEqual(await self.repos.task.list_unfinished(chat.principal.key), ())
+        self.assertEqual(await self.repos.task.list_all_unfinished(), ())
         row = await _one(
-            self.conn, "SELECT status, finished_at FROM task WHERE id = ?", chat.task_id
+            self.conn, "SELECT status FROM task WHERE id = ?", chat.task_id
         )
         self.assertEqual(row["status"], TaskStatus.FAILED)
-        self.assertIsNotNone(row["finished_at"])
-
-    async def test_delete_by_principal(self) -> None:
-        """按主体清除名下全部任务"""
-        principal = _principal()
-        await self.repos.principal.upsert(principal, "张三")
-        await self.repos.task.insert(self._request(dedupe_key="k-1"))
-        await self.repos.task.insert(self._request(kind=TaskKind.CLEAR))
-
-        self.assertEqual(await self.repos.task.delete_by_principal(principal.key), 2)
 
     def _request(
         self,
+        principal: PrincipalDTO | None = None,
         *,
-        kind: TaskKind = TaskKind.CHAT,
-        priority: TaskPriority = TaskPriority.NORMAL,
-        dedupe_key: str = "",
         payload: TaskPayload = (),
     ) -> TaskRequestDTO:
         """构造一条入队请求"""
         return TaskRequestDTO(
-            principal=_principal(),
-            kind=kind,
+            principal=principal or _principal(),
+            kind=TaskKind.CHAT,
             source_ref=_ref(),
-            priority=priority,
-            dedupe_key=dedupe_key,
             payload=payload,
         )
 

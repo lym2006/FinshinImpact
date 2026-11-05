@@ -4,7 +4,7 @@
 import asyncio
 from dataclasses import dataclass, replace
 
-from core.domain import TaskKind, TaskPriority
+from core.domain import TaskKind
 from core.domain.ids import PrincipalKey, SessionKey
 
 from ..context import HandlerContext
@@ -20,15 +20,14 @@ class TaskItem:
     container_key: SessionKey
     principal_key: PrincipalKey
     kind: TaskKind
-    priority: TaskPriority
     ctx: HandlerContext
     sequence: int = 0
 
 
 class HotQueue:
-    """容器级优先级队列
+    """容器级队列
 
-    - 同容器多项共用一串，按优先级与到达序定序
+    - 同容器多项排一串，按到达先后消费
     - 串排空即释放该容器的键与到达序计数
     """
 
@@ -56,8 +55,7 @@ class HotQueue:
             if not rows:
                 self._release(container_key)
                 return None
-            nxt = min(rows, key=lambda row: (row.priority, row.sequence))
-            rows.remove(nxt)
+            nxt = rows.pop(0)
             if not rows:
                 self._release(container_key)
             return nxt
