@@ -3,7 +3,7 @@
 
 - 连续失败达阈值才报断连短句，单条失败只记明细、恢复零输出
 - 面板与日志的重连计数不含首次失败
-- 快照读数、周期作废与作废原因各测一组
+- 快照读数、计时起点、周期作废与作废原因各测一组
 """
 
 import logging
@@ -28,6 +28,7 @@ from aiohttp_socks import (  # noqa: E402
 )
 
 from adapters.telegram.session import is_link_failure  # noqa: E402
+from utils.network import _link as link_module  # noqa: E402
 from utils.network._link import (  # noqa: E402
     _DOWN_THRESHOLD,
     _FAIL_LOG_EVERY,
@@ -106,11 +107,23 @@ class TestIsLinkFailure(unittest.TestCase):
                 self.assertFalse(is_link_failure(exc))
 
 
+class _Clock:
+    """测试用的表，指针由用例自己拨"""
+
+    def __init__(self) -> None:
+        self.now = 0.0
+
+    def monotonic(self) -> float:
+        return self.now
+
+
 class TestLinkReport(unittest.TestCase):
     """断连与恢复的上报节奏"""
 
     # 断连日志要说得出走的哪一路，用例统一喂一个代理串
     PROXY = "http://127.0.0.1:7897"
+    # 秒，约 147 小时，拨成开机以来的读数，盯住「空档被算成断连」
+    UPTIME = 529_223.0
 
     def setUp(self) -> None:
         self.link = _LinkReport()
@@ -214,6 +227,33 @@ class TestLinkReport(unittest.TestCase):
         self.assertEqual(status.retries, _DOWN_THRESHOLD - _RETRY_OFFSET)
         self.assertEqual(status.elapsed, 0)
         self.assertEqual(status.span_text, "0 秒")
+
+    def test_clock_starts_on_the_first_failure(self) -> None:
+        """计时起点落在本周期第一次失败，界面读不到开机以来的空档"""
+        clock = _Clock()
+        clock.now = self.UPTIME
+        with patch.object(link_module, "time", clock):
+            self.link.failed("GetUpdates", OSError("boom"), self.PROXY)
+            clock.now = self.UPTIME + 20.0
+            self.link.failed("GetUpdates", OSError("boom"), self.PROXY)
+            status = self.link.snapshot()
+        self.assertEqual(status.elapsed, 20)
+
+    def test_new_cycle_restarts_the_clock(self) -> None:
+        """上一轮收尾后另起一轮，时长从新一轮第一次失败起算"""
+        clock = _Clock()
+        with patch.object(link_module, "time", clock):
+            clock.now = 100.0
+            self.link.failed("GetUpdates", OSError("boom"), self.PROXY)
+            self.link.failed("GetUpdates", OSError("boom"), self.PROXY)
+            clock.now = 900.0
+            self.link.recovered()
+            clock.now = 1000.0
+            self.link.failed("GetUpdates", OSError("boom"), self.PROXY)
+            self.link.failed("GetUpdates", OSError("boom"), self.PROXY)
+            clock.now = 1005.0
+            status = self.link.snapshot()
+        self.assertEqual(status.elapsed, 5)
 
     def test_reset_makes_recovery_quiet(self) -> None:
         """作废周期后恢复不再补收尾行，服务停止不留陈旧计时"""

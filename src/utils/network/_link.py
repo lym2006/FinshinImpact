@@ -74,18 +74,20 @@ class _LinkReport:
 
     def __init__(self) -> None:
         self._fails = 0
-        self._since = 0.0
+        self._since = time.monotonic()
 
     def failed(self, api: str, error: BaseException, proxy: str | None) -> None:
         """记录一次网络层失败
 
         - 通道串由发起方递，断连出在哪一路只有它知道
+        - 计时起点落在本周期第一次失败，先于次数落下
         """
+        if not self._fails:
+            self._since = time.monotonic()
         self._fails += 1
         via = proxy or CheckMessage.VIA_DIRECT
         _logger.debug(f"链路失败：{api} 通道={via} {type(error).__name__}: {error}")
         if self._fails == _DOWN_THRESHOLD:
-            self._since = time.monotonic()
             _logger.error(EngineMessage.DOWN.format(n=self._fails, channel=via))
         elif self._fails > _DOWN_THRESHOLD and self._fails % _FAIL_LOG_EVERY == 0:
             _logger.debug(
