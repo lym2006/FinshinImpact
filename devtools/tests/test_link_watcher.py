@@ -171,6 +171,22 @@ class TestLinkWatcher(unittest.TestCase):
         self.watcher.poll()
         self.assertEqual(len(self.dialogs), 1)
 
+    def test_suppression_reason_logged_once(self) -> None:
+        """压住弹窗的原因同一句只报一次，放行后不补报"""
+        self.watcher._test_round_open = True
+        self.report.status = _down()
+        with self.assertLogs("Bot.GUI.Link", level="DEBUG") as captured:
+            self.watcher.poll()
+            self.watcher.poll()
+        self.assertEqual(
+            [r.getMessage() for r in captured.records],
+            ["断连计时窗未弹：配置面板或检查窗在途"],
+        )
+
+        self.watcher._test_round_open = False
+        with self.assertNoLogs("Bot.GUI.Link", level="DEBUG"):
+            self.watcher.poll()
+
 
 class TestRoundOpenProbe(unittest.TestCase):
     """抑制判据实况
