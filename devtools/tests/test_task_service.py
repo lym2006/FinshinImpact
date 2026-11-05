@@ -27,7 +27,6 @@ from core.domain import (  # noqa: E402
     Platform,
     TaskHandler,
     TaskKind,
-    TaskPriority,
 )
 from core.domain.ids import (  # noqa: E402
     KEY_SEP,
@@ -93,8 +92,6 @@ class _StubLedger:
 def _item(
     user: str,
     container: ContainerKey = _GROUP_CONTAINER,
-    kind: TaskKind = TaskKind.CHAT,
-    priority: TaskPriority = TaskPriority.NORMAL,
 ) -> TaskItem:
     """构造一条排队项"""
     principal = PrincipalDTO(
@@ -112,8 +109,7 @@ def _item(
     return TaskItem(
         container_key=SessionKey(f"{principal.platform}{KEY_SEP}{container}"),
         principal_key=principal.key,
-        kind=kind,
-        priority=priority,
+        kind=TaskKind.CHAT,
         ctx=HandlerContext(event=event, interaction=_NullPort()),
     )
 
@@ -142,7 +138,7 @@ class TestTaskService(unittest.IsolatedAsyncioTestCase):
         """等所有在跑的消费协程收工"""
         await asyncio.gather(*list(service._runners.values()))
 
-    async def test_dispatch_follows_priority(self) -> None:
+    async def test_dispatch_follows_arrival(self) -> None:
         gate = asyncio.Event()
         order: list[str] = []
 
@@ -156,12 +152,12 @@ class TestTaskService(unittest.IsolatedAsyncioTestCase):
             await asyncio.sleep(0)
         self.assertEqual(order, ["111"])
 
-        await service.enqueue(_item("222", priority=TaskPriority.HIGH))
-        await service.enqueue(_item("333", priority=TaskPriority.IMMEDIATE))
+        await service.enqueue(_item("222"))
+        await service.enqueue(_item("333"))
 
         gate.set()
         await self._finish(service)
-        self.assertEqual(order, ["111", "333", "222"])
+        self.assertEqual(order, ["111", "222", "333"])
 
     async def test_runner_released_when_queue_drains(self) -> None:
         async def run(ctx: HandlerContext) -> None:
@@ -196,7 +192,7 @@ class TestTaskService(unittest.IsolatedAsyncioTestCase):
 
     async def test_missing_handler_reports_and_moves_on(self) -> None:
         service = self._service({})
-        await service.enqueue(_item("111", kind=TaskKind.HISTORY))
+        await service.enqueue(_item("111"))
         await self._finish(service)
 
         self.assertIsInstance(self.faults[0][1], LookupError)

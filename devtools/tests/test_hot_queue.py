@@ -18,7 +18,7 @@ from system.profile_env import set_profile  # noqa: E402
 set_profile("tg.000000")
 
 from core.contracts import InteractionPort  # noqa: E402
-from core.domain import ChatScope, Platform, TaskKind, TaskPriority  # noqa: E402
+from core.domain import ChatScope, Platform, TaskKind  # noqa: E402
 from core.domain.ids import (  # noqa: E402
     KEY_SEP,
     ContainerKey,
@@ -82,8 +82,6 @@ def _ctx(user: str, container: ContainerKey = _GROUP_CONTAINER) -> HandlerContex
 
 def _item(
     user: str,
-    kind: TaskKind = TaskKind.CHAT,
-    priority: TaskPriority = TaskPriority.NORMAL,
     container: ContainerKey = _GROUP_CONTAINER,
 ) -> TaskItem:
     """构造一条排队项，序号交给队列补"""
@@ -91,14 +89,13 @@ def _item(
     return TaskItem(
         container_key=SessionKey(f"{ctx.event.principal.platform}{KEY_SEP}{container}"),
         principal_key=ctx.event.principal.key,
-        kind=kind,
-        priority=priority,
+        kind=TaskKind.CHAT,
         ctx=ctx,
     )
 
 
 class TestHotQueue(unittest.IsolatedAsyncioTestCase):
-    """容器级优先级队列"""
+    """容器级排队"""
 
     async def asyncSetUp(self) -> None:
         self.queue = HotQueue()
@@ -110,11 +107,15 @@ class TestHotQueue(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((first.sequence, second.sequence), (0, 1))
         self.assertEqual(self.queue.size(_GROUP), 2)
 
-    async def test_pop_takes_priority_then_arrival(self) -> None:
+    async def test_pop_takes_arrival_order(self) -> None:
         await self.queue.push(_item("111"))
-        await self.queue.push(_item("222", priority=TaskPriority.HIGH))
-        await self.queue.push(_item("333", priority=TaskPriority.HIGH))
+        await self.queue.push(_item("222"))
+        await self.queue.push(_item("333"))
 
+        self.assertEqual(
+            (await self.queue.pop_next(_GROUP)).principal_key,
+            PrincipalKey("tg.g100123.111"),
+        )
         self.assertEqual(
             (await self.queue.pop_next(_GROUP)).principal_key,
             PrincipalKey("tg.g100123.222"),
@@ -122,10 +123,6 @@ class TestHotQueue(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(
             (await self.queue.pop_next(_GROUP)).principal_key,
             PrincipalKey("tg.g100123.333"),
-        )
-        self.assertEqual(
-            (await self.queue.pop_next(_GROUP)).principal_key,
-            PrincipalKey("tg.g100123.111"),
         )
 
     async def test_empty_container_yields_none(self) -> None:

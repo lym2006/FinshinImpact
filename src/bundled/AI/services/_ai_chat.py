@@ -6,7 +6,7 @@
 
 from asyncio import CancelledError
 
-from core.domain import TaskHandler, TaskKind, TaskPriority
+from core.domain import TaskHandler, TaskKind
 from exceptions import MessageVanishedError
 from services.context import HandlerContext
 from services.tasks import TaskItem, get_task_service
@@ -27,7 +27,6 @@ async def handle_ai_chat(ctx: HandlerContext) -> None:
             container_key=key,
             principal_key=ctx.event.principal.key,
             kind=TaskKind.CHAT,
-            priority=TaskPriority.NORMAL,
             ctx=ctx,
         )
     )

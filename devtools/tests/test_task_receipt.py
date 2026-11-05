@@ -31,7 +31,6 @@ from core.contracts import CapabilityCall  # noqa: E402
 from core.domain import (  # noqa: E402
     Platform,
     TaskKind,
-    TaskPriority,
     TaskStatus,
 )
 from core.domain.ids import (  # noqa: E402
@@ -150,7 +149,6 @@ class TestReportLostTasks(unittest.IsolatedAsyncioTestCase):
                     container=principal.container,
                     message_id=MessageId("789"),
                 ),
-                priority=TaskPriority.NORMAL,
             )
         )
         if running:

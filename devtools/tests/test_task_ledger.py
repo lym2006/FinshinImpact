@@ -20,7 +20,6 @@ from core.domain import (  # noqa: E402
     ChatScope,
     Platform,
     TaskKind,
-    TaskPriority,
     TaskStatus,
 )
 from core.domain.ids import (  # noqa: E402
@@ -70,7 +69,6 @@ def _item(user: str, message_id: str = "7") -> TaskItem:
         container_key=SessionKey(f"{principal.platform}{KEY_SEP}{_CONTAINER}"),
         principal_key=principal.key,
         kind=TaskKind.CHAT,
-        priority=TaskPriority.NORMAL,
         ctx=HandlerContext(event=event, interaction=SimpleNamespace()),  # type: ignore[arg-type]
     )
 

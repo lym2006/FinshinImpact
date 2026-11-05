@@ -25,17 +25,15 @@ class SqlitePrincipalRepository(PrincipalRepository):
     async def upsert(self, principal: PrincipalDTO, display_name: str) -> PrincipalDTO:
         """写入或更新主体
 
-        - 已存在时只刷显示名与活跃时间
+        - 已存在时只刷显示名
         """
-        now = time.time()
         await self._conn.execute(
             """
             INSERT INTO principal(key, platform, container, user,
-                                  display_name, created_at, last_active_at)
-            VALUES(?, ?, ?, ?, ?, ?, ?)
+                                  display_name, created_at)
+            VALUES(?, ?, ?, ?, ?, ?)
             ON CONFLICT(key) DO UPDATE SET
-                display_name = excluded.display_name,
-                last_active_at = excluded.last_active_at
+                display_name = excluded.display_name
             """,
             (
                 principal.key,
@@ -43,8 +41,7 @@ class SqlitePrincipalRepository(PrincipalRepository):
                 principal.container,
                 principal.user,
                 display_name,
-                now,
-                now,
+                time.time(),
             ),
         )
         await self._conn.commit()
@@ -57,19 +54,6 @@ class SqlitePrincipalRepository(PrincipalRepository):
         ) as cursor:
             row = await cursor.fetchone()
         return _to_dto(row) if row is not None else None
-
-    async def list_stale(self, before: float) -> tuple[PrincipalDTO, ...]:
-        """列出失活主体
-
-        - 按最后活跃时间升序
-        """
-        async with self._conn.execute(
-            f"SELECT {_SELECT_COLUMNS} FROM principal "
-            "WHERE is_active = 0 AND last_active_at < ? ORDER BY last_active_at",
-            (before,),
-        ) as cursor:
-            rows = await cursor.fetchall()
-        return tuple(_to_dto(row) for row in rows)
 
 
 def _to_dto(row: aiosqlite.Row) -> PrincipalDTO:

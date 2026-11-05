@@ -1,10 +1,10 @@
 # src/core/domain/_task.py
 """任务对象
 
-- 定义跨平台归一的任务类型、状态与优先级词表
+- 定义跨平台归一的任务类型与状态词表
 """
 
-from enum import IntEnum, StrEnum
+from enum import StrEnum
 
 from ._role import ChatRole
 
@@ -15,12 +15,7 @@ TaskPayload = tuple[_ChatTurn, ...]
 class TaskKind(StrEnum):
     """任务类型"""
 
-    # 通用
     CHAT = "chat"
-
-    # 特权
-    CLEAR = "clear"
-    HISTORY = "history"
 
 
 class TaskStatus(StrEnum):
@@ -29,16 +24,4 @@ class TaskStatus(StrEnum):
     PENDING = "pending"
     RUNNING = "running"
     SUCCEEDED = "succeeded"
-    CANCELLED = "cancelled"
     FAILED = "failed"
-
-
-class TaskPriority(IntEnum):
-    """任务优先级
-
-    - 数值越小越优先
-    """
-
-    IMMEDIATE = 0  # 指令类：clear
-    HIGH = 10  # 查询类：history
-    NORMAL = 50  # 普通对话：chat
