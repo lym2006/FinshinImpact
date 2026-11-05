@@ -34,8 +34,9 @@ class TaskLedger:
         self._began: set[PrincipalKey] = set()
 
     async def enqueue(self, item: TaskItem) -> None:
-        """记一条入队，该头一串才落库
+        """记入队
 
+        - 该主体这一串的头一条才落库，后续只加在途计数
         - 主体行随任务行一起写，外键才有落点
         """
         key = item.principal_key
@@ -53,14 +54,16 @@ class TaskLedger:
                     principal=principal,
                     kind=item.kind,
                     source_ref=item.ctx.event.ref,
-                    priority=item.priority,
                 )
             )
         except Exception as e:
             self._on_fault(item, e)
 
     async def begin(self, item: TaskItem) -> None:
-        """记开答，整串只推一次到在跑"""
+        """记开答
+
+        - 同一串只推到在跑一次
+        """
         key = item.principal_key
         if key in self._began:
             return
@@ -68,8 +71,9 @@ class TaskLedger:
         await self._patch(item, TaskPatchDTO(status=TaskStatus.RUNNING))
 
     async def settle(self, item: TaskItem, *, failed: bool) -> None:
-        """记落定，该主体最后一条才写终态
+        """记落定
 
+        - 在途计数归零才写终态
         - 没开过答就落定即没答上，按失败记
         """
         key = item.principal_key

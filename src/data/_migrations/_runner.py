@@ -1,7 +1,7 @@
 # src/data/_migrations/_runner.py
 """迁移运行器
 
-- 按版本号顺序补做未应用的脚本，执行前先备份库文件
+- 按版本号顺序补做未应用的脚本，库里已经有表才先备份整库
 - 校验库结构是否在当前代码可读范围
 - 把未跑完的任务判死
 """
@@ -18,13 +18,17 @@ import aiosqlite
 
 from core.domain import TaskStatus
 
-from . import _0001_baseline
+from . import _0001_baseline, _0002_purge_task_surplus, _0003_purge_session_surplus
 
 # 代码内置的结构版本，库内更高即拒绝启动
-SUPPORTED_SCHEMA = 1
+SUPPORTED_SCHEMA = 3
 
 # 版本号与脚本模块的对照，升序即执行顺序
-_MIGRATIONS: tuple[tuple[int, ModuleType], ...] = ((1, _0001_baseline),)
+_MIGRATIONS: tuple[tuple[int, ModuleType], ...] = (
+    (1, _0001_baseline),
+    (2, _0002_purge_task_surplus),
+    (3, _0003_purge_session_surplus),
+)
 
 _BACKUP_KEEP = 3  # 超出份数即删最旧
 
@@ -37,19 +41,26 @@ _VERSION_TABLE = "schema_version"
 async def run_migrations(
     conn: aiosqlite.Connection, db_path: Path, backup_dir: Path
 ) -> None:
-    """把库结构补到当前代码支持的版本"""
+    """把库结构补到当前代码支持的版本
+
+    - 一支脚本一个事务，落定才记版本号
+    - 动手前整库备份一份，空文件没东西可丢即不备份
+    """
     current = await _current_version(conn)
+    backed_up = not await _has_tables(conn)
 
     for version, module in _MIGRATIONS:
         if version <= current:
             continue
-        await _backup(db_path, backup_dir, conn)
+        if not backed_up:
+            await _backup(db_path, backup_dir, conn)
+            backed_up = True
         await module.apply(conn)
         await conn.execute(
             "INSERT INTO schema_version(version, applied_at, checksum) VALUES(?, ?, ?)",
             (version, time.time(), _checksum(module)),
         )
-    await conn.commit()
+        await conn.commit()
 
 
 async def check_schema_compatible(conn: aiosqlite.Connection) -> bool:
@@ -61,11 +72,11 @@ async def purge_dead_tasks(conn: aiosqlite.Connection) -> int:
     """把中断在半途的任务判为失败
 
     - 返回判死条数
-    - 死行不清，用户重发同内容会命中那个永不完成的死任务
+    - 死行不清，每次启动都把它们当欠账重补一遍
     """
     async with conn.execute(
-        "UPDATE task SET status = ?, finished_at = ? WHERE status IN (?, ?)",
-        (TaskStatus.FAILED, time.time(), TaskStatus.PENDING, TaskStatus.RUNNING),
+        "UPDATE task SET status = ? WHERE status IN (?, ?)",
+        (TaskStatus.FAILED, TaskStatus.PENDING, TaskStatus.RUNNING),
     ) as cursor:
         affected = cursor.rowcount
     await conn.commit()
@@ -89,14 +100,21 @@ async def _current_version(conn: aiosqlite.Connection) -> int:
     return int(row[0]) if row and row[0] is not None else 0
 
 
+async def _has_tables(conn: aiosqlite.Connection) -> bool:
+    """判断库里是否已经建过表"""
+    async with conn.execute(
+        "SELECT 1 FROM sqlite_master"
+        " WHERE type IN ('table', 'index') AND name NOT LIKE 'sqlite_%' LIMIT 1"
+    ) as cursor:
+        return await cursor.fetchone() is not None
+
+
 async def _backup(db_path: Path, backup_dir: Path, conn: aiosqlite.Connection) -> None:
     """迁移前复制整库文件，并删到只剩保留份数"""
-    # 打开连接即建空文件，无内容的库没有可备份的东西
-    if not db_path.exists() or db_path.stat().st_size == 0:
-        return
-
     # WAL 中的已提交内容先落回主文件，复制出的库才完整
-    await conn.execute("PRAGMA wal_checkpoint(FULL)")
+    # 这行 pragma 会回一行，不取空就锁着结构，随后的删列当场被拒
+    async with conn.execute("PRAGMA wal_checkpoint(FULL)") as cursor:
+        await cursor.fetchall()
 
     stamp = datetime.now().strftime(_BACKUP_STAMP)
     target = backup_dir / f"{db_path.stem}-{stamp}{_BACKUP_SUFFIX}"
