@@ -8,7 +8,7 @@
 
 按你正在干什么查，不看施工批次：
 
-- 要搬文件、改符号名、做兼容迁移 → [`migration-and-renaming.md`](migration-and-renaming.md)
+- 要搬文件、改符号名、改库结构、做兼容迁移 → [`migration-and-renaming.md`](migration-and-renaming.md)
 - 要给一段代码或一个符号挑归宿、改依赖方向 → [`layering.md`](layering.md)
 - 碰启动链路、引导期窗体、实例锁 → [`bootstrap-and-startup.md`](bootstrap-and-startup.md)
 - 碰界面、样式表、控件尺寸，或要证明观感没变 → [`gui-and-styles.md`](gui-and-styles.md)
@@ -49,3 +49,4 @@
 - 2026-10-27 并入并批时机那条线：整组到齐靠派发顺序、不靠静默等待。
 
 - 2026-10-30 收录规矩加严：读者是所有人，不是参与施工的人。全册按新规矩清掉对话引用、定案过程、内部待办与只在一台机器上成立的读数。命名条文移回 [`../coding-style.md`](../coding-style.md)。
+- 2026-11-05 并入库结构迁移那条线：号只追加、幂等靠先核再动、回一行的语句不取空就锁着库、新库别白留空备份。
