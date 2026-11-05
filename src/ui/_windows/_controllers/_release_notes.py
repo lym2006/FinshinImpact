@@ -37,7 +37,7 @@ class _ReleaseNotesWorker(QThread):
         except VersionError as e:
             self.done.emit(_ERR_MAP_VERSION[type(e)].format(**vars(e)), [], False)
         except Exception as e:
-            _logger.debug("版本变化拉取异常")
+            _logger.debug("版本变化拉取异常", exc_info=True)
             self.done.emit(
                 WAIT_DIALOG.crash_text.format(err=type(e).__name__), [], False
             )

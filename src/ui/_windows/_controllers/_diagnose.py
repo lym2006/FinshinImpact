@@ -72,7 +72,7 @@ class _DiagnoseWorker(QThread):
                 )
             )
         except Exception:  # 诊断自身异常也变成一行结果
-            _logger.debug("诊断线程异常")
+            _logger.debug("诊断线程异常", exc_info=True)
             self.row_update.emit(
                 {
                     "id": RowId.ADVICE,
