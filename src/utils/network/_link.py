@@ -8,7 +8,7 @@
 import time
 from dataclasses import dataclass
 
-from skin.messages import EngineMessage
+from skin.messages import CheckMessage, EngineMessage
 
 from ..logger import get_logger
 
@@ -76,13 +76,17 @@ class _LinkReport:
         self._fails = 0
         self._since = 0.0
 
-    def failed(self, api: str, error: BaseException) -> None:
-        """记录一次网络层失败"""
+    def failed(self, api: str, error: BaseException, proxy: str | None) -> None:
+        """记录一次网络层失败
+
+        - 通道串由发起方递，断连出在哪一路只有它知道
+        """
         self._fails += 1
-        _logger.debug(f"链路失败：{api} {type(error).__name__}: {error}")
+        via = proxy or CheckMessage.VIA_DIRECT
+        _logger.debug(f"链路失败：{api} 通道={via} {type(error).__name__}: {error}")
         if self._fails == _DOWN_THRESHOLD:
             self._since = time.monotonic()
-            _logger.error(EngineMessage.DOWN)
+            _logger.error(EngineMessage.DOWN.format(n=self._fails, channel=via))
         elif self._fails > _DOWN_THRESHOLD and self._fails % _FAIL_LOG_EVERY == 0:
             _logger.debug(
                 EngineMessage.RETRYING.format(span=self._span(), n=self._retries())
@@ -96,8 +100,13 @@ class _LinkReport:
             )
         self._fails = 0
 
-    def reset(self) -> None:
-        """作废进行中的断连周期"""
+    def reset(self, reason: str) -> None:
+        """作废进行中的断连周期
+
+        - 没在途周期即无声，免得每次热重载都刷一行
+        """
+        if self._fails:
+            _logger.debug(f"断连周期作废：{reason}（作废前累计 {self._fails} 次失败）")
         self._fails = 0
 
     def snapshot(self) -> LinkStatus:

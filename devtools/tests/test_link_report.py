@@ -3,7 +3,7 @@
 
 - 连续失败达阈值才报断连短句，单条失败只记明细、恢复零输出
 - 面板与日志的重连计数不含首次失败
-- 快照读数与周期作废各测一组
+- 快照读数、周期作废与作废原因各测一组
 """
 
 import logging
@@ -109,6 +109,9 @@ class TestIsLinkFailure(unittest.TestCase):
 class TestLinkReport(unittest.TestCase):
     """断连与恢复的上报节奏"""
 
+    # 断连日志要说得出走的哪一路，用例统一喂一个代理串
+    PROXY = "http://127.0.0.1:7897"
+
     def setUp(self) -> None:
         self.link = _LinkReport()
 
@@ -116,35 +119,39 @@ class TestLinkReport(unittest.TestCase):
         """跑 times 次失败并收集日志记录"""
         with self.assertLogs("Bot.Net", level=level) as captured:
             for _ in range(times):
-                self.link.failed("GetUpdates", OSError("boom"))
+                self.link.failed("GetUpdates", OSError("boom"), self.PROXY)
         return list(captured.records)
 
     def test_single_failure_stays_quiet(self) -> None:
         """未到阈值的单条失败只记明细，不报断连、快照不归 down"""
         records = self._emit(1)
         self.assertEqual([r.levelno for r in records], [logging.DEBUG])
-        self.assertIn("链路失败：GetUpdates OSError: boom", records[0].getMessage())
+        self.assertIn(
+            f"链路失败：GetUpdates 通道={self.PROXY} OSError: boom",
+            records[0].getMessage(),
+        )
         self.assertFalse(self.link.snapshot().down)
 
     def test_blip_then_recovery_logs_nothing(self) -> None:
         """单条抖动后立刻恢复，面板不留任何断连/恢复行"""
-        self.link.failed("GetUpdates", OSError("boom"))
+        self.link.failed("GetUpdates", OSError("boom"), self.PROXY)
         with self.assertNoLogs("Bot.Net", level="DEBUG"):
             self.link.recovered()
 
     def test_second_failure_declares_down(self) -> None:
-        """连续失败到阈值才起表报断连，明细先于短句"""
+        """连续失败到阈值才起表报断连，明细先于短句且短句带通道"""
         records = self._emit(_DOWN_THRESHOLD)
         errors = [r for r in records if r.levelno == logging.ERROR]
         self.assertEqual(len(errors), 1)
         self.assertIn("引擎断线", errors[0].getMessage())
+        self.assertIn(f"通道={self.PROXY}", errors[0].getMessage())
         self.assertTrue(self.link.snapshot().down)
 
     def test_intermediate_failures_stay_quiet(self) -> None:
         """已断连后、未到下个补报里程碑的失败只记明细"""
         self._emit(_DOWN_THRESHOLD + 2)
         with self.assertLogs("Bot.Net", level="DEBUG") as captured:
-            self.link.failed("GetUpdates", OSError("boom"))
+            self.link.failed("GetUpdates", OSError("boom"), self.PROXY)
         self.assertEqual([r.levelno for r in captured.records], [logging.DEBUG])
         self.assertIn("链路失败：GetUpdates", captured.records[0].getMessage())
 
@@ -154,6 +161,29 @@ class TestLinkReport(unittest.TestCase):
         self.assertEqual(records[-1].levelno, logging.DEBUG)
         self.assertIn(f"第 {_FAIL_LOG_EVERY - _RETRY_OFFSET} 次尝试", last)
         self.assertIn("已断 0 秒", last)
+
+    def test_broadcast_lines_carry_no_traceback(self) -> None:
+        """异常在场时断网回合的每一行都不带调用链"""
+        try:
+            raise OSError("boom")
+        except OSError as error:
+            with self.assertLogs("Bot.Net", level="DEBUG") as captured:
+                for _ in range(_FAIL_LOG_EVERY):
+                    self.link.failed("GetUpdates", error, self.PROXY)
+                self.link.reset("引擎停止")
+        broadcasts = [
+            record
+            for record in captured.records
+            if "链路失败" in record.getMessage() or "重连中" in record.getMessage()
+        ]
+        voided = [
+            record
+            for record in captured.records
+            if "断连周期作废" in record.getMessage()
+        ]
+        self.assertEqual(len(broadcasts), _FAIL_LOG_EVERY + 1)
+        self.assertEqual(len(voided), 1)
+        self.assertFalse(any(record.exc_info for record in captured.records))
 
     def test_recovery_reports_once_then_quiet(self) -> None:
         self._emit(2)
@@ -177,8 +207,8 @@ class TestLinkReport(unittest.TestCase):
 
     def test_snapshot_counts_the_cycle(self) -> None:
         """弹窗首拍的读数是第 1 次重连，不含那条原始请求"""
-        self.link.failed("GetUpdates", OSError("boom"))
-        self.link.failed("GetUpdates", OSError("boom"))
+        self.link.failed("GetUpdates", OSError("boom"), self.PROXY)
+        self.link.failed("GetUpdates", OSError("boom"), self.PROXY)
         status = self.link.snapshot()
         self.assertTrue(status.down)
         self.assertEqual(status.retries, _DOWN_THRESHOLD - _RETRY_OFFSET)
@@ -187,11 +217,23 @@ class TestLinkReport(unittest.TestCase):
 
     def test_reset_makes_recovery_quiet(self) -> None:
         """作废周期后恢复不再补收尾行，服务停止不留陈旧计时"""
-        self.link.failed("GetUpdates", OSError("boom"))
-        self.link.reset()
+        self.link.failed("GetUpdates", OSError("boom"), self.PROXY)
+        self.link.reset("引擎停止")
         self.assertFalse(self.link.snapshot().down)
         with self.assertNoLogs("Bot.Net", level="INFO"):
             self.link.recovered()
+
+    def test_reset_names_who_voided_the_cycle(self) -> None:
+        """在途周期被作废即报作废方与累计次数，没在途即无声"""
+        self.link.failed("GetUpdates", OSError("boom"), self.PROXY)
+        with self.assertLogs("Bot.Net", level="DEBUG") as captured:
+            self.link.reset("引擎线程收尾")
+        self.assertEqual(
+            captured.records[0].getMessage(),
+            "断连周期作废：引擎线程收尾（作废前累计 1 次失败）",
+        )
+        with self.assertNoLogs("Bot.Net", level="DEBUG"):
+            self.link.reset("引擎停止")
 
 
 class TestLinkStatusTexts(unittest.TestCase):
@@ -233,7 +275,7 @@ class TestSessionLinkReporting(unittest.IsolatedAsyncioTestCase):
     async def test_engine_session_reports_failure(self) -> None:
         with self.assertLogs("Bot.Net", level="DEBUG") as captured:
             await self._make_request(True)
-        self.assertIn("链路失败：GetMe", captured.records[0].getMessage())
+        self.assertIn("链路失败：GetMe 通道=直连", captured.records[0].getMessage())
 
 
 if __name__ == "__main__":

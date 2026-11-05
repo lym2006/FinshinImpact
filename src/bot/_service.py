@@ -93,7 +93,7 @@ class AdapterRuntime:
 
         _logger.debug("正在收尾资源...")
         self._stop_event.set()
-        link_report.reset()
+        link_report.reset("引擎停止")
 
         if self._loop and not self._loop.is_closed():
             try:
@@ -123,7 +123,7 @@ class AdapterRuntime:
         except Exception as e:
             _logger.send_error("AdapterRuntime loop 异常", e)
         finally:
-            link_report.reset()  # 线程收尾即作废断连周期，防弹窗挂着走表
+            link_report.reset("引擎线程收尾")  # 弹窗挂着走表会一直计时
             try:
                 self._loop.run_until_complete(self._loop.shutdown_asyncgens())
             except Exception:

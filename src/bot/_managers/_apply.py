@@ -106,7 +106,7 @@ class ConfigApplier:
             await host._settings_manager.execute()
         if not host._settings_manager.link_verified:
             # 代理不通或没探成：引擎失败源于代理，作废链路账，断连窗不踩配置向导
-            link_report.reset()
+            link_report.reset("配置校验没过")
         self._resolved_proxy = None
 
         errors = host._settings_manager.last_errors

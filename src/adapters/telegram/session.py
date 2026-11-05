@@ -66,6 +66,9 @@ class SSLUnverifiedSession(AiohttpSession):
         self._connector_init["ssl"] = verify
         self._report_link = report_link
 
+        # 断连日志要报出走的是哪一路，父类那份 proxy 还可能是代理对象
+        self._link_proxy = proxy or None
+
     async def make_request(
         self,
         bot: "Bot",
@@ -77,7 +80,7 @@ class SSLUnverifiedSession(AiohttpSession):
             result = await super().make_request(bot, method, timeout=timeout)
         except Exception as exc:
             if self._report_link and is_link_failure(exc):
-                link_report.failed(type(method).__name__, exc)
+                link_report.failed(type(method).__name__, exc, self._link_proxy)
             raise
         if self._report_link:
             link_report.recovered()

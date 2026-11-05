@@ -8,6 +8,8 @@ from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QObject
 
+from skin.messages import EngineMessage
+from utils.logger import get_logger
 from utils.network import LinkStatus, link_report
 
 from .._dialogs import LinkDialog, SettingsDialog, current_check_window
@@ -18,6 +20,8 @@ _POLL_MS = 1000  # 1 秒查一次链路快照
 
 if TYPE_CHECKING:
     from PySide6.QtWidgets import QWidget
+
+_logger = get_logger("GUI.Link")
 
 
 class LinkWatcher(QObject):
@@ -36,6 +40,9 @@ class LinkWatcher(QObject):
         self._dismissed = False
         self._muted = False
 
+        # 同一个原因只报一次，逐秒轮询不把面板刷满
+        self._blocked_logged = ""
+
     def start(self) -> None:
         """启动逐秒轮询"""
         self._ticker = Ticker(self, _POLL_MS, self.poll)
@@ -52,9 +59,24 @@ class LinkWatcher(QObject):
         if self._dialog is not None:
             self._dialog.refresh(status)
             return
-        if self._muted or self._dismissed or self._is_round_open():
+        blocked = self._block_reason()
+        if blocked:
+            if blocked != self._blocked_logged:
+                _logger.debug(f"断连计时窗未弹：{blocked}")
+                self._blocked_logged = blocked
             return
+        self._blocked_logged = ""
         self._show(status)
+
+    def _block_reason(self) -> str:
+        """当前压住弹窗的原因，没压住交空串"""
+        if self._muted:
+            return EngineMessage.BLOCK_MUTED
+        if self._dismissed:
+            return EngineMessage.BLOCK_DISMISSED
+        if self._is_round_open():
+            return EngineMessage.BLOCK_ROUND_OPEN
+        return ""
 
     def _is_round_open(self) -> bool:
         """配置面板或检查进度窗当前是否开着"""

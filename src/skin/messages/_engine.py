@@ -47,11 +47,16 @@ class EngineMessage:
     # 用：bot/_managers/_service.py 任务状态账写失败行，kind 为任务类型
     TASK_LEDGER_FAULT = "任务 {kind} 状态账写入失败"
 
-    # 用：utils/network/_link.py 断连周期首行
-    DOWN = "引擎断线：等待网络恢复"
+    # 用：utils/network/_link.py 断连周期首行，n 为连续失败次数、channel 为本次请求走的通道
+    DOWN = "引擎断线：等待网络恢复（连续 {n} 次失败，通道={channel}）"
 
     # 用：utils/network/_link.py 重连进度行，span 为面板时长短串、n 为累计尝试次数
     RETRYING = "重连中：已断 {span}，第 {n} 次尝试"
 
     # 用：utils/network/_link.py 断连周期收尾行，span 为面板时长短串、n 为重试次数
     RECOVERED = "网络恢复成功：断线 {span}，重试 {n} 次"
+
+    # 用：ui/_windows/_link_watcher.py 压住计时窗的三种原因
+    BLOCK_MUTED = "本次运行已静默"
+    BLOCK_DISMISSED = "本次断连已被手动收起"
+    BLOCK_ROUND_OPEN = "配置面板或检查窗在途"
