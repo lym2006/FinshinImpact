@@ -11,8 +11,8 @@ class PluginMessage:
     # 用：ui._guide._panel 窗口标题
     TITLE = "插件设置（实例：{code}）"
 
-    # 用：ui._guide._panel 核心行勾选位替代文字
-    ROW_CORE = "必选"
+    # 用：ui._guide._panel 随包行勾选位替代文字
+    ROW_BUNDLED = "必选"
 
     # 用：ui._guide._panel 行尾状态标签
     STATUS_INSTALLED = "已装"

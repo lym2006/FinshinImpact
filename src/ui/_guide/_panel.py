@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from core.domain import CORE_PLUGIN_PRIORITY, ManifestKey, StateKey
+from core.domain import BUNDLED_PLUGIN_PRIORITY, ManifestKey, StateKey
 from services.env_setup.deps_manifest import (
     catalog_digest,
     load_manifests,
@@ -103,7 +103,7 @@ class _PluginPanelDialog(QDialog):
 
     def _make_row(self, manifest: dict[str, Any], checked: bool) -> QWidget:
         """拼插件单行三列控件"""
-        core = manifest[ManifestKey.NAME] in CORE_PLUGIN_PRIORITY
+        bundled = manifest[ManifestKey.NAME] in BUNDLED_PLUGIN_PRIORITY
         title = manifest[ManifestKey.TITLE] or manifest[ManifestKey.NAME]
         middle = manifest[ManifestKey.SUMMARY]
 
@@ -125,10 +125,10 @@ class _PluginPanelDialog(QDialog):
         status.setFixedWidth(PANEL.status_width)
         status.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
 
-        if core:
-            # 核心插件无勾选框，勾选位以"必选"文字占宽对齐
-            slot: QWidget = QLabel(PluginMessage.ROW_CORE)
-            slot.setObjectName(ObjectName.ROW_CORE_MARK)
+        if bundled:
+            # 随包插件无勾选框，勾选位以"必选"文字占宽对齐
+            slot: QWidget = QLabel(PluginMessage.ROW_BUNDLED)
+            slot.setObjectName(ObjectName.ROW_BUNDLED_MARK)
         else:
             slot = check
         slot.setFixedWidth(PANEL.check_width)
@@ -157,14 +157,14 @@ class _PluginPanelDialog(QDialog):
         return bool(check and check.isChecked())
 
     def _checked_names(self) -> list[str]:
-        """取当前勾选的非 core 插件名"""
+        """取当前勾选的表外插件名"""
         names: list[str] = []
         for row in range(self._list.count()):
             item = self._list.item(row)
             manifest = item.data(_ROLE_MANIFEST)
             if (
                 not isinstance(manifest, dict)
-                or manifest[ManifestKey.NAME] in CORE_PLUGIN_PRIORITY
+                or manifest[ManifestKey.NAME] in BUNDLED_PLUGIN_PRIORITY
             ):
                 continue
             if self._row_checked(item):

@@ -93,15 +93,15 @@ class TestCollectMissing(_StartupBase):
             plan, [("AI_render", [], ["playwright chromium-headless-shell"])]
         )
 
-    def test_core_plugin_always_checked(self) -> None:
-        """启用集为空也覆盖 core 插件的缺失"""
+    def test_bundled_plugin_always_checked(self) -> None:
+        """启用集为空也覆盖随包插件的缺失"""
         self.m["load_state"].return_value = {StateKey.ENABLED: []}
-        core = {
+        bundled = {
             ManifestKey.NAME: "help",
             ManifestKey.DEPS: ["foo==1.0"],
             ManifestKey.ASSETS: [],
         }
-        self.m["load_manifests"].return_value = [core]
+        self.m["load_manifests"].return_value = [bundled]
         self.m["is_pin_installed"].return_value = False
 
         plan = _startup._collect_missing("AAAA")
