@@ -114,8 +114,8 @@ class CommandPriority(IntEnum):
     LAST = 50  # 最后档
 
 
-# 随包插件的恒启用与加载档位，清单写什么都改不了，表外插件一律常规档
-CORE_PLUGIN_PRIORITY: dict[str, CommandPriority] = {
+# 随包插件的恒启用与加载档位，表外插件一律常规档
+BUNDLED_PLUGIN_PRIORITY: dict[str, CommandPriority] = {
     "help": CommandPriority.FIRST,
     "grant": CommandPriority.NORMAL,
     "AI": CommandPriority.LAST,

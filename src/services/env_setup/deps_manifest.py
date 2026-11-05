@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from core.domain import (
-    CORE_PLUGIN_PRIORITY,
+    BUNDLED_PLUGIN_PRIORITY,
     MANIFEST_FIELDS,
     PLUGINS_PKG,
     CommandPriority,
@@ -74,7 +74,7 @@ def load_manifests(plugins_path: Path) -> list[dict[str, Any]]:
 
     manifests.sort(
         key=lambda item: (
-            CORE_PLUGIN_PRIORITY.get(item[ManifestKey.NAME], CommandPriority.NORMAL),
+            BUNDLED_PLUGIN_PRIORITY.get(item[ManifestKey.NAME], CommandPriority.NORMAL),
             item[ManifestKey.NAME],
         )
     )
@@ -128,7 +128,7 @@ def panel_needed(code: str) -> bool:
 def save_state(code: str, enabled: list[str], catalog: str) -> None:
     """写实例插件状态
 
-    - core 插件不写进 enabled，读取侧恒并入
+    - 随包插件不写进 enabled，读取侧恒并入
     - 引导期写入用 tomlkit，运行期只读不写
     """
     import tomlkit

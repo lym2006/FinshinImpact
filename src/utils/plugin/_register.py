@@ -12,7 +12,7 @@ from collections.abc import Callable
 from typing import Any, cast
 
 from core.domain import (
-    CORE_PLUGIN_PRIORITY,
+    BUNDLED_PLUGIN_PRIORITY,
     PLUGINS_PKG,
     CommandRole,
     PlatformTiming,
@@ -74,7 +74,7 @@ def register_plugins(
 
     for manifest in _resolve_plugins():
         plugin_name = manifest.name
-        core = plugin_name in CORE_PLUGIN_PRIORITY
+        bundled = plugin_name in BUNDLED_PLUGIN_PRIORITY
         try:
             # 动态导入插件模块
             module = importlib.import_module(f"{PLUGINS_PKG}.{plugin_name}")
@@ -101,17 +101,17 @@ def register_plugins(
             error: PluginsError = (
                 PluginMissingError() if missing else PluginDependencyError()
             )
-            if core:
+            if bundled:
                 raise
             report.append((plugin_name, error))
 
         except PluginRoleError as e:
-            if core:
+            if bundled:
                 raise
             report.append((plugin_name, e))
 
         except Exception as e:
-            if core:
+            if bundled:
                 raise
             report.append((plugin_name, PluginLoadError(type(e).__name__)))
 
