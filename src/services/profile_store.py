@@ -71,7 +71,7 @@ def list_profiles() -> list[tuple[str, str]]:
 
     - 扫 instances 下一级身份文件夹，返回 (身份码, 备注名) 列表
     - 目录不存在时返回空列表
-    - 身份码解析不出平台的目录跳过，旧格式改名即回来
+    - 身份码解析不出平台的目录跳过
     - 按最近使用时间降序，时间缺失或相同时按身份码降序
     """
     profiles: list[tuple[float, str, str]] = []

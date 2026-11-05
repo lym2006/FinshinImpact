@@ -353,7 +353,7 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(frames), 1, "免测轮只发结论帧")
 
     async def test_token_change_not_a_network_round(self) -> None:
-        """只换 token 不再单点复查通道
+        """只换 token 不单点复查通道
 
         - token 不进变化判定，网络参数未变即免测
         """

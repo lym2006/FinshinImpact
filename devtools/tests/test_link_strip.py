@@ -116,7 +116,7 @@ class TestLinkStrip(unittest.TestCase):
         )
 
     def test_estimate_prices_stripped_text(self) -> None:
-        """体量折算按剥完的那份算，长网址不再撑大窗口"""
+        """体量折算按剥完的那份算，长网址撑不大窗口"""
         window = (MessageDTO(role=ChatRole.SYSTEM, content="人设正文"),)
         long_url = "https://example.com/" + "x" * 400
         gap = estimate_window(window, "", long_url) - estimate_window(
