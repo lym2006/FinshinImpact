@@ -37,10 +37,10 @@ async def _show_history(raw: Message, ctx: HandlerContext) -> None:
     file_path = _get_file_path(key)
 
     if not file_path.exists():
-        await ctx.answer(BotMessage.HISTORY_EMPTY)
+        await ctx.respond(BotMessage.HISTORY_EMPTY)
         return
 
-    await ctx.answer(
+    await ctx.respond(
         OutboundPayloadDTO(
             kind=ContentKind.DOCUMENT,
             text=BotMessage.HISTORY_CAPTION,
@@ -56,7 +56,7 @@ async def _clear_history(raw: Message, ctx: HandlerContext) -> None:
     key = make_session_key(ctx.event.principal)
     await clear_session(key)
     _get_file_path(key).unlink(missing_ok=True)
-    await ctx.answer(BotMessage.HISTORY_MEMORY_CLEARED)
+    await ctx.respond(BotMessage.HISTORY_MEMORY_CLEARED)
 
 
 routes = (
