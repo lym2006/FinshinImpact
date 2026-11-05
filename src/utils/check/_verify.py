@@ -74,13 +74,12 @@ async def _probe_safe(
     try:
         resolved, errors, detail = await probe(ch)
     except asyncio.CancelledError:
-        # 陪跑被取消属正常清场，不附堆栈
-        _logger.debug(
-            f"{_probe_tag(round_no, ch, started, budget)} 未采用 跳过", exc_info=False
-        )
+        _logger.debug(f"{_probe_tag(round_no, ch, started, budget)} 未采用 跳过")
         raise
     except Exception:
-        _logger.debug(f"{_probe_tag(round_no, ch, started, budget)} 探针异常")
+        _logger.debug(
+            f"{_probe_tag(round_no, ch, started, budget)} 探针异常", exc_info=True
+        )
         return (
             False,
             None,
