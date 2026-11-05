@@ -60,6 +60,7 @@ class SettingsDialogTheme:
 
     # 提示文案
     verified_ok: str = DialogMessage.SETUP_VERIFIED_OK
+    recheck_ok: str = DialogMessage.SETUP_RECHECK_OK
     history_reset: str = DialogMessage.SETUP_HISTORY_RESET
 
     # 按钮文案
