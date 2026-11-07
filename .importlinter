@@ -80,6 +80,26 @@ source_modules =
 forbidden_modules =
     aiogram
 
+# 本体只认接口包与归一事件，链条穿过 adapters 属正常，故只禁直接导入
+[importlinter:contract:body-aiogram-free]
+name = body free of the platform engine
+type = forbidden
+source_modules =
+    bootstrap
+    bundled
+    bot
+    core
+    data
+    exceptions
+    services
+    skin
+    system
+    ui
+    utils
+forbidden_modules =
+    aiogram
+allow_indirect_imports = True
+
 [importlinter:contract:data-adapters-isolation]
 name = data and adapters isolation
 type = forbidden

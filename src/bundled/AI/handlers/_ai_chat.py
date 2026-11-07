@@ -5,8 +5,6 @@
 - 对话任务入队分发
 """
 
-from aiogram.types import Message
-
 from core.domain import ChatScope, CommandRole, PluginRoute
 from services.context import HandlerContext
 from utils import get_logger
@@ -70,13 +68,13 @@ async def _triggers_chat(ctx: HandlerContext) -> bool:
             return False  # 其他类型一律忽略
 
 
-async def _deny_private(raw: Message, ctx: HandlerContext) -> None:
+async def _deny_private(platform_raw: object, ctx: HandlerContext) -> None:
     """私聊门槛回执"""
     _logger.info(f"{ctx.event.principal.key} 无权私聊，已拦下")
     await ctx.answer(BotMessage.CHAT_PRIVATE_DENIED)
 
 
-async def _process_ai_chat(raw: Message, ctx: HandlerContext) -> None:
+async def _process_ai_chat(platform_raw: object, ctx: HandlerContext) -> None:
     """AI 聊天核心处理器"""
     await handle_ai_chat(ctx)
 

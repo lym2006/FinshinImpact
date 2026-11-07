@@ -187,9 +187,9 @@ class AccessCase(unittest.TestCase):
         - 回传 (命令回执, 正文回执)
         """
         cmd_ctx, cmd_port = _grant_ctx("456", first_args)
-        asyncio.run(_commands._add_grant(raw=None, ctx=cmd_ctx))
+        asyncio.run(_commands._add_grant(platform_raw=None, ctx=cmd_ctx))
         body_ctx, body_port = _text_ctx("456", then)
-        asyncio.run(_commands._finish_grant(raw=None, ctx=body_ctx))
+        asyncio.run(_commands._finish_grant(platform_raw=None, ctx=body_ctx))
         return cmd_port.sent, body_port.sent
 
 
@@ -227,7 +227,7 @@ class TestCommandGate(AccessCase):
         """主人清记忆把库内上下文与记录文件一起删掉"""
         (self.records / "tg.g100123.md").write_text("正文", encoding="utf8")
         ctx, port = _ctx("456")
-        asyncio.run(_history._clear_history(raw=None, ctx=ctx))
+        asyncio.run(_history._clear_history(platform_raw=None, ctx=ctx))
 
         self.assertEqual(port.sent, [BotMessage.HISTORY_MEMORY_CLEARED])
         self.assertEqual(self.cleared, ["tg.g100123"])
@@ -236,7 +236,7 @@ class TestCommandGate(AccessCase):
     def test_member_is_denied(self) -> None:
         """普通用户只收到无权限"""
         ctx, port = _ctx("999")
-        asyncio.run(_history._clear_history(raw=None, ctx=ctx))
+        asyncio.run(_history._clear_history(platform_raw=None, ctx=ctx))
 
         self.assertEqual(port.sent, [BotMessage.CMD_NO_PERMISSION])
         self.assertEqual(self.cleared, [])
@@ -247,14 +247,14 @@ class TestCommandGate(AccessCase):
         (self.records / "tg.g100123.md").write_text("正文", encoding="utf8")
 
         ctx, port = _ctx("999")
-        asyncio.run(_history._show_history(raw=None, ctx=ctx))
+        asyncio.run(_history._show_history(platform_raw=None, ctx=ctx))
 
         self.assertEqual(port.sent[0], BotMessage.HISTORY_CAPTION)
 
     def test_member_cannot_read_history(self) -> None:
         """普通用户看不到记录文件"""
         ctx, port = _ctx("999")
-        asyncio.run(_history._show_history(raw=None, ctx=ctx))
+        asyncio.run(_history._show_history(platform_raw=None, ctx=ctx))
 
         self.assertEqual(port.sent, [BotMessage.CMD_NO_PERMISSION])
 
@@ -265,7 +265,7 @@ class TestGrantCommands(AccessCase):
     def test_owner_grants_by_id(self) -> None:
         """主人按 id 授权"""
         ctx, port = _grant_ctx("456", ("12345",))
-        asyncio.run(_commands._add_grant(raw=None, ctx=ctx))
+        asyncio.run(_commands._add_grant(platform_raw=None, ctx=ctx))
 
         self.assertEqual(self.repo.rows, {"12345": "tg.g100123.456"})
         self.assertEqual(port.sent, [BotMessage.GRANT_ADDED.format(id="12345")])
@@ -274,7 +274,7 @@ class TestGrantCommands(AccessCase):
         """重复授权提示已在名单里，流程不断"""
         asyncio.run(self._grant_user("12345"))
         ctx, port = _grant_ctx("456", ("12345",))
-        asyncio.run(_commands._add_grant(raw=None, ctx=ctx))
+        asyncio.run(_commands._add_grant(platform_raw=None, ctx=ctx))
 
         self.assertEqual(port.sent, [BotMessage.GRANT_EXISTS.format(id="12345")])
         self.assertEqual(self.pending, {"tg.g100123.456": _commands._GrantStep.ADD})
@@ -282,7 +282,7 @@ class TestGrantCommands(AccessCase):
     def test_grant_without_arg_asks_target(self) -> None:
         """缺参数即提问并挂起待输入"""
         ctx, port = _grant_ctx("456", ())
-        asyncio.run(_commands._add_grant(raw=None, ctx=ctx))
+        asyncio.run(_commands._add_grant(platform_raw=None, ctx=ctx))
 
         self.assertEqual(port.sent, [BotMessage.GRANT_ASK_TARGET])
         self.assertEqual(self.pending, {"tg.g100123.456": _commands._GrantStep.ADD})
@@ -291,7 +291,7 @@ class TestGrantCommands(AccessCase):
     def test_grant_with_two_args_shows_usage(self) -> None:
         """参数多于一个只报用法，不挂待输入"""
         ctx, port = _grant_ctx("456", ("12345", "67890"))
-        asyncio.run(_commands._add_grant(raw=None, ctx=ctx))
+        asyncio.run(_commands._add_grant(platform_raw=None, ctx=ctx))
 
         self.assertEqual(port.sent, [BotMessage.GRANT_USAGE])
         self.assertEqual(self.pending, {})
@@ -301,7 +301,7 @@ class TestGrantCommands(AccessCase):
         """管理员不能再授权别人"""
         asyncio.run(self._grant_user("999"))
         ctx, port = _grant_ctx("999", ("777",))
-        asyncio.run(_commands._add_grant(raw=None, ctx=ctx))
+        asyncio.run(_commands._add_grant(platform_raw=None, ctx=ctx))
 
         self.assertEqual(port.sent, [BotMessage.CMD_NO_PERMISSION])
         self.assertEqual(self.repo.rows, {"999": "tg.g100123.456"})
@@ -312,7 +312,7 @@ class TestGrantCommands(AccessCase):
         ctx, port = _ctx(
             "456", command=CommandDTO(matched=True, head="ungrant", pieces=("12345",))
         )
-        asyncio.run(_commands._drop_grant(raw=None, ctx=ctx))
+        asyncio.run(_commands._drop_grant(platform_raw=None, ctx=ctx))
 
         self.assertEqual(self.repo.rows, {})
         self.assertEqual(port.sent, [BotMessage.UNGRANT_REMOVED.format(id="12345")])
@@ -322,7 +322,7 @@ class TestGrantCommands(AccessCase):
         ctx, port = _ctx(
             "456", command=CommandDTO(matched=True, head="ungrant", pieces=("777",))
         )
-        asyncio.run(_commands._drop_grant(raw=None, ctx=ctx))
+        asyncio.run(_commands._drop_grant(platform_raw=None, ctx=ctx))
 
         self.assertEqual(port.sent, [BotMessage.UNGRANT_MISSING.format(id="777")])
         self.assertEqual(self.pending, {"tg.g100123.456": _commands._GrantStep.DROP})
@@ -338,7 +338,7 @@ class TestWriteFailure(AccessCase):
         """直带 id 写失败只提示重试，待输入挂着"""
         with patch.object(_commands, "add_admin", self._boom):
             ctx, port = _grant_ctx("456", ("12345",))
-            asyncio.run(_commands._add_grant(raw=None, ctx=ctx))
+            asyncio.run(_commands._add_grant(platform_raw=None, ctx=ctx))
 
         self.assertEqual(port.sent, [BotMessage.GRANT_RETRY_TARGET])
         self.assertEqual(self.pending, {"tg.g100123.456": _commands._GrantStep.ADD})
@@ -353,9 +353,9 @@ class TestWriteFailure(AccessCase):
         self.repo.rows.clear()
         with patch.object(_commands, "add_admin", self._boom):
             ctx, _ = _grant_ctx("456", ())
-            asyncio.run(_commands._add_grant(raw=None, ctx=ctx))
+            asyncio.run(_commands._add_grant(platform_raw=None, ctx=ctx))
             body_ctx, body_port = _text_ctx("456", "999")
-            asyncio.run(_commands._finish_grant(raw=None, ctx=body_ctx))
+            asyncio.run(_commands._finish_grant(platform_raw=None, ctx=body_ctx))
 
         self.assertEqual(body_port.sent, [BotMessage.GRANT_RETRY_TARGET])
         self.assertEqual(self.pending, {"tg.g100123.456": _commands._GrantStep.ADD})
@@ -421,11 +421,11 @@ class TestGrantStepwise(AccessCase):
         """撤销走同一套分步"""
         asyncio.run(self._grant_user("12345"))
         ctx, port = _ctx("456", command=CommandDTO(matched=True, head="ungrant"))
-        asyncio.run(_commands._drop_grant(raw=None, ctx=ctx))
+        asyncio.run(_commands._drop_grant(platform_raw=None, ctx=ctx))
         self.assertEqual(port.sent, [BotMessage.UNGRANT_ASK_TARGET])
 
         body_ctx, body_port = _text_ctx("456", "12345")
-        asyncio.run(_commands._finish_grant(raw=None, ctx=body_ctx))
+        asyncio.run(_commands._finish_grant(platform_raw=None, ctx=body_ctx))
 
         self.assertEqual(
             body_port.sent, [BotMessage.UNGRANT_REMOVED.format(id="12345")]
@@ -437,7 +437,7 @@ class TestGrantStepwise(AccessCase):
         """流程中再发另一条命令即改认的目标动作"""
         self._flow((), "占位")
         ctx, port = _ctx("456", command=CommandDTO(matched=True, head="ungrant"))
-        asyncio.run(_commands._drop_grant(raw=None, ctx=ctx))
+        asyncio.run(_commands._drop_grant(platform_raw=None, ctx=ctx))
 
         self.assertEqual(port.sent, [BotMessage.UNGRANT_ASK_TARGET])
         self.assertEqual(self.pending, {"tg.g100123.456": _commands._GrantStep.DROP})
@@ -445,7 +445,7 @@ class TestGrantStepwise(AccessCase):
     def test_member_cannot_start_the_flow(self) -> None:
         """非主人连流程都起不来"""
         ctx, port = _grant_ctx("999", ())
-        asyncio.run(_commands._add_grant(raw=None, ctx=ctx))
+        asyncio.run(_commands._add_grant(platform_raw=None, ctx=ctx))
 
         self.assertEqual(port.sent, [BotMessage.CMD_NO_PERMISSION])
         self.assertEqual(self.pending, {})
@@ -490,7 +490,7 @@ class TestPrivateGate(AccessCase):
     def test_member_gets_one_denial(self) -> None:
         """接走只回一句门槛说明，不入队"""
         ctx, port = _ctx("999")
-        asyncio.run(_ai_chat._deny_private(raw=None, ctx=ctx))
+        asyncio.run(_ai_chat._deny_private(platform_raw=None, ctx=ctx))
         self.assertEqual(port.sent, [BotMessage.CHAT_PRIVATE_DENIED])
 
     def test_admin_and_owner_pass(self) -> None:
@@ -530,7 +530,7 @@ class TestAdminView(AccessCase):
     ) -> list[str]:
         """发一条查询并交出回执"""
         ctx, port = _admin_ctx(user_id, scope)
-        asyncio.run(_commands._show_admins(raw=None, ctx=ctx))
+        asyncio.run(_commands._show_admins(platform_raw=None, ctx=ctx))
         return port.sent
 
     def test_private_lists_each_key(self) -> None:
