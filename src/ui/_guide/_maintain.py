@@ -3,7 +3,7 @@
 
 - 依赖管理弹下拉菜单，同步重建与清理缓存两条操作并列
 - 保留清单取全实例启用并集，操作对象为共享 runtime 依赖层
-- 启动期对账不符调的也是这条同步流程
+- 同步重建会删保留清单外的包，只由这个菜单发起
 """
 
 from PySide6.QtCore import QPoint
@@ -58,14 +58,6 @@ def _cache_flow(parent: QWidget | None) -> list[str]:
     if not _confirm(parent, PluginMessage.CACHE_WARNING):
         return []
     return run_with_progress(PluginMessage.PROGRESS_CACHE, _cache_task)
-
-
-def sync_deps() -> None:
-    """启动期依赖同步，此刻无宿主窗口即独立弹
-
-    - 用户选否或同步失败都不落对账戳，下次启动清单仍不符再问
-    """
-    _sync_flow(None)
 
 
 def open_maintain_menu(anchor: QPushButton, parent: QWidget) -> None:

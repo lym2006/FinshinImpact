@@ -137,9 +137,9 @@ def settle_runtime(code: str) -> None:
     failed = run_with_progress(
         PluginMessage.PROGRESS_RUNTIME, lambda on_line: _install_missing(plan, on_line)
     )
+    dropped = _disable_failed(code, failed) if failed else []
     if not failed:
         return
-    dropped = _disable_failed(code, failed)
     ensure_app()
     box = QMessageBox()
     box.setIcon(QMessageBox.Icon.Warning)
