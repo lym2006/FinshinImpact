@@ -45,7 +45,7 @@ class InitializationManager(BaseManager):
         load_persona_cache()
 
     def sync_persona(self) -> bool:
-        """人设模板对账
+        """内置模板对账
 
         - 对账可能补建过副本，按存档重装一遍才是最终正文
         - 返回正文是否自动换过新版

@@ -105,11 +105,11 @@ class TestResolveMark(unittest.TestCase):
         """只看冒号前
 
         - 后文配置项名不误伤
-        - "配置"域先于"保存"命中（校验词曾被 💾 抢走）
+        - "配置"域先于"保存"命中
         """
 
-        self.assertEqual(self._mark(20, "保存 2 项配置: 代理、超时（秒）"), "⚙")
-        self.assertEqual(self._mark(20, "已写入磁盘: 超时（秒）"), "💾")
+        self.assertEqual(self._mark(20, "保存 2 项配置: 代理模式、记录保留（天）"), "⚙")
+        self.assertEqual(self._mark(20, "已写入磁盘: 代理模式"), "💾")
 
     def test_domain_icons(self) -> None:
         """过程行按领域分配图标"""
@@ -120,7 +120,7 @@ class TestResolveMark(unittest.TestCase):
             "新任务入队，当前长度: 2": "📥",
             "正在启动引擎...": "🤖",
             "开始加载 3 个插件...": "🔌",
-            "正在初始化全局 Playwright 浏览器...": "🌐",
+            "正在初始化浏览器...": "🌐",
         }
         for msg, expect in cases.items():
             self.assertEqual(self._mark(20, msg), expect, msg)

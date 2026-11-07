@@ -2,7 +2,7 @@
 """文件初始化
 
 - 必要文件检查与模板落盘
-- 实例人设与内置默认模板按内容指纹对账
+- 实例人设与内置模板按内容指纹对账
 """
 
 import hashlib
@@ -24,7 +24,7 @@ from .persona import load_persona_cache, save_applied_persona
 
 
 class PersonaSync(StrEnum):
-    """人设模板对账结果
+    """内置模板对账结果
 
     - 启动日志与弹窗分派共用，禁裸写协议串
     """
@@ -79,7 +79,7 @@ def _write_persona_stamp(digest: str) -> None:
 
 
 def _ensure_persona_copy() -> bool:
-    """实例人设副本缺失即从内置默认模板建好
+    """实例人设副本缺失即从内置模板建好
 
     - 副本已在即原样保留
     - 模板读不出或写不进返回 False
@@ -96,7 +96,7 @@ def _ensure_persona_copy() -> bool:
 
 
 def apply_persona_template() -> bool:
-    """用内置默认模板覆盖实例人设
+    """用内置模板覆盖实例人设
 
     - 覆盖后落当前模板指纹、刷存档并按存档装填正文
     - 读写失败返回 False
@@ -140,11 +140,11 @@ def mark_persona_prompted() -> None:
 
 
 def sync_persona_template() -> PersonaSync:
-    """实例人设与内置默认模板对账
+    """实例人设与内置模板对账
 
     - 戳记最近一次与该实例打交道的模板指纹
     - 副本内容等于戳所记的模板才判从未改动，直接换新
-    - 从未改动判不出即只提示，绝不用模板覆盖实例副本
+    - 从未改动判不出即只提示，绝不用内置模板覆盖实例副本
     - 提示未送达即不落戳，下次启动接着提示
     - 换新写不进退回提示路径，由用户当场处置
     """

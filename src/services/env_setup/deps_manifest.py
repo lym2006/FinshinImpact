@@ -38,7 +38,7 @@ _COMMAND_KEYS = frozenset({HelpKey.CMD, HelpKey.DESC})
 
 
 def plugins_roots() -> list[Path]:
-    """列出插件根目录，仓内在前外部在后
+    """列出插件根目录，随包在前外部在后
 
     - find_spec 只定位不执行模块代码
     - 外部目录不存在即不进表
@@ -96,7 +96,7 @@ def _scan_rows(plugins_paths: Sequence[Path]) -> list[dict[str, Any]]:
 def load_manifests(plugins_paths: Sequence[Path]) -> list[dict[str, Any]]:
     """扫描插件根目录聚合最小清单
 
-    - 同名插件按根的顺序取先读到的，仓内压住外部同名
+    - 同名插件按根的顺序取先读到的，随包压住外部同名
     - 随包表里的先成一组，组内按档位序，其余一律排在后并按 name 字典序
     """
     found: dict[str, dict[str, Any]] = {}

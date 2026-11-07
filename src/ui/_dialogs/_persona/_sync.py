@@ -1,7 +1,7 @@
 # src/ui/_dialogs/_persona/_sync.py
-"""默认人设更新弹窗
+"""内置模板更新弹窗
 
-- 提示内置默认人设有更新，并给出一键覆盖实例副本的入口
+- 提示内置模板有更新，并给出一键覆盖实例副本的入口
 """
 
 from PySide6.QtCore import Qt
@@ -20,7 +20,7 @@ _MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
 
 
 class PersonaSyncDialog(BaseDialog):
-    """默认人设更新提示弹窗
+    """内置模板更新提示弹窗
 
     - 覆盖副本由按钮当场授权，点确认才改写并回报结果
     """

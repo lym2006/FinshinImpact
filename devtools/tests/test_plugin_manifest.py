@@ -4,7 +4,7 @@
 - 清单只认 name/title/summary/deps/assets/help
 - 恒启用与加载档位来自随包表，多写的键按未知键忽略
 - 引导期精简实现与运行期读取在这两条上一致
-- 引导期根表认外部目录，同名插件以仓内那行为准
+- 引导期根表认外部目录，同名插件以随包那行为准
 """
 
 import sys
@@ -109,7 +109,7 @@ class TestGuideRead(unittest.TestCase):
 
 
 class TestGuideRoots(unittest.TestCase):
-    """引导期根表：仓内在前，外部目录按项目根拼"""
+    """引导期根表：随包在前，外部目录按项目根拼"""
 
     def test_installed_dir_enters_roots_when_present(self) -> None:
         """外部目录存在才进根表
@@ -130,14 +130,14 @@ class TestGuideRoots(unittest.TestCase):
             self.assertEqual(names, [PLUGINS_PKG, INSTALLED_PLUGINS_NAME])
 
     def test_bundled_row_wins_same_name(self) -> None:
-        """两根目录同名时精简清单只留仓内那一行
+        """两根目录同名时精简清单只留随包那一行
 
         - 这条红了说明外部同名插件会顶掉随包件的那一行
         """
         with tempfile.TemporaryDirectory() as tmp:
             bundled = Path(tmp) / PLUGINS_PKG
             installed = Path(tmp) / INSTALLED_PLUGINS_NAME
-            for root, title in ((bundled, "仓内"), (installed, "外部")):
+            for root, title in ((bundled, "随包"), (installed, "外部")):
                 target = root / "dup" / "plugin.toml"
                 target.parent.mkdir(parents=True)
                 target.write_text(
@@ -147,7 +147,7 @@ class TestGuideRoots(unittest.TestCase):
 
             rows = deps_manifest.load_manifests([bundled, installed])
 
-            self.assertEqual([row["title"] for row in rows], ["仓内"])
+            self.assertEqual([row["title"] for row in rows], ["随包"])
 
     def test_shadowed_row_carries_winner_name(self) -> None:
         """被顶掉的那一份连同赢家的名字一起交出来
@@ -158,7 +158,7 @@ class TestGuideRoots(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             bundled = Path(tmp) / PLUGINS_PKG
             installed = Path(tmp) / INSTALLED_PLUGINS_NAME
-            for root, title in ((bundled, "仓内"), (installed, "外部")):
+            for root, title in ((bundled, "随包"), (installed, "外部")):
                 target = root / "dup" / "plugin.toml"
                 target.parent.mkdir(parents=True)
                 target.write_text(

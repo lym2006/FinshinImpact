@@ -1,5 +1,5 @@
 # devtools/tests/test_persona_sync.py
-"""人设模板对账与生效正文的单元测试
+"""内置模板对账与生效正文的单元测试
 
 - 副本缺失即从模板建好并落戳，不打扰
 - 副本内容等于戳所记的模板才自动换新，行尾转换不算改动
@@ -38,9 +38,9 @@ from skin.messages import DialogMessage, MiscMessage  # noqa: E402
 from ui._dialogs._diff import split_diff, split_diff_aligned  # noqa: E402
 from utils import init_files, persona  # noqa: E402
 
-_V1 = "# 默认人设 v1\n"
-_V2 = "# 默认人设 v2\n"
-_V3 = "# 默认人设 v3\n"
+_V1 = "# 内置模板 v1\n"
+_V2 = "# 内置模板 v2\n"
+_V3 = "# 内置模板 v3\n"
 _EDITED = "# 我自己改过的人设\n"
 
 
@@ -76,7 +76,7 @@ class _StageBase(unittest.TestCase):
         self.stack.enter_context(patch.object(persona, "_persona_text", ""))
 
     def write_template(self, text: str) -> None:
-        """写内置默认模板"""
+        """写内置模板"""
         self.template.write_text(text, encoding="utf-8")
 
     def write_copy(self, text: str) -> None:
@@ -502,7 +502,7 @@ class TestStartupOrder(unittest.TestCase):
     """拍板排在对账前面，起服务不等拍板"""
 
     def test_resolve_runs_before_sync(self) -> None:
-        """start 先应用配置，再比对文件，最后对人设模板"""
+        """start 先应用配置，再比对文件，最后对内置模板"""
         from bot._managers import BotManager
 
         order: list[str] = []

@@ -41,7 +41,7 @@ class DialogMessage:
         "正文里的 {OWNER_ID} 是主人 id 占位符，运行时自动填入，请勿改动\n"
         "选定即生效，正文变了会清空对话历史与记录文件"
     )
-    SETUP_PERSONA_USE_TEMPLATE = "用模板覆盖"
+    SETUP_PERSONA_USE_TEMPLATE = "用内置模板覆盖"
     SETUP_PERSONA_NO_TEMPLATE = "内置模板无法读取"
 
     # 用：人设正文拍板窗

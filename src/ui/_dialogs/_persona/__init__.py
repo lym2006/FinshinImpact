@@ -1,7 +1,7 @@
 # src/ui/_dialogs/_persona/__init__.py
 """人设弹窗
 
-- 代发面板入口行、正文编辑、两份正文拍板与默认模板更新提示
+- 代发面板入口行、正文编辑、两份正文拍板与内置模板更新提示
 """
 
 from ._panel import PersonaPreviewRow

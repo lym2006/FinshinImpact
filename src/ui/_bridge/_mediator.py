@@ -41,7 +41,7 @@ class _GUIBridge(QObject):
     request_notice = SafeSignal(
         str, bool
     )  # 弹通知窗，致命确认后直退：(展示文案，是否致命)
-    request_persona_update = SafeSignal()  # 默认人设有更新，弹一键覆盖窗
+    request_persona_update = SafeSignal()  # 内置模板有更新，弹一键覆盖窗
     request_persona_resolve = SafeSignal(
         str, str, str, str
     )  # 两份正文不一致，弹拍板窗：(旧, 新, 旧栏名, 新栏名)

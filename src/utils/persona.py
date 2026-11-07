@@ -57,7 +57,7 @@ def _read_persona_text() -> tuple[str, _PersonaSource]:
 
 
 def read_template_text() -> str:
-    """读内置默认模板正文
+    """读内置模板正文
 
     - 读不出返回空串，是否停手由调用方判
     """
