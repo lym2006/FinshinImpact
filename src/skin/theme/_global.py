@@ -99,5 +99,6 @@ class ScrollbarTheme:
     handle_hover_bg: str = "#777777"  # 滑块悬停色
     width: int = 10  # 宽度
     min_handle_height: int = 20  # 滑块最小高度
+    step: int = 5  # 滚动单格像素，滚轮一轮走三格即 15 像素
     margin: int = 0  # 外边距（清除默认间隙）
     arrow_height: int = 0  # 箭头高度（隐藏默认箭头）
