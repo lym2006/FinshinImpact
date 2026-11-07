@@ -149,6 +149,35 @@ class TestGuideRoots(unittest.TestCase):
 
             self.assertEqual([row["title"] for row in rows], ["仓内"])
 
+    def test_shadowed_row_carries_winner_name(self) -> None:
+        """被顶掉的那一份连同赢家的名字一起交出来
+
+        - 面板给这行写「插件名被谁占用」用的就是这个名字
+        - 各根目录名字不撞时交空表，面板不多出行
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            bundled = Path(tmp) / PLUGINS_PKG
+            installed = Path(tmp) / INSTALLED_PLUGINS_NAME
+            for root, title in ((bundled, "仓内"), (installed, "外部")):
+                target = root / "dup" / "plugin.toml"
+                target.parent.mkdir(parents=True)
+                target.write_text(
+                    f'name = "dup"\ntitle = "{title}"\nsummary = "同名"\n',
+                    encoding="utf-8",
+                )
+
+            losers = deps_manifest.shadowed_manifests([bundled, installed])
+
+            self.assertEqual(
+                [(row["title"], winner) for row, winner in losers], [("外部", "dup")]
+            )
+
+            quiet = Path(tmp) / "single" / "plugin.toml"
+            quiet.parent.mkdir(parents=True)
+            quiet.write_text('name = "single"\ntitle = "独一份"\n', encoding="utf-8")
+
+            self.assertEqual(deps_manifest.shadowed_manifests([bundled, quiet]), [])
+
 
 if __name__ == "__main__":
     unittest.main()

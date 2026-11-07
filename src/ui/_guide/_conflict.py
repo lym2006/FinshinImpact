@@ -1,9 +1,9 @@
 # src/ui/_guide/_conflict.py
 """冲突明细窗
 
-- 逐条列命令名被谁占用，一行一句
-- 窗宽跟着最长那句给，到上限为止，剩下的宽度不留白
+- 定宽小窗逐条列冲突，一行一句
 - 句子仍宽过窗内那一列即在行内循环滚，横向一律不出滚动条
+- 窗高跟着条数长，长到上限为止，多出的条目由竖向滚动条接住
 - 挂宿主窗当父件，配色与字体随宿主的样式走
 """
 
@@ -34,6 +34,7 @@ def show_conflicts(parent: QWidget, anchor: QWidget, lines: list[str]) -> None:
     """
     popup = QWidget(parent, Qt.WindowType.Popup)
     popup.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+    popup.setFixedWidth(PANEL.conflict_width)
     popup.setMaximumHeight(PANEL.conflict_max_height)
     layout = QVBoxLayout(popup)
     layout.setContentsMargins(0, 0, 0, 0)
@@ -52,8 +53,6 @@ def show_conflicts(parent: QWidget, anchor: QWidget, lines: list[str]) -> None:
     rows.setFixedHeight(min(len(lines) * PANEL.row_height, PANEL.conflict_max_height))
     layout.addWidget(rows)
 
-    longest = max(rows.fontMetrics().horizontalAdvance(line) for line in lines)
-    popup.setFixedWidth(min(longest + PANEL.row_pad_h * 2, PANEL.conflict_width))
     popup.adjustSize()
     area = anchor.screen().availableGeometry()
     top = anchor.mapToGlobal(QPoint(0, anchor.height()))
