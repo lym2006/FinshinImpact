@@ -6,9 +6,9 @@
 
 from dataclasses import dataclass
 
-from core.contracts import InteractionPort
 from core.domain import ChatScope, ContentKind
 from core.dto import InboundEventDTO, MsgReferenceDTO, OutboundPayloadDTO
+from finshin_sdk import InteractionPort
 
 
 @dataclass(frozen=True, slots=True)

@@ -11,10 +11,10 @@ from typing import TYPE_CHECKING
 from aiogram.exceptions import TelegramAPIError
 from aiogram.types import FSInputFile, Message
 
-from core.contracts import InteractionPort
 from core.domain import ContentKind
 from core.domain.ids import ContainerKey
 from core.dto import MsgReferenceDTO, OutboundPayloadDTO, PrincipalDTO
+from finshin_sdk import InteractionPort
 
 from ._errors import is_vanished, translate
 from ._fields import build_ref

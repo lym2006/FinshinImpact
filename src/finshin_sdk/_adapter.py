@@ -1,4 +1,4 @@
-# src/core/contracts/_adapter.py
+# src/finshin_sdk/_adapter.py
 """适配器契约
 
 - 定义交互端口与适配器基类的抽象接口
@@ -6,8 +6,8 @@
 
 from abc import ABC, abstractmethod
 
-from ..domain import Platform
-from ..dto import MsgReferenceDTO, OutboundPayloadDTO, PrincipalDTO
+from core.domain import Platform
+from core.dto import MsgReferenceDTO, OutboundPayloadDTO, PrincipalDTO
 
 
 class InteractionPort(ABC):

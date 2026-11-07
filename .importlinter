@@ -2,6 +2,7 @@
 root_packages =
     bootstrap
     core
+    finshin_sdk
     data
     services
     adapters
@@ -31,6 +32,24 @@ forbidden_modules =
     cv2
     numpy
 
+# 接口包零第三方，平台框架一旦进来就把两侧都锁死在那个平台上
+[importlinter:contract:sdk-zero-deps]
+name = sdk zero external dependencies
+type = forbidden
+source_modules =
+    finshin_sdk
+forbidden_modules =
+    aiogram
+    PySide6
+    aiosqlite
+    httpx
+    playwright
+    tenacity
+    markdown
+    PIL
+    cv2
+    numpy
+
 # 消费方经 ui 门面取窗，链条穿过 ui 属正常，故只禁直接导入
 [importlinter:contract:ui-only-qt]
 name = Qt confined to the view layer
@@ -44,6 +63,7 @@ source_modules =
     exceptions
     services
     core
+    finshin_sdk
     skin
     data
     system
@@ -98,6 +118,7 @@ layers =
     exceptions
     services
     data
+    finshin_sdk
     core
     skin
     system

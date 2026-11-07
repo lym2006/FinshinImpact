@@ -15,7 +15,8 @@ from utils import get_logger, register_lifecycle, unregister_lifecycle
 from utils.network import link_report
 
 if TYPE_CHECKING:
-    from core.contracts import BaseAdapter, CapabilityCall, InteractionPort
+    from core.contracts import CapabilityCall
+    from finshin_sdk import BaseAdapter, InteractionPort
 
 
 # 引擎线程握手
