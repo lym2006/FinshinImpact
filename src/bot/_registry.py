@@ -18,14 +18,14 @@ from core.domain import (
     PluginTimingRun,
     TaskHandler,
 )
-from exceptions import PluginsError
+from exceptions import AdapterMissingError, PluginsError
 from utils.plugin import register_plugins
 
 if TYPE_CHECKING:
     from finshin_sdk import BaseAdapter
 
 # 单通道探测：收 token 与代理，回生效代理与该通道的字段错误
-_ChannelProbe = Callable[[str, str], Awaitable[tuple[str | None, dict[str, str]]]]
+ChannelProbe = Callable[[str, str], Awaitable[tuple[str | None, dict[str, str]]]]
 
 # 一轮网络诊断，收配置代理、token 与代理模式，逐帧回调并按停止判定中止
 _DiagnoseFlow = Callable[..., Coroutine[Any, Any, None]]
@@ -50,7 +50,7 @@ class _PlatformEntry:
     """一个平台的装配件"""
 
     assemble: Callable[[str, str | None], PlatformAssembly]
-    channel_probe: _ChannelProbe
+    channel_probe: ChannelProbe
     engine_preload: Callable[[], None]
     diagnose: _DiagnoseFlow
 
@@ -85,4 +85,7 @@ _ENTRIES: dict[Platform, _PlatformEntry] = {
 
 def entry_for(platform: Platform) -> _PlatformEntry:
     """按平台标识取装配件"""
-    return _ENTRIES[platform]
+    entry = _ENTRIES.get(platform)
+    if entry is None:
+        raise AdapterMissingError(platform)
+    return entry

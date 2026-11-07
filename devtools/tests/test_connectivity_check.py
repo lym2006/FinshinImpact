@@ -187,7 +187,7 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
             return None if sys_box is None else sys_box["value"]
 
         with (
-            patch.object(mod, "_CHANNEL_PROBE", fake_probe),
+            patch.object(mod, "_channel_probe", lambda: fake_probe),
             patch.object(mod, "local_row", return_value=local),
             patch.object(mod, "detect_system_proxy", detected),
             patch.object(mod, "link_report", report),
@@ -508,7 +508,7 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
 
         report = SimpleNamespace(snapshot=lambda: SimpleNamespace(down=False))
         with (
-            patch.object(mod, "_CHANNEL_PROBE", fake_probe),
+            patch.object(mod, "_channel_probe", lambda: fake_probe),
             patch.object(mod, "local_row", return_value=(local_frame, {})),
             patch.object(mod, "detect_system_proxy", detected),
             patch.object(mod, "link_report", report),

@@ -38,11 +38,14 @@ from utils.network import (
 from utils.network.probe import single_row_of
 from utils.paths import PLATFORM
 
-from .._registry import entry_for
+from .._registry import ChannelProbe, entry_for
 from ._base import BaseManager
 
-# 实例平台冻结的单通道探测入口
-_CHANNEL_PROBE = entry_for(PLATFORM).channel_probe
+
+def _channel_probe() -> ChannelProbe:
+    """本实例平台的单通道探测入口"""
+    # 导入期取件会让缺件平台的实例连模块都进不来
+    return entry_for(PLATFORM).channel_probe
 
 
 def _label_of(schema: AppSchema, key: str) -> str:
@@ -202,10 +205,11 @@ class SettingsManager(BaseManager):
 
         - token 错误时不换代理重试
         """
+        channel_probe = _channel_probe()
 
         async def probe(ch: Channel) -> tuple[str | None, dict[str, str], str]:
             start = time.monotonic()
-            resolved, errors = await _CHANNEL_PROBE(token, ch.url)
+            resolved, errors = await channel_probe(token, ch.url)
             self.logger.debug(
                 CheckMessage.COST.format(
                     via=via_label(ch), cost=time.monotonic() - start
