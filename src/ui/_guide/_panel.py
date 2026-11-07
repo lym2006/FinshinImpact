@@ -3,6 +3,7 @@
 
 - 勾选即启用、取消即禁用，保存只写状态与目录指纹
 - 命令名被在场插件拿走的行不给勾选框，改挂冲突按钮写明被谁拿走
+- 冲突明细窗定宽，长句在窗内折行，条目超出给竖向滚动条
 - 冲突明细里的插件名与命令名都按用户看得见的那份写
 - 依赖与资源的安装由启动结算负责，禁用不删已装库
 - 清库只走选窗「依赖管理」同步，面板保存无删除动作
@@ -11,14 +12,12 @@
 from typing import Any
 
 from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QCheckBox,
     QDialog,
     QHBoxLayout,
     QLabel,
     QListWidgetItem,
-    QMenu,
     QPushButton,
     QVBoxLayout,
     QWidget,
@@ -47,7 +46,8 @@ from skin.qss import build_bootstrap_qss
 from skin.theme import GLOBAL, PANEL, ButtonStyle, ObjectName
 
 from .._lifecycle import ensure_app
-from .._primitives import ThemedList, TickedCheckBox, make_button
+from .._primitives import MarqueeLabel, ThemedList, TickedCheckBox, make_button
+from ._conflict import show_conflicts
 
 MODE_AUTO = "auto"  # 自动弹出：保存并启动
 MODE_EDIT = "edit"  # 选窗按钮进入：保存回列表
@@ -138,7 +138,10 @@ class _PluginPanelDialog(QDialog):
     def _make_row(
         self, manifest: dict[str, Any], checked: bool, taken: tuple[CommandTaken, ...]
     ) -> QWidget:
-        """拼插件单行三列控件"""
+        """拼插件单行三列控件
+
+        - 名称与说明由插件作者自写，宽度放不下即循环滚，全文挂悬浮提示
+        """
         bundled = manifest[ManifestKey.NAME] in BUNDLED_PLUGIN_PRIORITY
         title = manifest[ManifestKey.TITLE] or manifest[ManifestKey.NAME]
         middle = manifest[ManifestKey.SUMMARY]
@@ -152,9 +155,9 @@ class _PluginPanelDialog(QDialog):
         )
         row_layout.setSpacing(PANEL.col_gap)
 
-        name_label = QLabel(title)
+        name_label = MarqueeLabel(title)
         name_label.setFixedWidth(PANEL.name_width)
-        desc_label = QLabel(middle)
+        desc_label = MarqueeLabel(middle)
         status = QLabel(self._status_label(manifest))
         status.setFixedWidth(PANEL.status_width)
         status.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
@@ -179,23 +182,21 @@ class _PluginPanelDialog(QDialog):
         return row
 
     def _make_conflict_button(self, taken: tuple[CommandTaken, ...]) -> QPushButton:
-        """勾选位换成冲突按钮，点开即列出每条命令名被谁拿走
-
-        - 抢走那一只报这一行显示的名字，不报目录名
-        """
+        """勾选位换成冲突按钮，点开即列出每条命令名被谁拿走"""
         button = make_button(PluginMessage.BTN_CONFLICT, ButtonStyle.CONFLICT)
-        menu = QMenu(button)
-        for one in taken:
-            action = QAction(
-                PluginMessage.CONFLICT_TAKEN.format(
-                    cmd=one.cmd, owner=self._titles[one.owner]
-                ),
-                menu,
-            )
-            action.setEnabled(False)
-            menu.addAction(action)
-        button.setMenu(menu)
+        button.clicked.connect(
+            lambda: show_conflicts(self, button, self._conflict_lines(taken))
+        )
         return button
+
+    def _conflict_lines(self, taken: tuple[CommandTaken, ...]) -> list[str]:
+        """逐条写成一句明细，抢走那一只报这一行显示的名字，不报目录名"""
+        return [
+            PluginMessage.CONFLICT_TAKEN.format(
+                cmd=one.cmd, owner=self._titles[one.owner]
+            )
+            for one in taken
+        ]
 
     def _claims(self) -> list[PluginClaim]:
         """按清单行交出命令名抢占的入参"""
