@@ -28,7 +28,6 @@ _SYMBOL_MODULES = {
     "open_panel": "._guide",
     "MODE_AUTO": "._guide",
     "settle_runtime": "._guide",
-    "sync_deps": "._guide",
     "ensure_app": "._lifecycle",
     "pump_events": "._lifecycle",
     "Ticker": "._lifecycle",
@@ -81,7 +80,6 @@ __all__ = [
     "open_panel",
     "MODE_AUTO",
     "settle_runtime",
-    "sync_deps",
     # 主窗装配入口
     "create_gui",
     # 主窗与观察器
@@ -118,7 +116,6 @@ if TYPE_CHECKING:
         settle_runtime,
         show_launch_wait,
         show_popup,
-        sync_deps,
     )
     from ._lifecycle import Ticker, ensure_app, pump_events
     from ._primitives import (
