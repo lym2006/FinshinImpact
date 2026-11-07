@@ -29,7 +29,7 @@ from bot._adapter_host import _parts as parts_mod  # noqa: E402
 from bot._managers import _settings as settings_mod  # noqa: E402
 from bot.error_guard import error_guard  # noqa: E402
 from core.domain import Platform  # noqa: E402
-from core.dto import AdapterManifestDTO  # noqa: E402
+from core.dto import AdapterManifestDTO, PluginManifestDTO  # noqa: E402
 from exceptions import AdapterMissingError  # noqa: E402
 from finshin_sdk import AdapterParts, BaseAdapter, PlatformAssembly  # noqa: E402
 from ui import gui_bridge  # noqa: E402
@@ -201,11 +201,14 @@ class TestAdapterHost(unittest.TestCase):
             diagnose=None,  # type: ignore[arg-type]
         )
         seen: dict[str, object] = {}
+        row = PluginManifestDTO(
+            name="help", module="bundled.help", title="帮助", summary=""
+        )
 
         def register(sink: object, builder: object) -> tuple:
             """记下装载侧交来的两件"""
             seen.update(sink=sink, builder=builder)
-            return ([("help", None)], (), (), {})
+            return ([(row, None)], (), (), {})
 
         with (
             patch.object(assemble_mod, "parts_for", lambda platform: parts),
@@ -219,4 +222,4 @@ class TestAdapterHost(unittest.TestCase):
         self.assertIsInstance(adapter.attached[0], _FakeMiddleware)
         self.assertEqual(seen["sink"], adapter.sink)
         self.assertEqual(seen["builder"], adapter.builder)
-        self.assertEqual(assembly.report, [("help", None)])
+        self.assertEqual(assembly.report, [(row, None)])

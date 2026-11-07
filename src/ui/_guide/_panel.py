@@ -24,7 +24,7 @@ from services.env_setup.deps_manifest import (
     catalog_digest,
     load_manifests,
     load_state,
-    plugins_root,
+    plugins_roots,
     save_state,
 )
 from services.env_setup.subprocess_ops import is_pin_installed
@@ -84,12 +84,12 @@ class _PluginPanelDialog(QDialog):
     def _build_rows(self) -> None:
         """按清单与实例状态填充插件行"""
         self._list.clear()
-        root = plugins_root()
-        if root is None:
+        roots = plugins_roots()
+        if not roots:
             return
 
         enabled = set(load_state(self._code).get(StateKey.ENABLED, []))
-        for manifest in load_manifests(root):
+        for manifest in load_manifests(roots):
             item = QListWidgetItem()
 
             # item 默认高 25，行 widget 高 44，不显式对齐则选中高亮画在错位矩形上
@@ -174,8 +174,8 @@ class _PluginPanelDialog(QDialog):
     def _on_save(self) -> None:
         """保存启用集与目录指纹"""
         enabled = self._checked_names()
-        root = plugins_root()
-        catalog = catalog_digest(load_manifests(root)) if root else ""
+        roots = plugins_roots()
+        catalog = catalog_digest(load_manifests(roots)) if roots else ""
         save_state(self._code, enabled, catalog)
         self.accept()
 

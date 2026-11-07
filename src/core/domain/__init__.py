@@ -19,6 +19,7 @@ from ._fields import FieldKey
 from ._platform import ChatScope, Platform, make_profile_code, platform_of_profile
 from ._plugin import (
     BUNDLED_PLUGIN_PRIORITY,
+    INSTALLED_PLUGINS_NAME,
     MANIFEST_FIELDS,
     PLUGINS_PKG,
     CommandPriority,
@@ -70,6 +71,7 @@ __all__ = [
     "ADAPTER_MANIFEST_FIELDS",
     # 插件
     "PLUGINS_PKG",
+    "INSTALLED_PLUGINS_NAME",
     "PlatformTiming",
     "PluginBackground",
     "PluginPredicate",

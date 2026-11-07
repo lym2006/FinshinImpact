@@ -12,7 +12,6 @@ from typing import Any, cast
 
 from core.domain import (
     BUNDLED_PLUGIN_PRIORITY,
-    PLUGINS_PKG,
     CommandRole,
     PlatformTiming,
     PluginBackground,
@@ -40,8 +39,8 @@ from finshin_sdk import RouterBuilder
 from ..paths import PROFILE_DIR
 from ._manifest import enabled_manifests
 
-# 逐项报告：(插件名, 失败异常)，成功那项异常记 None
-_PluginReport = list[tuple[str, PluginsError | None]]
+# 逐项报告：(插件清单, 失败异常)，成功那项异常记 None
+_PluginReport = list[tuple[PluginManifestDTO, PluginsError | None]]
 
 # 注册结果：逐项报告、待启动的常驻协程、任务处理清单、按时机归组的订阅
 _RegisterResult = tuple[
@@ -70,15 +69,14 @@ def register_plugins(
     success_count = 0
 
     for manifest in _resolve_plugins():
-        plugin_name = manifest.name
-        bundled = plugin_name in BUNDLED_PLUGIN_PRIORITY
+        bundled = manifest.name in BUNDLED_PLUGIN_PRIORITY
         try:
             # 动态导入插件模块
-            module = importlib.import_module(f"{PLUGINS_PKG}.{plugin_name}")
+            module = importlib.import_module(manifest.module)
             spec = cast(PluginSpec | None, getattr(module, "spec", None))
 
             if spec is None:
-                report.append((plugin_name, PluginSpecError()))
+                report.append((manifest, PluginSpecError()))
                 continue
 
             _check_roles(manifest, spec)
@@ -89,28 +87,28 @@ def register_plugins(
             for timing, runs in _grouped_timings(spec.timings).items():
                 for run in _checked_hooks(runs, f"timings.{timing}"):
                     timings.setdefault(timing, []).append(run)
-            report.append((plugin_name, None))
+            report.append((manifest, None))
             success_count += 1
 
         except ModuleNotFoundError as e:
             # 插件本身不存在与插件内部缺依赖分开报，两者用户动作不同
-            missing = f"{PLUGINS_PKG}.{plugin_name}" in str(e)
+            missing = manifest.module in str(e)
             error: PluginsError = (
                 PluginMissingError() if missing else PluginDependencyError()
             )
             if bundled:
                 raise
-            report.append((plugin_name, error))
+            report.append((manifest, error))
 
         except PluginRoleError as e:
             if bundled:
                 raise
-            report.append((plugin_name, e))
+            report.append((manifest, e))
 
         except Exception as e:
             if bundled:
                 raise
-            report.append((plugin_name, PluginLoadError(type(e).__name__)))
+            report.append((manifest, PluginLoadError(type(e).__name__)))
 
     if success_count == 0:
         raise PluginsMissingError() from None

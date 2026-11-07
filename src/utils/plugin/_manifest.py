@@ -3,16 +3,20 @@
 
 - 扫描插件目录聚合各插件自描述清单
 - 读取实例状态文件并计算启用序列
+- 外部根里名字撞上随包表的插件整份不放行
 - 引导期另有一份只取最小字段集的精简实现
 """
 
+import importlib.machinery
 import importlib.util
+import sys
 import tomllib
 from pathlib import Path
 from typing import Any
 
 from core.domain import (
     BUNDLED_PLUGIN_PRIORITY,
+    INSTALLED_PLUGINS_NAME,
     MANIFEST_FIELDS,
     PLUGINS_PKG,
     CommandPriority,
@@ -21,6 +25,7 @@ from core.domain import (
     StateKey,
 )
 from core.dto import PluginManifestDTO
+from system.profile_env import ROOT_DIR
 
 from ._manifest_help import read_help_sections
 
@@ -30,9 +35,12 @@ _SCALAR_TYPES: dict[str, type] = {spec.key: spec.value_type for spec in MANIFEST
 # 清单必填项，缺任一拒收
 _REQUIRED_KEYS = tuple(spec.key for spec in MANIFEST_FIELDS if spec.required)
 
+# 插件根：目录与这棵树的顶层包名
+_PluginRoot = tuple[Path, str]
 
-def _plugins_dir() -> Path | None:
-    """定位插件包目录
+
+def _bundled_dir() -> Path | None:
+    """定位仓内插件包目录
 
     - find_spec 只定位不执行模块代码，冻结包下路径随包走
     - 定位失败返回 None，由调用方处理
@@ -43,7 +51,44 @@ def _plugins_dir() -> Path | None:
     return Path(next(iter(spec.submodule_search_locations)))
 
 
-def _load_manifests(plugins_path: Path) -> dict[str, PluginManifestDTO]:
+def _installed_dir() -> Path:
+    """定位项目根下的外部插件目录"""
+    return ROOT_DIR / INSTALLED_PLUGINS_NAME
+
+
+def _mount(dir_path: Path) -> str:
+    """把外部插件目录挂成顶层包并回它的包名
+
+    - 目录不在搜索路径上，按路径造一份只带搜索位置的包模块
+    - 插件目录内部的相对引用因此走得通，跨出目录引不到仓内私有件
+    """
+    pkg = dir_path.name
+    if pkg not in sys.modules:
+        spec = importlib.machinery.ModuleSpec(pkg, loader=None, is_package=True)
+        spec.submodule_search_locations = [str(dir_path)]
+        sys.modules[pkg] = importlib.util.module_from_spec(spec)
+    return pkg
+
+
+def _plugins_roots() -> list[_PluginRoot]:
+    """列出插件根，仓内在前外部在后
+
+    - 外部目录不存在即不进表
+    """
+    roots: list[_PluginRoot] = []
+
+    bundled = _bundled_dir()
+    if bundled is not None:
+        roots.append((bundled, PLUGINS_PKG))
+
+    installed = _installed_dir()
+    if installed.is_dir():
+        roots.append((installed, _mount(installed)))
+
+    return roots
+
+
+def _load_manifests(plugins_path: Path, pkg: str) -> dict[str, PluginManifestDTO]:
     """扫描插件目录聚合清单
 
     - 只认含清单文件的直接子目录
@@ -56,19 +101,20 @@ def _load_manifests(plugins_path: Path) -> dict[str, PluginManifestDTO]:
         return manifests
 
     for path in sorted(plugins_path.iterdir()):
-        manifest = _read_manifest(path / PluginFileName.MANIFEST, path.name)
+        manifest = _read_manifest(path / PluginFileName.MANIFEST, path.name, pkg)
         if manifest is not None:
             manifests[manifest.name] = manifest
 
     return manifests
 
 
-def _read_manifest(path: Path, dir_name: str) -> PluginManifestDTO | None:
+def _read_manifest(path: Path, dir_name: str, pkg: str) -> PluginManifestDTO | None:
     """读取单份插件清单文件
 
     - 文件缺失或解析失败返回 None
     - 必填三项缺失、name 与目录名不符或类型错误则整份拒收
     - 未知键忽略，可选字段缺省用 DTO 默认值
+    - 导入路径按所在根的顶层包名拼，清单不写这一行
     """
     if not path.is_file():
         return None
@@ -100,7 +146,7 @@ def _read_manifest(path: Path, dir_name: str) -> PluginManifestDTO | None:
     if raw_sections := data.get(ManifestKey.HELP):
         kwargs["help_section"] = read_help_sections(raw_sections, dir_name)
 
-    return PluginManifestDTO(**kwargs)
+    return PluginManifestDTO(**kwargs, module=f"{pkg}.{dir_name}")
 
 
 def _load_instance_enabled(state_path: Path) -> frozenset[str] | None:
@@ -165,9 +211,15 @@ def enabled_manifests(state_path: Path) -> list[PluginManifestDTO]:
     """读取启用插件的清单序列
 
     - 注册表与帮助聚合共用本函数取序列
-    - 目录定位失败或无清单返回空列表
+    - 一根目录都定位不到或无清单返回空列表
+    - 外部根里名字撞上随包表的插件不进序列，改名单也不放行
+    - 同名插件按根的顺序取先读到的，仓内压住外部
     """
-    found = _plugins_dir()
-    if found is None:
-        return []
-    return _resolve_enabled(_load_manifests(found), _load_instance_enabled(state_path))
+    manifests: dict[str, PluginManifestDTO] = {}
+    for dir_path, pkg in _plugins_roots():
+        for name, manifest in _load_manifests(dir_path, pkg).items():
+            if pkg != PLUGINS_PKG and name in BUNDLED_PLUGIN_PRIORITY:
+                continue
+            manifests.setdefault(name, manifest)
+
+    return _resolve_enabled(manifests, _load_instance_enabled(state_path))

@@ -35,8 +35,8 @@ class EngineMessage:
     # 用：bot/_managers/_service.py 插件注册结算行
     PLUGINS_DONE = "插件注册完成，共 {n} 项"
 
-    # 用：bot/_managers/_service.py 逐插件成功行
-    PLUGIN_OK = "[{index}/{n}] 插件 {name} 注册成功"
+    # 用：bot/_managers/_service.py 逐插件成功行，module 为插件导入路径
+    PLUGIN_OK = "[{index}/{n}] 插件 {module} 注册成功"
 
     # 用：bot/_managers/_service.py 逐插件失败行，reason 取自插件异常映射表
     PLUGIN_FAIL = "[{index}/{n}] 插件 '{name}' {reason}"

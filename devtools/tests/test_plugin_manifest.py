@@ -4,6 +4,7 @@
 - 清单只认 name/title/summary/deps/assets/help
 - 恒启用与加载档位来自随包表，多写的键按未知键忽略
 - 引导期精简实现与运行期读取在这两条上一致
+- 引导期根表认外部目录，同名插件以仓内那行为准
 """
 
 import sys
@@ -18,10 +19,11 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
+from core.domain import INSTALLED_PLUGINS_NAME, PLUGINS_PKG  # noqa: E402
 from services.env_setup import deps_manifest  # noqa: E402
 from utils.plugin import _manifest  # noqa: E402
 
-# 外部插件多写两个本体不认的键，读取侧按未知键忽略
+# 表外插件多写两个本体不认的键，读取侧按未知键忽略
 _MANIFEST = """
 name = "{name}"
 title = "{name}"
@@ -49,7 +51,9 @@ class TestEnabledOrder(unittest.TestCase):
         self.root = Path(self._tmp.name)
         for name in ("extra", "help", "AI"):
             _write(self.root, name)
-        patcher = patch.object(_manifest, "_plugins_dir", lambda: self.root)
+        patcher = patch.object(
+            _manifest, "_plugins_roots", lambda: [(self.root, "bundled")]
+        )
         patcher.start()
         self.addCleanup(patcher.stop)
 
@@ -85,10 +89,52 @@ class TestGuideRead(unittest.TestCase):
             for name in ("extra", "help", "AI"):
                 _write(root, name)
 
-            rows = deps_manifest.load_manifests(root)
+            rows = deps_manifest.load_manifests([root])
 
             self.assertEqual([row["name"] for row in rows], ["help", "extra", "AI"])
             self.assertFalse({"always", "weight"} & set(rows[0]))
+
+
+class TestGuideRoots(unittest.TestCase):
+    """引导期根表：仓内在前，外部目录按项目根拼"""
+
+    def test_installed_dir_enters_roots_when_present(self) -> None:
+        """外部目录存在才进根表
+
+        - 这条红了说明面板与装库看不到外部插件，或空目录也进了表
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            installed = base / INSTALLED_PLUGINS_NAME
+
+            with patch.object(deps_manifest, "ROOT_DIR", base):
+                names = [path.name for path in deps_manifest.plugins_roots()]
+                self.assertEqual(names, [PLUGINS_PKG])
+
+                installed.mkdir()
+                names = [path.name for path in deps_manifest.plugins_roots()]
+
+            self.assertEqual(names, [PLUGINS_PKG, INSTALLED_PLUGINS_NAME])
+
+    def test_bundled_row_wins_same_name(self) -> None:
+        """两根目录同名时精简清单只留仓内那一行
+
+        - 这条红了说明外部同名插件会顶掉随包件的那一行
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            bundled = Path(tmp) / PLUGINS_PKG
+            installed = Path(tmp) / INSTALLED_PLUGINS_NAME
+            for root, title in ((bundled, "仓内"), (installed, "外部")):
+                target = root / "dup" / "plugin.toml"
+                target.parent.mkdir(parents=True)
+                target.write_text(
+                    f'name = "dup"\ntitle = "{title}"\nsummary = "同名"\n',
+                    encoding="utf-8",
+                )
+
+            rows = deps_manifest.load_manifests([bundled, installed])
+
+            self.assertEqual([row["title"] for row in rows], ["仓内"])
 
 
 if __name__ == "__main__":

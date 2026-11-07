@@ -18,7 +18,7 @@ from services.env_setup.deps_manifest import (
     catalog_digest,
     load_manifests,
     load_state,
-    plugins_root,
+    plugins_roots,
     save_state,
     top_package_name,
 )
@@ -39,13 +39,13 @@ def _target_manifests(code: str) -> list[dict]:
     - 范围是随包插件与本实例启用集
     - 随包插件不看勾选，读取侧恒并入
     """
-    root = plugins_root()
-    if root is None:
+    roots = plugins_roots()
+    if not roots:
         return []
     enabled = set(load_state(code).get(StateKey.ENABLED, []))
     return [
         manifest
-        for manifest in load_manifests(root)
+        for manifest in load_manifests(roots)
         if manifest[ManifestKey.NAME] in BUNDLED_PLUGIN_PRIORITY
         or manifest[ManifestKey.NAME] in enabled
     ]
@@ -93,8 +93,8 @@ def _disable_failed(code: str, failed: list[str]) -> list[str]:
     - 命中不了具体插件（整轮异常）时启用集全禁
     - 只改启用集，不动已装库
     """
-    root = plugins_root()
-    if root is None:
+    roots = plugins_roots()
+    if not roots:
         return []
     enabled = [
         name
@@ -106,7 +106,7 @@ def _disable_failed(code: str, failed: list[str]) -> list[str]:
 
     tops = {top_package_name(item) for item in failed}
     dropped: list[str] = []
-    for manifest in load_manifests(root):
+    for manifest in load_manifests(roots):
         name = manifest[ManifestKey.NAME]
         if name not in enabled:
             continue
@@ -118,7 +118,7 @@ def _disable_failed(code: str, failed: list[str]) -> list[str]:
         dropped = list(enabled)
 
     keep = [name for name in enabled if name not in dropped]
-    save_state(code, keep, catalog_digest(load_manifests(root)))
+    save_state(code, keep, catalog_digest(load_manifests(roots)))
     return dropped
 
 
