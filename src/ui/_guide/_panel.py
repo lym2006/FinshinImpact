@@ -3,7 +3,8 @@
 
 - 勾选即启用、取消即禁用，保存只写状态与目录指纹
 - 命令名被在场插件拿走的行不给勾选框，改挂冲突按钮写明被谁拿走
-- 冲突明细窗定宽，长句在窗内折行，条目超出给竖向滚动条
+- 名字撞上先读到的那份插件即整只不装载，面板上单开一行写明被谁顶掉
+- 冲突明细窗定宽，一行一句，放不下即在行内循环滚
 - 冲突明细里的插件名与命令名都按用户看得见的那份写
 - 依赖与资源的安装由启动结算负责，禁用不删已装库
 - 清库只走选窗「依赖管理」同步，面板保存无删除动作
@@ -38,6 +39,7 @@ from services.env_setup.deps_manifest import (
     load_state,
     plugins_roots,
     save_state,
+    shadowed_manifests,
 )
 from services.env_setup.subprocess_ops import is_pin_installed
 from services.env_setup.toolchain import dev_mode
@@ -52,8 +54,24 @@ from ._conflict import show_conflicts
 MODE_AUTO = "auto"  # 自动弹出：保存并启动
 MODE_EDIT = "edit"  # 选窗按钮进入：保存回列表
 
-# Qt 自定义数据角色，列表行挂清单 dict
+# Qt 自定义数据角色，行上挂清单、冲突明细与顶掉它的那份插件名
 _ROLE_MANIFEST = 0x0100
+_ROLE_LINES = 0x0101
+_ROLE_NAME_TAKEN = 0x0102
+
+
+def _status_label(manifest: dict[str, Any]) -> str:
+    """算一行行尾的状态标签
+
+    - 缺库数按这份清单声明的依赖逐条查已装
+    - 开发模式只报话不动环境
+    """
+    missing = sum(1 for pin in manifest[ManifestKey.DEPS] if not is_pin_installed(pin))
+    if not missing:
+        return PluginMessage.STATUS_INSTALLED
+    if dev_mode():
+        return PluginMessage.STATUS_DEV_SKIP
+    return PluginMessage.STATUS_MISSING.format(count=missing)
 
 
 class _PluginPanelDialog(QDialog):
@@ -66,8 +84,6 @@ class _PluginPanelDialog(QDialog):
         self._code = code
         self._mode = mode
         self._manifests: list[dict[str, Any]] = []
-        self._items: dict[str, QListWidgetItem] = {}
-        self._conflicted: dict[str, tuple[CommandTaken, ...]] = {}
         self._titles: dict[str, str] = {}
         self._build()
 
@@ -102,11 +118,10 @@ class _PluginPanelDialog(QDialog):
         """按清单与实例状态填充插件行
 
         - 首屏就按抢占结果定勾选位形态，同一行只拼一遍
+        - 被同名顶掉的那一份排在整张清单末尾
         """
         self._list.clear()
         self._manifests = []
-        self._items = {}
-        self._conflicted = {}
         self._titles = {}
         roots = plugins_roots()
         if not roots:
@@ -119,24 +134,41 @@ class _PluginPanelDialog(QDialog):
             or manifest[ManifestKey.NAME]
             for manifest in self._manifests
         }
+
         _, conflicts = resolve_claims(self._claims(), frozenset(enabled))
         for manifest in self._manifests:
             name = manifest[ManifestKey.NAME]
-            taken = conflicts.get(name, ())
-            item = QListWidgetItem()
+            lines = self._lines(conflicts.get(name, ()))
+            self._add_row(manifest, name in enabled, lines)
+        for loser, winner in shadowed_manifests(roots):
+            clash = [PluginMessage.CONFLICT_NAME.format(owner=self._titles[winner])]
+            self._add_row(loser, False, clash, winner, PluginMessage.BTN_DUP_NAME)
 
-            # item 默认高 25，行 widget 高 44，不显式对齐则选中高亮画在错位矩形上
-            item.setSizeHint(QSize(0, PANEL.row_height))
-            item.setData(_ROLE_MANIFEST, manifest)
-            self._list.addItem(item)
-            self._list.setItemWidget(
-                item, self._make_row(manifest, name in enabled, taken)
-            )
-            self._items[name] = item
-            self._conflicted[name] = taken
+    def _add_row(
+        self,
+        manifest: dict[str, Any],
+        checked: bool,
+        lines: list[str],
+        taken_by: str = "",
+        label: str = PluginMessage.BTN_CONFLICT,
+    ) -> None:
+        """拼一行挂进清单，冲突明细、按钮名与顶掉它的那份插件名都随行走"""
+        item = QListWidgetItem()
+
+        # item 默认高 25，行 widget 高 44，不显式对齐则选中高亮画在错位矩形上
+        item.setSizeHint(QSize(0, PANEL.row_height))
+        item.setData(_ROLE_MANIFEST, manifest)
+        item.setData(_ROLE_LINES, lines)
+        item.setData(_ROLE_NAME_TAKEN, taken_by)
+        self._list.addItem(item)
+        self._list.setItemWidget(item, self._make_row(manifest, checked, lines, label))
 
     def _make_row(
-        self, manifest: dict[str, Any], checked: bool, taken: tuple[CommandTaken, ...]
+        self,
+        manifest: dict[str, Any],
+        checked: bool,
+        lines: list[str],
+        label: str = PluginMessage.BTN_CONFLICT,
     ) -> QWidget:
         """拼插件单行三列控件
 
@@ -144,7 +176,6 @@ class _PluginPanelDialog(QDialog):
         """
         bundled = manifest[ManifestKey.NAME] in BUNDLED_PLUGIN_PRIORITY
         title = manifest[ManifestKey.TITLE] or manifest[ManifestKey.NAME]
-        middle = manifest[ManifestKey.SUMMARY]
 
         row = QWidget()
         row.setFixedHeight(PANEL.row_height)
@@ -157,17 +188,17 @@ class _PluginPanelDialog(QDialog):
 
         name_label = MarqueeLabel(title)
         name_label.setFixedWidth(PANEL.name_width)
-        desc_label = MarqueeLabel(middle)
-        status = QLabel(self._status_label(manifest))
+        desc_label = MarqueeLabel(manifest[ManifestKey.SUMMARY])
+        status = QLabel(_status_label(manifest))
         status.setFixedWidth(PANEL.status_width)
         status.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
 
-        if bundled:
+        if lines:
+            slot: QWidget = self._make_conflict_button(lines, label)
+        elif bundled:
             # 随包插件无勾选框，勾选位以"必选"文字占宽对齐
-            slot: QWidget = QLabel(PluginMessage.ROW_BUNDLED)
+            slot = QLabel(PluginMessage.ROW_BUNDLED)
             slot.setObjectName(ObjectName.ROW_BUNDLED_MARK)
-        elif taken:
-            slot = self._make_conflict_button(taken)
         else:
             check = TickedCheckBox(GLOBAL.check_size, PANEL.col_gap)
             check.setChecked(checked)
@@ -181,15 +212,13 @@ class _PluginPanelDialog(QDialog):
         row_layout.addWidget(status)
         return row
 
-    def _make_conflict_button(self, taken: tuple[CommandTaken, ...]) -> QPushButton:
-        """勾选位换成冲突按钮，点开即列出每条命令名被谁拿走"""
-        button = make_button(PluginMessage.BTN_CONFLICT, ButtonStyle.CONFLICT)
-        button.clicked.connect(
-            lambda: show_conflicts(self, button, self._conflict_lines(taken))
-        )
+    def _make_conflict_button(self, lines: list[str], label: str) -> QPushButton:
+        """勾选位是一颗按冲突类型点名的按钮，点开即逐条写明被谁拿走"""
+        button = make_button(label, ButtonStyle.CONFLICT)
+        button.clicked.connect(lambda: show_conflicts(self, button, lines))
         return button
 
-    def _conflict_lines(self, taken: tuple[CommandTaken, ...]) -> list[str]:
+    def _lines(self, taken: tuple[CommandTaken, ...]) -> list[str]:
         """逐条写成一句明细，抢走那一只报这一行显示的名字，不报目录名"""
         return [
             PluginMessage.CONFLICT_TAKEN.format(
@@ -211,32 +240,23 @@ class _PluginPanelDialog(QDialog):
     def _apply_clashes(self) -> None:
         """按当前勾选重算命令名抢占
 
-        - 只重拼勾选位或冲突明细有变的行，行数与行高不动，滚动位置不变
+        - 只重拼明细有变的行，行数与行高不动，滚动位置不变
+        - 随包行与名字顶掉的行不参与重算，两种都不跟勾选走
         """
         _, conflicts = resolve_claims(self._claims(), frozenset(self._checked_names()))
-        for manifest in self._manifests:
+        for row in range(self._list.count()):
+            item = self._list.item(row)
+            manifest = item.data(_ROLE_MANIFEST)
             name = manifest[ManifestKey.NAME]
-            if name in BUNDLED_PLUGIN_PRIORITY:
+            if item.data(_ROLE_NAME_TAKEN) or name in BUNDLED_PLUGIN_PRIORITY:
                 continue
-            taken = conflicts.get(name, ())
-            if taken == self._conflicted[name]:
+            lines = self._lines(conflicts.get(name, ()))
+            if lines == item.data(_ROLE_LINES):
                 continue
-            item = self._items[name]
             self._list.setItemWidget(
-                item, self._make_row(manifest, self._row_checked(item), taken)
+                item, self._make_row(manifest, self._row_checked(item), lines)
             )
-            self._conflicted[name] = taken
-
-    def _status_label(self, manifest: dict[str, Any]) -> str:
-        """计算单插件状态标签"""
-        missing = sum(
-            1 for pin in manifest[ManifestKey.DEPS] if not is_pin_installed(pin)
-        )
-        if not missing:
-            return PluginMessage.STATUS_INSTALLED
-        if dev_mode():
-            return PluginMessage.STATUS_DEV_SKIP
-        return PluginMessage.STATUS_MISSING.format(count=missing)
+            item.setData(_ROLE_LINES, lines)
 
     def _row_checked(self, item: QListWidgetItem) -> bool:
         """取列表项所在行的复选框勾选态"""

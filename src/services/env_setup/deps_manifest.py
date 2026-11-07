@@ -69,16 +69,13 @@ def _read_toml(path: Path) -> dict[str, Any] | None:
         return None
 
 
-def load_manifests(plugins_paths: Sequence[Path]) -> list[dict[str, Any]]:
-    """扫描插件根目录聚合最小清单
+def _scan_rows(plugins_paths: Sequence[Path]) -> list[dict[str, Any]]:
+    """按根的顺序逐子目录读出最小清单，同名不去重
 
     - 无清单或 name 非法的子目录跳过
-    - 同名插件按根的顺序取先读到的，仓内压住外部同名
     - 每行带 help 段声明的命令名，供命令名抢占判定取用
-    - 随包表里的先成一组，组内按档位序，其余一律排在后并按 name 字典序
     """
-    found: dict[str, dict[str, Any]] = {}
-
+    rows: list[dict[str, Any]] = []
     for plugins_path in plugins_paths:
         if not plugins_path.is_dir():
             continue
@@ -91,9 +88,22 @@ def load_manifests(plugins_paths: Sequence[Path]) -> list[dict[str, Any]]:
                 key: data.get(key, _DEFAULTS[key]) for key in _MINIMAL_KEYS
             }
             row[HelpKey.COMMANDS] = _command_names(data)
-            found.setdefault(row[ManifestKey.NAME], row)
+            rows.append(row)
 
-    manifests = sorted(
+    return rows
+
+
+def load_manifests(plugins_paths: Sequence[Path]) -> list[dict[str, Any]]:
+    """扫描插件根目录聚合最小清单
+
+    - 同名插件按根的顺序取先读到的，仓内压住外部同名
+    - 随包表里的先成一组，组内按档位序，其余一律排在后并按 name 字典序
+    """
+    found: dict[str, dict[str, Any]] = {}
+    for row in _scan_rows(plugins_paths):
+        found.setdefault(row[ManifestKey.NAME], row)
+
+    return sorted(
         found.values(),
         key=lambda item: (
             item[ManifestKey.NAME] not in BUNDLED_PLUGIN_PRIORITY,
@@ -101,7 +111,27 @@ def load_manifests(plugins_paths: Sequence[Path]) -> list[dict[str, Any]]:
             item[ManifestKey.NAME],
         ),
     )
-    return manifests
+
+
+def shadowed_manifests(
+    plugins_paths: Sequence[Path],
+) -> list[tuple[dict[str, Any], str]]:
+    """读出被同名前一份顶掉的插件行
+
+    - 回 (被顶掉的清单, 顶掉它的那份的名字) 序列
+    - 名字先被哪一根目录读到，后一根目录里的同名那份即整只不装载
+    - 面板据此给被顶掉的那一份补一行冲突明细
+    """
+    claimed: set[str] = set()
+    shadowed: list[tuple[dict[str, Any], str]] = []
+    for row in _scan_rows(plugins_paths):
+        name = row[ManifestKey.NAME]
+        if name in claimed:
+            shadowed.append((row, name))
+            continue
+        claimed.add(name)
+
+    return shadowed
 
 
 def catalog_digest(manifests: list[dict[str, Any]]) -> str:

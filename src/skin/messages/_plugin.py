@@ -14,8 +14,12 @@ class PluginMessage:
     # 用：ui._guide._panel 随包行勾选位替代文字
     ROW_BUNDLED = "必选"
 
-    # 用：ui._guide._panel 命令名被抢走行的勾选位按钮与菜单明细行
+    # 用：ui._guide._panel 命令被抢行的勾选位按钮与明细行
     BTN_CONFLICT = "冲突"
+
+    # 用：ui._guide._panel 重名行的勾选位按钮
+    BTN_DUP_NAME = "重名"
+    CONFLICT_NAME = "插件名被 {owner} 占用"
     CONFLICT_TAKEN = "/{cmd} 已被 {owner} 占用"
 
     # 用：ui._guide._panel 行尾状态标签
