@@ -4,6 +4,7 @@
 - 定义跨层传递的不可变数据快照
 """
 
+from ._adapter import AdapterManifestDTO
 from ._content import ContentDTO, MediaEntryDTO
 from ._identity import MsgReferenceDTO, PrincipalDTO
 from ._interaction import CommandDTO, InboundEventDTO, OutboundPayloadDTO
@@ -23,6 +24,8 @@ __all__ = [
     "HelpFlagDTO",
     "HelpSectionDTO",
     "PluginManifestDTO",
+    # 适配器
+    "AdapterManifestDTO",
     # 交互
     "OutboundPayloadDTO",
     "InboundEventDTO",

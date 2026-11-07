@@ -30,8 +30,8 @@ from utils import get_logger
 from utils.lifecycle import shutdown_all
 from utils.paths import PLATFORM
 
+from ._adapter_host import parts_for
 from ._managers import BotManager
-from ._registry import entry_for
 
 _ERR_MAP_ADAPTER = MAPS[MAP_KEY_ADAPTER]
 
@@ -61,12 +61,12 @@ class Main:
             # 实例锁由 bootstrap 统一抢占
             app = ensure_app()
 
-            platform_entry = entry_for(PLATFORM)
+            platform_parts = parts_for(PLATFORM)
 
             # 引擎重依赖已由引导层后台线程预热，此处命中模块缓存
-            platform_entry.engine_preload()
+            platform_parts.engine_preload()
 
-            window, instances = create_gui(platform_entry.diagnose)
+            window, instances = create_gui(platform_parts.diagnose)
 
             # 多实例任务栏区分：标题带身份码，无身份码维持原标题
             profile = get_profile()
