@@ -75,7 +75,7 @@ def load_manifests(plugins_paths: Sequence[Path]) -> list[dict[str, Any]]:
     - 无清单或 name 非法的子目录跳过
     - 同名插件按根的顺序取先读到的，仓内压住外部同名
     - 每行带 help 段声明的命令名，供命令名抢占判定取用
-    - 先按随包表定档，表外插件一律常规档，同档按 name 字典序
+    - 随包表里的先成一组，组内按档位序，其余一律排在后并按 name 字典序
     """
     found: dict[str, dict[str, Any]] = {}
 
@@ -96,6 +96,7 @@ def load_manifests(plugins_paths: Sequence[Path]) -> list[dict[str, Any]]:
     manifests = sorted(
         found.values(),
         key=lambda item: (
+            item[ManifestKey.NAME] not in BUNDLED_PLUGIN_PRIORITY,
             BUNDLED_PLUGIN_PRIORITY.get(item[ManifestKey.NAME], CommandPriority.NORMAL),
             item[ManifestKey.NAME],
         ),

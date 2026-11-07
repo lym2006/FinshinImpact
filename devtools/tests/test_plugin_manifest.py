@@ -91,8 +91,21 @@ class TestGuideRead(unittest.TestCase):
 
             rows = deps_manifest.load_manifests([root])
 
-            self.assertEqual([row["name"] for row in rows], ["help", "extra", "AI"])
+            self.assertEqual([row["name"] for row in rows], ["help", "AI", "extra"])
             self.assertFalse({"always", "weight"} & set(rows[0]))
+
+    def test_bundled_grouped_before_external(self) -> None:
+        """随包表里的三只成组在前，表外的名字再靠前也不插进来"""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for name in ("aardvark", "help", "grant", "AI"):
+                _write(root, name)
+
+            rows = deps_manifest.load_manifests([root])
+
+            self.assertEqual(
+                [row["name"] for row in rows], ["help", "grant", "AI", "aardvark"]
+            )
 
 
 class TestGuideRoots(unittest.TestCase):
