@@ -45,7 +45,7 @@ class PanelTheme:
     name_width: int = 180  # 名称列固定宽
     status_width: int = 110  # 状态列固定宽
     col_gap: int = 12  # 列间距
-    conflict_width: int = 420  # 冲突明细窗定宽，长句在这宽度内折行
+    conflict_width: int = 420  # 冲突明细窗定宽，一句一行在这宽度里循环滚
     conflict_rows: int = 5  # 明细窗最多露几行，按整行给，条目再多走竖向滚动
 
 

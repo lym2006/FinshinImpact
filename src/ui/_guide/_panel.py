@@ -213,7 +213,7 @@ class _PluginPanelDialog(QDialog):
         return row
 
     def _make_conflict_button(self, lines: list[str], label: str) -> QPushButton:
-        """勾选位是一颗按冲突类型点名的按钮，点开即逐条写明被谁拿走"""
+        """勾选位是一颗写明冲突类型的按钮，点开逐条列出被谁拿走"""
         button = make_button(label, ButtonStyle.CONFLICT)
         button.clicked.connect(lambda: show_conflicts(self, button, lines))
         return button
