@@ -4,6 +4,14 @@
 - 定义业务类型，将不同平台的原始类型归一化
 """
 
+from ._adapter import (
+    ADAPTER_ENTRY_MODULE,
+    ADAPTER_MANIFEST_FIELDS,
+    ADAPTER_MANIFEST_FILE,
+    ADAPTERS_PKG,
+    AdapterFieldSpec,
+    AdapterManifestKey,
+)
 from ._command import BoundCommand, CommandFlag, StepInput, bind_command, is_flag_name
 from ._container import make_container
 from ._content import ContentKind
@@ -53,6 +61,13 @@ __all__ = [
     # 平台
     "Platform",
     "ChatScope",
+    # 适配器
+    "ADAPTERS_PKG",
+    "ADAPTER_ENTRY_MODULE",
+    "ADAPTER_MANIFEST_FILE",
+    "AdapterManifestKey",
+    "AdapterFieldSpec",
+    "ADAPTER_MANIFEST_FIELDS",
     # 插件
     "PLUGINS_PKG",
     "PlatformTiming",

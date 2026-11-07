@@ -8,17 +8,18 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING
 
 from core.contracts import CapabilityCall
 from core.domain import ContentKind, PlatformTiming
 from core.dto import OutboundPayloadDTO
-from exceptions import MAP_KEY_PLUGINS, MAPS, PluginsError
+from exceptions import MAP_KEY_PLUGINS, MAPS, BotError
+from finshin_sdk import PlatformAssembly
 from skin.messages import EngineMessage
 from utils.paths import PLATFORM
 
-from .._registry import PlatformAssembly, entry_for
+from .._adapter_host import parts_for
 from ._base import BaseManager
 
 if TYPE_CHECKING:
@@ -29,6 +30,18 @@ if TYPE_CHECKING:
     from .._service import AdapterRuntime
 
 _ERR_MAP_PLUGIN = MAPS[MAP_KEY_PLUGINS]
+
+
+def _failure_reason(error: BaseException) -> str:
+    """失败行的原因取映射文案
+
+    - 认得出的异常族照映射填
+    - 认不出的报异常类名，细节归调试日志
+    """
+    template = _ERR_MAP_PLUGIN.get(type(error)) if isinstance(error, BotError) else None
+    if template is None:
+        return type(error).__name__
+    return template.format(**vars(error))
 
 
 class ServiceManager(BaseManager):
@@ -96,9 +109,11 @@ class ServiceManager(BaseManager):
     def _create_components(self) -> PlatformAssembly:
         """按配置装配本实例平台的适配器与插件清单"""
         token, proxy = self._get_config()
-        return entry_for(PLATFORM).assemble(token, proxy)
+        return parts_for(PLATFORM).assemble(token, proxy)
 
-    def _log_plugin_report(self, report: list[tuple[str, PluginsError | None]]) -> None:
+    def _log_plugin_report(
+        self, report: Sequence[tuple[str, Exception | None]]
+    ) -> None:
         """逐条落插件加载结果，失败行带映射文案"""
         total = len(report)
         self.logger.info(EngineMessage.PLUGINS_DONE.format(n=total))
@@ -113,7 +128,7 @@ class ServiceManager(BaseManager):
                     index=index,
                     n=total,
                     name=name,
-                    reason=_ERR_MAP_PLUGIN[type(error)].format(**vars(error)),
+                    reason=_failure_reason(error),
                 ),
                 error,
             )

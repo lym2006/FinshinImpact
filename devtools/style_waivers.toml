@@ -30,6 +30,12 @@ match = "get_me"
 reason = "探测接缝函数，用例按同名关键字替换实现，不经 import 消费"
 
 [[waiver]]
+section = "命名与门面导出"
+path = "src/adapters/telegram/entry.py"
+match = "parts"
+reason = "交件入口由装载侧按清单动态导入后调用，导入图查不到消费方"
+
+[[waiver]]
 section = "拆分粒度"
 path = "src/ui/_dialogs/_check.py"
 match = "CheckDialog"

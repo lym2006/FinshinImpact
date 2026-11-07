@@ -10,6 +10,7 @@ from collections.abc import Awaitable, Callable
 from typing import cast
 
 from core.domain import ConfigKey, ConfigSection, FieldKey, ProxyMode
+from finshin_sdk import ChannelProbe
 from skin.messages import CheckMessage
 from ui import gui_bridge
 from utils import config_manager
@@ -38,14 +39,14 @@ from utils.network import (
 from utils.network.probe import single_row_of
 from utils.paths import PLATFORM
 
-from .._registry import ChannelProbe, entry_for
+from .._adapter_host import parts_for
 from ._base import BaseManager
 
 
 def _channel_probe() -> ChannelProbe:
     """本实例平台的单通道探测入口"""
     # 导入期取件会让缺件平台的实例连模块都进不来
-    return entry_for(PLATFORM).channel_probe
+    return parts_for(PLATFORM).channel_probe
 
 
 def _label_of(schema: AppSchema, key: str) -> str:
