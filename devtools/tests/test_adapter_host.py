@@ -5,6 +5,7 @@
 - 有清单的平台取到四件，没清单的平台抛缺件异常
 - 缺件那句取映射文案，带平台标识
 - 清单表空着也进得了配置管理器
+- 入口模块的装配只交运行时，挂日志与注册插件归装载侧
 """
 
 import importlib
@@ -22,6 +23,7 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
+from bot._adapter_host import _assemble as assemble_mod  # noqa: E402
 from bot._adapter_host import _manifest as manifest_mod  # noqa: E402
 from bot._adapter_host import _parts as parts_mod  # noqa: E402
 from bot._managers import _settings as settings_mod  # noqa: E402
@@ -29,10 +31,60 @@ from bot.error_guard import error_guard  # noqa: E402
 from core.domain import Platform  # noqa: E402
 from core.dto import AdapterManifestDTO  # noqa: E402
 from exceptions import AdapterMissingError  # noqa: E402
-from finshin_sdk import AdapterParts  # noqa: E402
+from finshin_sdk import AdapterParts, BaseAdapter, PlatformAssembly  # noqa: E402
 from ui import gui_bridge  # noqa: E402
 
 _PARTS_KEYS = ("assemble", "channel_probe", "engine_preload", "diagnose")
+
+
+class _FakeMiddleware:
+    """假日志中间件，只用来认出装载侧交来的那一只"""
+
+
+class _FakeAdapter(BaseAdapter):
+    """记下装载侧交来的两件，其余成员按基类要求补齐"""
+
+    def __init__(self) -> None:
+        self.sink = object()
+        self.builder = lambda spec: spec
+        self.attached: list[object] = []
+
+    @property
+    def platform(self) -> Platform:
+        """平台标识"""
+        return Platform.TELEGRAM
+
+    @property
+    def interaction(self):  # type: ignore[override]
+        """交互端口"""
+        return None
+
+    @property
+    def route_sink(self):  # type: ignore[override]
+        """事件分发替身"""
+        return self.sink
+
+    @property
+    def router_builder(self):  # type: ignore[override]
+        """清单编译替身"""
+        return self.builder
+
+    def attach_middleware(self, middleware: object) -> None:
+        """收下装载侧交来的日志中间件"""
+        self.attached.append(middleware)
+
+    async def start(self) -> None:
+        """启动空动作"""
+
+    async def stop(self) -> None:
+        """停止空动作"""
+
+    async def close(self) -> None:
+        """收尾空动作"""
+
+    def is_link_failure(self, exc: BaseException) -> bool:
+        """连接失败判据替身"""
+        return False
 
 
 class TestAdapterHost(unittest.TestCase):
@@ -120,3 +172,51 @@ class TestAdapterHost(unittest.TestCase):
             importlib.reload(settings_mod)
             with self.assertRaises(AdapterMissingError):
                 settings_mod._channel_probe()
+
+    def test_assemble_hands_over_runtime_only(self) -> None:
+        """入口模块的装配只交运行时
+
+        - 交出的运行时带路由挂载口、清单编译器与中间件挂载点
+        - 插件报告那几栏由装载侧拼齐
+        """
+        runtime = parts_mod.parts_for(Platform.TELEGRAM).assemble(
+            "123456:AA-test-token", None
+        )
+        self.assertIsInstance(runtime, BaseAdapter)
+        self.assertTrue(callable(runtime.router_builder))
+        self.assertTrue(callable(runtime.attach_middleware))
+        self.assertTrue(hasattr(runtime, "route_sink"))
+
+    def test_host_wires_middleware_and_plugins(self) -> None:
+        """挂日志与注册插件这两步归装载侧
+
+        - 交进注册的是这只适配器自己的挂载口与编译器
+        - 装配结果由装载侧拼齐
+        """
+        adapter = _FakeAdapter()
+        parts = AdapterParts(
+            assemble=lambda token, proxy: adapter,
+            channel_probe=None,  # type: ignore[arg-type]
+            engine_preload=None,  # type: ignore[arg-type]
+            diagnose=None,  # type: ignore[arg-type]
+        )
+        seen: dict[str, object] = {}
+
+        def register(sink: object, builder: object) -> tuple:
+            """记下装载侧交来的两件"""
+            seen.update(sink=sink, builder=builder)
+            return ([("help", None)], (), (), {})
+
+        with (
+            patch.object(assemble_mod, "parts_for", lambda platform: parts),
+            patch.object(assemble_mod, "register_plugins", register),
+            patch.object(assemble_mod, "LoggingMiddleware", _FakeMiddleware),
+        ):
+            assembly = assemble_mod.assemble_platform(Platform.TELEGRAM, "t", None)
+
+        self.assertIsInstance(assembly, PlatformAssembly)
+        self.assertEqual(len(adapter.attached), 1)
+        self.assertIsInstance(adapter.attached[0], _FakeMiddleware)
+        self.assertEqual(seen["sink"], adapter.sink)
+        self.assertEqual(seen["builder"], adapter.builder)
+        self.assertEqual(assembly.report, [("help", None)])

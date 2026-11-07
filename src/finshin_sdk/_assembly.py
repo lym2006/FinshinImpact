@@ -42,11 +42,11 @@ class PlatformAssembly:
 class AdapterParts:
     """适配器入口模块交出的四件
 
-    - assemble 收 token 与代理，回装配出来的件
+    - assemble 收 token 与代理，回这个平台的运行时
     - engine_preload 只付引擎导入费，不等配置
     """
 
-    assemble: Callable[[str, str | None], PlatformAssembly]
+    assemble: Callable[[str, str | None], BaseAdapter]
     channel_probe: ChannelProbe
     engine_preload: Callable[[], None]
     diagnose: _DiagnoseFlow

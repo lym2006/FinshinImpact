@@ -19,7 +19,7 @@ from finshin_sdk import PlatformAssembly
 from skin.messages import EngineMessage
 from utils.paths import PLATFORM
 
-from .._adapter_host import parts_for
+from .._adapter_host import assemble_platform
 from ._base import BaseManager
 
 if TYPE_CHECKING:
@@ -109,7 +109,7 @@ class ServiceManager(BaseManager):
     def _create_components(self) -> PlatformAssembly:
         """按配置装配本实例平台的适配器与插件清单"""
         token, proxy = self._get_config()
-        return parts_for(PLATFORM).assemble(token, proxy)
+        return assemble_platform(PLATFORM, token, proxy)
 
     def _log_plugin_report(
         self, report: Sequence[tuple[str, Exception | None]]

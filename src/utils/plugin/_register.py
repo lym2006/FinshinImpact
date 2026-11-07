@@ -8,7 +8,6 @@
 """
 
 import importlib
-from collections.abc import Callable
 from typing import Any, cast
 
 from core.domain import (
@@ -36,6 +35,7 @@ from exceptions import (
     PluginsMissingError,
     PluginSpecError,
 )
+from finshin_sdk import RouterBuilder
 
 from ..paths import PROFILE_DIR
 from ._manifest import enabled_manifests
@@ -51,13 +51,10 @@ _RegisterResult = tuple[
     dict[PlatformTiming, tuple[PluginTimingRun, ...]],
 ]
 
-# 平台侧的清单编译器，由装配层注入
-_RouteBuilder = Callable[[PluginSpec], Any]
-
 
 def register_plugins(
     sink: RouteSink,
-    build_router: _RouteBuilder,
+    build_router: RouterBuilder,
 ) -> _RegisterResult:
     """按启用序列注册插件
 
