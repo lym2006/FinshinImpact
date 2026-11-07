@@ -16,7 +16,7 @@ from .._primitives import MarqueeLabel, ThemedList
 
 
 def _fit_rows(rows: ThemedList) -> None:
-    """把行宽改成视口实宽
+    """把行宽定成视口实宽
 
     - 竖向滚动条一出现就吃掉一段宽度，行按实宽决定滚不滚
     """

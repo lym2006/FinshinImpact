@@ -23,8 +23,8 @@ from core.domain import ManifestKey, StateKey  # noqa: E402
 from ui._guide import _startup  # noqa: E402
 
 _SENTINEL = Path("plugins-sentinel")
-_RENDER = {
-    ManifestKey.NAME: "AI_render",
+_WEB = {
+    ManifestKey.NAME: "webshot",
     ManifestKey.DEPS: ["markdown==3.10.2", "playwright==1.62.0"],
     ManifestKey.ASSETS: ["playwright chromium-headless-shell"],
 }
@@ -61,8 +61,8 @@ class _StartupBase(unittest.TestCase):
         for name in _PATCHED:
             self.m[name] = self.stack.enter_context(patch.object(_startup, name))
         self.m["plugins_roots"].return_value = [_SENTINEL]
-        self.m["load_manifests"].return_value = [_AI, _RENDER]
-        self.m["load_state"].return_value = {StateKey.ENABLED: ["AI_render"]}
+        self.m["load_manifests"].return_value = [_AI, _WEB]
+        self.m["load_state"].return_value = {StateKey.ENABLED: ["webshot"]}
         self.m["dev_mode"].return_value = False
         self.m["is_pin_installed"].return_value = True
         self.m["is_asset_installed"].return_value = True
@@ -81,7 +81,7 @@ class TestCollectMissing(_StartupBase):
 
         plan = _startup._collect_missing("AAAA")
 
-        self.assertEqual(plan, [("AI_render", ["playwright==1.62.0"], [])])
+        self.assertEqual(plan, [("webshot", ["playwright==1.62.0"], [])])
 
     def test_missing_asset_planned(self) -> None:
         """资源探活落空即列入计划"""
@@ -90,7 +90,7 @@ class TestCollectMissing(_StartupBase):
         plan = _startup._collect_missing("AAAA")
 
         self.assertEqual(
-            plan, [("AI_render", [], ["playwright chromium-headless-shell"])]
+            plan, [("webshot", [], ["playwright chromium-headless-shell"])]
         )
 
     def test_bundled_plugin_always_checked(self) -> None:
@@ -155,7 +155,7 @@ class TestInstallMissing(_StartupBase):
 
     def test_installs_only_missing_items(self) -> None:
         """按计划逐插件补装，只喂缺失项"""
-        plan = [("AI_render", ["playwright==1.62.0"], ["playwright chromium"])]
+        plan = [("webshot", ["playwright==1.62.0"], ["playwright chromium"])]
         self.m["install_deps"].return_value = []
         self.m["install_assets"].return_value = []
 
@@ -167,7 +167,7 @@ class TestInstallMissing(_StartupBase):
 
     def test_collects_failed_items(self) -> None:
         """两路失败项合并回传"""
-        plan = [("AI_render", ["a==1.0"], ["playwright chromium"])]
+        plan = [("webshot", ["a==1.0"], ["playwright chromium"])]
         self.m["install_deps"].return_value = ["a==1.0"]
         self.m["install_assets"].return_value = ["playwright chromium"]
 
@@ -185,17 +185,17 @@ class TestDisableFailed(_StartupBase):
 
     def test_drops_plugin_matched_by_dep(self) -> None:
         """失败项命中某插件的依赖，只禁该插件并落盘剩余启用集"""
-        self.m["load_state"].return_value = {StateKey.ENABLED: ["AI_render", "other"]}
+        self.m["load_state"].return_value = {StateKey.ENABLED: ["webshot", "other"]}
         other = {
             ManifestKey.NAME: "other",
             ManifestKey.DEPS: ["foo==1.0"],
             ManifestKey.ASSETS: [],
         }
-        self.m["load_manifests"].return_value = [_AI, _RENDER, other]
+        self.m["load_manifests"].return_value = [_AI, _WEB, other]
 
         dropped = _startup._disable_failed("AAAA", ["playwright==1.62.0"])
 
-        self.assertEqual(dropped, ["AI_render"])
+        self.assertEqual(dropped, ["webshot"])
         self.m["save_state"].assert_called_once_with("AAAA", ["other"], "cat")
 
     def test_drops_plugin_matched_by_asset(self) -> None:
@@ -204,13 +204,13 @@ class TestDisableFailed(_StartupBase):
             "AAAA", ["playwright chromium-headless-shell"]
         )
 
-        self.assertEqual(dropped, ["AI_render"])
+        self.assertEqual(dropped, ["webshot"])
 
     def test_unmatched_failure_drops_all_enabled(self) -> None:
         """失败项命中不了具体插件（整轮异常），启用集全禁"""
         dropped = _startup._disable_failed("AAAA", ["任务异常中止"])
 
-        self.assertEqual(dropped, ["AI_render"])
+        self.assertEqual(dropped, ["webshot"])
         self.m["save_state"].assert_called_once_with("AAAA", [], "cat")
 
     def test_no_enabled_no_write(self) -> None:

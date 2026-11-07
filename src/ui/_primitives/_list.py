@@ -16,7 +16,7 @@ class ThemedList(QListWidget):
     """带选中联动与增删操作的列表"""
 
     def __init__(self, parent: QWidget | None = None) -> None:
-        """按公共档位把竖向滚动改成按像素走"""
+        """竖向滚动按公共档位走像素"""
         super().__init__(parent)
         self.set_fine_scroll(SCROLLBAR.step)
 
