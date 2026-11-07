@@ -6,8 +6,8 @@
 
 from typing import TYPE_CHECKING
 
-from core.contracts import BaseAdapter, InteractionPort
 from core.domain import Platform
+from finshin_sdk import BaseAdapter, InteractionPort
 
 from ._interaction import TelegramInteractionPort
 from ._normalize import NormalizeMiddleware

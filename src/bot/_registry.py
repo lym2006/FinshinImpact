@@ -22,7 +22,7 @@ from exceptions import PluginsError
 from utils.plugin import register_plugins
 
 if TYPE_CHECKING:
-    from core.contracts import BaseAdapter
+    from finshin_sdk import BaseAdapter
 
 # 单通道探测：收 token 与代理，回生效代理与该通道的字段错误
 _ChannelProbe = Callable[[str, str], Awaitable[tuple[str | None, dict[str, str]]]]

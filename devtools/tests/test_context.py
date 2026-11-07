@@ -16,7 +16,6 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
-from core.contracts import InteractionPort  # noqa: E402
 from core.domain import ChatScope, ContentKind, Platform  # noqa: E402
 from core.domain.ids import ContainerKey, MessageId, UserId  # noqa: E402
 from core.dto import (  # noqa: E402
@@ -26,6 +25,7 @@ from core.dto import (  # noqa: E402
     OutboundPayloadDTO,
     PrincipalDTO,
 )
+from finshin_sdk import InteractionPort  # noqa: E402
 from services.context import HandlerContext  # noqa: E402
 
 
