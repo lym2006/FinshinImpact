@@ -44,7 +44,7 @@ _PluginRoot = tuple[Path, str]
 
 
 def _bundled_dir() -> Path | None:
-    """定位仓内插件包目录
+    """定位随包插件包目录
 
     - find_spec 只定位不执行模块代码，冻结包下路径随包走
     - 定位失败返回 None，由调用方处理
@@ -64,7 +64,7 @@ def _mount(dir_path: Path) -> str:
     """把外部插件目录挂成顶层包并回它的包名
 
     - 目录不在搜索路径上，按路径造一份只带搜索位置的包模块
-    - 插件目录内部的相对引用因此走得通，跨出目录引不到仓内私有件
+    - 插件目录内部的相对引用因此走得通，跨出目录引不到随包私有件
     """
     pkg = dir_path.name
     if pkg not in sys.modules:
@@ -75,7 +75,7 @@ def _mount(dir_path: Path) -> str:
 
 
 def _plugins_roots() -> list[_PluginRoot]:
-    """列出插件根，仓内在前外部在后
+    """列出插件根，随包在前外部在后
 
     - 外部目录不存在即不进表
     """
@@ -222,7 +222,7 @@ def enabled_manifests(state_path: Path) -> list[PluginManifestDTO]:
     - 注册表与帮助聚合共用本函数取序列
     - 一根目录都定位不到或无清单返回空列表
     - 外部根里名字撞上随包表的插件不进序列，改名单也不放行
-    - 同名插件按根的顺序取先读到的，仓内压住外部
+    - 同名插件按根的顺序取先读到的，随包压住外部
     - 命令名被在场插件拿走的整只不进序列，互抢的多只表外插件一起不作数
     """
     manifests: dict[str, PluginManifestDTO] = {}

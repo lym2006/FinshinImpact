@@ -1,10 +1,10 @@
 # devtools/tests/test_plugin_external.py
 """外部插件目录装载的单元测试
 
-- 装载认两根：仓内树在前，项目根的 plugins_installed 在后
+- 装载认两根：随包树在前，项目根的 plugins_installed 在后
 - 外部插件的导入路径带外部顶层包名，目录内部的相对引用走得通
-- 同名插件以先读到的根为准，仓内压住外部
-- 外部目录不存在时只剩仓内一根
+- 同名插件以先读到的根为准，随包压住外部
+- 外部目录不存在时只剩随包一根
 - 插件交出的一切按契约收到：清单字段、路由、常驻协程、任务处理、时机订阅
 - 权限档对不上与缺清单的插件记失败，不混进成功行
 """
@@ -155,7 +155,7 @@ class _FakeSink:
 
 
 class ExternalRootCase(unittest.TestCase):
-    """两根目录的公共脚手架：仓内一根、外部一根，全在临时目录"""
+    """两根目录的公共脚手架：随包一根、外部一根，全在临时目录"""
 
     def setUp(self) -> None:
         self._tmp = tempfile.TemporaryDirectory()
@@ -199,7 +199,7 @@ class TestExternalRootReads(ExternalRootCase):
 
         - 这条红了说明外部目录没进根表，或包名没按目录拼
         """
-        _write_plugin(self.bundled, "inner", "仓内")
+        _write_plugin(self.bundled, "inner", "随包")
         _write_plugin(self.installed, "outer", "外部")
         self._enable_installed()
 
@@ -211,18 +211,18 @@ class TestExternalRootReads(ExternalRootCase):
         )
 
     def test_bundled_root_wins_same_name(self) -> None:
-        """同名插件两只都在盘上时读进仓内那只
+        """同名插件两只都在盘上时读进随包那只
 
         - 这条红了说明后扫的根覆盖了先扫的，外部插件会顶掉随包件
         """
-        _write_plugin(self.bundled, "dup", "仓内")
+        _write_plugin(self.bundled, "dup", "随包")
         _write_plugin(self.installed, "dup", "外部")
         self._enable_installed()
 
         picked = _manifest.enabled_manifests(self.state)
 
         self.assertEqual(
-            [(m.title, m.module) for m in picked], [("仓内", f"{PLUGINS_PKG}.dup")]
+            [(m.title, m.module) for m in picked], [("随包", f"{PLUGINS_PKG}.dup")]
         )
 
     def test_installed_name_clashing_bundled_table_never_loads(self) -> None:
@@ -230,7 +230,7 @@ class TestExternalRootReads(ExternalRootCase):
 
         - 根表顺序换成外部在前，挡它的必须是判据而不是扫描运气
         """
-        _write_plugin(self.bundled, "help", "仓内")
+        _write_plugin(self.bundled, "help", "随包")
         _write_plugin(self.installed, "help", "改名顶替")
         self._enable_installed()
         patcher = patch.object(
@@ -247,16 +247,16 @@ class TestExternalRootReads(ExternalRootCase):
         picked = _manifest.enabled_manifests(self.state)
 
         self.assertEqual(
-            [(m.title, m.module) for m in picked], [("仓内", f"{PLUGINS_PKG}.help")]
+            [(m.title, m.module) for m in picked], [("随包", f"{PLUGINS_PKG}.help")]
         )
 
     def test_name_clash_leaves_command_claim_out_of_play(self) -> None:
         """名字撞随包件时命令撞不撞结果一样，命令那层压根不参与判定
 
         - 这条红了说明名字判据挪到了命令判定之后，外部声明的命令能把随包件禁掉
-        - 装载侧只留仓内那只，面板侧读到的行也只有仓内那一份
+        - 装载侧只留随包那只，面板侧读到的行也只有随包那一份
         """
-        _write_plugin(self.bundled, "help", "仓内", commands=("status",))
+        _write_plugin(self.bundled, "help", "随包", commands=("status",))
         _write_plugin(self.installed, "help", "改名顶替", commands=("status",))
         self._enable_installed()
         patcher = patch.object(
@@ -273,7 +273,7 @@ class TestExternalRootReads(ExternalRootCase):
         picked = _manifest.enabled_manifests(self.state)
 
         self.assertEqual(
-            [(m.title, m.module) for m in picked], [("仓内", f"{PLUGINS_PKG}.help")]
+            [(m.title, m.module) for m in picked], [("随包", f"{PLUGINS_PKG}.help")]
         )
 
         rows = deps_manifest.load_manifests([self.bundled, self.installed])
@@ -287,7 +287,7 @@ class TestExternalRootReads(ExternalRootCase):
         self.assertEqual(conflicts, {})
 
     def test_absent_external_dir_leaves_one_root(self) -> None:
-        """外部目录不存在时根表只剩仓内
+        """外部目录不存在时根表只剩随包
 
         - 这条红了说明不存在的目录也进了表
         """

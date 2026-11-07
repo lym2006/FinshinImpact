@@ -85,11 +85,11 @@ class TestPurgeRecords(unittest.TestCase):
         self.assertEqual(keys, ())
         self.assertTrue(live.exists())
 
-    def test_legacy_name_still_returns_its_stem(self) -> None:
-        """旧的按人分开的文件名照删，交回的键在库里对不上"""
-        legacy = self.root / "tg.g100123.456.md"
-        legacy.write_text("旧形态", encoding="utf8")
-        _stamp(legacy, _AGE)
+    def test_multi_dot_name_still_returns_its_stem(self) -> None:
+        """文件名不做特判，整段去后缀就是交回的键"""
+        extra_dot = self.root / "tg.g100123.456.md"
+        extra_dot.write_text("问答", encoding="utf8")
+        _stamp(extra_dot, _AGE)
 
         keys = _cleanup._purge_records(time.time() - _KEEP)
 

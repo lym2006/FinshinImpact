@@ -195,7 +195,7 @@ class BotGUI(QMainWindow):
             self._shutdown_handler()
 
     def show_persona_update(self) -> None:
-        """弹出默认人设更新提示"""
+        """弹出内置模板更新提示"""
         owner = _result_owner(self)
         if owner is None:
             Ticker.after(_NOTICE_RETRY_DELAY_MS, self.show_persona_update)
