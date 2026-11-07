@@ -20,6 +20,7 @@ dist/
 # --- 运行时数据 ---
 instances/
 runtime/
+plugins_installed/
 
 # --- 项目特定忽略项 ---
 docs/design/

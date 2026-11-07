@@ -14,6 +14,7 @@ from core.domain import (
     PluginTimingRun,
     TaskHandler,
 )
+from core.dto import PluginManifestDTO
 
 from ._adapter import BaseAdapter
 
@@ -29,10 +30,11 @@ class PlatformAssembly:
     """一个平台装配出来的件
 
     - 适配器交运行时托管，其余四件交装配层登记
+    - report 行是 (插件清单, 失败异常)，成功那项异常记 None
     """
 
     adapter: BaseAdapter
-    report: Sequence[tuple[str, Exception | None]]
+    report: Sequence[tuple[PluginManifestDTO, Exception | None]]
     backgrounds: tuple[PluginBackground, ...]
     handlers: tuple[TaskHandler, ...]
     timings: dict[PlatformTiming, tuple[PluginTimingRun, ...]]

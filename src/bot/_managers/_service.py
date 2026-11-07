@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 
 from core.contracts import CapabilityCall
 from core.domain import ContentKind, PlatformTiming
-from core.dto import OutboundPayloadDTO
+from core.dto import OutboundPayloadDTO, PluginManifestDTO
 from exceptions import MAP_KEY_PLUGINS, MAPS, BotError
 from finshin_sdk import PlatformAssembly
 from skin.messages import EngineMessage
@@ -112,22 +112,27 @@ class ServiceManager(BaseManager):
         return assemble_platform(PLATFORM, token, proxy)
 
     def _log_plugin_report(
-        self, report: Sequence[tuple[str, Exception | None]]
+        self, report: Sequence[tuple[PluginManifestDTO, Exception | None]]
     ) -> None:
-        """逐条落插件加载结果，失败行带映射文案"""
+        """逐条落插件加载结果，失败行带映射文案
+
+        - 成功行报导入路径，看得出这只插件来自哪一根目录
+        """
         total = len(report)
         self.logger.info(EngineMessage.PLUGINS_DONE.format(n=total))
-        for index, (name, error) in enumerate(report, 1):
+        for index, (manifest, error) in enumerate(report, 1):
             if error is None:
                 self.logger.debug(
-                    EngineMessage.PLUGIN_OK.format(index=index, n=total, name=name)
+                    EngineMessage.PLUGIN_OK.format(
+                        index=index, n=total, module=manifest.module
+                    )
                 )
                 continue
             self.logger.send_error(
                 EngineMessage.PLUGIN_FAIL.format(
                     index=index,
                     n=total,
-                    name=name,
+                    name=manifest.name,
                     reason=_failure_reason(error),
                 ),
                 error,

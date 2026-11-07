@@ -55,6 +55,7 @@ def _manifest_of(cmd: str, role: CommandRole) -> PluginManifestDTO:
     command = HelpCommandDTO(cmd=cmd, desc="演示命令", role=role)
     return PluginManifestDTO(
         name="demo",
+        module=f"{PLUGINS_PKG}.demo",
         title="演示",
         summary="演示",
         help_section=(HelpSectionDTO(commands=(command,)),),
@@ -100,6 +101,7 @@ class TestMenuRoleNote(unittest.TestCase):
         command = HelpCommandDTO(cmd="md", desc="图片输出", role=role)
         manifest = PluginManifestDTO(
             name="demo",
+            module=f"{PLUGINS_PKG}.demo",
             title="演示",
             summary="演示",
             help_section=(HelpSectionDTO(commands=(command,)),),
@@ -151,7 +153,7 @@ class TestBuiltinManifests(unittest.TestCase):
 
     def test_builtin_plugins_pass_the_check(self) -> None:
         for manifest in _manifest.enabled_manifests(Path("unused")):
-            module = importlib.import_module(f"{PLUGINS_PKG}.{manifest.name}")
+            module = importlib.import_module(manifest.module)
             _register._check_roles(manifest, module.spec)
 
 

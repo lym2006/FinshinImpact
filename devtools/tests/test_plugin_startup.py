@@ -35,7 +35,7 @@ _AI = {
 }
 
 _PATCHED = (
-    "plugins_root",
+    "plugins_roots",
     "load_manifests",
     "load_state",
     "catalog_digest",
@@ -60,7 +60,7 @@ class _StartupBase(unittest.TestCase):
         self.m: dict[str, MagicMock] = {}
         for name in _PATCHED:
             self.m[name] = self.stack.enter_context(patch.object(_startup, name))
-        self.m["plugins_root"].return_value = _SENTINEL
+        self.m["plugins_roots"].return_value = [_SENTINEL]
         self.m["load_manifests"].return_value = [_AI, _RENDER]
         self.m["load_state"].return_value = {StateKey.ENABLED: ["AI_render"]}
         self.m["dev_mode"].return_value = False
@@ -223,8 +223,8 @@ class TestDisableFailed(_StartupBase):
         self.m["save_state"].assert_not_called()
 
     def test_root_missing_returns_empty(self) -> None:
-        """插件目录定位失败直接空手而归"""
-        self.m["plugins_root"].return_value = None
+        """一根插件目录都定位不到时直接空手而归"""
+        self.m["plugins_roots"].return_value = []
 
         self.assertEqual(_startup._disable_failed("AAAA", ["x==1.0"]), [])
 

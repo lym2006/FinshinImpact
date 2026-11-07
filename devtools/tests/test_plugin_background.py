@@ -86,7 +86,10 @@ def _register_modules(modules: dict[str, object], names: list[str]):
         return found
 
     dispatcher = _FakeDispatcher()
-    manifests = [SimpleNamespace(name=name, help_section=()) for name in names]
+    manifests = [
+        SimpleNamespace(name=name, module=f"{PLUGINS_PKG}.{name}", help_section=())
+        for name in names
+    ]
 
     with (
         patch.object(_register, "_resolve_plugins", lambda: manifests),
@@ -132,7 +135,7 @@ class TestCollectBackgrounds(unittest.TestCase):
 
         self.assertEqual(hooks, (_noop,))
         self.assertEqual(timings, {PlatformTiming.IDENTITY_CHANGED: (_noop,)})
-        self.assertEqual(report, [("AI", None)])
+        self.assertEqual([(m.name, e) for m, e in report], [("AI", None)])
         self.assertEqual(len(routers), 1)
         self.assertEqual(len(routers[0].compiled.routes), 1)
 
@@ -201,7 +204,7 @@ class TestCollectBackgrounds(unittest.TestCase):
         self.assertEqual(hooks, (_noop,))
         self.assertEqual(timings, {})
         self.assertEqual(len(routers), 1)
-        self.assertEqual([row[0] for row in report], ["bad", "good"])
+        self.assertEqual([m.name for m, _ in report], ["bad", "good"])
         self.assertIsInstance(report[0][1], PluginLoadError)
         self.assertIsNone(report[1][1])
 
@@ -214,7 +217,7 @@ class TestCollectBackgrounds(unittest.TestCase):
         self.assertEqual(hooks, ())
         self.assertEqual(timings, {})
         self.assertEqual(handlers, ())
-        self.assertEqual(report, [("help", None)])
+        self.assertEqual([(m.name, e) for m, e in report], [("help", None)])
 
     def test_declared_task_handlers_returned(self) -> None:
         """回归点 8：声明了任务处理的插件交出处理清单"""

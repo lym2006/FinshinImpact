@@ -8,11 +8,13 @@ import hashlib
 import importlib.util
 import re
 import tomllib
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
 from core.domain import (
     BUNDLED_PLUGIN_PRIORITY,
+    INSTALLED_PLUGINS_NAME,
     MANIFEST_FIELDS,
     PLUGINS_PKG,
     CommandPriority,
@@ -31,15 +33,23 @@ _MINIMAL_KEYS = frozenset(spec.key for spec in MANIFEST_FIELDS)
 _DEFAULTS: dict[str, Any] = {spec.key: spec.default for spec in MANIFEST_FIELDS}
 
 
-def plugins_root() -> Path | None:
-    """定位插件包目录
+def plugins_roots() -> list[Path]:
+    """列出插件根目录，仓内在前外部在后
 
     - find_spec 只定位不执行模块代码
+    - 外部目录不存在即不进表
     """
+    roots: list[Path] = []
+
     spec = importlib.util.find_spec(PLUGINS_PKG)
-    if spec is None or not spec.submodule_search_locations:
-        return None
-    return Path(next(iter(spec.submodule_search_locations)))
+    if spec is not None and spec.submodule_search_locations:
+        roots.append(Path(next(iter(spec.submodule_search_locations))))
+
+    installed = ROOT_DIR / INSTALLED_PLUGINS_NAME
+    if installed.is_dir():
+        roots.append(installed)
+
+    return roots
 
 
 def _read_toml(path: Path) -> dict[str, Any] | None:
@@ -55,28 +65,34 @@ def _read_toml(path: Path) -> dict[str, Any] | None:
         return None
 
 
-def load_manifests(plugins_path: Path) -> list[dict[str, Any]]:
-    """扫描插件目录聚合最小清单
+def load_manifests(plugins_paths: Sequence[Path]) -> list[dict[str, Any]]:
+    """扫描插件根目录聚合最小清单
 
     - 无清单或 name 非法的子目录跳过
+    - 同名插件按根的顺序取先读到的，仓内压住外部同名
     - 先按随包表定档，表外插件一律常规档，同档按 name 字典序
     """
-    manifests: list[dict[str, Any]] = []
+    found: dict[str, dict[str, Any]] = {}
 
-    if not plugins_path.is_dir():
-        return manifests
-
-    for path in sorted(plugins_path.iterdir()):
-        data = _read_toml(path / PluginFileName.MANIFEST)
-        if not data or not isinstance(data.get(ManifestKey.NAME), str):
+    for plugins_path in plugins_paths:
+        if not plugins_path.is_dir():
             continue
-        manifests.append({key: data.get(key, _DEFAULTS[key]) for key in _MINIMAL_KEYS})
 
-    manifests.sort(
+        for path in sorted(plugins_path.iterdir()):
+            data = _read_toml(path / PluginFileName.MANIFEST)
+            if not data or not isinstance(data.get(ManifestKey.NAME), str):
+                continue
+            row: dict[str, Any] = {
+                key: data.get(key, _DEFAULTS[key]) for key in _MINIMAL_KEYS
+            }
+            found.setdefault(row[ManifestKey.NAME], row)
+
+    manifests = sorted(
+        found.values(),
         key=lambda item: (
             BUNDLED_PLUGIN_PRIORITY.get(item[ManifestKey.NAME], CommandPriority.NORMAL),
             item[ManifestKey.NAME],
-        )
+        ),
     )
     return manifests
 
@@ -119,10 +135,10 @@ def panel_needed(code: str) -> bool:
     catalog = state.get(StateKey.CATALOG)
     if not isinstance(catalog, str) or not catalog:
         return True
-    root = plugins_root()
-    if root is None:
+    roots = plugins_roots()
+    if not roots:
         return False
-    return catalog_digest(load_manifests(root)) != catalog
+    return catalog_digest(load_manifests(roots)) != catalog
 
 
 def save_state(code: str, enabled: list[str], catalog: str) -> None:
@@ -193,8 +209,7 @@ def _enabled_field_union(exclude_code: str, field: str) -> list[str]:
     if not INSTANCES_DIR.is_dir():
         return items
 
-    root = plugins_root()
-    manifests = load_manifests(root) if root else []
+    manifests = load_manifests(plugins_roots())
     for path in sorted(INSTANCES_DIR.iterdir()):
         if not path.is_dir() or path.name == exclude_code:
             continue
