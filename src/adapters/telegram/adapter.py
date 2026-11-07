@@ -4,24 +4,22 @@
 - 持有 Bot 与 Dispatcher 并托管启停
 """
 
-from typing import TYPE_CHECKING
+from typing import Any
 
-from core.domain import Platform
-from finshin_sdk import BaseAdapter, InteractionPort
+from core.domain import Platform, RouteSink
+from finshin_sdk import BaseAdapter, InteractionPort, RouterBuilder
 
 from ._interaction import TelegramInteractionPort
 from ._normalize import NormalizeMiddleware
 from .session import SSLUnverifiedSession
 from .session import is_link_failure as _is_link_failure
 
-if TYPE_CHECKING:
-    from aiogram import Dispatcher
-
 
 class TelegramAdapter(BaseAdapter):
     """Telegram 适配器
 
-    - dispatcher 供装配层挂日志与注册路由
+    - 交出事件分发器作路由挂载口、清单编译器与中间件挂载点
+    - 引擎重依赖在函数体内入场，导入这只模块不等它
     """
 
     def __init__(self, token: str, *, proxy: str | None = None) -> None:
@@ -44,9 +42,20 @@ class TelegramAdapter(BaseAdapter):
         return self._interaction
 
     @property
-    def dispatcher(self) -> "Dispatcher":
-        """事件分发器"""
+    def route_sink(self) -> RouteSink:
+        """插件路由的挂载口"""
         return self._dispatcher
+
+    @property
+    def router_builder(self) -> RouterBuilder:
+        """把路由清单编译成 aiogram 的 Router"""
+        from .router_bridge import build_router
+
+        return build_router
+
+    def attach_middleware(self, middleware: Any) -> None:
+        """挂到更新链，排在正文归一之后"""
+        self._dispatcher.update.outer_middleware(middleware)
 
     async def start(self) -> None:
         """启动事件接收"""

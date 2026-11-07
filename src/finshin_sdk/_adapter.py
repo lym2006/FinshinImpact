@@ -5,9 +5,14 @@
 """
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable
+from typing import Any
 
-from core.domain import Platform
+from core.domain import Platform, PluginSpec, RouteSink
 from core.dto import MsgReferenceDTO, OutboundPayloadDTO, PrincipalDTO
+
+# 清单编译器：把插件交出的路由清单编译成本平台的路由对象
+RouterBuilder = Callable[[PluginSpec], Any]
 
 
 class InteractionPort(ABC):
@@ -58,6 +63,23 @@ class BaseAdapter(ABC):
     @abstractmethod
     def interaction(self) -> InteractionPort:
         """交互端口"""
+
+    @property
+    @abstractmethod
+    def route_sink(self) -> RouteSink:
+        """插件路由的挂载口"""
+
+    @property
+    @abstractmethod
+    def router_builder(self) -> RouterBuilder:
+        """把路由清单编译成本平台路由的那只手"""
+
+    @abstractmethod
+    def attach_middleware(self, middleware: Any) -> None:
+        """把日志中间件挂到本平台的更新链
+
+        - 中间件实例由装载侧交来，挂载点各平台自己认
+        """
 
     @abstractmethod
     async def start(self) -> None:
