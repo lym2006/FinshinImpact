@@ -13,6 +13,7 @@ from concurrent.futures import Future
 from functools import partial
 from typing import cast
 
+from exceptions import MAP_KEY_ADAPTER, MAPS, AdapterError
 from skin.messages import CheckMessage
 from skin.theme import WINDOW
 from system.profile_env import get_profile
@@ -31,6 +32,8 @@ from utils.paths import PLATFORM
 
 from ._managers import BotManager
 from ._registry import entry_for
+
+_ERR_MAP_ADAPTER = MAPS[MAP_KEY_ADAPTER]
 
 # 退出清理
 _LOOP_JOIN_TIMEOUT = 5  # 等事件循环线程退出最多 5 秒
@@ -100,6 +103,11 @@ class Main:
             # 进入 Qt 主循环
             return app.exec()
 
+        except AdapterError as e:
+            self.logger.send_error(
+                f"程序启动异常：{_ERR_MAP_ADAPTER[type(e)].format(**vars(e))}", e
+            )
+            return 1
         except Exception as e:
             self.logger.send_error("程序启动异常", e)
             return 1

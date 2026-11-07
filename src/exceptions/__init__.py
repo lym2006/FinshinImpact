@@ -4,6 +4,7 @@
 - 定义全部自定义异常族与文案模板
 """
 
+from ._adapter import ADAPTER_MAP, AdapterError, AdapterMissingError
 from ._base import BotError
 from ._config import (
     CONFIG_MAP,
@@ -69,6 +70,7 @@ MAP_KEY_CONFIG = "Config"
 MAP_KEY_NETWORK = "Network"
 MAP_KEY_VERSION = "Version"
 MAP_KEY_PLUGINS = "Plugins"
+MAP_KEY_ADAPTER = "Adapter"
 
 MAPS = {
     MAP_KEY_CONFIG: CONFIG_MAP,
@@ -76,6 +78,7 @@ MAPS = {
     MAP_KEY_NETWORK: NETWORK_MAP,
     MAP_KEY_CONNECTIVITY: CONNECTIVITY_MAP,
     MAP_KEY_PLUGINS: PLUGINS_MAP,
+    MAP_KEY_ADAPTER: ADAPTER_MAP,
 }
 
 __all__ = [
@@ -130,4 +133,7 @@ __all__ = [
     "PluginDependencyError",
     "PluginLoadError",
     "PluginRoleError",
+    # 适配器
+    "AdapterError",
+    "AdapterMissingError",
 ]

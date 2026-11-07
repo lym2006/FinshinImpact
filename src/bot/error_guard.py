@@ -11,10 +11,12 @@ from collections.abc import Callable
 from typing import Any, ParamSpec, TypeVar, cast
 
 from exceptions import (
+    MAP_KEY_ADAPTER,
     MAP_KEY_CONFIG,
     MAP_KEY_CONNECTIVITY,
     MAP_KEY_PROXY,
     MAPS,
+    AdapterError,
     BotError,
     ConfigError,
     ConfigPathMissingError,
@@ -43,6 +45,8 @@ def _describe(exc: BotError) -> str:
     """渲染给用户看的定性文案"""
     if isinstance(exc, ConfigError):
         template = MAPS[MAP_KEY_CONFIG].get(type(exc), "")
+    elif isinstance(exc, AdapterError):
+        template = MAPS[MAP_KEY_ADAPTER].get(type(exc), "")
     else:
         table = MAPS[MAP_KEY_CONNECTIVITY]
         if isinstance(exc, ProxyError):
