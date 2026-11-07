@@ -18,6 +18,7 @@ from core.domain import (
     MANIFEST_FIELDS,
     PLUGINS_PKG,
     CommandPriority,
+    HelpKey,
     ManifestKey,
     PluginFileName,
     StateKey,
@@ -27,10 +28,13 @@ from system.profile_env import INSTANCES_DIR, ROOT_DIR, profile_dir
 # 依赖 pin 串顶层包名截断符，"playwright>=1.40" 切出 "playwright"
 _PIN_SPLIT = re.compile(r"[<>=!~\[;\s]+")
 
-# 面板与裁决所需的最小字段集，help 段面板不消费故排除
+# 面板与裁决所需的最小字段集，help 段只取命令名
 _MINIMAL_KEYS = frozenset(spec.key for spec in MANIFEST_FIELDS)
 
 _DEFAULTS: dict[str, Any] = {spec.key: spec.default for spec in MANIFEST_FIELDS}
+
+# 单条命令的必填两键，缺任一的条目不算命令名
+_COMMAND_KEYS = frozenset({HelpKey.CMD, HelpKey.DESC})
 
 
 def plugins_roots() -> list[Path]:
@@ -70,6 +74,7 @@ def load_manifests(plugins_paths: Sequence[Path]) -> list[dict[str, Any]]:
 
     - 无清单或 name 非法的子目录跳过
     - 同名插件按根的顺序取先读到的，仓内压住外部同名
+    - 每行带 help 段声明的命令名，供命令名抢占判定取用
     - 先按随包表定档，表外插件一律常规档，同档按 name 字典序
     """
     found: dict[str, dict[str, Any]] = {}
@@ -85,6 +90,7 @@ def load_manifests(plugins_paths: Sequence[Path]) -> list[dict[str, Any]]:
             row: dict[str, Any] = {
                 key: data.get(key, _DEFAULTS[key]) for key in _MINIMAL_KEYS
             }
+            row[HelpKey.COMMANDS] = _command_names(data)
             found.setdefault(row[ManifestKey.NAME], row)
 
     manifests = sorted(
@@ -110,6 +116,29 @@ def catalog_digest(manifests: list[dict[str, Any]]) -> str:
         for m in manifests
     )
     return hashlib.sha256("\n".join(items).encode("utf-8")).hexdigest()
+
+
+def _command_names(data: dict[str, Any]) -> tuple[str, ...]:
+    """从清单 help 段取命令名
+
+    - 段与条目的形状不符即跳过该项
+    - 必填两键齐了才算一条命令名
+    """
+    sections = data.get(ManifestKey.HELP)
+    if not isinstance(sections, list):
+        return ()
+
+    names: list[str] = []
+    for section in sections:
+        if not isinstance(section, dict):
+            continue
+        for command in section.get(HelpKey.COMMANDS, []):
+            if not isinstance(command, dict):
+                continue
+            if all(isinstance(command.get(key), str) for key in _COMMAND_KEYS):
+                names.append(command[HelpKey.CMD])
+
+    return tuple(names)
 
 
 def _state_path_of(code: str) -> Path:

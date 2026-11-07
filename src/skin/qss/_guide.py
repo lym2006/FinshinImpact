@@ -210,6 +210,25 @@ QListWidget::item:hover {{
 QLabel#{ObjectName.ROW_BUNDLED_MARK} {{
     color: {SURFACE.disabled_color};
     background-color: transparent;
+}}
+
+QPushButton#{ButtonStyle.CONFLICT} {{
+    background-color: transparent;
+    color: {SURFACE.danger_bg};
+    border: none;
+    border-radius: {SURFACE.radius}px;
+    padding: 0; margin: 6px {PANEL.check_width - PANEL.conflict_box_w}px 6px 0;
+    min-width: {PANEL.conflict_box_w}px; min-height: {PANEL.conflict_box_h}px;
+}}
+
+QPushButton#{ButtonStyle.CONFLICT}::menu-indicator {{
+    image: none;
+    width: 0;
+}}
+
+QPushButton#{ButtonStyle.CONFLICT}:hover {{
+    background-color: {SURFACE.danger_bg};
+    color: {SURFACE.sel_color};
 }}"""
 
 # 滚动条
