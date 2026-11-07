@@ -1,4 +1,4 @@
-# Simple workflow for deploying static content to GitHub Pages
+# Deploys the version page to GitHub Pages: only the files the app reads online
 name: Deploy static content to Pages
 
 on:
@@ -33,11 +33,15 @@ jobs:
         uses: actions/checkout@v4
       - name: Setup Pages
         uses: actions/configure-pages@v5
+      - name: Build site content
+        run: |
+          mkdir site
+          cp pyproject.toml site/pyproject.toml
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload entire repository
-          path: '.'
+          # Copy at deploy time keeps pyproject.toml the single source of the version
+          path: 'site'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5

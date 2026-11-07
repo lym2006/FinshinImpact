@@ -260,7 +260,7 @@ Release 只承担新用户首次下载与老用户回看某版变化，不承担
 Release 发布完成不等于升级链生效：在线版本页是启动器与 GUI 版本检查的唯一真相。
 「版本页」在线地址的单源定义在 `packaging/pack_spec.py` 的 `_PAGES_PYPROJECT_URL`。
 
-- 版本页仓库的 workflow 随发布自动同步 `pyproject.toml` 并部署 Pages，**无需手动覆盖推送**。
+- 主仓 workflow 随 push `main` 把 `pyproject.toml` 复制进站点目录后部署 Pages，在线只出这一只文件，**无需手动覆盖推送**。
 - 闭环判据：跑 `python packaging\build.py --check`，「在线版本页」那一行显示新版本号。
 - Pages 部署有延迟，读数未变稍后重跑。
 - 推 tag、传 zip 两步齐了，老客户端才会在下次启动时收到升级提示。
