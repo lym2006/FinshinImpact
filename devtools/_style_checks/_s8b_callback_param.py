@@ -2,6 +2,7 @@
 """回调形参分节检查
 
 - 协程里带 `Message` 注解的形参即框架按位置注入的原始事件，名字须为 `raw` 且占首位
+- 名为 `platform_raw` 的形参同属注入位，注解须写 `object`，写成平台类型即把这份插件锁在某个平台上
 - 注解为 `HandlerContext` 的形参按名注入，改名即取不到上下文
 - 中间件的 `__call__` 由框架全位置调用，三形参须按 handler、event、data 排且不加 `*`
 - 必填参数后紧跟同型可选参数提示用 `*` 隔开，防实参错位
@@ -20,6 +21,10 @@ if TYPE_CHECKING:
     from ._common import FileData
 
 _RAW_PARAM = "raw"
+
+# 插件侧的原始事件口子，按名认出注入位，注解一律放宽成 object
+_PLATFORM_RAW_PARAM = "platform_raw"
+_PLATFORM_RAW_TYPE = "object"
 
 # 按名注入的上下文形参，名字即框架的取键
 _CTX_PARAM = "ctx"
@@ -56,14 +61,33 @@ def check(files: list[FileData]) -> list[Finding]:
 def _check_injection(file: FileData, node: ast.AsyncFunctionDef) -> list[Finding]:
     """协程逐形参判事件名、注入位与上下文名
 
-    - 协程里出现带事件注解的形参才算框架绑定的回调，纯业务协程不套此口径
+    - 协程里出现带事件注解的形参或名为 `platform_raw` 的形参才算框架绑定的回调
     """
     findings: list[Finding] = []
     params = _params(node)
-    if not any(_is_event_arg(arg.annotation) for arg in params):
+    if not any(_is_callback_slot(arg) for arg in params):
         return findings
     for index, arg in enumerate(params):
-        if _is_event_arg(arg.annotation):
+        if _is_platform_raw(arg):
+            if index:
+                findings.append(
+                    _f(
+                        file,
+                        arg.lineno,
+                        f"协程 `{node.name}` 的 `{arg.arg}` 须排首位",
+                        True,
+                    )
+                )
+            elif _type_text(file, arg.annotation) != _PLATFORM_RAW_TYPE:
+                findings.append(
+                    _f(
+                        file,
+                        arg.lineno,
+                        f"协程 `{node.name}` 的 `{arg.arg}` 注解应写 `{_PLATFORM_RAW_TYPE}`",
+                        True,
+                    )
+                )
+        elif _is_event_arg(arg.annotation):
             if arg.arg != _RAW_PARAM:
                 findings.append(
                     _f(
@@ -158,6 +182,16 @@ def _params(
         for arg in (*node.args.posonlyargs, *node.args.args)
         if arg.arg not in _RECEIVERS
     ]
+
+
+def _is_callback_slot(arg: ast.arg) -> bool:
+    """按事件注解或原始件口子名认出框架注入的形参"""
+    return _is_event_arg(arg.annotation) or _is_platform_raw(arg)
+
+
+def _is_platform_raw(arg: ast.arg) -> bool:
+    """形参名落在原始件口子上，注解写成平台类型也算"""
+    return arg.arg == _PLATFORM_RAW_PARAM
 
 
 def _is_event_arg(annotation: ast.expr | None) -> bool:

@@ -22,7 +22,7 @@ PluginBackground = Callable[[], Coroutine[Any, Any, None]]
 # 路由谓词，只吃归一后的处理上下文，返回是否接管这条事件
 PluginPredicate = Callable[..., Awaitable[bool]]
 
-# 路由处理函数，首位按位置收原始事件，ctx 按名注入
+# 路由处理函数，首位按位置收本平台原始件且不许读它，归一事件与上下文都从 ctx 取
 _PluginHandler = Callable[..., Awaitable[None]]
 
 # 任务处理函数，只吃归一后的处理上下文，报错自行收干净再交回调度

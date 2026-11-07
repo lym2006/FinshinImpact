@@ -10,8 +10,6 @@
 
 from enum import StrEnum
 
-from aiogram.types import Message
-
 from core.domain import ChatScope, CommandRole, PluginRoute, PluginSpec, StepInput
 from core.domain.ids import PrincipalKey, UserId
 from services.context import HandlerContext
@@ -115,19 +113,19 @@ async def _take_command(ctx: HandlerContext, step: _GrantStep, usage: str) -> No
 
 
 @require_role(CommandRole.OWNER)
-async def _add_grant(raw: Message, ctx: HandlerContext) -> None:
+async def _add_grant(platform_raw: object, ctx: HandlerContext) -> None:
     """授权用户"""
     await _take_command(ctx, _GrantStep.ADD, BotMessage.GRANT_USAGE)
 
 
 @require_role(CommandRole.OWNER)
-async def _drop_grant(raw: Message, ctx: HandlerContext) -> None:
+async def _drop_grant(platform_raw: object, ctx: HandlerContext) -> None:
     """撤销授权"""
     await _take_command(ctx, _GrantStep.DROP, BotMessage.UNGRANT_USAGE)
 
 
 @require_role(CommandRole.OWNER)
-async def _show_admins(raw: Message, ctx: HandlerContext) -> None:
+async def _show_admins(platform_raw: object, ctx: HandlerContext) -> None:
     """查看授权名单
 
     - 私聊出逐条明细，其余场景只回条数
@@ -153,7 +151,7 @@ async def _show_admins(raw: Message, ctx: HandlerContext) -> None:
 
 
 @require_role(CommandRole.OWNER)
-async def _finish_grant(raw: Message, ctx: HandlerContext) -> None:
+async def _finish_grant(platform_raw: object, ctx: HandlerContext) -> None:
     """按待输入流程认目标"""
     key = ctx.event.principal.key
     step = _pending[key]

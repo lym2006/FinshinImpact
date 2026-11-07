@@ -7,8 +7,6 @@
 
 from pathlib import Path
 
-from aiogram.types import Message
-
 from core.domain import CommandRole, ContentKind, PluginRoute
 from core.domain.ids import SessionKey
 from core.dto import OutboundPayloadDTO
@@ -27,7 +25,7 @@ def _get_file_path(key: SessionKey) -> Path:
 
 
 @require_role(CommandRole.ADMIN)
-async def _show_history(raw: Message, ctx: HandlerContext) -> None:
+async def _show_history(platform_raw: object, ctx: HandlerContext) -> None:
     """发送历史记录
 
     - 人设或主人换过即先清干净，旧记录不会越过这次变更发出去
@@ -51,7 +49,7 @@ async def _show_history(raw: Message, ctx: HandlerContext) -> None:
 
 
 @require_role(CommandRole.ADMIN)
-async def _clear_history(raw: Message, ctx: HandlerContext) -> None:
+async def _clear_history(platform_raw: object, ctx: HandlerContext) -> None:
     """清除记忆"""
     key = make_session_key(ctx.event.principal)
     await clear_session(key)

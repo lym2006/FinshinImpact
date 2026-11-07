@@ -10,8 +10,6 @@
 
 import asyncio
 
-from aiogram.types import Message
-
 from core.domain import (
     BoundCommand,
     ChatScope,
@@ -129,7 +127,7 @@ def _reject_text(command: CommandDTO) -> str:
     return BotMessage.CMD_NOT_FOUND
 
 
-async def _reject_command(raw: Message, ctx: HandlerContext) -> None:
+async def _reject_command(platform_raw: object, ctx: HandlerContext) -> None:
     """回绝写法不对的命令
 
     - 频道静默无视
@@ -139,12 +137,12 @@ async def _reject_command(raw: Message, ctx: HandlerContext) -> None:
     await ctx.respond(_reject_text(ctx.event.command))
 
 
-async def _show_single_help(raw: Message, ctx: HandlerContext) -> None:
+async def _show_single_help(platform_raw: object, ctx: HandlerContext) -> None:
     """发送单个命令的帮助说明"""
     await ctx.respond(resolve_single_help(ctx.event.command.head))
 
 
-async def _show_menu(raw: Message, ctx: HandlerContext) -> None:
+async def _show_menu(platform_raw: object, ctx: HandlerContext) -> None:
     """以图片形式发送帮助菜单"""
     # 渲染可能触发绘制，放线程池防卡事件循环
     path = await asyncio.to_thread(generate_image)

@@ -256,6 +256,29 @@ class TestCallbackParams(unittest.TestCase):
         hits = _scan([("src/bundled/_probe_cb.py", source)]).get("回调形参", [])
         self.assertTrue(any("改名 `ctx`" in text for text in hits), hits)
 
+    def test_platform_raw_needs_object(self) -> None:
+        """原始件口子按平台类型标注即锁死该平台，判硬性"""
+        source = (
+            _skeleton("src/bundled/_probe_cb.py")
+            + "from aiogram.types import Message\n"
+            + "from services import HandlerContext\n\n\n"
+            + "async def _go(platform_raw: Message, ctx: HandlerContext) -> None:\n"
+            + '    """定位\n\n    - 说明\n    """\n'
+        )
+        hits = _scan([("src/bundled/_probe_cb.py", source)]).get("回调形参", [])
+        self.assertTrue(any("注解应写 `object`" in text for text in hits), hits)
+
+    def test_platform_raw_ctx_rename(self) -> None:
+        """首位收 object 也算回调，上下文改名照样查得到"""
+        source = (
+            _skeleton("src/bundled/_probe_cb.py")
+            + "from services import HandlerContext\n\n\n"
+            + "async def _go(platform_raw: object, host: HandlerContext) -> None:\n"
+            + '    """定位\n\n    - 说明\n    """\n'
+        )
+        hits = _scan([("src/bundled/_probe_cb.py", source)]).get("回调形参", [])
+        self.assertTrue(any("改名 `ctx`" in text for text in hits), hits)
+
     def test_swappable_optional_pair(self) -> None:
         """必填后紧跟同型可选参数提示加星号，属待核"""
         source = (
