@@ -40,6 +40,8 @@ class PanelTheme:
     row_pad_h: int = 10  # 插件行水平内边距
     row_height: int = 44  # 插件行高
     check_width: int = 34  # 勾选位列宽，容下"必选"两字并与勾选框对齐
+    conflict_box_w: int = 26  # 冲突色块宽，两字文案加左右各一格的余量
+    conflict_box_h: int = 20  # 冲突色块高，与对勾方框同一档，上下各出一格
     name_width: int = 180  # 名称列固定宽
     status_width: int = 110  # 状态列固定宽
     col_gap: int = 12  # 列间距

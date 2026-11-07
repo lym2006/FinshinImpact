@@ -4,6 +4,7 @@
 - 扫描插件目录聚合各插件自描述清单
 - 读取实例状态文件并计算启用序列
 - 外部根里名字撞上随包表的插件整份不放行
+- 命令名被在场插件拿走的整只不放行
 - 引导期另有一份只取最小字段集的精简实现
 """
 
@@ -21,8 +22,11 @@ from core.domain import (
     PLUGINS_PKG,
     CommandPriority,
     ManifestKey,
+    PluginClaim,
     PluginFileName,
     StateKey,
+    is_enabled,
+    resolve_claims,
 )
 from core.dto import PluginManifestDTO
 from system.profile_env import ROOT_DIR
@@ -188,15 +192,13 @@ def _resolve_enabled(
 ) -> list[PluginManifestDTO]:
     """计算启用插件序列
 
-    - 随包表里的插件恒启用
-    - enabled 为 None 表示从未保存过选择，只用随包插件
+    - 在场与否由 is_enabled 定，随包表里的插件恒启用
     - 先按随包表定档，表外插件一律常规档，同档按 name 字典序
     """
     picked = [
         manifest
         for manifest in manifests.values()
-        if manifest.name in BUNDLED_PLUGIN_PRIORITY
-        or (enabled is not None and manifest.name in enabled)
+        if is_enabled(manifest.name, enabled)
     ]
     return sorted(
         picked,
@@ -207,6 +209,13 @@ def _resolve_enabled(
     )
 
 
+def _declared_commands(manifest: PluginManifestDTO) -> tuple[str, ...]:
+    """取清单声明的命令名"""
+    return tuple(
+        command.cmd for section in manifest.help_section for command in section.commands
+    )
+
+
 def enabled_manifests(state_path: Path) -> list[PluginManifestDTO]:
     """读取启用插件的清单序列
 
@@ -214,6 +223,7 @@ def enabled_manifests(state_path: Path) -> list[PluginManifestDTO]:
     - 一根目录都定位不到或无清单返回空列表
     - 外部根里名字撞上随包表的插件不进序列，改名单也不放行
     - 同名插件按根的顺序取先读到的，仓内压住外部
+    - 命令名被在场插件拿走的整只不进序列，互抢的多只表外插件一起不作数
     """
     manifests: dict[str, PluginManifestDTO] = {}
     for dir_path, pkg in _plugins_roots():
@@ -222,4 +232,15 @@ def enabled_manifests(state_path: Path) -> list[PluginManifestDTO]:
                 continue
             manifests.setdefault(name, manifest)
 
-    return _resolve_enabled(manifests, _load_instance_enabled(state_path))
+    enabled = _load_instance_enabled(state_path)
+    claims = [
+        PluginClaim(name=manifest.name, commands=_declared_commands(manifest))
+        for manifest in manifests.values()
+    ]
+    allowed, _ = resolve_claims(claims, enabled)
+
+    return [
+        manifest
+        for manifest in _resolve_enabled(manifests, enabled)
+        if manifest.name in allowed
+    ]

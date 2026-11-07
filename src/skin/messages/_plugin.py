@@ -14,6 +14,10 @@ class PluginMessage:
     # 用：ui._guide._panel 随包行勾选位替代文字
     ROW_BUNDLED = "必选"
 
+    # 用：ui._guide._panel 命令名被抢走行的勾选位按钮与菜单明细行
+    BTN_CONFLICT = "冲突"
+    CONFLICT_TAKEN = "/{cmd} 已被 {owner} 占用"
+
     # 用：ui._guide._panel 行尾状态标签
     STATUS_INSTALLED = "已装"
     STATUS_MISSING = "缺 {count} 个库"

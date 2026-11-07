@@ -23,11 +23,13 @@ from ._plugin import (
     MANIFEST_FIELDS,
     PLUGINS_PKG,
     CommandPriority,
+    CommandTaken,
     HelpKey,
     ManifestFieldSpec,
     ManifestKey,
     PlatformTiming,
     PluginBackground,
+    PluginClaim,
     PluginFileName,
     PluginMark,
     PluginPredicate,
@@ -39,6 +41,8 @@ from ._plugin import (
     StateKey,
     TaskHandler,
     TaskRun,
+    is_enabled,
+    resolve_claims,
 )
 from ._role import ChatRole, CommandRole
 from ._task import TaskKind, TaskPayload, TaskStatus
@@ -80,6 +84,8 @@ __all__ = [
     "PluginTiming",
     "PluginTimingRun",
     "CommandPriority",
+    "CommandTaken",
+    "PluginClaim",
     "PluginFileName",
     "PluginMark",
     "ManifestKey",
@@ -91,6 +97,8 @@ __all__ = [
     "RouteSink",
     "TaskHandler",
     "TaskRun",
+    "is_enabled",
+    "resolve_claims",
     # 内容与角色
     "ContentKind",
     "ChatRole",

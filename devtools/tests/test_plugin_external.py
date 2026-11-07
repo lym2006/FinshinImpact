@@ -26,13 +26,20 @@ set_profile("tg.000000")
 from core.domain import (  # noqa: E402
     INSTALLED_PLUGINS_NAME,
     PLUGINS_PKG,
+    HelpKey,
+    ManifestKey,
     PlatformTiming,
+    PluginClaim,
     TaskKind,
+    resolve_claims,
 )
 from exceptions import PluginRoleError, PluginSpecError  # noqa: E402
+from services.env_setup import deps_manifest  # noqa: E402
 from utils.plugin import _manifest, _register  # noqa: E402
 
 _MANIFEST = 'name = "{name}"\ntitle = "{title}"\nsummary = "外部目录装载用例"\n'
+# 清单里的命令声明，读侧按它做命令名抢占判定
+_COMMAND = '\n[[help]]\nsection = "样例"\n\n[[help.commands]]\ncmd = "{cmd}"\ndesc = "看一眼"\n'
 # 入口引同目录的另一只文件，导入走不通即红
 _ENTRY = """
 from ._inner import ROUTE
@@ -116,17 +123,23 @@ _MATE_ENTRY = "from core.domain import PluginSpec\n\nspec = PluginSpec()\n"
 
 
 def _write_plugin(
-    root: Path, name: str, title: str, sources: dict[str, str] | None = None
+    root: Path,
+    name: str,
+    title: str,
+    sources: dict[str, str] | None = None,
+    commands: tuple[str, ...] = (),
 ) -> None:
     """在根目录下摆一只带清单的插件目录
 
     - sources 为空只交清单，用于只看读取的用例
+    - commands 往清单里补命令声明，读侧据此做抢占判定
     """
     plugin_dir = root / name
     plugin_dir.mkdir(parents=True)
-    (plugin_dir / "plugin.toml").write_text(
-        _MANIFEST.format(name=name, title=title), encoding="utf-8"
-    )
+    text = _MANIFEST.format(name=name, title=title)
+    for cmd in commands:
+        text += _COMMAND.format(cmd=cmd)
+    (plugin_dir / "plugin.toml").write_text(text, encoding="utf-8")
     for file_name, body in (sources or {}).items():
         (plugin_dir / file_name).write_text(body, encoding="utf-8")
 
@@ -236,6 +249,42 @@ class TestExternalRootReads(ExternalRootCase):
         self.assertEqual(
             [(m.title, m.module) for m in picked], [("仓内", f"{PLUGINS_PKG}.help")]
         )
+
+    def test_name_clash_leaves_command_claim_out_of_play(self) -> None:
+        """名字撞随包件时命令撞不撞结果一样，命令那层压根不参与判定
+
+        - 这条红了说明名字判据挪到了命令判定之后，外部声明的命令能把随包件禁掉
+        - 装载侧只留仓内那只，面板侧读到的行也只有仓内那一份
+        """
+        _write_plugin(self.bundled, "help", "仓内", commands=("status",))
+        _write_plugin(self.installed, "help", "改名顶替", commands=("status",))
+        self._enable_installed()
+        patcher = patch.object(
+            _manifest,
+            "_plugins_roots",
+            lambda: [
+                (self.installed, INSTALLED_PLUGINS_NAME),
+                (self.bundled, PLUGINS_PKG),
+            ],
+        )
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+        picked = _manifest.enabled_manifests(self.state)
+
+        self.assertEqual(
+            [(m.title, m.module) for m in picked], [("仓内", f"{PLUGINS_PKG}.help")]
+        )
+
+        rows = deps_manifest.load_manifests([self.bundled, self.installed])
+        claims = [
+            PluginClaim(name=row[ManifestKey.NAME], commands=row[HelpKey.COMMANDS])
+            for row in rows
+        ]
+        allowed, conflicts = resolve_claims(claims, frozenset({"help"}))
+
+        self.assertEqual(allowed, frozenset({"help"}))
+        self.assertEqual(conflicts, {})
 
     def test_absent_external_dir_leaves_one_root(self) -> None:
         """外部目录不存在时根表只剩仓内
