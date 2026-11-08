@@ -44,7 +44,7 @@ class PanelTheme:
     conflict_box_h: int = 20  # 冲突色块高，与对勾方框同一档，上下各出一格
     name_width: int = 180  # 名称列固定宽
     status_width: int = 110  # 状态列固定宽
-    command_width: int = 44  # 行尾看命令按钮的内容宽，描边另加，代码侧不再定宽
+    command_width: int = 44  # 行尾看命令按钮的内容宽，一圈描边另算，宽度只由样式表给
     command_box_h: int = 24  # 看命令按钮高，比冲突色块高一档，容一圈描边
     col_gap: int = 12  # 列间距
     conflict_width: int = 420  # 冲突明细窗定宽，一句一行在这宽度里循环滚
