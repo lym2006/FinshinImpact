@@ -5,14 +5,24 @@
 - 句子仍宽过窗内那一列即在行内循环滚，横向一律不出滚动条
 - 窗高跟着条数长到最多露的那几行，多出的条目由竖向滚动条接住
 - 挂宿主窗当父件，配色与字体随宿主的样式走
+- 点开明细的按钮与明细行文案都从这里交出，两类明细走同一只窗
 """
 
+from typing import Any
+
 from PySide6.QtCore import QPoint, QSize, Qt
-from PySide6.QtWidgets import QListWidgetItem, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QListWidgetItem,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 
-from skin.theme import PANEL
+from core.domain import CommandTaken, HelpKey, ManifestKey, PluginClaim
+from skin.messages import PluginMessage
+from skin.theme import PANEL, ButtonStyle
 
-from .._primitives import MarqueeLabel, ThemedList
+from .._primitives import MarqueeLabel, ThemedList, make_button
 
 
 def _fit_rows(rows: ThemedList) -> None:
@@ -27,7 +37,7 @@ def _fit_rows(rows: ThemedList) -> None:
         item.setSizeHint(hint)
 
 
-def show_conflicts(parent: QWidget, anchor: QWidget, lines: list[str]) -> None:
+def _show_conflicts(parent: QWidget, anchor: QWidget, lines: list[str]) -> None:
     """贴着锚点弹出明细，屏幕下缘放不下即翻到上缘
 
     - 窗高随条数长到最多露的那几行，装不下的条目由竖向滚动条接住
@@ -64,3 +74,49 @@ def show_conflicts(parent: QWidget, anchor: QWidget, lines: list[str]) -> None:
     popup.move(top)
     popup.show()
     _fit_rows(rows)
+
+
+def clash_lines(taken: tuple[CommandTaken, ...], titles: dict[str, str]) -> list[str]:
+    """逐条写成一句冲突明细，抢走那一只报显示名，不报目录名"""
+    return [
+        PluginMessage.CONFLICT_TAKEN.format(cmd=one.cmd, owner=titles[one.owner])
+        for one in taken
+    ]
+
+
+def claims_of(manifests: list[dict[str, Any]]) -> list[PluginClaim]:
+    """按清单行交出命令名抢占的入参"""
+    return [
+        PluginClaim(
+            name=manifest[ManifestKey.NAME],
+            commands=tuple(cmd for cmd, _ in manifest[HelpKey.COMMANDS]),
+        )
+        for manifest in manifests
+    ]
+
+
+def _command_lines(manifest: dict[str, Any]) -> list[str]:
+    """逐条写成一行命令明细，一条都没声明时交一句说明"""
+    lines = [
+        PluginMessage.COMMAND_LINE.format(cmd=cmd, desc=desc)
+        for cmd, desc in manifest[HelpKey.COMMANDS]
+    ]
+    return lines or [PluginMessage.COMMAND_NONE]
+
+
+def make_clash_button(parent: QWidget, lines: list[str], label: str) -> QPushButton:
+    """勾选位是一颗写明冲突类型的按钮，点开逐条列出被谁拿走"""
+    button = make_button(label, ButtonStyle.CONFLICT)
+    button.clicked.connect(lambda: _show_conflicts(parent, button, lines))
+    return button
+
+
+def make_command_button(parent: QWidget, manifest: dict[str, Any]) -> QPushButton:
+    """行尾一只看命令的按钮，点开逐条列出这份清单声明的命令名与说明
+
+    - 宽度只由样式表给，代码再定一次会被描边顶掉
+    """
+    button = make_button(PluginMessage.BTN_COMMAND, ButtonStyle.COMMAND)
+    lines = _command_lines(manifest)
+    button.clicked.connect(lambda: _show_conflicts(parent, button, lines))
+    return button
