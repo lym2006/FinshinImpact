@@ -21,6 +21,7 @@ dependencies = [
     "httpx==0.28.1",
     "packaging==26.3",
     "pillow==12.1.1",
+    "pypinyin==0.55.0",
     "tomlkit==0.15.1",
     "pyside6-essentials==6.11.2",
 ]
