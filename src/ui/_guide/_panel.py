@@ -21,17 +21,13 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QListWidgetItem,
-    QPushButton,
     QVBoxLayout,
     QWidget,
 )
 
 from core.domain import (
     BUNDLED_PLUGIN_PRIORITY,
-    CommandTaken,
-    HelpKey,
     ManifestKey,
-    PluginClaim,
     StateKey,
     resolve_claims,
 )
@@ -51,7 +47,12 @@ from skin.theme import GLOBAL, PANEL, ButtonStyle, ObjectName
 
 from .._lifecycle import ensure_app
 from .._primitives import MarqueeLabel, TickedCheckBox, make_button
-from ._conflict import show_conflicts
+from ._conflict import (
+    claims_of,
+    clash_lines,
+    make_clash_button,
+    make_command_button,
+)
 from ._search import ROLE_MANIFEST, build_searchable_list
 
 MODE_AUTO = "auto"  # 自动弹出：保存并启动
@@ -74,26 +75,6 @@ def _status_label(manifest: dict[str, Any]) -> str:
     if dev_mode():
         return PluginMessage.STATUS_DEV_SKIP
     return PluginMessage.STATUS_MISSING.format(count=missing)
-
-
-def _command_lines(manifest: dict[str, Any]) -> list[str]:
-    """逐条写成一行命令明细，一条都没声明时交一句说明"""
-    lines = [
-        PluginMessage.COMMAND_LINE.format(cmd=cmd, desc=desc)
-        for cmd, desc in manifest[HelpKey.COMMANDS]
-    ]
-    return lines or [PluginMessage.COMMAND_NONE]
-
-
-def _make_command_button(parent: QWidget, manifest: dict[str, Any]) -> QPushButton:
-    """行尾一只看命令的按钮，点开逐条列出这份清单声明的命令名与说明
-
-    - 明细行交给贴锚点弹的那只定宽小窗，代码再定一次宽会被描边顶掉
-    """
-    button = make_button(PluginMessage.BTN_COMMAND, ButtonStyle.COMMAND)
-    lines = _command_lines(manifest)
-    button.clicked.connect(lambda: show_conflicts(parent, button, lines))
-    return button
 
 
 class _PluginPanelDialog(QDialog):
@@ -156,10 +137,10 @@ class _PluginPanelDialog(QDialog):
             for manifest in self._manifests
         }
 
-        _, conflicts = resolve_claims(self._claims(), frozenset(enabled))
+        _, conflicts = resolve_claims(claims_of(self._manifests), frozenset(enabled))
         for manifest in self._manifests:
             name = manifest[ManifestKey.NAME]
-            lines = self._lines(conflicts.get(name, ()))
+            lines = clash_lines(conflicts.get(name, ()), self._titles)
             self._add_row(manifest, name in enabled, lines)
         for loser, winner in shadowed_manifests(roots):
             clash = [PluginMessage.CONFLICT_NAME.format(owner=self._titles[winner])]
@@ -215,7 +196,7 @@ class _PluginPanelDialog(QDialog):
         status.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
 
         if lines:
-            slot: QWidget = self._make_conflict_button(lines, label)
+            slot: QWidget = make_clash_button(self, lines, label)
         elif bundled:
             # 随包插件无勾选框，勾选位以"必选"文字占宽对齐
             slot = QLabel(PluginMessage.ROW_BUNDLED)
@@ -232,35 +213,10 @@ class _PluginPanelDialog(QDialog):
         row_layout.addWidget(desc_label, stretch=1)
         row_layout.addWidget(status)
         row_layout.addWidget(
-            _make_command_button(self, manifest),
+            make_command_button(self, manifest),
             alignment=Qt.AlignmentFlag.AlignVCenter,
         )
         return row
-
-    def _make_conflict_button(self, lines: list[str], label: str) -> QPushButton:
-        """勾选位是一颗写明冲突类型的按钮，点开逐条列出被谁拿走"""
-        button = make_button(label, ButtonStyle.CONFLICT)
-        button.clicked.connect(lambda: show_conflicts(self, button, lines))
-        return button
-
-    def _lines(self, taken: tuple[CommandTaken, ...]) -> list[str]:
-        """逐条写成一句明细，抢走那一只报这一行显示的名字，不报目录名"""
-        return [
-            PluginMessage.CONFLICT_TAKEN.format(
-                cmd=one.cmd, owner=self._titles[one.owner]
-            )
-            for one in taken
-        ]
-
-    def _claims(self) -> list[PluginClaim]:
-        """按清单行交出命令名抢占的入参"""
-        return [
-            PluginClaim(
-                name=manifest[ManifestKey.NAME],
-                commands=tuple(cmd for cmd, _ in manifest[HelpKey.COMMANDS]),
-            )
-            for manifest in self._manifests
-        ]
 
     def _apply_clashes(self) -> None:
         """按当前勾选重算命令名抢占
@@ -269,14 +225,16 @@ class _PluginPanelDialog(QDialog):
         - 随包行与名字顶掉的行不参与重算，两种都不跟勾选走
         - 重拼会把行上那件换成新控件，交搜索件按当前输入补一次筛
         """
-        _, conflicts = resolve_claims(self._claims(), frozenset(self._checked_names()))
+        _, conflicts = resolve_claims(
+            claims_of(self._manifests), frozenset(self._checked_names())
+        )
         for row in range(self._list.count()):
             item = self._list.item(row)
             manifest = item.data(ROLE_MANIFEST)
             name = manifest[ManifestKey.NAME]
             if item.data(_ROLE_NAME_TAKEN) or name in BUNDLED_PLUGIN_PRIORITY:
                 continue
-            lines = self._lines(conflicts.get(name, ()))
+            lines = clash_lines(conflicts.get(name, ()), self._titles)
             if lines == item.data(_ROLE_LINES):
                 continue
             self._list.setItemWidget(
