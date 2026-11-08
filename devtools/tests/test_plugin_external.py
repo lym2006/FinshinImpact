@@ -278,7 +278,10 @@ class TestExternalRootReads(ExternalRootCase):
 
         rows = deps_manifest.load_manifests([self.bundled, self.installed])
         claims = [
-            PluginClaim(name=row[ManifestKey.NAME], commands=row[HelpKey.COMMANDS])
+            PluginClaim(
+                name=row[ManifestKey.NAME],
+                commands=tuple(cmd for cmd, _ in row[HelpKey.COMMANDS]),
+            )
             for row in rows
         ]
         allowed, conflicts = resolve_claims(claims, frozenset({"help"}))

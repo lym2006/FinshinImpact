@@ -166,7 +166,7 @@ class TestTwoReadersAgree(unittest.TestCase):
     ) -> tuple[dict[str, tuple[str, ...]], dict[str, tuple[str, ...]]]:
         """分别取两份读侧认到的命令名"""
         rows = {
-            row[ManifestKey.NAME]: row[HelpKey.COMMANDS]
+            row[ManifestKey.NAME]: tuple(cmd for cmd, _ in row[HelpKey.COMMANDS])
             for row in deps_manifest.load_manifests([root])
         }
         manifests = {

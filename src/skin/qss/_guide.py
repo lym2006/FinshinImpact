@@ -229,6 +229,21 @@ QPushButton#{ButtonStyle.CONFLICT}::menu-indicator {{
 QPushButton#{ButtonStyle.CONFLICT}:hover {{
     background-color: {SURFACE.danger_bg};
     color: {SURFACE.sel_color};
+}}
+
+QPushButton#{ButtonStyle.COMMAND} {{
+    background-color: transparent;
+    color: {SURFACE.color};
+    border: 1px solid {SURFACE.border_color};
+    border-radius: {SURFACE.radius}px;
+    padding: 0; margin: 4px 0;
+    min-width: {PANEL.command_width}px; min-height: {PANEL.command_box_h}px;
+}}
+
+QPushButton#{ButtonStyle.COMMAND}:hover {{
+    background-color: {SURFACE.hover_bg};
+    border: 1px solid {SURFACE.sel_bg};
+    color: {SURFACE.hover_color};
 }}"""
 
 # 滚动条

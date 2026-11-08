@@ -72,7 +72,7 @@ def _scan_rows(plugins_paths: Sequence[Path]) -> list[dict[str, Any]]:
     """按根的顺序逐子目录读出最小清单，同名不去重
 
     - 无清单或 name 非法的子目录跳过
-    - 每行带 help 段声明的命令名，供命令名抢占判定取用
+    - 每行带 help 段声明的命令名与说明，命令名供抢占判定取用
     """
     rows: list[dict[str, Any]] = []
     for plugins_path in plugins_paths:
@@ -86,7 +86,7 @@ def _scan_rows(plugins_paths: Sequence[Path]) -> list[dict[str, Any]]:
             row: dict[str, Any] = {
                 key: data.get(key, _DEFAULTS[key]) for key in _MINIMAL_KEYS
             }
-            row[HelpKey.COMMANDS] = _command_names(data)
+            row[HelpKey.COMMANDS] = _command_pairs(data)
             rows.append(row)
 
     return rows
@@ -167,17 +167,17 @@ def _pinyin_key(text: str) -> tuple[str, ...]:
     return tuple(piece.lower() for piece in lazy_pinyin(text))
 
 
-def _command_names(data: dict[str, Any]) -> tuple[str, ...]:
-    """从清单 help 段取命令名
+def _command_pairs(data: dict[str, Any]) -> tuple[tuple[str, str], ...]:
+    """从清单 help 段取命令名与说明，按声明顺序成对交出
 
     - 段与条目的形状不符即跳过该项
-    - 必填两键齐了才算一条命令名
+    - 必填两键齐了才算一条
     """
     sections = data.get(ManifestKey.HELP)
     if not isinstance(sections, list):
         return ()
 
-    names: list[str] = []
+    commands: list[tuple[str, str]] = []
     for section in sections:
         if not isinstance(section, dict):
             continue
@@ -185,9 +185,9 @@ def _command_names(data: dict[str, Any]) -> tuple[str, ...]:
             if not isinstance(command, dict):
                 continue
             if all(isinstance(command.get(key), str) for key in _COMMAND_KEYS):
-                names.append(command[HelpKey.CMD])
+                commands.append((command[HelpKey.CMD], command[HelpKey.DESC]))
 
-    return tuple(names)
+    return tuple(commands)
 
 
 def _state_path_of(code: str) -> Path:

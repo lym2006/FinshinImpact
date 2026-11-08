@@ -27,6 +27,11 @@ class PluginMessage:
     STATUS_MISSING = "缺 {count} 个库"
     STATUS_DEV_SKIP = "开发模式请手动安装"
 
+    # 用：ui._guide._panel 行尾看命令按钮与明细行
+    BTN_COMMAND = "命令"
+    COMMAND_LINE = "/{cmd} {desc}"
+    COMMAND_NONE = "这份插件没声明命令"
+
     # 用：ui._guide._search 搜索行占位、筛选档与空命中提示
     SEARCH_PLACEHOLDER = "搜索插件名或命令名"
     SEARCH_SCOPE_ALL = "全部"
