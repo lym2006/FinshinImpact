@@ -1,4 +1,4 @@
-# src/bot/_adapter_host/_manifest.py
+# src/services/adapter_manifest.py
 """适配器清单读取器
 
 - 扫描适配器目录聚合各适配器自描述清单
@@ -41,7 +41,7 @@ def _adapters_dir() -> Path | None:
     return Path(next(iter(spec.submodule_search_locations)))
 
 
-def load_manifests() -> dict[Platform, AdapterManifestDTO]:
+def load_adapter_manifests() -> dict[Platform, AdapterManifestDTO]:
     """扫描适配器目录聚合清单
 
     - 只认含清单文件的直接子目录
