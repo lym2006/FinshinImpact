@@ -27,6 +27,13 @@ class PluginMessage:
     STATUS_MISSING = "缺 {count} 个库"
     STATUS_DEV_SKIP = "开发模式请手动安装"
 
+    # 用：ui._guide._search 搜索行占位、筛选档与空命中提示
+    SEARCH_PLACEHOLDER = "搜索插件名或命令名"
+    SEARCH_SCOPE_ALL = "全部"
+    SEARCH_SCOPE_NAME = "只搜名字"
+    SEARCH_SCOPE_CMD = "只搜命令"
+    SEARCH_EMPTY = "没有匹配的插件"
+
     # 用：ui._guide._panel 空身份码防呆
     PANEL_NEED_CODE = "打开插件面板需要实例身份码"
 
