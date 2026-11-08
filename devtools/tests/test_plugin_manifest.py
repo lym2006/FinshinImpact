@@ -42,6 +42,22 @@ def _write(root: Path, name: str) -> None:
     target.write_text(_MANIFEST.format(name=name), encoding="utf-8")
 
 
+_TITLED_MANIFEST = """
+name = "{name}"
+title = "{title}"
+summary = "外部插件"
+deps = []
+assets = []
+"""
+
+
+def _write_titled(root: Path, name: str, title: str) -> None:
+    """在目录下造一份指定标题的清单"""
+    target = root / name / "plugin.toml"
+    target.parent.mkdir(parents=True)
+    target.write_text(_TITLED_MANIFEST.format(name=name, title=title), encoding="utf-8")
+
+
 class TestEnabledOrder(unittest.TestCase):
     """运行期读取：随包表定恒启用与档位"""
 
@@ -91,7 +107,7 @@ class TestGuideRead(unittest.TestCase):
 
             rows = deps_manifest.load_manifests([root])
 
-            self.assertEqual([row["name"] for row in rows], ["help", "AI", "extra"])
+            self.assertEqual([row["name"] for row in rows], ["AI", "help", "extra"])
             self.assertFalse({"always", "weight"} & set(rows[0]))
 
     def test_bundled_grouped_before_external(self) -> None:
@@ -104,7 +120,30 @@ class TestGuideRead(unittest.TestCase):
             rows = deps_manifest.load_manifests([root])
 
             self.assertEqual(
-                [row["name"] for row in rows], ["help", "grant", "AI", "aardvark"]
+                [row["name"] for row in rows], ["AI", "grant", "help", "aardvark"]
+            )
+
+    def test_groups_order_by_pinyin_of_title(self) -> None:
+        """两组组内都按面板上那列显示名的拼音序
+
+        - 档位表只管命令抢占先后，不再决定行序
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            titled = (
+                ("help", "权限授权"),
+                ("grant", "AI 对话"),
+                ("ping_a", "帮助"),
+                ("ping_b", "撞名甲"),
+            )
+            for name, title in titled:
+                _write_titled(root, name, title)
+
+            rows = deps_manifest.load_manifests([root])
+
+            self.assertEqual(
+                [row["title"] for row in rows],
+                ["AI 对话", "权限授权", "帮助", "撞名甲"],
             )
 
 

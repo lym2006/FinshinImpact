@@ -17,7 +17,6 @@ from core.domain import (
     INSTALLED_PLUGINS_NAME,
     MANIFEST_FIELDS,
     PLUGINS_PKG,
-    CommandPriority,
     HelpKey,
     ManifestKey,
     PluginFileName,
@@ -97,20 +96,13 @@ def load_manifests(plugins_paths: Sequence[Path]) -> list[dict[str, Any]]:
     """扫描插件根目录聚合最小清单
 
     - 同名插件按根的顺序取先读到的，随包压住外部同名
-    - 随包表里的先成一组，组内按档位序，其余一律排在后并按 name 字典序
+    - 随包表里的先成一组，两组组内都按显示名的拼音序
     """
     found: dict[str, dict[str, Any]] = {}
     for row in _scan_rows(plugins_paths):
         found.setdefault(row[ManifestKey.NAME], row)
 
-    return sorted(
-        found.values(),
-        key=lambda item: (
-            item[ManifestKey.NAME] not in BUNDLED_PLUGIN_PRIORITY,
-            BUNDLED_PLUGIN_PRIORITY.get(item[ManifestKey.NAME], CommandPriority.NORMAL),
-            item[ManifestKey.NAME],
-        ),
-    )
+    return sorted(found.values(), key=_sort_key)
 
 
 def shadowed_manifests(
@@ -147,6 +139,32 @@ def catalog_digest(manifests: list[dict[str, Any]]) -> str:
         for m in manifests
     )
     return hashlib.sha256("\n".join(items).encode("utf-8")).hexdigest()
+
+
+def _sort_key(row: dict[str, Any]) -> tuple[Any, ...]:
+    """拼面板行序的排序键
+
+    - 先分来源组，组内按显示名的拼音序
+    - 显示名取标题列，没填标题时退化成目录名
+    - 同拼音按显示名整串，再同按目录名
+    """
+    display = row[ManifestKey.TITLE] or row[ManifestKey.NAME]
+    return (
+        row[ManifestKey.NAME] not in BUNDLED_PLUGIN_PRIORITY,
+        _pinyin_key(display),
+        display.lower(),
+        row[ManifestKey.NAME],
+    )
+
+
+def _pinyin_key(text: str) -> tuple[str, ...]:
+    """把文本切成拼音片段用于排序
+
+    - 非汉字片段原样保留，中英混排的标题照该片段比
+    """
+    from pypinyin import lazy_pinyin
+
+    return tuple(piece.lower() for piece in lazy_pinyin(text))
 
 
 def _command_names(data: dict[str, Any]) -> tuple[str, ...]:
