@@ -24,7 +24,6 @@ from system.profile_env import set_profile  # noqa: E402
 set_profile("tg.000000")
 
 from bot._adapter_host import _assemble as assemble_mod  # noqa: E402
-from bot._adapter_host import _manifest as manifest_mod  # noqa: E402
 from bot._adapter_host import _parts as parts_mod  # noqa: E402
 from bot._managers import _settings as settings_mod  # noqa: E402
 from bot.error_guard import error_guard  # noqa: E402
@@ -32,6 +31,7 @@ from core.domain import Platform  # noqa: E402
 from core.dto import AdapterManifestDTO, PluginManifestDTO  # noqa: E402
 from exceptions import AdapterMissingError  # noqa: E402
 from finshin_sdk import AdapterParts, BaseAdapter, PlatformAssembly  # noqa: E402
+from services import adapter_manifest as manifest_mod  # noqa: E402
 from ui import gui_bridge  # noqa: E402
 
 _PARTS_KEYS = ("assemble", "channel_probe", "engine_preload", "diagnose")
@@ -112,7 +112,7 @@ class TestAdapterHost(unittest.TestCase):
                 body, encoding="utf-8"
             )
             with patch.object(manifest_mod, "_adapters_dir", lambda: adapters_dir):
-                return manifest_mod.load_manifests()
+                return manifest_mod.load_adapter_manifests()
 
     def test_full_manifest_is_read(self) -> None:
         """齐两项的清单读出导入路径
@@ -168,7 +168,7 @@ class TestAdapterHost(unittest.TestCase):
 
         - 抛点在探测入口调用处
         """
-        with patch.object(parts_mod, "load_manifests", lambda: {}):
+        with patch.object(parts_mod, "load_adapter_manifests", lambda: {}):
             importlib.reload(settings_mod)
             with self.assertRaises(AdapterMissingError):
                 settings_mod._channel_probe()

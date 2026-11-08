@@ -144,6 +144,7 @@ def _preload_engine_worker() -> None:
     """子线程里付 utils 与引擎导入费
 
     - utils 先落位发信号，导入失败也放行，交主线程兜底重导
+    - 引擎预热按清单逐份走，一份失败不拦其余
     """
     try:
         importlib.import_module("utils")
@@ -152,9 +153,14 @@ def _preload_engine_worker() -> None:
     finally:
         _UTILS_READY.set()
     try:
-        from adapters.telegram.probe import preload_engine
+        from services.adapter_manifest import load_adapter_manifests
 
-        preload_engine()
+        for manifest in load_adapter_manifests().values():
+            try:
+                entry = importlib.import_module(manifest.entry)
+                entry.parts().engine_preload()
+            except Exception:  # noqa: BLE001  单份缺件交主线程兜底重导
+                pass
     except Exception:  # noqa: BLE001  预热失败交主线程兜底重导
         pass
 
