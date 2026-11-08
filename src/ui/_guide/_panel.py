@@ -7,6 +7,7 @@
 - 冲突明细窗定宽，一行一句，放不下即在行内循环滚
 - 冲突明细里的插件名与命令名都按用户看得见的那份写
 - 行尾一颗看命令的按钮，点开逐条列出这份清单声明的命令名与说明
+- 那两只明细小窗同一套行件：定宽、一句一行、放不下即循环滚、超出最多露的那几行改走竖向滚动
 - 依赖与资源的安装由启动结算负责，禁用不删已装库
 - 清库只走选窗「依赖管理」同步，面板保存无删除动作
 """
@@ -85,9 +86,9 @@ def _command_lines(manifest: dict[str, Any]) -> list[str]:
 
 
 def _make_command_button(parent: QWidget, manifest: dict[str, Any]) -> QPushButton:
-    """行尾一只看命令的按钮，点开复用冲突明细窗那一型
+    """行尾一只看命令的按钮，点开逐条列出这份清单声明的命令名与说明
 
-    - 宽交给 QSS 的 min-width，代码再定一次宽会被描边顶掉
+    - 明细行交给贴锚点弹的那只定宽小窗，代码再定一次宽会被描边顶掉
     """
     button = make_button(PluginMessage.BTN_COMMAND, ButtonStyle.COMMAND)
     lines = _command_lines(manifest)
