@@ -48,14 +48,14 @@ from skin.qss import build_bootstrap_qss
 from skin.theme import GLOBAL, PANEL, ButtonStyle, ObjectName
 
 from .._lifecycle import ensure_app
-from .._primitives import MarqueeLabel, ThemedList, TickedCheckBox, make_button
+from .._primitives import MarqueeLabel, TickedCheckBox, make_button
 from ._conflict import show_conflicts
+from ._search import ROLE_MANIFEST, build_searchable_list
 
 MODE_AUTO = "auto"  # 自动弹出：保存并启动
 MODE_EDIT = "edit"  # 选窗按钮进入：保存回列表
 
-# Qt 自定义数据角色，行上挂清单、冲突明细与顶掉它的那份插件名
-_ROLE_MANIFEST = 0x0100
+# Qt 自定义数据角色，行上挂冲突明细与顶掉它的那份插件名
 _ROLE_LINES = 0x0101
 _ROLE_NAME_TAKEN = 0x0102
 
@@ -96,9 +96,8 @@ class _PluginPanelDialog(QDialog):
 
         layout = QVBoxLayout(self)
 
-        self._list = ThemedList()
+        self._list, self._search = build_searchable_list(layout)
         self._build_rows()
-        layout.addWidget(self._list)
 
         buttons = QHBoxLayout()
         save_btn = make_button(
@@ -157,7 +156,7 @@ class _PluginPanelDialog(QDialog):
 
         # item 默认高 25，行 widget 高 44，不显式对齐则选中高亮画在错位矩形上
         item.setSizeHint(QSize(0, PANEL.row_height))
-        item.setData(_ROLE_MANIFEST, manifest)
+        item.setData(ROLE_MANIFEST, manifest)
         item.setData(_ROLE_LINES, lines)
         item.setData(_ROLE_NAME_TAKEN, taken_by)
         self._list.addItem(item)
@@ -242,11 +241,12 @@ class _PluginPanelDialog(QDialog):
 
         - 只重拼明细有变的行，行数与行高不动，滚动位置不变
         - 随包行与名字顶掉的行不参与重算，两种都不跟勾选走
+        - 重拼会把行上那件换成新控件，交搜索件按当前输入补一次筛
         """
         _, conflicts = resolve_claims(self._claims(), frozenset(self._checked_names()))
         for row in range(self._list.count()):
             item = self._list.item(row)
-            manifest = item.data(_ROLE_MANIFEST)
+            manifest = item.data(ROLE_MANIFEST)
             name = manifest[ManifestKey.NAME]
             if item.data(_ROLE_NAME_TAKEN) or name in BUNDLED_PLUGIN_PRIORITY:
                 continue
@@ -257,6 +257,7 @@ class _PluginPanelDialog(QDialog):
                 item, self._make_row(manifest, self._row_checked(item), lines)
             )
             item.setData(_ROLE_LINES, lines)
+        self._search.refresh()
 
     def _row_checked(self, item: QListWidgetItem) -> bool:
         """取列表项所在行的复选框勾选态"""
@@ -269,7 +270,7 @@ class _PluginPanelDialog(QDialog):
         names: list[str] = []
         for row in range(self._list.count()):
             item = self._list.item(row)
-            manifest = item.data(_ROLE_MANIFEST)
+            manifest = item.data(ROLE_MANIFEST)
             if (
                 not isinstance(manifest, dict)
                 or manifest[ManifestKey.NAME] in BUNDLED_PLUGIN_PRIORITY
