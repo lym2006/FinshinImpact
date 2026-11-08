@@ -19,3 +19,4 @@ class ButtonStyle(StrEnum):
     LIST_ADD = "btn_list_add"
     LIST_DEL = "btn_list_del"
     CONFLICT = "btn_conflict"
+    COMMAND = "btn_command"

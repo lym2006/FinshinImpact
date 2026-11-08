@@ -49,7 +49,7 @@ def _cmd_forms(manifest: dict[str, Any]) -> list[str]:
     """交出每条命令名的带斜杠与不带斜杠两种写法"""
     return [
         f"{mark}{cmd}".lower()
-        for cmd in manifest[HelpKey.COMMANDS]
+        for cmd, _ in manifest[HelpKey.COMMANDS]
         for mark in _CMD_MARKS
     ]
 

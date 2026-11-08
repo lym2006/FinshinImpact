@@ -6,6 +6,7 @@
 - 名字撞上先读到的那份插件即整只不装载，面板上单开一行写明被谁顶掉
 - 冲突明细窗定宽，一行一句，放不下即在行内循环滚
 - 冲突明细里的插件名与命令名都按用户看得见的那份写
+- 行尾一颗看命令的按钮，点开逐条列出这份清单声明的命令名与说明
 - 依赖与资源的安装由启动结算负责，禁用不删已装库
 - 清库只走选窗「依赖管理」同步，面板保存无删除动作
 """
@@ -72,6 +73,26 @@ def _status_label(manifest: dict[str, Any]) -> str:
     if dev_mode():
         return PluginMessage.STATUS_DEV_SKIP
     return PluginMessage.STATUS_MISSING.format(count=missing)
+
+
+def _command_lines(manifest: dict[str, Any]) -> list[str]:
+    """逐条写成一行命令明细，一条都没声明时交一句说明"""
+    lines = [
+        PluginMessage.COMMAND_LINE.format(cmd=cmd, desc=desc)
+        for cmd, desc in manifest[HelpKey.COMMANDS]
+    ]
+    return lines or [PluginMessage.COMMAND_NONE]
+
+
+def _make_command_button(parent: QWidget, manifest: dict[str, Any]) -> QPushButton:
+    """行尾一只看命令的按钮，点开复用冲突明细窗那一型
+
+    - 宽交给 QSS 的 min-width，代码再定一次宽会被描边顶掉
+    """
+    button = make_button(PluginMessage.BTN_COMMAND, ButtonStyle.COMMAND)
+    lines = _command_lines(manifest)
+    button.clicked.connect(lambda: show_conflicts(parent, button, lines))
+    return button
 
 
 class _PluginPanelDialog(QDialog):
@@ -169,7 +190,7 @@ class _PluginPanelDialog(QDialog):
         lines: list[str],
         label: str = PluginMessage.BTN_CONFLICT,
     ) -> QWidget:
-        """拼插件单行三列控件
+        """拼插件单行的控件
 
         - 名称与说明由插件作者自写，宽度放不下即循环滚，全文挂悬浮提示
         """
@@ -209,6 +230,10 @@ class _PluginPanelDialog(QDialog):
         row_layout.addWidget(name_label)
         row_layout.addWidget(desc_label, stretch=1)
         row_layout.addWidget(status)
+        row_layout.addWidget(
+            _make_command_button(self, manifest),
+            alignment=Qt.AlignmentFlag.AlignVCenter,
+        )
         return row
 
     def _make_conflict_button(self, lines: list[str], label: str) -> QPushButton:
@@ -231,7 +256,7 @@ class _PluginPanelDialog(QDialog):
         return [
             PluginClaim(
                 name=manifest[ManifestKey.NAME],
-                commands=manifest[HelpKey.COMMANDS],
+                commands=tuple(cmd for cmd, _ in manifest[HelpKey.COMMANDS]),
             )
             for manifest in self._manifests
         ]
