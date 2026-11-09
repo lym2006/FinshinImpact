@@ -39,3 +39,13 @@ class FontRegisterError(FontError):
 
 class FontFamilyError(FontError):
     """字体家族名获取异常"""
+
+
+GUI_MAP = {
+    FontError: "字体文件出问题：{path}",
+    FontMissingError: "找不到字体文件：{path}",
+    FontLoadError: "字体文件读不出来：{path}",
+    FontFamilyError: "字体文件里没有可用的家族名：{path}",
+    FontRegisterError: "字体注册失败：{path}",
+    DashboardWriteError: "仪表盘写入失败",
+}

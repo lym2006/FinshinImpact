@@ -58,4 +58,5 @@ PLUGINS_MAP = {
     PluginDependencyError: "内部依赖缺失",
     PluginLoadError: "加载失败：{kind}",
     PluginRoleError: "命令权限说明与实际拦截对不上",
+    PluginsMissingError: "一只插件都没装上，程序无法运行",
 }
