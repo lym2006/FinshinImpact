@@ -44,6 +44,7 @@
 - 引导期窗体与主窗同为视图层，只消费服务层函数，不自己算。
 - 代发平台要实现的两份抽象接口只从 `finshin_sdk` 取，本体不直接引适配器。
 - 平台框架（aiogram）只许 `src/adapters/` 引，其余各处一律不引，这条由依赖契约钉死。
+- 接口包对外只代发插件与适配器真要用的那几样；只给随包件用的形状留在本体侧（如内部入口基类住 `core.contracts`），别放上对外那一面。
 
 ## Docstring
 
@@ -230,7 +231,7 @@
   - `GUI` 可见文案收敛进 `skin/messages/`，禁止 f-string 裸写业务话术。
   - `Bot` 对话话术收敛进 `src/bundled/_shared/messages.py`（`BotMessage`），插件间直连引用，禁止内联裸写。
   - 运行日志不属对话文案，不收敛，就地内联保持可 grep。
-  - 异常文案模板在同文件就近写映射表，取文案一律走 `exceptions.describe_error`，调用处不再各自查表填参。
+  - 异常文案模板在同文件就近写映射表，取文案一律走 `exceptions.describe_error`，调用处不自行查表填参。
   - `theme` 令牌只代理引用、不持有话术字面量。
 
 ## 文案类（skin/messages/）
