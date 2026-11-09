@@ -25,6 +25,12 @@ reason = "同基线脚本，runner 反射调用"
 
 [[waiver]]
 section = "命名与门面导出"
+path = "src/system/startup_guard.py"
+match = "startup_guard"
+reason = "发布包入口脚本由 build.py 按文本生成，导入图查不到消费方"
+
+[[waiver]]
+section = "命名与门面导出"
 path = "src/adapters/telegram/probe.py"
 match = "get_me"
 reason = "探测接缝函数，用例按同名关键字替换实现，不经 import 消费"
