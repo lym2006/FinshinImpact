@@ -11,7 +11,7 @@ import shutil
 import time
 from pathlib import Path
 
-from core.domain import Platform, make_profile_code, platform_of_profile
+from finshin_sdk.domain import Platform, make_profile_code, platform_of_profile
 from system.atomic_write import write_bytes_atomic
 from system.profile_env import (
     ASSET_PERSONA_EXAMPLE_NAME,

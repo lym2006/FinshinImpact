@@ -27,8 +27,8 @@ from aiogram.types import Chat, Message, Update, User  # noqa: E402
 
 from adapters.telegram._normalize import NormalizeMiddleware  # noqa: E402
 from adapters.telegram.router_bridge import _Predicate, build_router  # noqa: E402
-from core.domain import PluginRoute, PluginSpec  # noqa: E402
-from services.context import HandlerContext  # noqa: E402
+from finshin_sdk import HandlerContext  # noqa: E402
+from finshin_sdk.domain import PluginRoute, PluginSpec  # noqa: E402
 
 _GROUP = Chat(id=-100123, type="supergroup", title="测试群")
 _USER = User(id=456, is_bot=False, first_name="三")

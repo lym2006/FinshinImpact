@@ -8,7 +8,7 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from core.domain import ConfigKey, FieldKey, ProxyMode
+from finshin_sdk.domain import ConfigKey, FieldKey, ProxyMode
 from skin.messages import CheckMessage
 
 

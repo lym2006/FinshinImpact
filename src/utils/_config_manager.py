@@ -8,8 +8,8 @@
 from copy import deepcopy
 from typing import Any, TypeVar, cast, get_origin
 
-from core.domain.ids import ConfigPath
 from exceptions import ConfigAttrError, ConfigPathMissingError
+from finshin_sdk.domain.ids import ConfigPath
 
 from .config import AppConfigData, AppSchema, get_schema
 from .config.models import ConfigValue

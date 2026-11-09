@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from core.domain import Platform, platform_of_profile
+from finshin_sdk.domain import Platform, platform_of_profile
 from services.profile_store import code_for_token, create_profile, update_profile
 from skin.messages import PickerMessage
 from skin.qss import build_bootstrap_qss

@@ -12,7 +12,7 @@ from typing import Any
 
 from aiogram.types import Message, TelegramObject
 
-from core.domain.ids import ChatId, MediaGroupId, UserId
+from finshin_sdk.domain.ids import ChatId, MediaGroupId, UserId
 from utils import get_logger
 
 from ._fields import sender_id

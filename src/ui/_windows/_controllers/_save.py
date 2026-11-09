@@ -8,8 +8,8 @@
 
 from typing import TYPE_CHECKING
 
-from core.domain import ConfigKey, ConfigSection
 from exceptions import ConfigOutputError
+from finshin_sdk.domain import ConfigKey, ConfigSection
 from skin.messages import CheckMessage
 from skin.theme import NOTICE_DIALOG
 from utils import config_manager

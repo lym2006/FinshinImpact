@@ -14,9 +14,9 @@ from dataclasses import dataclass
 from aiogram.enums import MessageEntityType
 from aiogram.types import Message, Update
 
-from core.domain import ContentKind, Platform, is_flag_name, make_container
-from core.domain.ids import ChatId, MessageId, UserId
-from core.dto import (
+from finshin_sdk.domain import ContentKind, Platform, is_flag_name, make_container
+from finshin_sdk.domain.ids import ChatId, MessageId, UserId
+from finshin_sdk.dto import (
     CommandDTO,
     ContentDTO,
     InboundEventDTO,

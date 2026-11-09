@@ -1,4 +1,4 @@
-# src/core/domain/__init__.py
+# src/finshin_sdk/domain/__init__.py
 """领域类型门面
 
 - 定义业务类型，将不同平台的原始类型归一化
@@ -45,7 +45,7 @@ from ._plugin import (
     resolve_claims,
 )
 from ._role import ChatRole, CommandRole
-from ._task import TaskKind, TaskPayload, TaskStatus
+from ._task import TaskPayload, TaskStatus, is_own_action
 from .config import (
     SECTIONS_BY_PLATFORM,
     ConfigGroup,
@@ -111,7 +111,7 @@ __all__ = [
     "is_flag_name",
     # 任务
     "TaskPayload",
-    "TaskKind",
+    "is_own_action",
     "TaskStatus",
     # 探测字段键
     "FieldKey",

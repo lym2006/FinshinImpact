@@ -1,4 +1,4 @@
-# src/core/domain/_content.py
+# src/finshin_sdk/domain/_content.py
 """内容值对象
 
 - 定义跨平台归一的内容类型词表

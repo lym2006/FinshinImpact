@@ -15,7 +15,7 @@ import tomllib
 from pathlib import Path
 from typing import Any
 
-from core.domain import (
+from finshin_sdk.domain import (
     BUNDLED_PLUGIN_PRIORITY,
     INSTALLED_PLUGINS_NAME,
     MANIFEST_FIELDS,
@@ -28,7 +28,7 @@ from core.domain import (
     is_enabled,
     resolve_claims,
 )
-from core.dto import PluginManifestDTO
+from finshin_sdk.dto import PluginManifestDTO
 from system.profile_env import ROOT_DIR
 
 from ._manifest_help import read_help_sections

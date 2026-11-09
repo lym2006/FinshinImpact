@@ -1,4 +1,4 @@
-# src/core/domain/config/_table.py
+# src/finshin_sdk/domain/config/_table.py
 """按平台拼装配置段全表
 
 - 定义各平台的段序列，顺序即面板页签顺序

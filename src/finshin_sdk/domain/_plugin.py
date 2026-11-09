@@ -1,4 +1,4 @@
-# src/core/domain/_plugin.py
+# src/finshin_sdk/domain/_plugin.py
 """插件对象
 
 - 定义插件加载优先级、相关文件、清单键名与对象记号的词表
@@ -12,8 +12,6 @@ from collections.abc import Awaitable, Callable, Coroutine, Sequence
 from dataclasses import dataclass
 from enum import IntEnum, StrEnum, auto
 from typing import Any, Protocol
-
-from ._task import TaskKind
 
 PLUGINS_PKG = "bundled"  # 插件树顶层包名，find_spec 与动态导入路径共用同值
 INSTALLED_PLUGINS_NAME = "plugins_installed"  # 项目根下的外部插件目录，目录名即顶层包名
@@ -55,7 +53,7 @@ class TaskHandler:
     - 同一类型只认最先交出来的那个
     """
 
-    kind: TaskKind
+    kind: str
     run: TaskRun
 
 

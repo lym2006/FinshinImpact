@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 from ._base import BotError
 
 if TYPE_CHECKING:
-    from core.dto import MsgReferenceDTO
+    from finshin_sdk.dto import MsgReferenceDTO
 
 
 class DomainError(BotError):

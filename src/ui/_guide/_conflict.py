@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from core.domain import CommandTaken, HelpKey, ManifestKey, PluginClaim
+from finshin_sdk.domain import CommandTaken, HelpKey, ManifestKey, PluginClaim
 from skin.messages import PluginMessage
 from skin.theme import PANEL, ButtonStyle
 

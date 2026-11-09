@@ -1,4 +1,4 @@
-# src/core/dto/_content.py
+# src/finshin_sdk/dto/_content.py
 """内容数据传输对象
 
 - 定义消息内容和媒体索引

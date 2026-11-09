@@ -12,7 +12,6 @@ from collections.abc import Awaitable, Callable
 import aiohttp_socks
 from aiohttp import ClientOSError
 
-from core.domain import FieldKey
 from exceptions import (
     ConnectivityError,
     DirectTimeoutError,
@@ -24,6 +23,7 @@ from exceptions import (
     TelegramServerError,
     TokenError,
 )
+from finshin_sdk.domain import FieldKey
 from skin.messages import CheckMessage, ConfigMessage
 from utils.network.probe import probe_budget
 

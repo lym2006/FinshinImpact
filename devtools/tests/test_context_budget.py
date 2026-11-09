@@ -19,8 +19,8 @@ from system.profile_env import set_profile  # noqa: E402
 set_profile("tg.000000")
 
 from bundled.AI import utils  # noqa: E402
-from core.domain import ChatRole  # noqa: E402
-from core.dto import MessageDTO  # noqa: E402
+from finshin_sdk.domain import ChatRole  # noqa: E402
+from finshin_sdk.dto import MessageDTO  # noqa: E402
 
 
 def _rounds(count: int, text: str = "说一句") -> tuple[MessageDTO, ...]:

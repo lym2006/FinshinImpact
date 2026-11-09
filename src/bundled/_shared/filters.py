@@ -4,9 +4,9 @@
 - 按归一事件的命令头匹配路由
 """
 
-from core.domain import CommandFlag
-from core.dto import CommandDTO
-from services.context import HandlerContext
+from finshin_sdk import HandlerContext
+from finshin_sdk.domain import CommandFlag
+from finshin_sdk.dto import CommandDTO
 
 
 def _has_help_flag(command: CommandDTO) -> bool:

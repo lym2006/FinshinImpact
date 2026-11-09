@@ -26,13 +26,19 @@ from bundled._shared import access, grants  # noqa: E402
 from bundled._shared.messages import BotMessage  # noqa: E402
 from bundled.AI.handlers import _ai_chat, _history  # noqa: E402
 from bundled.grant import _commands  # noqa: E402
-from core.domain import ChatScope, CommandRole, ContentKind, Platform  # noqa: E402
-from core.domain.ids import (  # noqa: E402
+from finshin_sdk import HandlerContext  # noqa: E402
+from finshin_sdk.domain import (  # noqa: E402
+    ChatScope,
+    CommandRole,
+    ContentKind,
+    Platform,
+)
+from finshin_sdk.domain.ids import (  # noqa: E402
     ContainerKey,
     MessageId,
     UserId,
 )
-from core.dto import (  # noqa: E402
+from finshin_sdk.dto import (  # noqa: E402
     CommandDTO,
     ContentDTO,
     InboundEventDTO,
@@ -41,7 +47,6 @@ from core.dto import (  # noqa: E402
     OutboundPayloadDTO,
     PrincipalDTO,
 )
-from services.context import HandlerContext  # noqa: E402
 
 _CONTAINER = ContainerKey("g100123")
 _PHOTO = MediaEntryDTO(kind=ContentKind.PHOTO, local_path="")

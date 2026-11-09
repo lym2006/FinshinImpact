@@ -10,7 +10,8 @@
 
 import asyncio
 
-from core.domain import (
+from finshin_sdk import HandlerContext
+from finshin_sdk.domain import (
     BoundCommand,
     ChatScope,
     CommandFlag,
@@ -19,8 +20,7 @@ from core.domain import (
     PluginSpec,
     bind_command,
 )
-from core.dto import CommandDTO, OutboundPayloadDTO
-from services.context import HandlerContext
+from finshin_sdk.dto import CommandDTO, OutboundPayloadDTO
 
 from .._shared.messages import BotMessage
 from ._services import (

@@ -21,7 +21,7 @@ from system.profile_env import set_profile  # noqa: E402
 set_profile("tg.000000")
 
 from adapters.telegram import diagnose as diagnose_mod  # noqa: E402
-from core.domain import FieldKey, ProxyMode  # noqa: E402
+from finshin_sdk.domain import FieldKey, ProxyMode  # noqa: E402
 from skin.messages import CheckMessage  # noqa: E402
 from utils.check import _verify as verify_mod  # noqa: E402
 from utils.network import FrameKey, RowId, RowStatus  # noqa: E402

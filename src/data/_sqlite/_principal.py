@@ -9,9 +9,9 @@ import time
 import aiosqlite
 
 from core.contracts import PrincipalRepository
-from core.domain import Platform
-from core.domain.ids import ContainerKey, PrincipalKey, UserId
-from core.dto import PrincipalDTO
+from finshin_sdk.domain import Platform
+from finshin_sdk.domain.ids import ContainerKey, PrincipalKey, UserId
+from finshin_sdk.dto import PrincipalDTO
 
 _SELECT_COLUMNS = "platform, container, user"
 

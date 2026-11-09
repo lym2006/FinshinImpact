@@ -1,4 +1,4 @@
-# src/core/dto/_interaction.py
+# src/finshin_sdk/dto/_interaction.py
 """交互数据传输对象
 
 - 定义外发负载与入站事件

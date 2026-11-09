@@ -26,8 +26,8 @@ from system.profile_env import set_profile  # noqa: E402
 set_profile("tg.000000")
 
 from adapters.telegram import probe as probe_mod  # noqa: E402
-from core.domain import FieldKey  # noqa: E402
 from exceptions import ProxyAddressError, ProxySchemeError, TokenError  # noqa: E402
+from finshin_sdk.domain import FieldKey  # noqa: E402
 from utils.check import _verify as verify_mod  # noqa: E402
 
 _check_config = probe_mod._check_config
@@ -813,7 +813,7 @@ class TestFaultRowPlacement(unittest.TestCase):
 
     def test_visible_proxy_row_gets_the_mark(self) -> None:
         """代理项看得见的两档红在代理项"""
-        from core.domain import FieldKey, ProxyMode
+        from finshin_sdk.domain import FieldKey, ProxyMode
         from utils.network import fault_row_of
 
         self.assertEqual(fault_row_of(ProxyMode.AUTO), FieldKey.PROXY)
@@ -821,7 +821,7 @@ class TestFaultRowPlacement(unittest.TestCase):
 
     def test_hidden_proxy_row_moves_to_mode_row(self) -> None:
         """代理项整行藏掉的两档红在模式行"""
-        from core.domain import ConfigKey, ProxyMode
+        from finshin_sdk.domain import ConfigKey, ProxyMode
         from utils.network import fault_row_of
 
         self.assertEqual(fault_row_of(ProxyMode.SYS), ConfigKey.PROXY_MODE)
@@ -838,7 +838,7 @@ class TestEnumFieldValidation(unittest.TestCase):
         """模式值不在选项表即报错"""
         from dataclasses import replace
 
-        from core.domain import Platform
+        from finshin_sdk.domain import Platform
         from utils.config._schema import build_schema
         from utils.config._validator import validate_types
 

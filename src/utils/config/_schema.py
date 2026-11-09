@@ -5,7 +5,7 @@
 - 结构与默认取 domain，标题与说明查 messages
 """
 
-from core.domain import (
+from finshin_sdk.domain import (
     SECTIONS_BY_PLATFORM,
     ConfigKey,
     FieldSpec,

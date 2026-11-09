@@ -10,10 +10,10 @@ import time
 from collections.abc import AsyncGenerator
 from typing import Any, Literal
 
-from core.domain.ids import SessionKey
-from core.dto import InboundEventDTO, MessageDTO
 from exceptions import DomainError, MessageVanishedError
-from services.context import HandlerContext
+from finshin_sdk import HandlerContext
+from finshin_sdk.domain.ids import SessionKey
+from finshin_sdk.dto import InboundEventDTO, MessageDTO
 from utils import get_logger
 
 from ..._shared.messages import BotMessage

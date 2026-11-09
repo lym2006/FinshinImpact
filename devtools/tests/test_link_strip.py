@@ -23,9 +23,9 @@ from bundled.AI.utils import (  # noqa: E402
     compose_user_text,
     estimate_window,
 )
-from core.domain import ChatRole, ChatScope, Platform  # noqa: E402
-from core.domain.ids import ContainerKey, MessageId, UserId  # noqa: E402
-from core.dto import (  # noqa: E402
+from finshin_sdk.domain import ChatRole, ChatScope, Platform  # noqa: E402
+from finshin_sdk.domain.ids import ContainerKey, MessageId, UserId  # noqa: E402
+from finshin_sdk.dto import (  # noqa: E402
     ContentDTO,
     InboundEventDTO,
     MessageDTO,

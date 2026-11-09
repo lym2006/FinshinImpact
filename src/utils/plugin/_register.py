@@ -10,7 +10,17 @@
 import importlib
 from typing import Any, cast
 
-from core.domain import (
+from exceptions import (
+    PluginDependencyError,
+    PluginLoadError,
+    PluginMissingError,
+    PluginRoleError,
+    PluginsError,
+    PluginsMissingError,
+    PluginSpecError,
+)
+from finshin_sdk import RouterBuilder
+from finshin_sdk.domain import (
     BUNDLED_PLUGIN_PRIORITY,
     CommandRole,
     PlatformTiming,
@@ -23,18 +33,9 @@ from core.domain import (
     PluginTimingRun,
     RouteSink,
     TaskHandler,
+    is_own_action,
 )
-from core.dto import PluginManifestDTO
-from exceptions import (
-    PluginDependencyError,
-    PluginLoadError,
-    PluginMissingError,
-    PluginRoleError,
-    PluginsError,
-    PluginsMissingError,
-    PluginSpecError,
-)
-from finshin_sdk import RouterBuilder
+from finshin_sdk.dto import PluginManifestDTO
 
 from ..paths import PROFILE_DIR
 from ._manifest import enabled_manifests
@@ -83,7 +84,7 @@ def register_plugins(
             declared = _checked_hooks(spec.backgrounds, "backgrounds")
             sink.include_router(build_router(spec))
             backgrounds.extend(declared)
-            handlers.extend(spec.task_handlers)
+            handlers.extend(_checked_handlers(spec.task_handlers, manifest.name))
             for timing, runs in _grouped_timings(spec.timings).items():
                 for run in _checked_hooks(runs, f"timings.{timing}"):
                     timings.setdefault(timing, []).append(run)
@@ -119,6 +120,24 @@ def register_plugins(
         tuple(handlers),
         {timing: tuple(runs) for timing, runs in timings.items()},
     )
+
+
+def _checked_handlers(declared: object, plugin_name: str) -> tuple[TaskHandler, ...]:
+    """校验插件交出的任务动作清单
+
+    - 不是任务声明的条目直接报错，装配期就出声
+    - 动作名前段必须等于本插件名，谁的动作号归谁
+    """
+    if not isinstance(declared, (list, tuple)):
+        raise TypeError("task_handlers 必须是任务声明的列表或元组")
+    checked: list[TaskHandler] = []
+    for item in declared:
+        if not isinstance(item, TaskHandler):
+            raise TypeError(f"task_handlers 里混进了非任务声明的条目: {item!r}")
+        if not is_own_action(item.kind, plugin_name):
+            raise TypeError(f"动作名 {item.kind} 不属于 {plugin_name} 名下")
+        checked.append(item)
+    return tuple(checked)
 
 
 def _grouped_timings(

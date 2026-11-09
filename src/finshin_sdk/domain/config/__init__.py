@@ -1,4 +1,4 @@
-# src/core/domain/config/__init__.py
+# src/finshin_sdk/domain/config/__init__.py
 """配置结构门面
 
 - 代发配置值类型、段与键枚举、字段与段结构体

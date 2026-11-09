@@ -10,7 +10,7 @@ import tomllib
 from pathlib import Path
 from typing import Any
 
-from core.domain import (
+from finshin_sdk.domain import (
     ADAPTER_ENTRY_MODULE,
     ADAPTER_MANIFEST_FIELDS,
     ADAPTER_MANIFEST_FILE,
@@ -18,7 +18,7 @@ from core.domain import (
     AdapterManifestKey,
     Platform,
 )
-from core.dto import AdapterManifestDTO
+from finshin_sdk.dto import AdapterManifestDTO
 
 # 清单标量字段与期望类型
 _SCALAR_TYPES: dict[str, type] = {
@@ -121,5 +121,6 @@ def _read_manifest(path: Path, dir_name: str) -> AdapterManifestDTO | None:
     return AdapterManifestDTO(
         platform=platform,
         deps=kwargs[AdapterManifestKey.DEPS],
+        requires_sdk=kwargs.get(AdapterManifestKey.REQUIRES_SDK, ""),
         entry=f"{ADAPTERS_PKG}.{dir_name}.{ADAPTER_ENTRY_MODULE}",
     )

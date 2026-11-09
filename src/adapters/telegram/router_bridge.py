@@ -9,8 +9,8 @@ from aiogram import Router
 from aiogram.filters import Filter
 from aiogram.types import Message
 
-from core.domain import PluginPredicate, PluginSpec
-from services.context import HandlerContext
+from finshin_sdk import HandlerContext
+from finshin_sdk.domain import PluginPredicate, PluginSpec
 
 
 class _Predicate(Filter):

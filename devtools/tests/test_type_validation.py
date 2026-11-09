@@ -271,7 +271,7 @@ class TestPlatformSchema(unittest.TestCase):
 
     def test_qq_table_has_no_proxy(self) -> None:
         """QQ 平台段表不含代理段"""
-        from core.domain import Platform
+        from finshin_sdk.domain import Platform
         from utils.config._schema import build_schema
 
         sections = {tab.section for tab in build_schema(Platform.QQ)}

@@ -4,9 +4,9 @@
 - 后台协程把交来的问答压成摘要并写回会话
 """
 
-from core.domain import ChatRole
-from core.domain.ids import SessionKey
-from core.dto import MessageDTO
+from finshin_sdk.domain import ChatRole
+from finshin_sdk.domain.ids import SessionKey
+from finshin_sdk.dto import MessageDTO
 from utils import get_logger
 
 from ..config import ai_config

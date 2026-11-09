@@ -15,32 +15,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "src"))
 
 import aiosqlite  # noqa: E402
 
-from core.domain import (  # noqa: E402
-    ChatRole,
-    ContentKind,
-    Platform,
-    TaskKind,
-    TaskPayload,
-    TaskStatus,
-)
-from core.domain.ids import (  # noqa: E402
-    ContainerKey,
-    MessageId,
-    PrincipalKey,
-    SessionKey,
-    TaskId,
-    UserId,
-)
-from core.dto import (  # noqa: E402
-    MediaEntryDTO,
-    MessageDTO,
-    MsgReferenceDTO,
-    PrincipalDTO,
-    SessionDTO,
-    SessionPatchDTO,
-    TaskPatchDTO,
-    TaskRequestDTO,
-)
 from data import (  # noqa: E402
     SUPPORTED_SCHEMA,
     build_repositories,
@@ -49,6 +23,31 @@ from data import (  # noqa: E402
     get_connection,
     purge_dead_tasks,
     run_migrations,
+)
+from finshin_sdk.domain import (  # noqa: E402
+    ChatRole,
+    ContentKind,
+    Platform,
+    TaskPayload,
+    TaskStatus,
+)
+from finshin_sdk.domain.ids import (  # noqa: E402
+    ContainerKey,
+    MessageId,
+    PrincipalKey,
+    SessionKey,
+    TaskId,
+    UserId,
+)
+from finshin_sdk.dto import (  # noqa: E402
+    MediaEntryDTO,
+    MessageDTO,
+    MsgReferenceDTO,
+    PrincipalDTO,
+    SessionDTO,
+    SessionPatchDTO,
+    TaskPatchDTO,
+    TaskRequestDTO,
 )
 
 # 闲置判定样本时刻（秒），只用于比对清除界限
@@ -598,7 +597,7 @@ class TestTask(_RealDb):
         """构造一条入队请求"""
         return TaskRequestDTO(
             principal=principal or _principal(),
-            kind=TaskKind.CHAT,
+            kind="demo.chat",
             source_ref=_ref(),
             payload=payload,
         )

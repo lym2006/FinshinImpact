@@ -40,7 +40,7 @@ from adapters.telegram._event import (  # noqa: E402
     normalize_update,
 )
 from adapters.telegram._normalize import NormalizeMiddleware  # noqa: E402
-from core.domain import ChatScope, ContentKind  # noqa: E402
+from finshin_sdk.domain import ChatScope, ContentKind  # noqa: E402
 
 _GROUP = Chat(id=-100123, type="supergroup", title="测试群")
 _PRIVATE = Chat(id=456, type="private")

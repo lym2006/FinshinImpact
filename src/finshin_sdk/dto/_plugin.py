@@ -1,4 +1,4 @@
-# src/core/dto/_plugin.py
+# src/finshin_sdk/dto/_plugin.py
 """插件数据传输对象
 
 - 定义插件自描述清单与帮助菜单贡献

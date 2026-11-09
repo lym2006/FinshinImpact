@@ -10,14 +10,13 @@ import aiosqlite
 from typing import cast
 
 from core.contracts import TaskRepository
-from core.domain import (
+from finshin_sdk.domain import (
     ChatRole,
     Platform,
-    TaskKind,
     TaskPayload,
     TaskStatus,
 )
-from core.domain.ids import (
+from finshin_sdk.domain.ids import (
     KEY_SEP,
     ContainerKey,
     MessageId,
@@ -25,7 +24,7 @@ from core.domain.ids import (
     TaskId,
     UserId,
 )
-from core.dto import (
+from finshin_sdk.dto import (
     MsgReferenceDTO,
     PrincipalDTO,
     TaskDTO,
@@ -141,7 +140,7 @@ class SqliteTaskRepository(TaskRepository):
                 container=ContainerKey(container),
                 user=UserId(user),
             ),
-            kind=TaskKind(row["kind"]),
+            kind=row["kind"],
             status=TaskStatus(row["status"]),
             source_ref=MsgReferenceDTO(
                 platform=Platform(source["platform"]),

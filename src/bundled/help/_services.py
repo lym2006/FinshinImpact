@@ -12,8 +12,8 @@ from typing import TypeAlias
 
 from PIL import Image, ImageDraw, ImageFont
 
-from core.domain import CommandFlag, CommandRole, PluginFileName
-from core.dto import HelpCommandDTO, HelpFlagDTO
+from finshin_sdk.domain import CommandFlag, CommandRole, PluginFileName
+from finshin_sdk.dto import HelpCommandDTO, HelpFlagDTO
 from system.profile_env import ASSET_FONT_NAME, ASSETS_DIR
 from utils import get_logger
 from utils.paths import HELP_IMAGE, PROFILE_DIR

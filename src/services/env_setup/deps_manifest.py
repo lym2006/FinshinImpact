@@ -12,7 +12,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-from core.domain import (
+from finshin_sdk.domain import (
     BUNDLED_PLUGIN_PRIORITY,
     INSTALLED_PLUGINS_NAME,
     MANIFEST_FIELDS,

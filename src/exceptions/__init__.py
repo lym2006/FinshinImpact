@@ -4,7 +4,12 @@
 - 定义全部自定义异常族与文案模板
 """
 
-from ._adapter import ADAPTER_MAP, AdapterError, AdapterMissingError
+from ._adapter import (
+    ADAPTER_MAP,
+    AdapterError,
+    AdapterMissingError,
+    AdapterOutOfDateError,
+)
 from ._base import BotError
 from ._config import (
     CONFIG_MAP,
@@ -136,4 +141,5 @@ __all__ = [
     # 适配器
     "AdapterError",
     "AdapterMissingError",
+    "AdapterOutOfDateError",
 ]

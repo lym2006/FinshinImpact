@@ -1,4 +1,4 @@
-# src/core/domain/_fields.py
+# src/finshin_sdk/domain/_fields.py
 """探测字段错误键词表
 
 - 定义错误字典与面板标红共用的字段键

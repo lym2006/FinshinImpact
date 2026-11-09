@@ -5,8 +5,8 @@
 - 导入期身份码必须已由 bootstrap 写入，取值即冻结
 """
 
-from core.domain import Platform, platform_of_profile
 from exceptions import ProfileMissingError
+from finshin_sdk.domain import Platform, platform_of_profile
 from system.profile_env import (
     ASSET_PERSONA_EXAMPLE_NAME,
     ASSETS_DIR,

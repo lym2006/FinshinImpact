@@ -1,4 +1,4 @@
-# src/core/dto/_identity.py
+# src/finshin_sdk/dto/_identity.py
 """身份数据传输对象
 
 - 定义会话主体与消息定位

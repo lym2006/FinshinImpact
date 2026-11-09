@@ -26,7 +26,7 @@ from adapters.telegram._event import (  # noqa: E402
     normalize_album,
     normalize_update,
 )
-from services.context import HandlerContext  # noqa: E402
+from finshin_sdk import HandlerContext  # noqa: E402
 from utils.middleware import LoggingMiddleware  # noqa: E402
 
 _GROUP = Chat(id=-100123, type="supergroup", title="测试群")

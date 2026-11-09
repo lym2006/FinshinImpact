@@ -19,7 +19,7 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
-from core.domain import INSTALLED_PLUGINS_NAME, PLUGINS_PKG  # noqa: E402
+from finshin_sdk.domain import INSTALLED_PLUGINS_NAME, PLUGINS_PKG  # noqa: E402
 from services.env_setup import deps_manifest  # noqa: E402
 from utils.plugin import _manifest  # noqa: E402
 

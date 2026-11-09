@@ -6,8 +6,8 @@
 """
 
 from core.contracts import GrantRepository
-from core.domain.ids import PrincipalKey, UserId
 from data import build_repositories, get_connection
+from finshin_sdk.domain.ids import PrincipalKey, UserId
 from utils.paths import DB_FILE
 
 _grant_repo: GrantRepository | None = None

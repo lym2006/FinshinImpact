@@ -16,7 +16,7 @@ from types import ModuleType
 
 import aiosqlite
 
-from core.domain import TaskStatus
+from finshin_sdk.domain import TaskStatus
 
 from . import _0001_baseline, _0002_purge_task_surplus, _0003_purge_session_surplus
 

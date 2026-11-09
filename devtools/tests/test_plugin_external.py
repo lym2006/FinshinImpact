@@ -6,7 +6,7 @@
 - 同名插件以先读到的根为准，随包压住外部
 - 外部目录不存在时只剩随包一根
 - 插件交出的一切按契约收到：清单字段、路由、常驻协程、任务处理、时机订阅
-- 权限档对不上与缺清单的插件记失败，不混进成功行
+- 权限档对不上、缺清单、动作名不挂自己名下的插件记失败，不混进成功行
 """
 
 import sys
@@ -23,17 +23,16 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
-from core.domain import (  # noqa: E402
+from exceptions import PluginLoadError, PluginRoleError, PluginSpecError  # noqa: E402
+from finshin_sdk.domain import (  # noqa: E402
     INSTALLED_PLUGINS_NAME,
     PLUGINS_PKG,
     HelpKey,
     ManifestKey,
     PlatformTiming,
     PluginClaim,
-    TaskKind,
     resolve_claims,
 )
-from exceptions import PluginRoleError, PluginSpecError  # noqa: E402
 from services.env_setup import deps_manifest  # noqa: E402
 from utils.plugin import _manifest, _register  # noqa: E402
 
@@ -47,7 +46,7 @@ from ._inner import ROUTE
 spec = ROUTE
 """
 _INNER = """
-from core.domain import PluginRoute, PluginSpec
+from finshin_sdk.domain import PluginRoute, PluginSpec
 
 
 async def _never(raw: object, ctx: object) -> bool:
@@ -80,13 +79,12 @@ flags = []
 role = "{role}"
 """
 _CONTRACT_ENTRY = '''
-from core.domain import (
+from finshin_sdk import (
     PlatformTiming,
     PluginRoute,
     PluginSpec,
     PluginTiming,
     TaskHandler,
-    TaskKind,
 )
 
 
@@ -114,12 +112,24 @@ async def _on_call(capability: object) -> None:
 spec = PluginSpec(
     routes=(PluginRoute(_hit, _pong),),
     backgrounds=(_beat,),
-    task_handlers=(TaskHandler(kind=TaskKind.CHAT, run=_task),),
+    task_handlers=(TaskHandler(kind="demo.chat", run=_task),),
     timings=(PluginTiming(PlatformTiming.BEFORE_ENGINE_RUN, _on_call),),
 )
 '''
+# 动作名挂在别家名下的入口，装载侧应拒收
+_FOREIGN_ACTION_ENTRY = """
+from finshin_sdk import PluginSpec, TaskHandler
+
+
+async def _task(ctx: object) -> None:
+    \"\""处理一条任务\"\""
+
+
+spec = PluginSpec(task_handlers=(TaskHandler(kind="other.chat", run=_task),))
+"""
+
 # 陪跑一只必成功的插件，另两只失败时才轮不到整体上抛
-_MATE_ENTRY = "from core.domain import PluginSpec\n\nspec = PluginSpec()\n"
+_MATE_ENTRY = "from finshin_sdk.domain import PluginSpec\n\nspec = PluginSpec()\n"
 
 
 def _write_plugin(
@@ -387,7 +397,7 @@ class TestExternalContract(ExternalRootCase):
         )
         self.assertEqual(len(sink.routers[0].routes), 1)
         self.assertEqual(len(backgrounds), 1)
-        self.assertEqual(handlers[0].kind, TaskKind.CHAT)
+        self.assertEqual(handlers[0].kind, "demo.chat")
         self.assertEqual(list(timings), [PlatformTiming.BEFORE_ENGINE_RUN])
 
     def test_role_mismatch_recorded_as_failure(self) -> None:
@@ -412,6 +422,18 @@ class TestExternalContract(ExternalRootCase):
         )
 
         self.assertIsInstance(report[0][1], PluginSpecError)
+
+    def test_action_outside_own_name_recorded_as_failure(self) -> None:
+        """动作名前段不等于插件名即记失败
+
+        - 这条红了说明装载侧不校验归属，外部插件能顶掉本家的任务号
+        """
+        _, (report, _, _, _), _ = self._register_installed(
+            {"__init__.py": _FOREIGN_ACTION_ENTRY},
+            _CONTRACT_MANIFEST.format(role="member"),
+        )
+
+        self.assertIsInstance(report[0][1], PluginLoadError)
 
 
 if __name__ == "__main__":

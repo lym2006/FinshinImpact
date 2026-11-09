@@ -24,8 +24,8 @@ set_profile("tg.000000")
 
 from bundled._shared.messages import BotMessage  # noqa: E402
 from bundled.help import _services  # noqa: E402
-from core.domain import HelpKey  # noqa: E402
-from core.dto import HelpCommandDTO, HelpFlagDTO, HelpSectionDTO  # noqa: E402
+from finshin_sdk.domain import HelpKey  # noqa: E402
+from finshin_sdk.dto import HelpCommandDTO, HelpFlagDTO, HelpSectionDTO  # noqa: E402
 from utils.plugin import _manifest_help  # noqa: E402
 
 # 被测函数入参里的插件名，只用于日志定位

@@ -1,4 +1,4 @@
-# src/core/domain/_command.py
+# src/finshin_sdk/domain/_command.py
 """命令值对象
 
 - 定义跨平台归一的命令 flag 词表

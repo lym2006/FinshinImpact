@@ -9,8 +9,8 @@ from pathlib import Path
 from typing import Any, TypeVar
 
 from bot.error_guard import error_guard
-from core.domain import ConfigKey, ConfigSection
-from core.domain.ids import ConfigPath
+from finshin_sdk.domain import ConfigKey, ConfigSection
+from finshin_sdk.domain.ids import ConfigPath
 from utils import config_manager
 from utils.paths import RECORDS_DIR
 from utils.persona import build_persona

@@ -7,10 +7,10 @@
 
 from pathlib import Path
 
-from core.domain import CommandRole, ContentKind, PluginRoute
-from core.domain.ids import SessionKey
-from core.dto import OutboundPayloadDTO
-from services.context import HandlerContext
+from finshin_sdk import HandlerContext
+from finshin_sdk.domain import CommandRole, ContentKind, PluginRoute
+from finshin_sdk.domain.ids import SessionKey
+from finshin_sdk.dto import OutboundPayloadDTO
 
 from ..._shared.access import require_role
 from ..._shared.filters import CommandMatch

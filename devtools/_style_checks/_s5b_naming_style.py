@@ -3,7 +3,7 @@
 
 - 连续裸常量赋值无分组注释疑似堆积
 - 同域成员不重复域前缀
-- core/dto 类型一律 DTO 后缀
+- 接口包 dto 类型一律 DTO 后缀
 """
 
 from __future__ import annotations
@@ -122,8 +122,10 @@ def _camel_to_upper(name: str) -> str:
 
 
 def _check_dto_suffix(file: FileData) -> list[Finding]:
-    """core/dto 下对外类型必须 DTO 后缀"""
-    if not (file.module == "core.dto" or file.module.startswith("core.dto.")):
+    """接口包 dto 下对外类型必须 DTO 后缀"""
+    if not (
+        file.module == "finshin_sdk.dto" or file.module.startswith("finshin_sdk.dto.")
+    ):
         return []
     findings: list[Finding] = []
     for node in file.tree.body:
@@ -133,7 +135,7 @@ def _check_dto_suffix(file: FileData) -> list[Finding]:
                     _f(
                         file,
                         node.lineno,
-                        f"core/dto 类 `{node.name}` 缺 DTO 后缀",
+                        f"接口包 dto 类 `{node.name}` 缺 DTO 后缀",
                         hard=True,
                     )
                 )

@@ -23,7 +23,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from core.domain import ConfigGroup, ConfigKey, ConfigSection
+from finshin_sdk.domain import ConfigGroup, ConfigKey, ConfigSection
 from skin.theme import GLOBAL, SETTINGS_DIALOG, ButtonStyle, ObjectName
 from utils.config.models import AppSchema, TabSchema
 from utils.network import uses_configured_proxy

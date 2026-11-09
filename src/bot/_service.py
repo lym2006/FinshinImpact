@@ -9,7 +9,7 @@ import asyncio
 import threading
 from typing import TYPE_CHECKING
 
-from core.domain import PluginBackground, PluginTimingRun
+from finshin_sdk.domain import PluginBackground, PluginTimingRun
 from skin.messages import EngineMessage
 from utils import get_logger, register_lifecycle, unregister_lifecycle
 from utils.network import link_report

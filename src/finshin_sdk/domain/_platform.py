@@ -1,4 +1,4 @@
-# src/core/domain/_platform.py
+# src/finshin_sdk/domain/_platform.py
 """平台与会话值对象
 
 - 定义跨平台归一的分类词表

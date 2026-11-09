@@ -7,7 +7,7 @@
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
-from ..dto import PrincipalDTO
+from finshin_sdk.dto import PrincipalDTO
 
 
 @dataclass(frozen=True, slots=True)

@@ -8,7 +8,7 @@
 import time
 from collections.abc import Awaitable, Callable, Sequence
 
-from core.domain import ProxyMode
+from finshin_sdk.domain import ProxyMode
 from skin.messages import CheckMessage
 from utils.check import run_probe_round
 from utils.logger import get_logger

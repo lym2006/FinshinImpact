@@ -4,6 +4,7 @@
 - 齐两项的清单读出导入路径，缺项或平台认不出的整份拒收
 - 声明的依赖读出依赖表，没写即空表，写法不对的整份拒收
 - 有清单的平台取到四件，没清单的平台抛缺件异常
+- 清单要的接口版本比本机新即拒载，读不懂的版本串同样拒载
 - 缺件那句取映射文案，带平台标识
 - 清单表空着也进得了配置管理器
 - 入口模块的装配只交运行时，挂日志与注册插件归装载侧
@@ -28,10 +29,10 @@ from bot._adapter_host import _assemble as assemble_mod  # noqa: E402
 from bot._adapter_host import _parts as parts_mod  # noqa: E402
 from bot._managers import _settings as settings_mod  # noqa: E402
 from bot.error_guard import error_guard  # noqa: E402
-from core.domain import Platform  # noqa: E402
-from core.dto import AdapterManifestDTO, PluginManifestDTO  # noqa: E402
-from exceptions import AdapterMissingError  # noqa: E402
+from exceptions import AdapterMissingError, AdapterOutOfDateError  # noqa: E402
 from finshin_sdk import AdapterParts, BaseAdapter, PlatformAssembly  # noqa: E402
+from finshin_sdk.domain import Platform  # noqa: E402
+from finshin_sdk.dto import AdapterManifestDTO, PluginManifestDTO  # noqa: E402
 from services import adapter_manifest as manifest_mod  # noqa: E402
 from ui import gui_bridge  # noqa: E402
 
@@ -186,6 +187,44 @@ class TestAdapterHost(unittest.TestCase):
         self.assertTrue(critical)
         self.assertIn("这个平台的适配器还没装：qq", msg)
         self.assertNotIn("AdapterMissingError", msg)
+
+    def test_requires_sdk_is_read(self) -> None:
+        """清单里的接口版本要求读进表，没写即空串"""
+        card = self._scan('platform = "tg"\nrequires_sdk = "0.2.0"\n')
+        self.assertEqual(card[Platform.TELEGRAM].requires_sdk, "0.2.0")
+        bare = self._scan('platform = "tg"\n')
+        self.assertEqual(bare[Platform.TELEGRAM].requires_sdk, "")
+
+    def test_newer_requirement_refuses_before_import(self) -> None:
+        """清单要的接口版本比本机新即拒载，且不碰入口模块"""
+        too_new = AdapterManifestDTO(
+            platform=Platform.TELEGRAM,
+            deps=(),
+            requires_sdk="99.0.0",
+            entry="adapters.telegram.entry",
+        )
+        with patch.object(
+            parts_mod, "load_adapter_manifests", lambda: {Platform.TELEGRAM: too_new}
+        ):
+            with patch.object(parts_mod, "import_module") as imported:
+                with self.assertRaises(AdapterOutOfDateError) as ctx:
+                    parts_mod.parts_for(Platform.TELEGRAM)
+        self.assertEqual(ctx.exception.requires, "99.0.0")
+        imported.assert_not_called()
+
+    def test_unreadable_requirement_refuses(self) -> None:
+        """版本串读不懂即拒载，原串交给那句人话"""
+        broken = AdapterManifestDTO(
+            platform=Platform.TELEGRAM,
+            deps=(),
+            requires_sdk="最新",
+            entry="adapters.telegram.entry",
+        )
+        with patch.object(
+            parts_mod, "load_adapter_manifests", lambda: {Platform.TELEGRAM: broken}
+        ):
+            with self.assertRaises(AdapterOutOfDateError):
+                parts_mod.parts_for(Platform.TELEGRAM)
 
     def test_settings_import_does_not_take_parts(self) -> None:
         """清单表空着也进得了配置管理器

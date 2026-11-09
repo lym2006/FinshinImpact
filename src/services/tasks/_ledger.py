@@ -8,10 +8,10 @@
 from collections.abc import Callable
 from pathlib import Path
 
-from core.domain import TaskStatus
-from core.domain.ids import KEY_SEP, PrincipalKey, TaskId
-from core.dto import TaskPatchDTO, TaskRequestDTO
 from data import Repositories, build_repositories, get_connection
+from finshin_sdk.domain import TaskStatus
+from finshin_sdk.domain.ids import KEY_SEP, PrincipalKey, TaskId
+from finshin_sdk.dto import TaskPatchDTO, TaskRequestDTO
 
 from ._queue import TaskItem
 

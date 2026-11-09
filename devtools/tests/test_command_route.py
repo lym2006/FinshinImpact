@@ -42,14 +42,14 @@ from adapters.telegram.router_bridge import build_router  # noqa: E402
 from bundled._shared.filters import CommandMatch  # noqa: E402
 from bundled._shared.messages import BotMessage  # noqa: E402
 from bundled.help import _commands  # noqa: E402
-from core.domain import ContentKind, PluginRoute, PluginSpec  # noqa: E402
-from core.dto import (  # noqa: E402
+from finshin_sdk import HandlerContext  # noqa: E402
+from finshin_sdk.domain import ContentKind, PluginRoute, PluginSpec  # noqa: E402
+from finshin_sdk.dto import (  # noqa: E402
     HelpCommandDTO,
     HelpFlagDTO,
     MsgReferenceDTO,
     OutboundPayloadDTO,
 )
-from services.context import HandlerContext  # noqa: E402
 
 _GROUP = Chat(id=-100123, type="supergroup", title="测试群")
 _PRIVATE = Chat(id=456, type="private")

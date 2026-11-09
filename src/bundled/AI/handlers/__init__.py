@@ -4,7 +4,7 @@
 - 交出全部业务路由的有序清单
 """
 
-from core.domain import PluginRoute
+from finshin_sdk.domain import PluginRoute
 
 from . import _ai_chat, _history
 

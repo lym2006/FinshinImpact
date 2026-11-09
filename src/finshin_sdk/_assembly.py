@@ -8,15 +8,14 @@ from collections.abc import Awaitable, Callable, Coroutine, Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from core.domain import (
+from ._adapter import BaseAdapter
+from .domain import (
     PlatformTiming,
     PluginBackground,
     PluginTimingRun,
     TaskHandler,
 )
-from core.dto import PluginManifestDTO
-
-from ._adapter import BaseAdapter
+from .dto import PluginManifestDTO
 
 # 单通道探测：收 token 与代理，回生效代理与该通道的字段错误
 ChannelProbe = Callable[[str, str], Awaitable[tuple[str | None, dict[str, str]]]]
