@@ -226,9 +226,9 @@ class TestDescribeError(unittest.TestCase):
         self.assertEqual(describe_error(ValueError("内部消息")), "ValueError")
 
     def test_newly_mapped_families_have_text(self) -> None:
-        """插件全灭与字体那几条不再是类名
+        """插件全灭与字体族那几条给出中文文案
 
-        - 这几族此前没有模板，屏上只剩英文类名
+        - 认不出模板才会退化成报异常类名，这条红了说明文案表漏了条目
         """
         self.assertEqual(
             describe_error(PluginsMissingError()), "一只插件都没装上，程序无法运行"

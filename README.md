@@ -99,6 +99,13 @@
 
 ## ⬆️ 旧版迁移<a id="previous"></a>
 
+- **v1.0.0-alpha.7.dev4**：
+  - 外部插件写法：入口改成 `__init__.py` 里的一只 `BasePlugin` 子类，一只模块只准有一只；挂在模块里的 `spec` 那套不再读取，`plugin.toml` 不用改。
+  - 外部插件只准引 `finshin_sdk`：引到本体各层（`utils`、`core`、`services` 一类）的整只拒装，面板写明哪份文件哪一行。
+  - 交出的东西换了名字：`PluginRoute` 叫 `MessageRoute`、`PluginBackground` 叫 `BackgroundLoop`、`TaskHandler` 叫 `QueuedAction`。
+  - 只写插件或适配器不必 clone 主仓源码：先打接口包再装，`uv build src/finshin_sdk --wheel`。
+  - 启动失败当场弹窗：平台适配器没装、要的接口版本比本机新、引导段炸掉，都会弹一句人话，不再只是启动卡消失。
+  - 库与记录：结构没动，不用搬。
 - **v1.0.0-alpha.7.dev2**：
   - 依赖清理：启动时不再弹"同步重建环境"，多余包留在盘上，要清就去选窗"依赖管理"手动同步。
   - 外部插件：插件目录放进项目根的 `plugins_installed\` 即被认出来，与内置重名的那份不放行。

@@ -126,7 +126,7 @@ class TestGuideRead(unittest.TestCase):
     def test_groups_order_by_pinyin_of_title(self) -> None:
         """两组组内都按面板上那列显示名的拼音序
 
-        - 档位表只管命令抢占先后，不再决定行序
+        - 档位表只管命令抢占先后，行序另按显示名排
         """
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
