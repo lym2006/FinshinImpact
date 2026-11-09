@@ -37,6 +37,7 @@ FinshinImpact\
 
 依赖清单：
 
+- 要装的库出自 `pyproject.toml` 的核心依赖与各 `src\adapters\*\adapter.toml` 的 `deps`。
 - `runtime\.installed` 记依赖清单摘要，清单没变下次跳过安装。
 - 启动器装依赖只追加，残留包只由引导层 `uv pip sync` 删除，无独立的移除清单。
 

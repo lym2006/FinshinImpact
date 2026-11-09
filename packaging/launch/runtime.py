@@ -17,6 +17,7 @@ from pack_spec import (
     UV_EXE_NAME,
     UV_PAYLOAD_DIR,
     UV_ZIP_NAME,
+    adapter_dependencies,
     dependencies,
     require_setting,
 )
@@ -114,7 +115,7 @@ def ensure_runtime(root: Path) -> None:
 
     # 装包期缓存放包内，不落用户目录
     cache = runtime / str(require_setting(root, _SETTING_CACHE))
-    deps = dependencies(root)
+    deps = [*dependencies(root), *adapter_dependencies(root)]
 
     if _installed_ok(runtime, deps):
         return

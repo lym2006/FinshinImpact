@@ -23,6 +23,7 @@ class AdapterManifestKey(StrEnum):
 
     PLATFORM = "platform"
     VERSION = "version"
+    DEPS = "deps"
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,4 +39,5 @@ class AdapterFieldSpec:
 ADAPTER_MANIFEST_FIELDS: tuple[AdapterFieldSpec, ...] = (
     AdapterFieldSpec(AdapterManifestKey.PLATFORM, str, "", required=True),
     AdapterFieldSpec(AdapterManifestKey.VERSION, str, "", required=True),
+    AdapterFieldSpec(AdapterManifestKey.DEPS, list, ()),
 )

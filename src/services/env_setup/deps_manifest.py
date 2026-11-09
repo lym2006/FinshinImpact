@@ -24,6 +24,8 @@ from core.domain import (
 )
 from system.profile_env import INSTANCES_DIR, ROOT_DIR, profile_dir
 
+from ..adapter_manifest import adapter_deps_union
+
 # 依赖 pin 串顶层包名截断符，"playwright>=1.40" 切出 "playwright"
 _PIN_SPLIT = re.compile(r"[<>=!~\[;\s]+")
 
@@ -272,10 +274,10 @@ def _enabled_deps_union(exclude_code: str = "") -> list[str]:
 def keep_union() -> list[str]:
     """全局保留清单
 
-    - 核心依赖与全实例启用插件依赖并集
+    - 核心依赖、随包适配器依赖与全实例启用插件依赖并集
     - 本实例刚保存的启用集已在盘上，并集即最新状态
     """
-    return [*_core_dependencies(), *_enabled_deps_union()]
+    return [*_core_dependencies(), *adapter_deps_union(), *_enabled_deps_union()]
 
 
 def _enabled_field_union(exclude_code: str, field: str) -> list[str]:

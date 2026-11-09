@@ -2,6 +2,7 @@
 """适配器装载单元测试
 
 - 齐两项的清单读出导入路径，缺项或平台认不出的整份拒收
+- 声明的依赖读出依赖表，没写即空表，写法不对的整份拒收
 - 有清单的平台取到四件，没清单的平台抛缺件异常
 - 缺件那句取映射文案，带平台标识
 - 清单表空着也进得了配置管理器
@@ -132,6 +133,33 @@ class TestAdapterHost(unittest.TestCase):
         """平台标识认不出的清单不进表"""
         manifests = self._scan('platform = "nope"\nversion = "1"\n')
         self.assertEqual(manifests, {})
+
+    def test_declared_deps_are_read(self) -> None:
+        """声明依赖的清单按顺序读出依赖表"""
+        manifests = self._scan(
+            'platform = "tg"\nversion = "1"\ndeps = ["aiogram==3.29.1", "httpx"]\n'
+        )
+        self.assertEqual(
+            manifests[Platform.TELEGRAM].deps, ("aiogram==3.29.1", "httpx")
+        )
+
+    def test_absent_deps_reads_empty(self) -> None:
+        """没写依赖的清单读出空表照样进表"""
+        manifests = self._scan('platform = "tg"\nversion = "1"\n')
+        self.assertEqual(manifests[Platform.TELEGRAM].deps, ())
+
+    def test_bad_deps_drops_manifest(self) -> None:
+        """依赖写法不对的清单不进表
+
+        - 整项不是数组
+        - 数组里有空串或非字符串
+        """
+        self.assertEqual(
+            self._scan('platform = "tg"\nversion = "1"\ndeps = "httpx"\n'), {}
+        )
+        self.assertEqual(
+            self._scan('platform = "tg"\nversion = "1"\ndeps = ["", 3]\n'), {}
+        )
 
     def test_listed_platform_returns_parts(self) -> None:
         """有清单的平台取到四件，四件都能调"""

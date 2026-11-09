@@ -22,8 +22,15 @@ from core.dto import AdapterManifestDTO
 
 # 清单标量字段与期望类型
 _SCALAR_TYPES: dict[str, type] = {
-    spec.key: spec.value_type for spec in ADAPTER_MANIFEST_FIELDS
+    spec.key: spec.value_type
+    for spec in ADAPTER_MANIFEST_FIELDS
+    if spec.value_type is not list
 }
+
+# 清单数组字段，逐项须是非空字符串
+_ARRAY_KEYS = tuple(
+    spec.key for spec in ADAPTER_MANIFEST_FIELDS if spec.value_type is list
+)
 
 # 清单必填项，缺任一拒收
 _REQUIRED_KEYS = tuple(spec.key for spec in ADAPTER_MANIFEST_FIELDS if spec.required)
@@ -62,11 +69,20 @@ def load_adapter_manifests() -> dict[Platform, AdapterManifestDTO]:
     return manifests
 
 
+def adapter_deps_union() -> list[str]:
+    """汇总各适配器清单声明的依赖
+
+    - 随包适配器全进表，没有启用集能筛
+    """
+    return [pin for dto in load_adapter_manifests().values() for pin in dto.deps]
+
+
 def _read_manifest(path: Path, dir_name: str) -> AdapterManifestDTO | None:
     """读取单份适配器清单文件
 
     - 文件缺失或解析失败返回 None
     - 必填项缺失、字段空值、平台标识非法则整份拒收
+    - 数组字段缺省为空表，出现非字符串或空串项同样整份拒收
     - 未知键忽略，入口模块按本体规定的名字定位
     """
     if not path.is_file():
@@ -86,6 +102,14 @@ def _read_manifest(path: Path, dir_name: str) -> AdapterManifestDTO | None:
             return None
         kwargs[key] = value
 
+    for key in _ARRAY_KEYS:
+        items = data.get(key, [])
+        if not isinstance(items, list) or not all(
+            isinstance(item, str) and item for item in items
+        ):
+            return None
+        kwargs[key] = tuple(items)
+
     if not all(k in kwargs for k in _REQUIRED_KEYS):
         return None
 
@@ -97,5 +121,6 @@ def _read_manifest(path: Path, dir_name: str) -> AdapterManifestDTO | None:
     return AdapterManifestDTO(
         platform=platform,
         version=kwargs[AdapterManifestKey.VERSION],
+        deps=kwargs[AdapterManifestKey.DEPS],
         entry=f"{ADAPTERS_PKG}.{dir_name}.{ADAPTER_ENTRY_MODULE}",
     )
