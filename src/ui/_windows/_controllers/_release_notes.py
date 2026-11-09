@@ -8,7 +8,7 @@ import asyncio
 
 from PySide6.QtCore import QThread, Signal
 
-from exceptions import MAP_KEY_VERSION, MAPS, VersionError
+from exceptions import VersionError, describe_error
 from skin.theme import RELEASE_NOTES_DIALOG, WAIT_DIALOG
 from utils.check import release_history
 from utils.logger import get_logger
@@ -17,7 +17,6 @@ from ..._dialogs import NoticeDialog, ReleaseNotesDialog, WaitDialog
 from ._base import BaseController
 
 _logger = get_logger("GUI.ReleaseNotes")
-_ERR_MAP_VERSION = MAPS[MAP_KEY_VERSION]
 
 
 class _ReleaseNotesWorker(QThread):
@@ -35,7 +34,7 @@ class _ReleaseNotesWorker(QThread):
                 RELEASE_NOTES_DIALOG.ready.format(count=len(notes)), notes, True
             )
         except VersionError as e:
-            self.done.emit(_ERR_MAP_VERSION[type(e)].format(**vars(e)), [], False)
+            self.done.emit(describe_error(e), [], False)
         except Exception as e:
             _logger.debug("版本变化拉取异常", exc_info=True)
             self.done.emit(

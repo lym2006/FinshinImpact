@@ -13,7 +13,7 @@ from concurrent.futures import Future
 from functools import partial
 from typing import cast
 
-from exceptions import MAP_KEY_ADAPTER, MAPS, AdapterError
+from exceptions import AdapterError, describe_error
 from skin.messages import CheckMessage, MiscMessage
 from skin.theme import WINDOW
 from system.native_dialog import describe
@@ -34,8 +34,6 @@ from utils.paths import PLATFORM
 
 from ._adapter_host import parts_for
 from ._managers import BotManager
-
-_ERR_MAP_ADAPTER = MAPS[MAP_KEY_ADAPTER]
 
 # 退出清理
 _LOOP_JOIN_TIMEOUT = 5  # 等事件循环线程退出最多 5 秒
@@ -109,7 +107,7 @@ class Main:
 
         except AdapterError as e:
             # 取件排在 GUI 之前，这句只能自己弹窗，主窗的兜底还没挂上
-            detail = _ERR_MAP_ADAPTER[type(e)].format(**vars(e))
+            detail = describe_error(e)
             self.logger.send_error(f"程序启动异常：{detail}", e)
             self._pop_failure(detail)
             return 1

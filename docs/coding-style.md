@@ -230,7 +230,7 @@
   - `GUI` 可见文案收敛进 `skin/messages/`，禁止 f-string 裸写业务话术。
   - `Bot` 对话话术收敛进 `src/bundled/_shared/messages.py`（`BotMessage`），插件间直连引用，禁止内联裸写。
   - 运行日志不属对话文案，不收敛，就地内联保持可 grep。
-  - 异常文案模板在同文件就近写映射表。
+  - 异常文案模板在同文件就近写映射表，取文案一律走 `exceptions.describe_error`，调用处不再各自查表填参。
   - `theme` 令牌只代理引用、不持有话术字面量。
 
 ## 文案类（skin/messages/）

@@ -5,6 +5,7 @@
 - 可恢复 ConfigError 走 request_force_setup 且不上抛
 - 非 BotError 原样抛出
 - async 函数形态同样生效
+- 文案查询沿继承链找最近一句，缺字段与认不出的都有确定落点
 """
 
 import asyncio
@@ -22,10 +23,15 @@ set_profile("tg.000000")
 
 from bot.error_guard import error_guard  # noqa: E402
 from exceptions import (  # noqa: E402
+    BotError,
     ConfigError,
     ConfigInputError,
     ConfigMissingError,
+    FontMissingError,
+    PluginsMissingError,
+    ProxyAddressError,
     TokenError,
+    describe_error,
 )
 from ui import gui_bridge  # noqa: E402
 
@@ -183,6 +189,55 @@ class TestErrorGuard(unittest.TestCase):
         with self.assertRaises(ConfigError):
             boom()
         self.assertIn("setup", self.received)
+
+
+class TestDescribeError(unittest.TestCase):
+    """异常文案查询的那只手"""
+
+    def test_unlisted_subclass_uses_parent_text(self) -> None:
+        """族里新加的子类没点名，落到父类那一句
+
+        - 这条红了说明查找退回按类硬查，新子类只能露类名
+        """
+
+        class OddProxyError(ProxyAddressError):
+            """表里没点名的临时子类"""
+
+        self.assertIn(
+            "代理地址格式无法解析", describe_error(OddProxyError("127.0.0.1:1"))
+        )
+
+    def test_missing_field_returns_template_as_is(self) -> None:
+        """模板要的字段异常上没有即退回模板原文
+
+        - 这条红了说明查表那步会把 KeyError 顶回调用方
+        """
+
+        class NoFieldProxyError(ProxyAddressError):
+            """不填代理地址的临时子类"""
+
+            def __init__(self) -> None:
+                BotError.__init__(self)
+
+        self.assertIn("{proxy}", describe_error(NoFieldProxyError()))
+
+    def test_unmapped_error_reports_class_name(self) -> None:
+        """表外异常报类名，细节归调试日志"""
+        self.assertEqual(describe_error(ValueError("内部消息")), "ValueError")
+
+    def test_newly_mapped_families_have_text(self) -> None:
+        """插件全灭与字体那几条不再是类名
+
+        - 这几族此前没有模板，屏上只剩英文类名
+        """
+        self.assertEqual(
+            describe_error(PluginsMissingError()), "一只插件都没装上，程序无法运行"
+        )
+        self.assertTrue(
+            describe_error(FontMissingError(Path("font.ttf"))).startswith(
+                "找不到字体文件"
+            )
+        )
 
 
 if __name__ == "__main__":

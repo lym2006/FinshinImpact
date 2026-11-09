@@ -14,13 +14,12 @@ from typing import Any, Literal, NoReturn, cast
 from packaging.version import Version
 
 from exceptions import (
-    MAP_KEY_NETWORK,
-    MAPS,
     HTTPStatusError,
     LocalVersionError,
     NetworkError,
     NewVersionError,
     RemoteVersionError,
+    describe_error,
 )
 from skin.messages import VersionMessage
 from system.profile_env import ROOT_DIR
@@ -84,13 +83,9 @@ async def _fetch(
         )
         return cast(dict[str, Any], content)
     except HTTPStatusError as e:
-        raise RemoteVersionError(
-            MAPS[MAP_KEY_NETWORK][HTTPStatusError].format(**vars(e))
-        ) from e
+        raise RemoteVersionError(describe_error(e)) from e
     except NetworkError as e:
-        raise RemoteVersionError(
-            MAPS[MAP_KEY_NETWORK][type(e)].format(**vars(e))
-        ) from e
+        raise RemoteVersionError(describe_error(e)) from e
     except Exception as e:
         raise RemoteVersionError(VersionMessage.REMOTE_BROKEN) from e
 
