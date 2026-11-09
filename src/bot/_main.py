@@ -14,7 +14,7 @@ from functools import partial
 from typing import cast
 
 from exceptions import MAP_KEY_ADAPTER, MAPS, AdapterError
-from skin.messages import CheckMessage
+from skin.messages import CheckMessage, MiscMessage
 from skin.theme import WINDOW
 from system.profile_env import get_profile
 from ui import (
@@ -25,10 +25,11 @@ from ui import (
     create_gui,
     ensure_app,
     gui_bridge,
+    show_popup,
 )
 from utils import get_logger
 from utils.lifecycle import shutdown_all
-from utils.paths import PLATFORM
+from utils.paths import LOGS_DIR, PLATFORM
 
 from ._adapter_host import parts_for
 from ._managers import BotManager
@@ -104,12 +105,16 @@ class Main:
             return app.exec()
 
         except AdapterError as e:
-            self.logger.send_error(
-                f"程序启动异常：{_ERR_MAP_ADAPTER[type(e)].format(**vars(e))}", e
-            )
+            # 取件排在 GUI 之前，这句只能自己弹窗，主窗的兜底还没挂上
+            detail = _ERR_MAP_ADAPTER[type(e)].format(**vars(e))
+            self.logger.send_error(f"程序启动异常：{detail}", e)
+            show_popup(WINDOW.title, detail)
             return 1
         except Exception as e:
             self.logger.send_error("程序启动异常", e)
+            show_popup(
+                WINDOW.title, MiscMessage.STARTUP_FAIL_HINT.format(logs=LOGS_DIR)
+            )
             return 1
         finally:
             self._cleanup()

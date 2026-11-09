@@ -6,6 +6,7 @@
 - 有清单的平台取到四件，没清单的平台抛缺件异常
 - 清单要的接口版本比本机新即拒载，读不懂的版本串同样拒载
 - 缺件那句取映射文案，带平台标识
+- 启动取件被拒与未知异常都弹窗，正文不带异常原文
 - 清单表空着也进得了配置管理器
 - 入口模块的装配只交运行时，挂日志与注册插件归装载侧
 """
@@ -25,6 +26,7 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
+from bot import _main as main_mod  # noqa: E402
 from bot._adapter_host import _assemble as assemble_mod  # noqa: E402
 from bot._adapter_host import _parts as parts_mod  # noqa: E402
 from bot._managers import _settings as settings_mod  # noqa: E402
@@ -235,6 +237,42 @@ class TestAdapterHost(unittest.TestCase):
             importlib.reload(settings_mod)
             with self.assertRaises(AdapterMissingError):
                 settings_mod._channel_probe()
+
+    def test_startup_refusal_pops_the_notice(self) -> None:
+        """启动取件被拒时那句人话上屏
+
+        - 取件排在主窗之前，主窗的兜底还没挂上
+        """
+        popped: list[str] = []
+
+        def refuse(_platform: object) -> None:
+            raise AdapterOutOfDateError("tg", "9.9.9", "0.1.0")
+
+        with (
+            patch.object(main_mod, "ensure_app", lambda: object()),
+            patch.object(main_mod, "show_popup", lambda _t, body: popped.append(body)),
+            patch.object(main_mod, "parts_for", refuse),
+        ):
+            self.assertEqual(main_mod.Main(on_ready=None).main(), 1)
+
+        self.assertEqual(popped, ["这个平台的适配器要接口包 9.9.9 以上，本机是 0.1.0"])
+
+    def test_unknown_startup_error_pops_without_details(self) -> None:
+        """未知启动异常只报一句要去看日志，异常原文不上屏"""
+        popped: list[str] = []
+
+        def break_out(_platform: object) -> None:
+            raise RuntimeError("内部细节不许进界面")
+
+        with (
+            patch.object(main_mod, "ensure_app", lambda: object()),
+            patch.object(main_mod, "show_popup", lambda _t, body: popped.append(body)),
+            patch.object(main_mod, "parts_for", break_out),
+        ):
+            self.assertEqual(main_mod.Main(on_ready=None).main(), 1)
+
+        self.assertTrue(popped[0].startswith("程序启动失败，详情见日志"))
+        self.assertNotIn("内部细节不许进界面", popped[0])
 
     def test_assemble_hands_over_runtime_only(self) -> None:
         """入口模块的装配只交运行时
