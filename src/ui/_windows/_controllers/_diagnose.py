@@ -12,7 +12,7 @@ from typing import Any
 from PySide6.QtCore import QThread, Signal
 from PySide6.QtWidgets import QDialog, QWidget
 
-from core.domain import ConfigKey, ConfigSection, ProxyMode
+from finshin_sdk.domain import ConfigKey, ConfigSection, ProxyMode
 from skin.messages import CheckMessage
 from system.profile_env import get_profile, read_token
 from utils import config_manager

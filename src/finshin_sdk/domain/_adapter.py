@@ -1,4 +1,4 @@
-# src/core/domain/_adapter.py
+# src/finshin_sdk/domain/_adapter.py
 """外部适配器词表
 
 - 定义适配器树包名、清单文件名、入口模块名、清单键名与字段规格
@@ -23,6 +23,7 @@ class AdapterManifestKey(StrEnum):
 
     PLATFORM = "platform"
     DEPS = "deps"
+    REQUIRES_SDK = "requires_sdk"
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,4 +39,5 @@ class AdapterFieldSpec:
 ADAPTER_MANIFEST_FIELDS: tuple[AdapterFieldSpec, ...] = (
     AdapterFieldSpec(AdapterManifestKey.PLATFORM, str, "", required=True),
     AdapterFieldSpec(AdapterManifestKey.DEPS, list, ()),
+    AdapterFieldSpec(AdapterManifestKey.REQUIRES_SDK, str, ""),
 )

@@ -21,9 +21,14 @@ from system.profile_env import set_profile  # noqa: E402
 set_profile("tg.000000")
 
 from bundled.AI.services import _summary, worker  # noqa: E402
-from core.domain import ChatRole, ChatScope, Platform  # noqa: E402
-from core.domain.ids import ContainerKey, MessageId, SessionKey, UserId  # noqa: E402
-from core.dto import (  # noqa: E402
+from finshin_sdk.domain import ChatRole, ChatScope, Platform  # noqa: E402
+from finshin_sdk.domain.ids import (  # noqa: E402
+    ContainerKey,
+    MessageId,
+    SessionKey,
+    UserId,
+)
+from finshin_sdk.dto import (  # noqa: E402
     ContentDTO,
     InboundEventDTO,
     MessageDTO,

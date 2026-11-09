@@ -1,4 +1,4 @@
-# src/core/dto/_task.py
+# src/finshin_sdk/dto/_task.py
 """任务数据传输对象
 
 - 定义任务队列的只读视图、创建请求与状态增量
@@ -6,7 +6,7 @@
 
 from dataclasses import dataclass
 
-from ..domain import TaskKind, TaskPayload, TaskStatus
+from ..domain import TaskPayload, TaskStatus
 from ..domain.ids import KEY_SEP, TaskId
 from ._identity import MsgReferenceDTO, PrincipalDTO
 
@@ -16,7 +16,7 @@ class TaskDTO:
     """任务只读视图"""
 
     principal: PrincipalDTO
-    kind: TaskKind
+    kind: str
     status: TaskStatus
     source_ref: MsgReferenceDTO  # 任务创建源消息
 
@@ -32,7 +32,7 @@ class TaskRequestDTO:
     """任务创建请求"""
 
     principal: PrincipalDTO
-    kind: TaskKind
+    kind: str
     source_ref: MsgReferenceDTO
 
     payload: TaskPayload = ()

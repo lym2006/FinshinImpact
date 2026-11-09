@@ -22,19 +22,19 @@ set_profile("tg.000000")
 from bundled._shared.access import require_role  # noqa: E402
 from bundled._shared.filters import CommandMatch  # noqa: E402
 from bundled.help import _services  # noqa: E402
-from core.domain import (  # noqa: E402
+from exceptions import PluginRoleError  # noqa: E402
+from finshin_sdk.domain import (  # noqa: E402
     PLUGINS_PKG,
     CommandRole,
     HelpKey,
     PluginRoute,
     PluginSpec,
 )
-from core.dto import (  # noqa: E402
+from finshin_sdk.dto import (  # noqa: E402
     HelpCommandDTO,
     HelpSectionDTO,
     PluginManifestDTO,
 )
-from exceptions import PluginRoleError  # noqa: E402
 from utils.plugin import _manifest, _manifest_help, _register  # noqa: E402
 
 

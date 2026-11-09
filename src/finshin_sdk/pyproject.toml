@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "finshin-sdk"
+dynamic = ["version"]
+description = "本体与适配器、插件共用的接口包"
+requires-python = ">=3.11,<4.0"
+
+[tool.setuptools]
+package-dir = { "" = ".." }
+packages = [
+    "finshin_sdk",
+    "finshin_sdk.domain",
+    "finshin_sdk.domain.config",
+    "finshin_sdk.dto",
+]
+
+[tool.setuptools.dynamic]
+version = { attr = "finshin_sdk.SDK_VERSION" }
+
+[tool.setuptools.package-data]
+finshin_sdk = ["py.typed"]

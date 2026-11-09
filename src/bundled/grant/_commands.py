@@ -10,9 +10,15 @@
 
 from enum import StrEnum
 
-from core.domain import ChatScope, CommandRole, PluginRoute, PluginSpec, StepInput
-from core.domain.ids import PrincipalKey, UserId
-from services.context import HandlerContext
+from finshin_sdk import HandlerContext
+from finshin_sdk.domain import (
+    ChatScope,
+    CommandRole,
+    PluginRoute,
+    PluginSpec,
+    StepInput,
+)
+from finshin_sdk.domain.ids import PrincipalKey, UserId
 from utils import get_logger
 
 from .._shared.access import require_role

@@ -21,28 +21,26 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
-from core.domain import (  # noqa: E402
+from finshin_sdk import HandlerContext, InteractionPort  # noqa: E402
+from finshin_sdk.domain import (  # noqa: E402
     ChatScope,
     Platform,
     TaskHandler,
-    TaskKind,
 )
-from core.domain.ids import (  # noqa: E402
+from finshin_sdk.domain.ids import (  # noqa: E402
     KEY_SEP,
     ContainerKey,
     MessageId,
     SessionKey,
     UserId,
 )
-from core.dto import (  # noqa: E402
+from finshin_sdk.dto import (  # noqa: E402
     ContentDTO,
     InboundEventDTO,
     MsgReferenceDTO,
     OutboundPayloadDTO,
     PrincipalDTO,
 )
-from finshin_sdk import InteractionPort  # noqa: E402
-from services.context import HandlerContext  # noqa: E402
 from services.tasks._queue import TaskItem  # noqa: E402
 from services.tasks._service import TaskService  # noqa: E402
 
@@ -109,7 +107,7 @@ def _item(
     return TaskItem(
         container_key=SessionKey(f"{principal.platform}{KEY_SEP}{container}"),
         principal_key=principal.key,
-        kind=TaskKind.CHAT,
+        kind="demo.chat",
         ctx=HandlerContext(event=event, interaction=_NullPort()),
     )
 
@@ -121,7 +119,7 @@ class TestTaskService(unittest.IsolatedAsyncioTestCase):
         self.faults: list[tuple[TaskItem, Exception]] = []
         self.ledger = _StubLedger()
 
-    def _service(self, handlers: dict[TaskKind, object], **kwargs: int) -> TaskService:
+    def _service(self, handlers: dict[str, object], **kwargs: int) -> TaskService:
         """把类型到处理函数的映射交进服务，报错全部收进本用例"""
         declared = [
             TaskHandler(kind=kind, run=run)  # type: ignore[arg-type]
@@ -146,7 +144,7 @@ class TestTaskService(unittest.IsolatedAsyncioTestCase):
             order.append(str(ctx.event.principal.user))
             await gate.wait()
 
-        service = self._service({TaskKind.CHAT: run})
+        service = self._service({"demo.chat": run})
         await service.enqueue(_item("111"))
         for _ in range(5):
             await asyncio.sleep(0)
@@ -163,7 +161,7 @@ class TestTaskService(unittest.IsolatedAsyncioTestCase):
         async def run(ctx: HandlerContext) -> None:
             return None
 
-        service = self._service({TaskKind.CHAT: run})
+        service = self._service({"demo.chat": run})
         await service.enqueue(_item("111"))
         await self._finish(service)
 
@@ -178,7 +176,7 @@ class TestTaskService(unittest.IsolatedAsyncioTestCase):
                 raise RuntimeError("炸了")
             order.append(user)
 
-        service = self._service({TaskKind.CHAT: run})
+        service = self._service({"demo.chat": run})
         await service.enqueue(_item("111"))
         await service.enqueue(_item("222"))
         await self._finish(service)
@@ -212,7 +210,7 @@ class TestTaskService(unittest.IsolatedAsyncioTestCase):
             inflight -= 1
             done.append(str(ctx.event.principal.user))
 
-        service = self._service({TaskKind.CHAT: run}, max_concurrency=1)
+        service = self._service({"demo.chat": run}, max_concurrency=1)
         await service.enqueue(_item("111"))
         await service.enqueue(_item("222", container=_OTHER_CONTAINER))
         await self._finish(service)
@@ -226,7 +224,7 @@ class TestTaskService(unittest.IsolatedAsyncioTestCase):
         async def run(ctx: HandlerContext) -> None:
             order.append(str(ctx.event.principal.user))
 
-        service = self._service({TaskKind.CHAT: run})
+        service = self._service({"demo.chat": run})
         await service.enqueue(_item("111"))
         await self._finish(service)
         await service.enqueue(_item("222"))
@@ -245,8 +243,8 @@ class TestTaskService(unittest.IsolatedAsyncioTestCase):
 
         service = TaskService(
             [
-                TaskHandler(kind=TaskKind.CHAT, run=first),
-                TaskHandler(kind=TaskKind.CHAT, run=second),
+                TaskHandler(kind="demo.chat", run=first),
+                TaskHandler(kind="demo.chat", run=second),
             ],
             ledger=self.ledger,
             on_fault=lambda item, e: self.faults.append((item, e)),
@@ -264,7 +262,7 @@ class TestTaskService(unittest.IsolatedAsyncioTestCase):
             order.append(str(ctx.event.principal.user))
             await gate.wait()
 
-        service = self._service({TaskKind.CHAT: run})
+        service = self._service({"demo.chat": run})
         await service.enqueue(_item("111"))
         for _ in range(5):
             await asyncio.sleep(0)
@@ -285,7 +283,7 @@ class TestTaskService(unittest.IsolatedAsyncioTestCase):
         async def run(ctx: HandlerContext) -> None:
             order.append(str(ctx.event.principal.user))
 
-        service = self._service({TaskKind.CHAT: run})
+        service = self._service({"demo.chat": run})
         await service.enqueue(_item("111"))
         await self._finish(service)
         await service.enqueue(_item("222"))

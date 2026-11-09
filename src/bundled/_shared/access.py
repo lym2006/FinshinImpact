@@ -11,9 +11,9 @@ from functools import wraps
 from typing import ParamSpec, cast
 
 from bot.error_guard import error_guard
-from core.domain import CommandRole, ConfigKey, ConfigSection, PluginMark
-from core.dto import PrincipalDTO
-from services.context import HandlerContext
+from finshin_sdk import HandlerContext
+from finshin_sdk.domain import CommandRole, ConfigKey, ConfigSection, PluginMark
+from finshin_sdk.dto import PrincipalDTO
 from utils import config_manager, get_logger
 
 from .grants import is_admin

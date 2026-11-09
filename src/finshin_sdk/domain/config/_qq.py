@@ -1,4 +1,4 @@
-# src/core/domain/config/_qq.py
+# src/finshin_sdk/domain/config/_qq.py
 """QQ 专属配置段
 
 - 定义 QQ 平台的配置段字段表

@@ -10,7 +10,7 @@ import asyncio
 from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass, field
 
-from core.domain import ConfigKey, FieldKey
+from finshin_sdk.domain import ConfigKey, FieldKey
 from skin.messages import CheckMessage
 
 from ..config import AppConfigData, AppSchema, validate_types

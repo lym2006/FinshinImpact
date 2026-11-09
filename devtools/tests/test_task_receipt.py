@@ -28,29 +28,28 @@ from bundled.AI.config import ai_config  # noqa: E402
 from bundled.AI.services import _receipt  # noqa: E402
 from bundled.AI.services._receipt import report_lost_tasks  # noqa: E402
 from core.contracts import CapabilityCall  # noqa: E402
-from core.domain import (  # noqa: E402
+from data import (  # noqa: E402
+    build_repositories,
+    close_all,
+    get_connection,
+    run_migrations,
+)
+from finshin_sdk.domain import (  # noqa: E402
     Platform,
-    TaskKind,
     TaskStatus,
 )
-from core.domain.ids import (  # noqa: E402
+from finshin_sdk.domain.ids import (  # noqa: E402
     KEY_SEP,
     ContainerKey,
     MessageId,
     TaskId,
     UserId,
 )
-from core.dto import (  # noqa: E402
+from finshin_sdk.dto import (  # noqa: E402
     MsgReferenceDTO,
     PrincipalDTO,
     TaskPatchDTO,
     TaskRequestDTO,
-)
-from data import (  # noqa: E402
-    build_repositories,
-    close_all,
-    get_connection,
-    run_migrations,
 )
 from utils import config_manager  # noqa: E402
 
@@ -105,7 +104,7 @@ def _principal(user: str, container: str = "g100123") -> PrincipalDTO:
 
 def _chat_id(principal: PrincipalDTO) -> TaskId:
     """取该主体的问答任务行号"""
-    return TaskId(f"{principal.key}{KEY_SEP}{TaskKind.CHAT}")
+    return TaskId(f"{principal.key}{KEY_SEP}demo.chat")
 
 
 class TestReportLostTasks(unittest.IsolatedAsyncioTestCase):
@@ -143,7 +142,7 @@ class TestReportLostTasks(unittest.IsolatedAsyncioTestCase):
         await self.repos.task.insert(
             TaskRequestDTO(
                 principal=principal,
-                kind=TaskKind.CHAT,
+                kind="demo.chat",
                 source_ref=MsgReferenceDTO(
                     platform=principal.platform,
                     container=principal.container,

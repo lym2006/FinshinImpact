@@ -9,9 +9,9 @@
 import re
 import time
 
-from core.domain import ChatRole
-from core.domain.ids import KEY_SEP, SessionKey
-from core.dto import InboundEventDTO, MessageDTO, PrincipalDTO
+from finshin_sdk.domain import ChatRole
+from finshin_sdk.domain.ids import KEY_SEP, SessionKey
+from finshin_sdk.dto import InboundEventDTO, MessageDTO, PrincipalDTO
 from utils.speaker import (
     bot_quote_block,
     link_mark,

@@ -6,8 +6,8 @@
 
 from aiogram.exceptions import TelegramAPIError
 
-from core.dto import MsgReferenceDTO
 from exceptions import MessageVanishedError
+from finshin_sdk.dto import MsgReferenceDTO
 
 # 服务端表示消息已不存在的错误串
 _VANISHED_MARKS = (

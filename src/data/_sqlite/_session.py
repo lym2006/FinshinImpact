@@ -9,9 +9,9 @@ import aiosqlite
 from typing import cast
 
 from core.contracts import SessionRepository
-from core.domain import ChatRole, Platform
-from core.domain.ids import KEY_SEP, ContainerKey, SessionKey, UserId
-from core.dto import MessageDTO, SessionDTO, SessionPatchDTO
+from finshin_sdk.domain import ChatRole, Platform
+from finshin_sdk.domain.ids import KEY_SEP, ContainerKey, SessionKey, UserId
+from finshin_sdk.dto import MessageDTO, SessionDTO, SessionPatchDTO
 
 
 class SqliteSessionRepository(SessionRepository):

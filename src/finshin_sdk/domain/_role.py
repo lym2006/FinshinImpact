@@ -1,4 +1,4 @@
-# src/core/domain/_role.py
+# src/finshin_sdk/domain/_role.py
 """角色对象
 
 - 定义跨平台归一的 AI 对话角色和用户权限角色

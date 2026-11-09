@@ -17,8 +17,9 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
-from core.domain import ChatScope, Platform, TaskKind  # noqa: E402
-from core.domain.ids import (  # noqa: E402
+from finshin_sdk import HandlerContext, InteractionPort  # noqa: E402
+from finshin_sdk.domain import ChatScope, Platform  # noqa: E402
+from finshin_sdk.domain.ids import (  # noqa: E402
     KEY_SEP,
     ContainerKey,
     MessageId,
@@ -26,15 +27,13 @@ from core.domain.ids import (  # noqa: E402
     SessionKey,
     UserId,
 )
-from core.dto import (  # noqa: E402
+from finshin_sdk.dto import (  # noqa: E402
     ContentDTO,
     InboundEventDTO,
     MsgReferenceDTO,
     OutboundPayloadDTO,
     PrincipalDTO,
 )
-from finshin_sdk import InteractionPort  # noqa: E402
-from services.context import HandlerContext  # noqa: E402
 from services.tasks._queue import HotQueue, TaskItem  # noqa: E402
 
 _GROUP = SessionKey(f"tg{KEY_SEP}g100123")
@@ -89,7 +88,7 @@ def _item(
     return TaskItem(
         container_key=SessionKey(f"{ctx.event.principal.platform}{KEY_SEP}{container}"),
         principal_key=ctx.event.principal.key,
-        kind=TaskKind.CHAT,
+        kind="demo.chat",
         ctx=ctx,
     )
 

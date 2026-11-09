@@ -6,8 +6,8 @@
 
 from typing import Any
 
-from core.domain import Platform, RouteSink
 from finshin_sdk import BaseAdapter, InteractionPort, RouterBuilder
+from finshin_sdk.domain import Platform, RouteSink
 
 from ._interaction import TelegramInteractionPort
 from ._normalize import NormalizeMiddleware

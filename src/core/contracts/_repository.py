@@ -6,8 +6,8 @@
 
 from abc import ABC, abstractmethod
 
-from ..domain.ids import PrincipalKey, SessionKey, TaskId, UserId
-from ..dto import (
+from finshin_sdk.domain.ids import PrincipalKey, SessionKey, TaskId, UserId
+from finshin_sdk.dto import (
     MediaEntryDTO,
     MsgReferenceDTO,
     PrincipalDTO,

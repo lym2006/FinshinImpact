@@ -10,7 +10,7 @@ import time
 import aiosqlite
 
 from core.contracts import GrantRepository
-from core.domain.ids import PrincipalKey, UserId
+from finshin_sdk.domain.ids import PrincipalKey, UserId
 
 
 class SqliteGrantRepository(GrantRepository):

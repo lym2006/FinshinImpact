@@ -7,7 +7,7 @@
 
 import aiosqlite
 
-from core.domain import TaskStatus
+from finshin_sdk.domain import TaskStatus
 
 _TABLES: tuple[str, ...] = (
     """

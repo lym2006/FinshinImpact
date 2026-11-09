@@ -9,10 +9,10 @@ import random
 import re
 
 from core.contracts import CapabilityCall
-from core.domain import ChatRole
-from core.domain.ids import ContainerKey
-from core.dto import PrincipalDTO, TaskDTO
 from data import build_repositories, get_connection, purge_dead_tasks
+from finshin_sdk.domain import ChatRole
+from finshin_sdk.domain.ids import ContainerKey
+from finshin_sdk.dto import PrincipalDTO, TaskDTO
 from utils import get_logger
 from utils.paths import DB_FILE
 

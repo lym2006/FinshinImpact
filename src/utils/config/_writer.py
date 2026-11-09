@@ -6,7 +6,7 @@
 
 import tomlkit
 
-from core.domain import SECTIONS_BY_PLATFORM, Platform
+from finshin_sdk.domain import SECTIONS_BY_PLATFORM, Platform
 
 
 def render_config(platform: Platform) -> str:

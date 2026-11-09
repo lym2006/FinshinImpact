@@ -11,7 +11,7 @@
 
 from PySide6.QtWidgets import QMessageBox
 
-from core.domain import BUNDLED_PLUGIN_PRIORITY, ManifestKey, StateKey
+from finshin_sdk.domain import BUNDLED_PLUGIN_PRIORITY, ManifestKey, StateKey
 from services.env_setup.assets import install_assets, is_asset_installed
 from services.env_setup.deps_install import install_deps
 from services.env_setup.deps_manifest import (

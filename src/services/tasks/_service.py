@@ -7,8 +7,8 @@
 import asyncio
 from collections.abc import Callable, Iterable
 
-from core.domain import TaskHandler, TaskKind, TaskRun
-from core.domain.ids import SessionKey
+from finshin_sdk.domain import TaskHandler, TaskRun
+from finshin_sdk.domain.ids import SessionKey
 
 from ._ledger import TaskLedger
 from ._queue import HotQueue, TaskItem
@@ -34,7 +34,7 @@ class TaskService:
         on_fault: _TaskFault,
         max_concurrency: int = _MAX_CONCURRENT,
     ) -> None:
-        self._handlers: dict[TaskKind, TaskRun] = {}
+        self._handlers: dict[str, TaskRun] = {}
         for declared in handlers:
             self._handlers.setdefault(declared.kind, declared.run)
         self._ledger = ledger

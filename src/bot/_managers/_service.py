@@ -12,10 +12,10 @@ from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING
 
 from core.contracts import CapabilityCall
-from core.domain import ContentKind, PlatformTiming
-from core.dto import OutboundPayloadDTO, PluginManifestDTO
 from exceptions import MAP_KEY_PLUGINS, MAPS, BotError
 from finshin_sdk import PlatformAssembly
+from finshin_sdk.domain import ContentKind, PlatformTiming
+from finshin_sdk.dto import OutboundPayloadDTO, PluginManifestDTO
 from skin.messages import EngineMessage
 from utils.paths import PLATFORM
 
@@ -23,8 +23,8 @@ from .._adapter_host import assemble_platform
 from ._base import BaseManager
 
 if TYPE_CHECKING:
-    from core.domain import PluginTimingRun
-    from core.dto import PrincipalDTO
+    from finshin_sdk.domain import PluginTimingRun
+    from finshin_sdk.dto import PrincipalDTO
     from services.tasks import TaskItem
 
     from .._service import AdapterRuntime

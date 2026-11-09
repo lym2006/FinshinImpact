@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from core.domain import HelpKey, ManifestKey
+from finshin_sdk.domain import HelpKey, ManifestKey
 from skin.messages import PluginMessage
 
 from .._primitives import ThemedList, make_combo

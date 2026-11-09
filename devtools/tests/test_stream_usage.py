@@ -25,7 +25,7 @@ set_profile("tg.000000")
 from bundled.AI.core import _client  # noqa: E402
 from bundled.AI.core._client import AIClient, StreamUsage  # noqa: E402
 from bundled.AI.services import worker  # noqa: E402
-from core.domain.ids import SessionKey  # noqa: E402
+from finshin_sdk.domain.ids import SessionKey  # noqa: E402
 
 _TURN = [{"role": "user", "content": "说一句"}]
 

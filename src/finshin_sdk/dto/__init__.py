@@ -1,4 +1,4 @@
-# src/core/dto/__init__.py
+# src/finshin_sdk/dto/__init__.py
 """数据传输对象门面
 
 - 定义跨层传递的不可变数据快照

@@ -19,7 +19,7 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
-from core.domain import ManifestKey, StateKey  # noqa: E402
+from finshin_sdk.domain import ManifestKey, StateKey  # noqa: E402
 from ui._guide import _startup  # noqa: E402
 
 _SENTINEL = Path("plugins-sentinel")

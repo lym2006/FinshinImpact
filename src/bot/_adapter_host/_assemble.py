@@ -4,8 +4,8 @@
 - 取件、造运行时、挂日志中间件、按启用序列注册插件
 """
 
-from core.domain import Platform
 from finshin_sdk import PlatformAssembly
+from finshin_sdk.domain import Platform
 from utils.middleware import LoggingMiddleware
 from utils.plugin import register_plugins
 

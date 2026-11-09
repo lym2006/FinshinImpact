@@ -8,9 +8,9 @@ import re
 from collections.abc import Awaitable, Callable
 from typing import Any
 
-from core.domain import ChatScope, ContentKind
-from core.dto import InboundEventDTO
-from services.context import HandlerContext
+from finshin_sdk import HandlerContext
+from finshin_sdk.domain import ChatScope, ContentKind
+from finshin_sdk.dto import InboundEventDTO
 
 from .logger import get_logger
 from .speaker import KIND_LABELS, bot_quote_block, clean_name, quote_block, speaker_mark

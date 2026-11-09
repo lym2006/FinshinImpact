@@ -1,4 +1,4 @@
-# src/services/context.py
+# src/finshin_sdk/_context.py
 """处理上下文
 
 - 组装事件与交互端口供 handler 消费
@@ -6,9 +6,9 @@
 
 from dataclasses import dataclass
 
-from core.domain import ChatScope, ContentKind
-from core.dto import InboundEventDTO, MsgReferenceDTO, OutboundPayloadDTO
-from finshin_sdk import InteractionPort
+from ._adapter import InteractionPort
+from .domain import ChatScope, ContentKind
+from .dto import InboundEventDTO, MsgReferenceDTO, OutboundPayloadDTO
 
 
 @dataclass(frozen=True, slots=True)

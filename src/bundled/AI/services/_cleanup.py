@@ -10,7 +10,7 @@ import contextlib
 import time
 from typing import NoReturn
 
-from core.domain.ids import SessionKey
+from finshin_sdk.domain.ids import SessionKey
 from services.tasks import get_task_service
 from utils import get_logger
 

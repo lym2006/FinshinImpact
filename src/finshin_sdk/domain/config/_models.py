@@ -1,4 +1,4 @@
-# src/core/domain/config/_models.py
+# src/finshin_sdk/domain/config/_models.py
 """配置结构值对象
 
 - 定义配置值类型别名

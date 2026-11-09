@@ -24,7 +24,7 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
-from core.domain import HelpKey, ManifestKey  # noqa: E402
+from finshin_sdk.domain import HelpKey, ManifestKey  # noqa: E402
 from skin.messages import PluginMessage  # noqa: E402
 from ui._guide._conflict import _command_lines  # noqa: E402
 from ui._guide._search import (  # noqa: E402

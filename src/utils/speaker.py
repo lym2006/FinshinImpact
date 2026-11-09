@@ -10,8 +10,8 @@
 import re
 import unicodedata
 
-from core.domain import ContentKind
-from core.domain.ids import UserId
+from finshin_sdk.domain import ContentKind
+from finshin_sdk.domain.ids import UserId
 
 # 标注里出现的词，拼给模型的标记与遮名称用的词都从这里取
 _ASSISTANT_SLOT = "assistant"  # 机器人自身的标注位，不带 id

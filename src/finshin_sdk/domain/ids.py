@@ -1,4 +1,4 @@
-# src/core/domain/ids.py
+# src/finshin_sdk/domain/ids.py
 """标识值类型
 
 - 定义跨 DTO 共用的字符串段语义类型
@@ -22,4 +22,4 @@ ChatId = NewType("ChatId", str)
 UserId = NewType("UserId", str)
 MessageId = NewType("MessageId", str)
 MediaGroupId = NewType("MediaGroupId", str)  # Telegram 相册组标识
-TaskId = NewType("TaskId", str)  # f"{PrincipalDTO.key}.{TaskKind}"
+TaskId = NewType("TaskId", str)  # f"{PrincipalDTO.key}.{动作名}"

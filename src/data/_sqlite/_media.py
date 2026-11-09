@@ -9,9 +9,9 @@ import time
 import aiosqlite
 
 from core.contracts import MediaRepository
-from core.domain import ContentKind, Platform
-from core.domain.ids import KEY_SEP, ContainerKey, PrincipalKey
-from core.dto import MediaEntryDTO, MsgReferenceDTO
+from finshin_sdk.domain import ContentKind, Platform
+from finshin_sdk.domain.ids import KEY_SEP, ContainerKey, PrincipalKey
+from finshin_sdk.dto import MediaEntryDTO, MsgReferenceDTO
 
 
 class SqliteMediaRepository(MediaRepository):

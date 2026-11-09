@@ -11,9 +11,9 @@ from collections.abc import Sequence
 from aiogram.enums import ChatType, ContentType
 from aiogram.types import Message, User
 
-from core.domain import ChatScope, ContentKind, Platform
-from core.domain.ids import ContainerKey, MessageId, UserId
-from core.dto import MediaEntryDTO, MsgReferenceDTO
+from finshin_sdk.domain import ChatScope, ContentKind, Platform
+from finshin_sdk.domain.ids import ContainerKey, MessageId, UserId
+from finshin_sdk.dto import MediaEntryDTO, MsgReferenceDTO
 from utils.speaker import media_mark
 
 _ANONYMOUS_USER = UserId("unknown")  # 匿名代发无 user 段时的占位值

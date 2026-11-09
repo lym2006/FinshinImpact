@@ -6,7 +6,7 @@
 - 订阅引擎开跑前、身份变更与配置校验通过三个平台机会
 """
 
-from core.domain import PlatformTiming, PluginSpec, PluginTiming
+from finshin_sdk.domain import PlatformTiming, PluginSpec, PluginTiming
 
 from .core import purge_on_identity_changed
 from .handlers import get_routes

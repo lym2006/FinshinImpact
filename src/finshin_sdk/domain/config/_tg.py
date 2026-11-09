@@ -1,4 +1,4 @@
-# src/core/domain/config/_tg.py
+# src/finshin_sdk/domain/config/_tg.py
 """Telegram 专属配置段
 
 - 定义 proxy 段字段表

@@ -11,9 +11,9 @@ from collections import defaultdict
 from pathlib import Path
 
 from core.contracts import CapabilityCall, SessionRepository
-from core.domain.ids import SessionKey
-from core.dto import MessageDTO, SessionDTO, SessionPatchDTO
 from data import build_repositories, get_connection
+from finshin_sdk.domain.ids import SessionKey
+from finshin_sdk.dto import MessageDTO, SessionDTO, SessionPatchDTO
 from utils import get_logger
 from utils.paths import DB_FILE
 

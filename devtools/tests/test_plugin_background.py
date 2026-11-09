@@ -31,7 +31,13 @@ set_profile("tg.000000")
 from bot import _service as service_module  # noqa: E402
 from bot._service import AdapterRuntime  # noqa: E402
 from core.contracts import CapabilityCall  # noqa: E402
-from core.domain import (  # noqa: E402
+from exceptions import (  # noqa: E402
+    PluginDependencyError,
+    PluginLoadError,
+    PluginMissingError,
+    PluginSpecError,
+)
+from finshin_sdk.domain import (  # noqa: E402
     PLUGINS_PKG,
     Platform,
     PlatformTiming,
@@ -39,13 +45,6 @@ from core.domain import (  # noqa: E402
     PluginSpec,
     PluginTiming,
     TaskHandler,
-    TaskKind,
-)
-from exceptions import (  # noqa: E402
-    PluginDependencyError,
-    PluginLoadError,
-    PluginMissingError,
-    PluginSpecError,
 )
 from utils.plugin import _register  # noqa: E402
 
@@ -221,7 +220,7 @@ class TestCollectBackgrounds(unittest.TestCase):
 
     def test_declared_task_handlers_returned(self) -> None:
         """回归点 8：声明了任务处理的插件交出处理清单"""
-        declared = TaskHandler(kind=TaskKind.CHAT, run=_handle)
+        declared = TaskHandler(kind="AI.chat", run=_handle)
         modules = {"AI": _plugin(task_handlers=(declared,)), "help": _plugin()}
 
         (_, _, handlers, _), _ = _register_modules(modules, ["AI", "help"])

@@ -7,7 +7,7 @@
 
 from dataclasses import dataclass, field
 
-from core.domain import ConfigGroup, ConfigKey, ConfigSection, ConfigValue
+from finshin_sdk.domain import ConfigGroup, ConfigKey, ConfigSection, ConfigValue
 
 # 运行时配置数据结构
 TabData = dict[str, ConfigValue]  # 一个标签页

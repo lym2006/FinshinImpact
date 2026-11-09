@@ -1,4 +1,4 @@
-# src/core/dto/_session.py
+# src/finshin_sdk/dto/_session.py
 """会话数据传输对象
 
 - 定义消息会话上下文与状态变更的数据快照

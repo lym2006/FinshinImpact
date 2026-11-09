@@ -9,8 +9,8 @@ import time
 from collections.abc import Awaitable, Callable
 from typing import cast
 
-from core.domain import ConfigKey, ConfigSection, FieldKey, ProxyMode
 from finshin_sdk import ChannelProbe
+from finshin_sdk.domain import ConfigKey, ConfigSection, FieldKey, ProxyMode
 from skin.messages import CheckMessage
 from ui import gui_bridge
 from utils import config_manager

@@ -22,7 +22,7 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
-from core.domain import (  # noqa: E402
+from finshin_sdk.domain import (  # noqa: E402
     PLUGINS_PKG,
     CommandTaken,
     HelpKey,

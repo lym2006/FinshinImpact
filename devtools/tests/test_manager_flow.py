@@ -35,7 +35,7 @@ from adapters.telegram.session import is_link_failure  # noqa: E402
 from bot._managers import BotManager, _apply  # noqa: E402
 from bot._service import AdapterRuntime  # noqa: E402
 from core.contracts import CapabilityCall  # noqa: E402
-from core.domain import FieldKey, Platform, PlatformTiming  # noqa: E402
+from finshin_sdk.domain import FieldKey, Platform, PlatformTiming  # noqa: E402
 from skin.messages import DialogMessage  # noqa: E402
 from ui import gui_bridge  # noqa: E402
 

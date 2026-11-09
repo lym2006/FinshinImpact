@@ -4,10 +4,8 @@
 import asyncio
 from dataclasses import dataclass, replace
 
-from core.domain import TaskKind
-from core.domain.ids import PrincipalKey, SessionKey
-
-from ..context import HandlerContext
+from finshin_sdk import HandlerContext
+from finshin_sdk.domain.ids import PrincipalKey, SessionKey
 
 
 @dataclass(frozen=True, slots=True)
@@ -19,7 +17,7 @@ class TaskItem:
 
     container_key: SessionKey
     principal_key: PrincipalKey
-    kind: TaskKind
+    kind: str
     ctx: HandlerContext
     sequence: int = 0
 

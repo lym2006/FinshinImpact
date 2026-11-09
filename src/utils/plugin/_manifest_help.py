@@ -6,8 +6,8 @@
 
 from typing import TypeGuard
 
-from core.domain import CommandRole, HelpKey, is_flag_name
-from core.dto import HelpCommandDTO, HelpFlagDTO, HelpSectionDTO
+from finshin_sdk.domain import CommandRole, HelpKey, is_flag_name
+from finshin_sdk.dto import HelpCommandDTO, HelpFlagDTO, HelpSectionDTO
 
 from ..logger import get_logger
 

@@ -6,9 +6,9 @@
 
 from asyncio import CancelledError
 
-from core.domain import TaskHandler, TaskKind
 from exceptions import MessageVanishedError
-from services.context import HandlerContext
+from finshin_sdk import HandlerContext
+from finshin_sdk.domain import TaskHandler
 from services.tasks import TaskItem, get_task_service
 from utils import get_logger
 
@@ -16,6 +16,9 @@ from ..utils import make_session_key
 from .worker import worker_loop
 
 _logger = get_logger("Plg.AI")
+
+# 本插件登记的任务动作名，形状是「插件名.动作」
+_TASK_KIND = "AI.chat"
 
 
 async def handle_ai_chat(ctx: HandlerContext) -> None:
@@ -26,7 +29,7 @@ async def handle_ai_chat(ctx: HandlerContext) -> None:
         TaskItem(
             container_key=key,
             principal_key=ctx.event.principal.key,
-            kind=TaskKind.CHAT,
+            kind=_TASK_KIND,
             ctx=ctx,
         )
     )
@@ -50,4 +53,4 @@ async def _run_chat_task(ctx: HandlerContext) -> None:
         _logger.send_error(f"{key} 任务出错", e)
 
 
-chat_task_handler = TaskHandler(kind=TaskKind.CHAT, run=_run_chat_task)
+chat_task_handler = TaskHandler(kind=_TASK_KIND, run=_run_chat_task)

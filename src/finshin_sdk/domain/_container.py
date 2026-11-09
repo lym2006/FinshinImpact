@@ -1,4 +1,4 @@
-# src/core/domain/_container.py
+# src/finshin_sdk/domain/_container.py
 """容器段归一
 
 - 定义平台 id 到容器键的转换规则

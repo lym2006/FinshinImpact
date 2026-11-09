@@ -25,7 +25,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from core.domain import (
+from finshin_sdk.domain import (
     BUNDLED_PLUGIN_PRIORITY,
     ManifestKey,
     StateKey,

@@ -1,4 +1,4 @@
-# src/core/domain/config/_shared.py
+# src/finshin_sdk/domain/config/_shared.py
 """全平台一致的配置段
 
 - 定义 ai、chore、data 三个共享段字段表

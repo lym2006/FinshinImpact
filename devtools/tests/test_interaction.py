@@ -23,14 +23,14 @@ from adapters.telegram._interaction import (  # noqa: E402
     _chat_id_of,
     _split_chunks,
 )
-from core.domain import ContentKind, Platform  # noqa: E402
-from core.domain.ids import ContainerKey, MessageId, UserId  # noqa: E402
-from core.dto import (  # noqa: E402
+from exceptions import MessageVanishedError  # noqa: E402
+from finshin_sdk.domain import ContentKind, Platform  # noqa: E402
+from finshin_sdk.domain.ids import ContainerKey, MessageId, UserId  # noqa: E402
+from finshin_sdk.dto import (  # noqa: E402
     MsgReferenceDTO,
     OutboundPayloadDTO,
     PrincipalDTO,
 )
-from exceptions import MessageVanishedError  # noqa: E402
 
 _SEGMENT = 4000
 

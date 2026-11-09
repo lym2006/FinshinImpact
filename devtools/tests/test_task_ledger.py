@@ -16,13 +16,19 @@ from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "src"))
 
-from core.domain import (  # noqa: E402
+from data import (  # noqa: E402
+    build_repositories,
+    close_all,
+    get_connection,
+    run_migrations,
+)
+from finshin_sdk import HandlerContext  # noqa: E402
+from finshin_sdk.domain import (  # noqa: E402
     ChatScope,
     Platform,
-    TaskKind,
     TaskStatus,
 )
-from core.domain.ids import (  # noqa: E402
+from finshin_sdk.domain.ids import (  # noqa: E402
     KEY_SEP,
     ContainerKey,
     MessageId,
@@ -30,20 +36,13 @@ from core.domain.ids import (  # noqa: E402
     TaskId,
     UserId,
 )
-from core.dto import (  # noqa: E402
+from finshin_sdk.dto import (  # noqa: E402
     ContentDTO,
     InboundEventDTO,
     MsgReferenceDTO,
     PrincipalDTO,
     TaskDTO,
 )
-from data import (  # noqa: E402
-    build_repositories,
-    close_all,
-    get_connection,
-    run_migrations,
-)
-from services.context import HandlerContext  # noqa: E402
 from services.tasks import TaskItem, TaskLedger  # noqa: E402
 
 _CONTAINER = ContainerKey("g100123")
@@ -68,7 +67,7 @@ def _item(user: str, message_id: str = "7") -> TaskItem:
     return TaskItem(
         container_key=SessionKey(f"{principal.platform}{KEY_SEP}{_CONTAINER}"),
         principal_key=principal.key,
-        kind=TaskKind.CHAT,
+        kind="demo.chat",
         ctx=HandlerContext(event=event, interaction=SimpleNamespace()),  # type: ignore[arg-type]
     )
 
@@ -96,7 +95,7 @@ class TestTaskLedger(unittest.IsolatedAsyncioTestCase):
     async def _row(self, user: str) -> TaskDTO | None:
         """取出该主体的任务行"""
         key = f"{Platform.TELEGRAM}{KEY_SEP}{_CONTAINER}{KEY_SEP}{user}"
-        return await self.repos.task.find(TaskId(f"{key}{KEY_SEP}{TaskKind.CHAT}"))
+        return await self.repos.task.find(TaskId(f"{key}{KEY_SEP}demo.chat"))
 
     async def test_first_of_a_run_inserts_one_row(self) -> None:
         """头一条入队即落行，主体行一并写上"""
