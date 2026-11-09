@@ -107,7 +107,7 @@ def _compile(routes: object) -> SimpleNamespace:
 def _plugin(name: str = "Fake", **fields: object) -> SimpleNamespace:
     """拼一只假插件模块，入口类按交出的字段回话
 
-    - 字段名沿用旧叫法：backgrounds、task_handlers、timings
+    - 关键字参数按三只入口方法名交：background_loops、queued_actions、timings
     - 入口类的所属模块名对齐假模块，装载侧据此认出它定义在本模块
     """
     routes = (MessageRoute(_never, _handle),)
@@ -116,8 +116,8 @@ def _plugin(name: str = "Fake", **fields: object) -> SimpleNamespace:
         (BundledPlugin,),
         {
             "message_routes": lambda self: routes,
-            "background_loops": lambda self: fields.get("backgrounds", ()),
-            "queued_actions": lambda self: fields.get("task_handlers", ()),
+            "background_loops": lambda self: fields.get("background_loops", ()),
+            "queued_actions": lambda self: fields.get("queued_actions", ()),
             "timings": lambda self: fields.get("timings", ()),
         },
     )
@@ -145,7 +145,7 @@ class TestCollectBackgrounds(unittest.TestCase):
         """声明了常驻协程与时机订阅的插件一并交出，并进成功报告"""
         modules = {
             "AI": _plugin(
-                backgrounds=(_noop,),
+                background_loops=(_noop,),
                 timings=(PluginTiming(PlatformTiming.IDENTITY_CHANGED, _noop),),
             )
         }
@@ -160,7 +160,7 @@ class TestCollectBackgrounds(unittest.TestCase):
 
     def test_entry_class_missing_skips_hooks(self) -> None:
         """没交入口类的插件记失败且不交出协程"""
-        modules = {"bad": _bare_module(backgrounds=(_noop,)), "good": _plugin()}
+        modules = {"bad": _bare_module(background_loops=(_noop,)), "good": _plugin()}
 
         (report, hooks, _, timings), routers = _register_modules(
             modules, ["bad", "good"]
@@ -173,7 +173,7 @@ class TestCollectBackgrounds(unittest.TestCase):
         self.assertIsNone(report[1][1])
 
     def test_legacy_router_not_mounted(self) -> None:
-        """只交 router 的旧写法不再认，记入口类缺失"""
+        """模块里只有 router 而没有入口类即记失败"""
         modules = {"bad": _bare_module(router=object()), "good": _plugin()}
 
         (report, hooks, _, timings), routers = _register_modules(
@@ -202,7 +202,7 @@ class TestCollectBackgrounds(unittest.TestCase):
 
     def test_non_callable_member_dropped(self) -> None:
         """声明里混进非 callable 只丢该成员"""
-        modules = {"AI": _plugin(backgrounds=(_noop, "拼错了"))}
+        modules = {"AI": _plugin(background_loops=(_noop, "拼错了"))}
 
         (_, hooks, _, timings), _ = _register_modules(modules, ["AI"])
 
@@ -212,8 +212,8 @@ class TestCollectBackgrounds(unittest.TestCase):
     def test_bad_shape_reported_and_excluded(self) -> None:
         """backgrounds 不是列表或元组即记失败，协程不收"""
         modules = {
-            "bad": _plugin(backgrounds=_noop),
-            "good": _plugin(backgrounds=(_noop,)),
+            "bad": _plugin(background_loops=_noop),
+            "good": _plugin(background_loops=(_noop,)),
         }
 
         (report, hooks, _, timings), routers = _register_modules(
@@ -238,10 +238,10 @@ class TestCollectBackgrounds(unittest.TestCase):
         self.assertEqual(handlers, ())
         self.assertEqual([(m.name, e) for m, e in report], [("help", None)])
 
-    def test_declared_task_handlers_returned(self) -> None:
+    def test_declared_queued_actions_returned(self) -> None:
         """回归点 8：声明了任务处理的插件交出处理清单"""
         declared = QueuedAction(kind="AI.chat", run=_handle)
-        modules = {"AI": _plugin(task_handlers=(declared,)), "help": _plugin()}
+        modules = {"AI": _plugin(queued_actions=(declared,)), "help": _plugin()}
 
         (_, _, handlers, _), _ = _register_modules(modules, ["AI", "help"])
 

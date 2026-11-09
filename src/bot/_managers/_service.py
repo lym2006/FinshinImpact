@@ -78,14 +78,14 @@ class ServiceManager(BaseManager):
         self._timing_hooks = parts.timings
         self._log_plugin_report(parts.report)
         configure_task_service(
-            parts.handlers,
+            parts.queued_actions,
             ledger=TaskLedger(DB_FILE, on_fault=self._report_ledger_fault),
             on_fault=self._report_task_fault,
         )
         self._service = AdapterRuntime(
             parts.adapter,
             self.capability_call(),
-            parts.backgrounds,
+            parts.background_loops,
             self.hooks_for(PlatformTiming.BEFORE_ENGINE_RUN),
         )
 
