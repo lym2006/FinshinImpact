@@ -242,20 +242,30 @@ class TestAdapterHost(unittest.TestCase):
         """启动取件被拒时那句人话上屏
 
         - 取件排在主窗之前，主窗的兜底还没挂上
+        - 先收提示卡，再弹报错窗
         """
         popped: list[str] = []
+        events: list[str] = []
 
         def refuse(_platform: object) -> None:
             raise AdapterOutOfDateError("tg", "9.9.9", "0.1.0")
 
         with (
             patch.object(main_mod, "ensure_app", lambda: object()),
-            patch.object(main_mod, "show_popup", lambda _t, body: popped.append(body)),
+            patch.object(
+                main_mod,
+                "show_popup",
+                lambda _t, body: (popped.append(body), events.append("popup")),
+            ),
             patch.object(main_mod, "parts_for", refuse),
         ):
-            self.assertEqual(main_mod.Main(on_ready=None).main(), 1)
+            main = main_mod.Main(
+                on_ready=None, close_wait=lambda: events.append("dismiss")
+            )
+            self.assertEqual(main.main(), 1)
 
         self.assertEqual(popped, ["这个平台的适配器要接口包 9.9.9 以上，本机是 0.1.0"])
+        self.assertEqual(events, ["dismiss", "popup"])
 
     def test_unknown_startup_error_pops_without_details(self) -> None:
         """未知启动异常只报一句要去看日志，异常原文不上屏"""

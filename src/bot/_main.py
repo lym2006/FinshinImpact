@@ -46,10 +46,12 @@ class Main:
     def __init__(
         self,
         on_ready: Callable[[], None] | None = None,
+        close_wait: Callable[[], None] | None = None,
         t0: float | None = None,
     ) -> None:
         self.logger = get_logger("Main")
         self._on_ready = on_ready
+        self._close_wait = close_wait
         self._t0 = t0 if t0 is not None else time.monotonic()
         self._loop = asyncio.new_event_loop()
         self._manager = BotManager(self._loop)
@@ -108,16 +110,23 @@ class Main:
             # 取件排在 GUI 之前，这句只能自己弹窗，主窗的兜底还没挂上
             detail = _ERR_MAP_ADAPTER[type(e)].format(**vars(e))
             self.logger.send_error(f"程序启动异常：{detail}", e)
-            show_popup(WINDOW.title, detail)
+            self._pop_failure(detail)
             return 1
         except Exception as e:
             self.logger.send_error("程序启动异常", e)
-            show_popup(
-                WINDOW.title, MiscMessage.STARTUP_FAIL_HINT.format(logs=LOGS_DIR)
-            )
+            self._pop_failure(MiscMessage.STARTUP_FAIL_HINT.format(logs=LOGS_DIR))
             return 1
         finally:
             self._cleanup()
+
+    def _pop_failure(self, body: str) -> None:
+        """报错上屏
+
+        - 先收引导提示卡，别让「就绪后自动进入主窗口」挂在报错后面继续计时
+        """
+        if self._close_wait is not None:
+            self._close_wait()
+        show_popup(WINDOW.title, body)
 
     def _wire_signals(
         self, window: BotGUI, instances: dict[str, BaseController]
