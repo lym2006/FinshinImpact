@@ -34,8 +34,8 @@ class PlatformAssembly:
 
     adapter: BaseAdapter
     report: Sequence[tuple[PluginManifestDTO, Exception | None]]
-    backgrounds: tuple[BackgroundLoop, ...]
-    handlers: tuple[QueuedAction, ...]
+    background_loops: tuple[BackgroundLoop, ...]
+    queued_actions: tuple[QueuedAction, ...]
     timings: dict[PlatformTiming, tuple[PluginTimingRun, ...]]
 
 

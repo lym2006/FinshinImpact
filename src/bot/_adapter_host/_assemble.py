@@ -21,7 +21,7 @@ def assemble_platform(
     """
     adapter = parts_for(platform).assemble(token, proxy)
     adapter.attach_middleware(LoggingMiddleware())
-    report, backgrounds, handlers, timings = register_plugins(
+    report, loops, actions, timings = register_plugins(
         adapter.route_sink, adapter.router_builder
     )
-    return PlatformAssembly(adapter, report, backgrounds, handlers, timings)
+    return PlatformAssembly(adapter, report, loops, actions, timings)

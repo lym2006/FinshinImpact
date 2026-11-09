@@ -35,12 +35,12 @@ class AdapterRuntime:
         self,
         adapter: "BaseAdapter",
         capability: "CapabilityCall",
-        backgrounds: tuple[BackgroundLoop, ...] = (),
+        background_loops: tuple[BackgroundLoop, ...] = (),
         before_run: tuple[PluginTimingRun, ...] = (),
     ) -> None:
         self._adapter = adapter
         self._capability = capability
-        self._backgrounds = backgrounds
+        self._background_loops = background_loops
         self._before_run = before_run
         self._loop: asyncio.AbstractEventLoop | None = None
         self._thread: threading.Thread | None = None
@@ -143,14 +143,14 @@ class AdapterRuntime:
 
         # 引擎开跑前交代的话要落在新回答前面
         await self._run_before_run()
-        tasks = [asyncio.create_task(hook()) for hook in self._backgrounds]
+        tasks = [asyncio.create_task(hook()) for hook in self._background_loops]
 
         try:
             await self._start_polling()
         except asyncio.CancelledError:
             _logger.debug("轮询被取消")
         finally:
-            await self._stop_backgrounds(tasks)
+            await self._stop_background_loops(tasks)
 
             # 只清自己并按对象注销：全局清理留给进程退出，防热重载互踩注册表
             try:
@@ -172,7 +172,7 @@ class AdapterRuntime:
             except Exception as e:
                 _logger.send_error("插件在引擎开跑前的件出错", e)
 
-    async def _stop_backgrounds(self, tasks: list[asyncio.Task]) -> None:
+    async def _stop_background_loops(self, tasks: list[asyncio.Task]) -> None:
         """收掉插件常驻协程
 
         - 取消后限时等待，超时即放行
