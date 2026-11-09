@@ -50,6 +50,7 @@ from ._network import (
 )
 from ._plugins import (
     PluginDependencyError,
+    PluginImportError,
     PluginLoadError,
     PluginMissingError,
     PluginRoleError,
@@ -114,6 +115,7 @@ __all__ = [
     "PluginSpecError",
     "PluginMissingError",
     "PluginDependencyError",
+    "PluginImportError",
     "PluginLoadError",
     "PluginRoleError",
     # 适配器
