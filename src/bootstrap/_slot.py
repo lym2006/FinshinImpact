@@ -17,6 +17,7 @@ from system.instance_lock import (
     acquire_instance_lock,
     release_bootstrap_lock,
 )
+from system.native_dialog import show_error
 from system.profile_env import get_profile, set_profile
 
 # 主程序 GUI 装配链，分步导入时逐模块各泵一轮
@@ -194,6 +195,34 @@ def _pump_imports() -> threading.Thread:
 
 def main() -> int:
     """引导入口
+
+    - 资格判定与主程序装配全程套最后兜底
+    - 兜底走系统原生弹窗：这一步界面库与主程序都可能正是坏掉的那个
+    """
+    try:
+        return _guide()
+    except Exception as e:
+        _pop_crash(e)
+        return 1
+
+
+def _pop_crash(exc: Exception) -> None:
+    """把启动炸点报给人看
+
+    - 这一段日志器还没挂上，屏幕上那句是唯一出口
+    - 只报异常类名，异常原文与堆栈都不上屏
+    """
+    from skin.messages import MiscMessage
+    from skin.theme import WINDOW
+
+    show_error(
+        WINDOW.title,
+        MiscMessage.STARTUP_CRASH.format(kind=type(exc).__name__),
+    )
+
+
+def _guide() -> int:
+    """资格判定、提示卡与主程序装配
 
     - 完成资格判定后，持锁进程才导入主程序
     - 须先写入身份码环境变量，再导入路径常量
