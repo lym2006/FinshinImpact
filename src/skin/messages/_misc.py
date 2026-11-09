@@ -15,6 +15,9 @@ class MiscMessage:
     # 用：bot/_main.py 启动失败那两弹窗的正文
     STARTUP_FAIL_HINT = "程序启动失败，详情见日志\n{logs}"
 
+    # 用：bootstrap 引导层最后兜底的原生弹窗正文，日志器还没挂上，屏幕是唯一出口
+    STARTUP_CRASH = "程序启动失败，运行库或包文件可能不完整\n（技术标识：{kind}）"
+
     # 用：bot/error_guard.py 与界面控制器包的报错正文
     GUARD_EXEC_ERROR = "执行 [{name}] 时发生错误"
     OPEN_LOGS_FAIL = "打开日志目录失败"
