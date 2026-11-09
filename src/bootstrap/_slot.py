@@ -241,9 +241,13 @@ def _guide() -> int:
     # 主程序导入完成前有无窗空白期，提示卡垫住这段
     wait = show_launch_wait(get_profile())
 
+    def dismiss_wait() -> None:
+        """收起提示卡"""
+        wait.close()
+
     def on_ready() -> None:
         """主窗就绪，收起提示卡并预热字节码"""
-        wait.close()
+        dismiss_wait()
         start_warmup()
 
     preload = _pump_imports()
@@ -251,6 +255,6 @@ def _guide() -> int:
     from bot import Main
 
     try:
-        return Main(on_ready=on_ready, t0=t0).main()
+        return Main(on_ready=on_ready, close_wait=dismiss_wait, t0=t0).main()
     finally:
         wait.close()
