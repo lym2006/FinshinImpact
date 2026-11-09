@@ -11,16 +11,9 @@ from collections.abc import Callable
 from typing import Any, ParamSpec, TypeVar, cast
 
 from exceptions import (
-    MAP_KEY_ADAPTER,
-    MAP_KEY_CONFIG,
-    MAP_KEY_CONNECTIVITY,
-    MAP_KEY_PROXY,
-    MAPS,
-    AdapterError,
     BotError,
-    ConfigError,
     ConfigPathMissingError,
-    ProxyError,
+    describe_error,
 )
 from skin.messages import ConfigMessage, MiscMessage
 from ui import gui_bridge
@@ -41,24 +34,6 @@ def _setup_errors(exc: BotError) -> dict[str, str]:
     return {}
 
 
-def _describe(exc: BotError) -> str:
-    """渲染给用户看的定性文案"""
-    if isinstance(exc, ConfigError):
-        template = MAPS[MAP_KEY_CONFIG].get(type(exc), "")
-    elif isinstance(exc, AdapterError):
-        template = MAPS[MAP_KEY_ADAPTER].get(type(exc), "")
-    else:
-        table = MAPS[MAP_KEY_CONNECTIVITY]
-        if isinstance(exc, ProxyError):
-            template = table[MAP_KEY_PROXY].get(type(exc), "")
-        else:
-            template = table.get(type(exc), "")
-    try:
-        return template.format(**vars(exc)) or type(exc).__name__
-    except (KeyError, IndexError):
-        return type(exc).__name__
-
-
 def _route(exc: BotError, stage: str) -> None:
     """路由异常到 GUI 信号"""
     logger = get_logger("ErrorGuard")
@@ -67,7 +42,7 @@ def _route(exc: BotError, stage: str) -> None:
         return
 
     logger.debug(exc)
-    detail = _describe(exc)
+    detail = describe_error(exc)
     if exc.fatal:
         logger.error(f"{stage}发生致命错误: {detail}")
         gui_bridge.request_notice.emit(f"{stage}\n{detail}", True)

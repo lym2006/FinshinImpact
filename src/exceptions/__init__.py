@@ -1,18 +1,17 @@
 # src/exceptions/__init__.py
 """异常聚合包
 
-- 定义全部自定义异常族与文案模板
+- 代发全部自定义异常族
+- 代发取异常那句人话的那只手
 """
 
 from ._adapter import (
-    ADAPTER_MAP,
     AdapterError,
     AdapterMissingError,
     AdapterOutOfDateError,
 )
 from ._base import BotError
 from ._config import (
-    CONFIG_MAP,
     ConfigAttrError,
     ConfigError,
     ConfigInputError,
@@ -22,7 +21,6 @@ from ._config import (
     ProfileMissingError,
 )
 from ._connectivity import (
-    CONNECTIVITY_MAP,
     ConnectivityError,
     DirectTimeoutError,
     ProxyAddressError,
@@ -33,6 +31,7 @@ from ._connectivity import (
     TelegramServerError,
     TokenError,
 )
+from ._describe import describe_error
 from ._domain import DomainError, MessageVanishedError
 from ._gui import (
     DashboardWriteError,
@@ -44,14 +43,12 @@ from ._gui import (
     GUIError,
 )
 from ._network import (
-    NETWORK_MAP,
     ConnectionFailedError,
     HTTPStatusError,
     NetworkError,
     RequestTimeoutError,
 )
 from ._plugins import (
-    PLUGINS_MAP,
     PluginDependencyError,
     PluginLoadError,
     PluginMissingError,
@@ -61,34 +58,15 @@ from ._plugins import (
     PluginSpecError,
 )
 from ._version import (
-    VERSION_MAP,
     LocalVersionError,
     NewVersionError,
     RemoteVersionError,
     VersionError,
 )
 
-# 异常映射表域键
-MAP_KEY_CONNECTIVITY = "Connectivity"
-MAP_KEY_PROXY = "Proxy"
-MAP_KEY_CONFIG = "Config"
-MAP_KEY_NETWORK = "Network"
-MAP_KEY_VERSION = "Version"
-MAP_KEY_PLUGINS = "Plugins"
-MAP_KEY_ADAPTER = "Adapter"
-
-MAPS = {
-    MAP_KEY_CONFIG: CONFIG_MAP,
-    MAP_KEY_VERSION: VERSION_MAP,
-    MAP_KEY_NETWORK: NETWORK_MAP,
-    MAP_KEY_CONNECTIVITY: CONNECTIVITY_MAP,
-    MAP_KEY_PLUGINS: PLUGINS_MAP,
-    MAP_KEY_ADAPTER: ADAPTER_MAP,
-}
-
 __all__ = [
-    # 异常映射表
-    "MAPS",
+    # 异常文案
+    "describe_error",
     # 基类
     "BotError",
     # 版本

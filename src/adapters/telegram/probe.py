@@ -199,13 +199,6 @@ async def attempt_channel(token: str, proxy: str) -> tuple[str | None, dict[str,
 
 def _err_text(e: ConnectivityError) -> str:
     """生成可读错误文案"""
-    from exceptions import MAP_KEY_CONNECTIVITY, MAP_KEY_PROXY, MAPS
+    from exceptions import describe_error
 
-    proxy_map = MAPS[MAP_KEY_CONNECTIVITY][MAP_KEY_PROXY]
-    template = proxy_map.get(type(e)) or MAPS[MAP_KEY_CONNECTIVITY].get(type(e))
-    if not template:
-        return type(e).__name__
-    try:
-        return template.format(**vars(e))
-    except (KeyError, IndexError):
-        return template
+    return describe_error(e)

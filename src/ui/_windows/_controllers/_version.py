@@ -9,7 +9,7 @@ import asyncio
 
 from PySide6.QtCore import QThread, Signal
 
-from exceptions import MAP_KEY_VERSION, MAPS, NewVersionError, VersionError
+from exceptions import NewVersionError, VersionError, describe_error
 from skin.messages import VersionMessage
 from skin.theme import WAIT_DIALOG
 from utils.check import ReleaseNote, check_updates, release_history
@@ -20,8 +20,7 @@ from ._base import BaseController
 
 _logger = get_logger("GUI.Version")
 
-# 异常文案表与 release 标签前缀
-_ERR_MAP_VERSION = MAPS[MAP_KEY_VERSION]
+# release 标签前缀
 _TAG_PREFIX = "v"
 
 
@@ -42,11 +41,9 @@ class _VersionWorker(QThread):
             tag = f"{_TAG_PREFIX}{e.new_version}"
             notes = self._notes()
             focus = tag if any(note.tag == tag for note in notes) else ""
-            self.done.emit(
-                _ERR_MAP_VERSION[NewVersionError].format(**vars(e)), notes, focus, True
-            )
+            self.done.emit(describe_error(e), notes, focus, True)
         except VersionError as e:
-            self.done.emit(_ERR_MAP_VERSION[type(e)].format(**vars(e)), [], "", False)
+            self.done.emit(describe_error(e), [], "", False)
         except Exception as e:
             _logger.debug("版本检查异常", exc_info=True)
             self.done.emit(

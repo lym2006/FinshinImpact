@@ -55,10 +55,9 @@ CONNECTIVITY_MAP = {
     TokenError: "Token 无效",
     TelegramServerError: "无法连接到服务器",
     DirectTimeoutError: "直连超时，请开启系统代理或在代理项填写地址",
-    "Proxy": {
-        ProxySchemeError: "代理协议不支持: {scheme}",
-        ProxyAddressError: "代理地址格式无法解析: {proxy}",
-        ProxyConnectionRefusedError: "无法连接到代理服务器 {proxy}，请检查代理工具是否开启",
-        ProxyTimeoutError: "连接代理 {proxy} 超时，请检查网络环境",
-    },
+    ProxyError: "代理地址有问题：{proxy}",
+    ProxySchemeError: "代理协议不支持: {scheme}",
+    ProxyAddressError: "代理地址格式无法解析: {proxy}",
+    ProxyConnectionRefusedError: "无法连接到代理服务器 {proxy}，请检查代理工具是否开启",
+    ProxyTimeoutError: "连接代理 {proxy} 超时，请检查网络环境",
 }

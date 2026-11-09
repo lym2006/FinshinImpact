@@ -12,7 +12,7 @@ from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING
 
 from core.contracts import CapabilityCall
-from exceptions import MAP_KEY_PLUGINS, MAPS, BotError
+from exceptions import describe_error
 from finshin_sdk import PlatformAssembly
 from finshin_sdk.domain import ContentKind, PlatformTiming
 from finshin_sdk.dto import OutboundPayloadDTO, PluginManifestDTO
@@ -28,20 +28,6 @@ if TYPE_CHECKING:
     from services.tasks import TaskItem
 
     from .._service import AdapterRuntime
-
-_ERR_MAP_PLUGIN = MAPS[MAP_KEY_PLUGINS]
-
-
-def _failure_reason(error: BaseException) -> str:
-    """失败行的原因取映射文案
-
-    - 认得出的异常族照映射填
-    - 认不出的报异常类名，细节归调试日志
-    """
-    template = _ERR_MAP_PLUGIN.get(type(error)) if isinstance(error, BotError) else None
-    if template is None:
-        return type(error).__name__
-    return template.format(**vars(error))
 
 
 class ServiceManager(BaseManager):
@@ -133,7 +119,7 @@ class ServiceManager(BaseManager):
                     index=index,
                     n=total,
                     name=manifest.name,
-                    reason=_failure_reason(error),
+                    reason=describe_error(error),
                 ),
                 error,
             )
