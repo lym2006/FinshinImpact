@@ -41,6 +41,19 @@ class PluginLoadError(PluginsError):
         super().__init__()
 
 
+class PluginImportError(PluginsError):
+    """外部插件引了本体内部
+
+    - target 是它想引的名字，where 落在哪份文件哪一行
+    """
+
+    def __init__(self, plugin: str, target: str, where: str) -> None:
+        self.plugin = plugin
+        self.target = target
+        self.where = where
+        super().__init__()
+
+
 class PluginRoleError(PluginsError):
     """命令权限声明与守卫不一致
 
@@ -58,5 +71,6 @@ PLUGINS_MAP = {
     PluginDependencyError: "内部依赖缺失",
     PluginLoadError: "加载失败：{kind}",
     PluginRoleError: "命令权限说明与实际拦截对不上",
+    PluginImportError: "外部插件 {plugin} 不许引本体内部：{target}（{where}）",
     PluginsMissingError: "一只插件都没装上，程序无法运行",
 }

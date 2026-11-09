@@ -23,7 +23,13 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
-from exceptions import PluginLoadError, PluginRoleError, PluginSpecError  # noqa: E402
+from exceptions import (  # noqa: E402
+    PluginImportError,
+    PluginLoadError,
+    PluginRoleError,
+    PluginSpecError,
+    describe_error,
+)
 from finshin_sdk.domain import (  # noqa: E402
     INSTALLED_PLUGINS_NAME,
     PLUGINS_PKG,
@@ -33,8 +39,10 @@ from finshin_sdk.domain import (  # noqa: E402
     PluginClaim,
     resolve_claims,
 )
+from finshin_sdk.dto import PluginManifestDTO  # noqa: E402
 from services.env_setup import deps_manifest  # noqa: E402
 from utils.plugin import _manifest, _register  # noqa: E402
+from utils.plugin._scope import check_external_scope  # noqa: E402
 
 _MANIFEST = 'name = "{name}"\ntitle = "{title}"\nsummary = "外部目录装载用例"\n'
 # 清单里的命令声明，读侧按它做命令名抢占判定
@@ -59,6 +67,14 @@ async def _drop(raw: object, ctx: object) -> None:
 
 
 ROUTE = PluginSpec(routes=(PluginRoute(_never, _drop),))
+"""
+
+# 伸手本体内部的入口，闸要在导入之前就拦下
+_SCOPE_OFFENDER = """
+from finshin_sdk import PluginSpec
+from utils.speaker import media_mark
+
+spec = PluginSpec()
 """
 
 # 交出全套件的清单文本，role 为命令声明的权限档
@@ -199,6 +215,32 @@ class ExternalRootCase(unittest.TestCase):
             "enabled = [{}]\n".format(", ".join(f'"{n}"' for n in names)),
             encoding="utf-8",
         )
+
+    def _register_installed(self, entries: dict[str, str], manifest: str) -> tuple:
+        """按给定入口跑一轮注册，回清单序列、注册结果与挂上来的路由
+
+        - 同时陪跑一只必成功的插件，单只失败才轮不到整体上抛
+        """
+        demo = self.installed / "demo"
+        demo.mkdir()
+        (demo / "plugin.toml").write_text(manifest, encoding="utf-8")
+        for file_name, body in entries.items():
+            (demo / file_name).write_text(body, encoding="utf-8")
+
+        mate = self.installed / "mate"
+        mate.mkdir()
+        (mate / "plugin.toml").write_text(
+            _MANIFEST.format(name="mate", title="陪跑"), encoding="utf-8"
+        )
+        (mate / "__init__.py").write_text(_MATE_ENTRY, encoding="utf-8")
+        self._enable_installed()
+
+        manifests = _manifest.enabled_manifests(self.state)
+        sink = _FakeSink()
+        with patch.object(_register, "_resolve_plugins", lambda: manifests):
+            result = _register.register_plugins(sink, lambda spec: spec)
+
+        return manifests, result, sink
 
 
 class TestExternalRootReads(ExternalRootCase):
@@ -350,32 +392,6 @@ class TestExternalRootImports(ExternalRootCase):
 class TestExternalContract(ExternalRootCase):
     """契约闸门：外部插件交出的一切从盘上收到装载侧"""
 
-    def _register_installed(self, entries: dict[str, str], manifest: str) -> tuple:
-        """按给定入口跑一轮注册，回清单序列、注册结果与挂上来的路由
-
-        - 同时陪跑一只必成功的插件，单只失败才轮不到整体上抛
-        """
-        demo = self.installed / "demo"
-        demo.mkdir()
-        (demo / "plugin.toml").write_text(manifest, encoding="utf-8")
-        for file_name, body in entries.items():
-            (demo / file_name).write_text(body, encoding="utf-8")
-
-        mate = self.installed / "mate"
-        mate.mkdir()
-        (mate / "plugin.toml").write_text(
-            _MANIFEST.format(name="mate", title="陪跑"), encoding="utf-8"
-        )
-        (mate / "__init__.py").write_text(_MATE_ENTRY, encoding="utf-8")
-        self._enable_installed()
-
-        manifests = _manifest.enabled_manifests(self.state)
-        sink = _FakeSink()
-        with patch.object(_register, "_resolve_plugins", lambda: manifests):
-            result = _register.register_plugins(sink, lambda spec: spec)
-
-        return manifests, result, sink
-
     def test_every_declared_piece_arrives(self) -> None:
         """清单字段、路由、协程、任务处理与时机订阅一并收到
 
@@ -434,6 +450,36 @@ class TestExternalContract(ExternalRootCase):
         )
 
         self.assertIsInstance(report[0][1], PluginLoadError)
+
+
+class TestExternalScope(ExternalRootCase):
+    """外部插件只准引接口包那道闸"""
+
+    def test_external_reaching_body_is_recorded(self) -> None:
+        """外部件引本体内部即记失败，另一只照常装载
+
+        - 这条红了说明闸没接进注册序列，外部件还能伸手进本体
+        """
+        _, (report, _, _, _), _ = self._register_installed(
+            {"__init__.py": _SCOPE_OFFENDER}, _CONTRACT_MANIFEST.format(role="member")
+        )
+        reason = describe_error(report[0][1])
+
+        self.assertIsInstance(report[0][1], PluginImportError)
+        self.assertIsNone(report[1][1])
+        self.assertIn("utils.speaker", reason)
+        self.assertIn("__init__.py:3", reason)
+
+    def test_bundled_tree_is_not_checked(self) -> None:
+        """随包树的模块名直接跳过这道查，目录不在盘上也不报错
+
+        - 这条红了说明放行按恒启用表挑人，新加的随包件会被误拦
+        """
+        check_external_scope(
+            PluginManifestDTO(
+                name="inner", module=f"{PLUGINS_PKG}.inner", title="随包", summary=""
+            )
+        )
 
 
 if __name__ == "__main__":

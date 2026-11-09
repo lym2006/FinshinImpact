@@ -12,6 +12,7 @@ from typing import Any, cast
 
 from exceptions import (
     PluginDependencyError,
+    PluginImportError,
     PluginLoadError,
     PluginMissingError,
     PluginRoleError,
@@ -39,6 +40,7 @@ from finshin_sdk.dto import PluginManifestDTO
 
 from ..paths import PROFILE_DIR
 from ._manifest import enabled_manifests
+from ._scope import check_external_scope
 
 # 逐项报告：(插件清单, 失败异常)，成功那项异常记 None
 _PluginReport = list[tuple[PluginManifestDTO, PluginsError | None]]
@@ -72,6 +74,9 @@ def register_plugins(
     for manifest in _resolve_plugins():
         bundled = manifest.name in BUNDLED_PLUGIN_PRIORITY
         try:
+            # 外部件先查引用范围，随包树里的由那只手自己放行
+            check_external_scope(manifest)
+
             # 动态导入插件模块
             module = importlib.import_module(manifest.module)
             spec = cast(PluginSpec | None, getattr(module, "spec", None))
@@ -101,7 +106,7 @@ def register_plugins(
                 raise
             report.append((manifest, error))
 
-        except PluginRoleError as e:
+        except (PluginImportError, PluginRoleError) as e:
             if bundled:
                 raise
             report.append((manifest, e))
