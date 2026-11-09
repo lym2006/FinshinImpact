@@ -120,7 +120,6 @@ def _read_manifest(path: Path, dir_name: str) -> AdapterManifestDTO | None:
 
     return AdapterManifestDTO(
         platform=platform,
-        version=kwargs[AdapterManifestKey.VERSION],
         deps=kwargs[AdapterManifestKey.DEPS],
         entry=f"{ADAPTERS_PKG}.{dir_name}.{ADAPTER_ENTRY_MODULE}",
     )
