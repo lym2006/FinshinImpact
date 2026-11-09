@@ -4,14 +4,14 @@
 - 交出全部业务路由的有序清单
 """
 
-from finshin_sdk.domain import PluginRoute
+from finshin_sdk.domain import MessageRoute
 
 from . import _ai_chat, _history
 
 __all__ = ["get_routes"]
 
 
-def get_routes() -> tuple[PluginRoute, ...]:
+def get_routes() -> tuple[MessageRoute, ...]:
     """按优先级拼出路由清单
 
     - 子路由顺序即匹配顺序，对话判定必须最后

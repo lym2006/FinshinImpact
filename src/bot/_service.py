@@ -9,7 +9,7 @@ import asyncio
 import threading
 from typing import TYPE_CHECKING
 
-from finshin_sdk.domain import PluginBackground, PluginTimingRun
+from finshin_sdk.domain import BackgroundLoop, PluginTimingRun
 from skin.messages import EngineMessage
 from utils import get_logger, register_lifecycle, unregister_lifecycle
 from utils.network import link_report
@@ -35,7 +35,7 @@ class AdapterRuntime:
         self,
         adapter: "BaseAdapter",
         capability: "CapabilityCall",
-        backgrounds: tuple[PluginBackground, ...] = (),
+        backgrounds: tuple[BackgroundLoop, ...] = (),
         before_run: tuple[PluginTimingRun, ...] = (),
     ) -> None:
         self._adapter = adapter

@@ -8,7 +8,7 @@
 from pathlib import Path
 
 from finshin_sdk import HandlerContext
-from finshin_sdk.domain import CommandRole, ContentKind, PluginRoute
+from finshin_sdk.domain import CommandRole, ContentKind, MessageRoute
 from finshin_sdk.domain.ids import SessionKey
 from finshin_sdk.dto import OutboundPayloadDTO
 
@@ -58,6 +58,6 @@ async def _clear_history(platform_raw: object, ctx: HandlerContext) -> None:
 
 
 routes = (
-    PluginRoute(CommandMatch("history"), _show_history),
-    PluginRoute(CommandMatch("clear"), _clear_history),
+    MessageRoute(CommandMatch("history"), _show_history),
+    MessageRoute(CommandMatch("clear"), _clear_history),
 )

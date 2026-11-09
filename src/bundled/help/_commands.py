@@ -16,8 +16,7 @@ from finshin_sdk.domain import (
     ChatScope,
     CommandFlag,
     ContentKind,
-    PluginRoute,
-    PluginSpec,
+    MessageRoute,
     bind_command,
 )
 from finshin_sdk.dto import CommandDTO, OutboundPayloadDTO
@@ -149,10 +148,8 @@ async def _show_menu(platform_raw: object, ctx: HandlerContext) -> None:
     await ctx.respond(OutboundPayloadDTO(kind=ContentKind.PHOTO, local_path=str(path)))
 
 
-spec = PluginSpec(
-    routes=(
-        PluginRoute(_is_illegal_command, _reject_command),
-        PluginRoute(_is_single_help, _show_single_help),
-        PluginRoute(_is_menu_request, _show_menu),
-    )
+ROUTES = (
+    MessageRoute(_is_illegal_command, _reject_command),
+    MessageRoute(_is_single_help, _show_single_help),
+    MessageRoute(_is_menu_request, _show_menu),
 )

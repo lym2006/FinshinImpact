@@ -14,8 +14,7 @@ from finshin_sdk import HandlerContext
 from finshin_sdk.domain import (
     ChatScope,
     CommandRole,
-    PluginRoute,
-    PluginSpec,
+    MessageRoute,
     StepInput,
 )
 from finshin_sdk.domain.ids import PrincipalKey, UserId
@@ -176,11 +175,9 @@ async def _finish_grant(platform_raw: object, ctx: HandlerContext) -> None:
         _pending.pop(key, None)
 
 
-spec = PluginSpec(
-    routes=(
-        PluginRoute(CommandMatch("grant"), _add_grant),
-        PluginRoute(CommandMatch("ungrant"), _drop_grant),
-        PluginRoute(CommandMatch("admin"), _show_admins),
-        PluginRoute(_awaits_target, _finish_grant),
-    )
+ROUTES = (
+    MessageRoute(CommandMatch("grant"), _add_grant),
+    MessageRoute(CommandMatch("ungrant"), _drop_grant),
+    MessageRoute(CommandMatch("admin"), _show_admins),
+    MessageRoute(_awaits_target, _finish_grant),
 )

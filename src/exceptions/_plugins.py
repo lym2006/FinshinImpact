@@ -18,8 +18,15 @@ class PluginsMissingError(PluginsError):
     fatal = True  # 环境缺失非配置可修，向导无从补救
 
 
-class PluginSpecError(PluginsError):
-    """插件没交 spec"""
+class PluginEntryError(PluginsError):
+    """插件入口类不对
+
+    - detail 写明是模块里没有子类，还是不止一只
+    """
+
+    def __init__(self, detail: str) -> None:
+        self.detail = detail
+        super().__init__()
 
 
 class PluginMissingError(PluginsError):
@@ -66,7 +73,7 @@ class PluginRoleError(PluginsError):
 
 
 PLUGINS_MAP = {
-    PluginSpecError: "缺少 spec 属性（检查 __init__.py）",
+    PluginEntryError: "插件入口不对：{detail}",
     PluginMissingError: "未找到（检查目录结构）",
     PluginDependencyError: "内部依赖缺失",
     PluginLoadError: "加载失败：{kind}",

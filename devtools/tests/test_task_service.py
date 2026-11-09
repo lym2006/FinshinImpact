@@ -25,7 +25,7 @@ from finshin_sdk import HandlerContext, InteractionPort  # noqa: E402
 from finshin_sdk.domain import (  # noqa: E402
     ChatScope,
     Platform,
-    TaskHandler,
+    QueuedAction,
 )
 from finshin_sdk.domain.ids import (  # noqa: E402
     KEY_SEP,
@@ -122,7 +122,7 @@ class TestTaskService(unittest.IsolatedAsyncioTestCase):
     def _service(self, handlers: dict[str, object], **kwargs: int) -> TaskService:
         """把类型到处理函数的映射交进服务，报错全部收进本用例"""
         declared = [
-            TaskHandler(kind=kind, run=run)  # type: ignore[arg-type]
+            QueuedAction(kind=kind, run=run)  # type: ignore[arg-type]
             for kind, run in handlers.items()
         ]
         return TaskService(
@@ -243,8 +243,8 @@ class TestTaskService(unittest.IsolatedAsyncioTestCase):
 
         service = TaskService(
             [
-                TaskHandler(kind="demo.chat", run=first),
-                TaskHandler(kind="demo.chat", run=second),
+                QueuedAction(kind="demo.chat", run=first),
+                QueuedAction(kind="demo.chat", run=second),
             ],
             ledger=self.ledger,
             on_fault=lambda item, e: self.faults.append((item, e)),

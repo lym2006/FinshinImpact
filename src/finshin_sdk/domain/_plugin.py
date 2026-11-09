@@ -17,16 +17,16 @@ PLUGINS_PKG = "bundled"  # 插件树顶层包名，find_spec 与动态导入路�
 INSTALLED_PLUGINS_NAME = "plugins_installed"  # 项目根下的外部插件目录，目录名即顶层包名
 
 # 插件声明的无参常驻协程，随 Bot 服务起停
-PluginBackground = Callable[[], Coroutine[Any, Any, None]]
+BackgroundLoop = Callable[[], Coroutine[Any, Any, None]]
 
 # 路由谓词，只吃归一后的处理上下文，返回是否接管这条事件
-PluginPredicate = Callable[..., Awaitable[bool]]
+RouteMatcher = Callable[..., Awaitable[bool]]
 
 # 路由处理函数，首位按位置收本平台原始件且不许读它，归一事件与上下文都从 ctx 取
 _PluginHandler = Callable[..., Awaitable[None]]
 
 # 任务处理函数，只吃归一后的处理上下文，报错自行收干净再交回调度
-TaskRun = Callable[..., Awaitable[None]]
+ActionRun = Callable[..., Awaitable[None]]
 
 # 时机订阅的处理函数，收平台召唤时交代的那一份能力
 PluginTimingRun = Callable[..., Awaitable[None]]
@@ -35,7 +35,7 @@ PluginTimingRun = Callable[..., Awaitable[None]]
 class PlatformTiming(StrEnum):
     """平台会说出口的机会
 
-    - 加新机会在这里加一名，不在 PluginSpec 上加字段
+    - 加新机会在这里加一名，不在插件入口基类上加方法
     - 名字只说平台发生了什么，不说插件该干什么
     """
 
@@ -47,24 +47,24 @@ class PlatformTiming(StrEnum):
 
 
 @dataclass(frozen=True, slots=True)
-class TaskHandler:
-    """一条任务处理声明
+class QueuedAction:
+    """一条动作声明
 
-    - 同一类型只认最先交出来的那个
+    - 同一动作名只认最先交出来的那个
     """
 
     kind: str
-    run: TaskRun
+    run: ActionRun
 
 
 @dataclass(frozen=True, slots=True)
-class PluginRoute:
+class MessageRoute:
     """一条路由声明
 
     - 谓词判真才进处理函数
     """
 
-    predicate: PluginPredicate
+    predicate: RouteMatcher
     handler: _PluginHandler
 
 
@@ -80,20 +80,24 @@ class PluginTiming:
     run: PluginTimingRun
 
 
-@dataclass(frozen=True, slots=True)
-class PluginSpec:
-    """插件交平台装配的清单
+class BasePlugin:
+    """插件入口基类
 
-    - routes 的先后即匹配优先级
-    - backgrounds 随 Bot 服务起停
-    - task_handlers 按任务类型派发
-    - timings 交出本插件订阅的平台机会，没订阅即空
+    - 三只方法都可以不写，不写即没有那一类能力
+    - 交出的清单按交出的顺序生效，本体不认识具体能力
     """
 
-    routes: tuple[PluginRoute, ...] = ()
-    backgrounds: tuple[PluginBackground, ...] = ()
-    task_handlers: tuple[TaskHandler, ...] = ()
-    timings: tuple[PluginTiming, ...] = ()
+    def message_routes(self) -> tuple[MessageRoute, ...]:
+        """来向消息的路由清单"""
+        return ()
+
+    def background_loops(self) -> tuple[BackgroundLoop, ...]:
+        """随机器人起停的常驻循环"""
+        return ()
+
+    def queued_actions(self) -> tuple[QueuedAction, ...]:
+        """可排队的动作清单"""
+        return ()
 
 
 class RouteSink(Protocol):

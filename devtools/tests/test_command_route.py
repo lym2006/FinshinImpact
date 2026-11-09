@@ -43,7 +43,7 @@ from bundled._shared.filters import CommandMatch  # noqa: E402
 from bundled._shared.messages import BotMessage  # noqa: E402
 from bundled.help import _commands  # noqa: E402
 from finshin_sdk import HandlerContext  # noqa: E402
-from finshin_sdk.domain import ContentKind, PluginRoute, PluginSpec  # noqa: E402
+from finshin_sdk.domain import ContentKind, MessageRoute  # noqa: E402
 from finshin_sdk.dto import (  # noqa: E402
     HelpCommandDTO,
     HelpFlagDTO,
@@ -457,12 +457,12 @@ class TestCtxReachesHandlers(unittest.IsolatedAsyncioTestCase):
         )
 
         # 帮助插件按清单编译成引擎对象，与另一只业务路由同台
-        self.dispatcher.include_router(build_router(_commands.spec))
+        self.dispatcher.include_router(build_router(_commands.ROUTES))
 
         async def run_history(raw: Message, *, ctx: HandlerContext) -> None:
             self.ran.append("history")
 
-        other = PluginSpec(routes=(PluginRoute(CommandMatch("history"), run_history),))
+        other = (MessageRoute(CommandMatch("history"), run_history),)
         self.dispatcher.include_router(build_router(other))
 
     async def _answer(self, text: str, chat: Chat = _PRIVATE) -> list[str]:

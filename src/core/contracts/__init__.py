@@ -5,7 +5,7 @@
 - 只包含抽象接口与能力定义，不放实现
 """
 
-from ._plugin import CapabilityCall
+from ._plugin import BundledPlugin, CapabilityCall
 from ._repository import (
     GrantRepository,
     MediaRepository,
@@ -17,6 +17,7 @@ from ._repository import (
 __all__ = [
     # 插件
     "CapabilityCall",
+    "BundledPlugin",
     # 仓储
     "PrincipalRepository",
     "SessionRepository",
