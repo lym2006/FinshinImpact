@@ -7,7 +7,7 @@
 import asyncio
 from collections.abc import Callable, Iterable
 
-from finshin_sdk.domain import TaskHandler, TaskRun
+from finshin_sdk.domain import ActionRun, QueuedAction
 from finshin_sdk.domain.ids import SessionKey
 
 from ._ledger import TaskLedger
@@ -28,13 +28,13 @@ class TaskService:
 
     def __init__(
         self,
-        handlers: Iterable[TaskHandler],
+        handlers: Iterable[QueuedAction],
         *,
         ledger: TaskLedger,
         on_fault: _TaskFault,
         max_concurrency: int = _MAX_CONCURRENT,
     ) -> None:
-        self._handlers: dict[str, TaskRun] = {}
+        self._handlers: dict[str, ActionRun] = {}
         for declared in handlers:
             self._handlers.setdefault(declared.kind, declared.run)
         self._ledger = ledger
@@ -121,7 +121,7 @@ _service: TaskService | None = None
 
 
 def configure_task_service(
-    handlers: Iterable[TaskHandler], *, ledger: TaskLedger, on_fault: _TaskFault
+    handlers: Iterable[QueuedAction], *, ledger: TaskLedger, on_fault: _TaskFault
 ) -> TaskService:
     """按本次注册交来的处理清单装配服务
 

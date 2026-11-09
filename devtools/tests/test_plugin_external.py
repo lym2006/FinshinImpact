@@ -24,10 +24,10 @@ from system.profile_env import set_profile  # noqa: E402
 set_profile("tg.000000")
 
 from exceptions import (  # noqa: E402
+    PluginEntryError,
     PluginImportError,
     PluginLoadError,
     PluginRoleError,
-    PluginSpecError,
     describe_error,
 )
 from finshin_sdk.domain import (  # noqa: E402
@@ -35,7 +35,6 @@ from finshin_sdk.domain import (  # noqa: E402
     PLUGINS_PKG,
     HelpKey,
     ManifestKey,
-    PlatformTiming,
     PluginClaim,
     resolve_claims,
 )
@@ -49,33 +48,42 @@ _MANIFEST = 'name = "{name}"\ntitle = "{title}"\nsummary = "外部目录装载�
 _COMMAND = '\n[[help]]\nsection = "样例"\n\n[[help.commands]]\ncmd = "{cmd}"\ndesc = "看一眼"\n'
 # 入口引同目录的另一只文件，导入走不通即红
 _ENTRY = """
-from ._inner import ROUTE
+from finshin_sdk import BasePlugin, MessageRoute
 
-spec = ROUTE
+from ._inner import ROUTES
+
+
+class DemoPlugin(BasePlugin):
+    def message_routes(self) -> tuple[MessageRoute, ...]:
+        return ROUTES
 """
+
 _INNER = """
-from finshin_sdk.domain import PluginRoute, PluginSpec
+from finshin_sdk import MessageRoute
 
 
 async def _never(raw: object, ctx: object) -> bool:
-    \"\"\"永不命中\"\"\"
     return False
 
 
 async def _drop(raw: object, ctx: object) -> None:
-    \"\"\"接管即吞掉\"\"\"
+    await _never(raw, ctx)
 
 
-ROUTE = PluginSpec(routes=(PluginRoute(_never, _drop),))
+ROUTES = (MessageRoute(_never, _drop),)
 """
+
 
 # 伸手本体内部的入口，闸要在导入之前就拦下
 _SCOPE_OFFENDER = """
-from finshin_sdk import PluginSpec
+from finshin_sdk import BasePlugin
 from utils.speaker import media_mark
 
-spec = PluginSpec()
+
+class OffenderPlugin(BasePlugin):
+    pass
 """
+
 
 # 交出全套件的清单文本，role 为命令声明的权限档
 _CONTRACT_MANIFEST = """
@@ -94,58 +102,68 @@ desc = "回一声"
 flags = []
 role = "{role}"
 """
-_CONTRACT_ENTRY = '''
-from finshin_sdk import (
-    PlatformTiming,
-    PluginRoute,
-    PluginSpec,
-    PluginTiming,
-    TaskHandler,
-)
+_CONTRACT_ENTRY = """
+from finshin_sdk import BasePlugin, BackgroundLoop, MessageRoute, QueuedAction
+from finshin_sdk.domain import PlatformTiming, PluginTiming
 
 
 async def _hit(raw: object, ctx: object) -> bool:
-    """接管这条事件"""
     return True
 
 
 async def _pong(raw: object, ctx: object) -> None:
-    """回一声"""
+    return
 
 
 async def _beat() -> None:
-    """起停期间常驻"""
+    return
 
 
 async def _task(ctx: object) -> None:
-    """处理一条任务"""
+    return
 
 
 async def _on_call(capability: object) -> None:
-    """应平台召唤"""
+    return
 
 
-spec = PluginSpec(
-    routes=(PluginRoute(_hit, _pong),),
-    backgrounds=(_beat,),
-    task_handlers=(TaskHandler(kind="demo.chat", run=_task),),
-    timings=(PluginTiming(PlatformTiming.BEFORE_ENGINE_RUN, _on_call),),
-)
-'''
+class DemoPlugin(BasePlugin):
+    def message_routes(self) -> tuple[MessageRoute, ...]:
+        return (MessageRoute(_hit, _pong),)
+
+    def background_loops(self) -> tuple[BackgroundLoop, ...]:
+        return (_beat,)
+
+    def queued_actions(self) -> tuple[QueuedAction, ...]:
+        return (QueuedAction(kind="demo.chat", run=_task),)
+
+    def timings(self) -> tuple[PluginTiming, ...]:
+        return (PluginTiming(PlatformTiming.BEFORE_ENGINE_RUN, _on_call),)
+"""
+
 # 动作名挂在别家名下的入口，装载侧应拒收
 _FOREIGN_ACTION_ENTRY = """
-from finshin_sdk import PluginSpec, TaskHandler
+from finshin_sdk import BasePlugin, QueuedAction
 
 
 async def _task(ctx: object) -> None:
-    \"\""处理一条任务\"\""
+    return
 
 
-spec = PluginSpec(task_handlers=(TaskHandler(kind="other.chat", run=_task),))
+class ForeignPlugin(BasePlugin):
+    def queued_actions(self) -> tuple[QueuedAction, ...]:
+        return (QueuedAction(kind="other.chat", run=_task),)
 """
 
+
 # 陪跑一只必成功的插件，另两只失败时才轮不到整体上抛
-_MATE_ENTRY = "from finshin_sdk.domain import PluginSpec\n\nspec = PluginSpec()\n"
+_MATE_ENTRY = """
+from finshin_sdk import BasePlugin
+
+
+class MatePlugin(BasePlugin):
+    pass
+"""
 
 
 def _write_plugin(
@@ -411,10 +429,10 @@ class TestExternalContract(ExternalRootCase):
         self.assertEqual(
             [(m.name, error) for m, error in report], [("demo", None), ("mate", None)]
         )
-        self.assertEqual(len(sink.routers[0].routes), 1)
+        self.assertEqual(len(sink.routers[0]), 1)
         self.assertEqual(len(backgrounds), 1)
         self.assertEqual(handlers[0].kind, "demo.chat")
-        self.assertEqual(list(timings), [PlatformTiming.BEFORE_ENGINE_RUN])
+        self.assertEqual(timings, {}, "外部件交的时机订阅不收")
 
     def test_role_mismatch_recorded_as_failure(self) -> None:
         """清单写的权限档与路由上的守卫对不上即记权限错
@@ -437,7 +455,7 @@ class TestExternalContract(ExternalRootCase):
             {"__init__.py": "value = 1\n"}, _CONTRACT_MANIFEST.format(role="member")
         )
 
-        self.assertIsInstance(report[0][1], PluginSpecError)
+        self.assertIsInstance(report[0][1], PluginEntryError)
 
     def test_action_outside_own_name_recorded_as_failure(self) -> None:
         """动作名前段不等于插件名即记失败
@@ -450,6 +468,27 @@ class TestExternalContract(ExternalRootCase):
         )
 
         self.assertIsInstance(report[0][1], PluginLoadError)
+
+
+# 只在方法体里伸手本体的入口，扫描同样要拦下
+_SCOPE_IN_METHOD = """
+from finshin_sdk import BasePlugin, MessageRoute
+
+
+async def _hit(raw: object, ctx: object) -> bool:
+    return True
+
+
+async def _pong(raw: object, ctx: object) -> None:
+    from utils.speaker import media_mark
+
+    print(media_mark)
+
+
+class SneakyPlugin(BasePlugin):
+    def message_routes(self) -> tuple[MessageRoute, ...]:
+        return (MessageRoute(_hit, _pong),)
+"""
 
 
 class TestExternalScope(ExternalRootCase):
@@ -469,6 +508,17 @@ class TestExternalScope(ExternalRootCase):
         self.assertIsNone(report[1][1])
         self.assertIn("utils.speaker", reason)
         self.assertIn("__init__.py:3", reason)
+
+    def test_body_import_inside_method_is_caught(self) -> None:
+        """只在方法体里伸手本体一样拒装
+
+        - 这条红了说明扫描只看模块开头，延迟导入能绕过闸
+        """
+        _, (report, _, _, _), _ = self._register_installed(
+            {"__init__.py": _SCOPE_IN_METHOD}, _CONTRACT_MANIFEST.format(role="member")
+        )
+
+        self.assertIsInstance(report[0][1], PluginImportError)
 
     def test_bundled_tree_is_not_checked(self) -> None:
         """随包树的模块名直接跳过这道查，目录不在盘上也不报错

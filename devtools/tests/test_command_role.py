@@ -27,8 +27,7 @@ from finshin_sdk.domain import (  # noqa: E402
     PLUGINS_PKG,
     CommandRole,
     HelpKey,
-    PluginRoute,
-    PluginSpec,
+    MessageRoute,
 )
 from finshin_sdk.dto import (  # noqa: E402
     HelpCommandDTO,
@@ -62,14 +61,14 @@ def _manifest_of(cmd: str, role: CommandRole) -> PluginManifestDTO:
     )
 
 
-def _routes(name: str, limit: CommandRole | None) -> tuple[PluginRoute, ...]:
+def _routes(name: str, limit: CommandRole | None) -> tuple[MessageRoute, ...]:
     """造一条带命令头的路由，limit 为空即不带守卫"""
 
     async def handler(raw: object, ctx: object) -> None:
         """占位处理函数"""
 
     guarded = handler if limit is None else require_role(limit)(handler)
-    return (PluginRoute(CommandMatch(name), guarded),)
+    return (MessageRoute(CommandMatch(name), guarded),)
 
 
 class TestRoleParse(unittest.TestCase):
@@ -125,27 +124,35 @@ class TestRoleCheck(unittest.TestCase):
     """装配期的清单声明与守卫比对"""
 
     def test_declared_owner_with_owner_guard_passes(self) -> None:
-        spec = PluginSpec(routes=_routes("wipe", CommandRole.OWNER))
-        _register._check_roles(_manifest_of("wipe", CommandRole.OWNER), spec)
+        _register._check_roles(
+            _manifest_of("wipe", CommandRole.OWNER),
+            _routes("wipe", CommandRole.OWNER),
+        )
 
     def test_declared_owner_without_guard_fails(self) -> None:
-        spec = PluginSpec(routes=_routes("wipe", None))
         with self.assertRaises(PluginRoleError):
-            _register._check_roles(_manifest_of("wipe", CommandRole.OWNER), spec)
+            _register._check_roles(
+                _manifest_of("wipe", CommandRole.OWNER), _routes("wipe", None)
+            )
 
     def test_guard_tier_below_declaration_fails(self) -> None:
-        spec = PluginSpec(routes=_routes("wipe", CommandRole.ADMIN))
         with self.assertRaises(PluginRoleError):
-            _register._check_roles(_manifest_of("wipe", CommandRole.OWNER), spec)
+            _register._check_roles(
+                _manifest_of("wipe", CommandRole.OWNER),
+                _routes("wipe", CommandRole.ADMIN),
+            )
 
     def test_member_declaration_with_guard_fails(self) -> None:
-        spec = PluginSpec(routes=_routes("wipe", CommandRole.ADMIN))
         with self.assertRaises(PluginRoleError):
-            _register._check_roles(_manifest_of("wipe", CommandRole.MEMBER), spec)
+            _register._check_roles(
+                _manifest_of("wipe", CommandRole.MEMBER),
+                _routes("wipe", CommandRole.ADMIN),
+            )
 
     def test_undeclared_route_without_guard_passes(self) -> None:
-        spec = PluginSpec(routes=_routes("other", None))
-        _register._check_roles(_manifest_of("wipe", CommandRole.MEMBER), spec)
+        _register._check_roles(
+            _manifest_of("wipe", CommandRole.MEMBER), _routes("other", None)
+        )
 
 
 class TestBuiltinManifests(unittest.TestCase):
@@ -154,7 +161,9 @@ class TestBuiltinManifests(unittest.TestCase):
     def test_builtin_plugins_pass_the_check(self) -> None:
         for manifest in _manifest.enabled_manifests(Path("unused")):
             module = importlib.import_module(manifest.module)
-            _register._check_roles(manifest, module.spec)
+            _register._check_roles(
+                manifest, _register._entry_class(manifest, module)().message_routes()
+            )
 
 
 if __name__ == "__main__":

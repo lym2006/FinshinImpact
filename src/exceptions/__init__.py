@@ -50,13 +50,13 @@ from ._network import (
 )
 from ._plugins import (
     PluginDependencyError,
+    PluginEntryError,
     PluginImportError,
     PluginLoadError,
     PluginMissingError,
     PluginRoleError,
     PluginsError,
     PluginsMissingError,
-    PluginSpecError,
 )
 from ._version import (
     LocalVersionError,
@@ -112,7 +112,7 @@ __all__ = [
     # 插件
     "PluginsError",
     "PluginsMissingError",
-    "PluginSpecError",
+    "PluginEntryError",
     "PluginMissingError",
     "PluginDependencyError",
     "PluginImportError",

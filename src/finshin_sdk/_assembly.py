@@ -10,10 +10,10 @@ from typing import Any
 
 from ._adapter import BaseAdapter
 from .domain import (
+    BackgroundLoop,
     PlatformTiming,
-    PluginBackground,
     PluginTimingRun,
-    TaskHandler,
+    QueuedAction,
 )
 from .dto import PluginManifestDTO
 
@@ -34,8 +34,8 @@ class PlatformAssembly:
 
     adapter: BaseAdapter
     report: Sequence[tuple[PluginManifestDTO, Exception | None]]
-    backgrounds: tuple[PluginBackground, ...]
-    handlers: tuple[TaskHandler, ...]
+    backgrounds: tuple[BackgroundLoop, ...]
+    handlers: tuple[QueuedAction, ...]
     timings: dict[PlatformTiming, tuple[PluginTimingRun, ...]]
 
 

@@ -22,7 +22,7 @@ set_profile("tg.000000")
 from bundled.AI.core import active_tasks  # noqa: E402
 from bundled.AI.services import _ai_chat, _cleanup  # noqa: E402
 from bundled.AI.utils import make_session_key  # noqa: E402
-from finshin_sdk.domain import ChatScope, Platform, TaskHandler  # noqa: E402
+from finshin_sdk.domain import ChatScope, Platform, QueuedAction  # noqa: E402
 from finshin_sdk.domain.ids import (  # noqa: E402
     ContainerKey,
     MessageId,
@@ -142,7 +142,7 @@ class TestEnqueueThroughService(unittest.TestCase):
 
         async def _run() -> int:
             configure_task_service(
-                [TaskHandler(kind="AI.chat", run=run)],
+                [QueuedAction(kind="AI.chat", run=run)],
                 ledger=_StubLedger(),
                 on_fault=_fault,
             )
@@ -180,7 +180,7 @@ class TestShutdownRelease(unittest.TestCase):
 
         async def _run() -> int:
             configure_task_service(
-                [TaskHandler(kind="AI.chat", run=_hold)],
+                [QueuedAction(kind="AI.chat", run=_hold)],
                 ledger=ledger,
                 on_fault=_fault,
             )

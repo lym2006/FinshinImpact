@@ -6,7 +6,7 @@
 """
 
 from finshin_sdk import HandlerContext
-from finshin_sdk.domain import ChatScope, CommandRole, PluginRoute
+from finshin_sdk.domain import ChatScope, CommandRole, MessageRoute
 from utils import get_logger
 
 from ..._shared.access import role_of
@@ -80,6 +80,6 @@ async def _process_ai_chat(platform_raw: object, ctx: HandlerContext) -> None:
 
 
 routes = (
-    PluginRoute(_denied_private, _deny_private),
-    PluginRoute(_triggers_chat, _process_ai_chat),
+    MessageRoute(_denied_private, _deny_private),
+    MessageRoute(_triggers_chat, _process_ai_chat),
 )

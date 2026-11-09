@@ -5,12 +5,14 @@
 - 谓词只吃处理上下文，原始事件继续按位置交给处理函数
 """
 
+from collections.abc import Sequence
+
 from aiogram import Router
 from aiogram.filters import Filter
 from aiogram.types import Message
 
 from finshin_sdk import HandlerContext
-from finshin_sdk.domain import PluginPredicate, PluginSpec
+from finshin_sdk.domain import MessageRoute, RouteMatcher
 
 
 class _Predicate(Filter):
@@ -19,7 +21,7 @@ class _Predicate(Filter):
     - 拿不到处理上下文时一律不接管
     """
 
-    def __init__(self, predicate: PluginPredicate) -> None:
+    def __init__(self, predicate: RouteMatcher) -> None:
         self._predicate = predicate
 
     async def __call__(self, raw: Message, ctx: HandlerContext | None = None) -> bool:
@@ -29,12 +31,12 @@ class _Predicate(Filter):
         return await self._predicate(ctx)
 
 
-def build_router(spec: PluginSpec) -> Router:
-    """按清单装配路由
+def build_router(routes: Sequence[MessageRoute]) -> Router:
+    """按路由清单装配路由
 
-    - routes 的顺序即匹配优先级
+    - 清单的先后即匹配优先级
     """
     router = Router()
-    for route in spec.routes:
+    for route in routes:
         router.message(_Predicate(route.predicate))(route.handler)
     return router

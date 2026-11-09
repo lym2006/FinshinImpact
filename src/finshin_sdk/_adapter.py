@@ -5,14 +5,14 @@
 """
 
 from abc import ABC, abstractmethod
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from typing import Any
 
-from .domain import Platform, PluginSpec, RouteSink
+from .domain import MessageRoute, Platform, RouteSink
 from .dto import MsgReferenceDTO, OutboundPayloadDTO, PrincipalDTO
 
 # 清单编译器：把插件交出的路由清单编译成本平台的路由对象
-RouterBuilder = Callable[[PluginSpec], Any]
+RouterBuilder = Callable[[Sequence[MessageRoute]], Any]
 
 
 class InteractionPort(ABC):

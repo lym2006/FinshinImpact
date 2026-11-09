@@ -8,7 +8,7 @@ from asyncio import CancelledError
 
 from exceptions import MessageVanishedError
 from finshin_sdk import HandlerContext
-from finshin_sdk.domain import TaskHandler
+from finshin_sdk.domain import QueuedAction
 from services.tasks import TaskItem, get_task_service
 from utils import get_logger
 
@@ -53,4 +53,4 @@ async def _run_chat_task(ctx: HandlerContext) -> None:
         _logger.send_error(f"{key} 任务出错", e)
 
 
-chat_task_handler = TaskHandler(kind=_TASK_KIND, run=_run_chat_task)
+chat_task_handler = QueuedAction(kind=_TASK_KIND, run=_run_chat_task)

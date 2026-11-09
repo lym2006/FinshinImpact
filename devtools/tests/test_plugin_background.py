@@ -30,21 +30,21 @@ set_profile("tg.000000")
 
 from bot import _service as service_module  # noqa: E402
 from bot._service import AdapterRuntime  # noqa: E402
-from core.contracts import CapabilityCall  # noqa: E402
+from core.contracts import BundledPlugin, CapabilityCall  # noqa: E402
 from exceptions import (  # noqa: E402
     PluginDependencyError,
+    PluginEntryError,
     PluginLoadError,
     PluginMissingError,
-    PluginSpecError,
 )
 from finshin_sdk.domain import (  # noqa: E402
     PLUGINS_PKG,
+    BasePlugin,
+    MessageRoute,
     Platform,
     PlatformTiming,
-    PluginRoute,
-    PluginSpec,
     PluginTiming,
-    TaskHandler,
+    QueuedAction,
 )
 from utils.plugin import _register  # noqa: E402
 
@@ -99,15 +99,35 @@ def _register_modules(modules: dict[str, object], names: list[str]):
     return result, dispatcher.routers
 
 
-def _compile(spec: object) -> SimpleNamespace:
-    """假编译器：把清单原样裹进一只待挂对象"""
-    return SimpleNamespace(compiled=spec)
+def _compile(routes: object) -> SimpleNamespace:
+    """假编译器：把路由清单原样裹进一只待挂对象"""
+    return SimpleNamespace(compiled=routes)
 
 
-def _plugin(**spec_fields: object) -> SimpleNamespace:
-    """拼一只只交路由清单的假插件模块"""
-    routes = (PluginRoute(_never, _handle),)
-    return SimpleNamespace(spec=PluginSpec(routes=routes, **spec_fields))
+def _plugin(name: str = "Fake", **fields: object) -> SimpleNamespace:
+    """拼一只假插件模块，入口类按交出的字段回话
+
+    - 字段名沿用旧叫法：backgrounds、task_handlers、timings
+    - 入口类的所属模块名对齐假模块，装载侧据此认出它定义在本模块
+    """
+    routes = (MessageRoute(_never, _handle),)
+    entry = type(
+        "FakePlugin",
+        (BundledPlugin,),
+        {
+            "message_routes": lambda self: routes,
+            "background_loops": lambda self: fields.get("backgrounds", ()),
+            "queued_actions": lambda self: fields.get("task_handlers", ()),
+            "timings": lambda self: fields.get("timings", ()),
+        },
+    )
+    entry.__module__ = name
+    return SimpleNamespace(__name__=name, FakePlugin=entry)
+
+
+def _bare_module(name: str = "Bare", **extra: object) -> SimpleNamespace:
+    """拼一只没有入口类的假插件模块"""
+    return SimpleNamespace(__name__=name, **extra)
 
 
 async def _say(principal: object, text: str) -> None:
@@ -136,31 +156,31 @@ class TestCollectBackgrounds(unittest.TestCase):
         self.assertEqual(timings, {PlatformTiming.IDENTITY_CHANGED: (_noop,)})
         self.assertEqual([(m.name, e) for m, e in report], [("AI", None)])
         self.assertEqual(len(routers), 1)
-        self.assertEqual(len(routers[0].compiled.routes), 1)
+        self.assertEqual(len(routers[0].compiled), 1)
 
-    def test_spec_missing_skips_hooks(self) -> None:
-        """缺清单的插件记失败且不交出协程"""
-        modules = {"AI": SimpleNamespace(backgrounds=(_noop,)), "help": _plugin()}
-
-        (report, hooks, _, timings), routers = _register_modules(
-            modules, ["AI", "help"]
-        )
-
-        self.assertEqual(hooks, ())
-        self.assertEqual(timings, {}, "缺清单的插件不该交出时机订阅")
-        self.assertEqual(len(routers), 1)
-        self.assertIsInstance(report[0][1], PluginSpecError)
-        self.assertIsNone(report[1][1])
-
-    def test_legacy_router_not_mounted(self) -> None:
-        """只交 router 的插件记加载失败"""
-        modules = {"bad": SimpleNamespace(router=object()), "good": _plugin()}
+    def test_entry_class_missing_skips_hooks(self) -> None:
+        """没交入口类的插件记失败且不交出协程"""
+        modules = {"bad": _bare_module(backgrounds=(_noop,)), "good": _plugin()}
 
         (report, hooks, _, timings), routers = _register_modules(
             modules, ["bad", "good"]
         )
 
-        self.assertIsInstance(report[0][1], PluginSpecError)
+        self.assertEqual(hooks, ())
+        self.assertEqual(timings, {}, "没交入口类的插件不该交出时机订阅")
+        self.assertEqual(len(routers), 1)
+        self.assertIsInstance(report[0][1], PluginEntryError)
+        self.assertIsNone(report[1][1])
+
+    def test_legacy_router_not_mounted(self) -> None:
+        """只交 router 的旧写法不再认，记入口类缺失"""
+        modules = {"bad": _bare_module(router=object()), "good": _plugin()}
+
+        (report, hooks, _, timings), routers = _register_modules(
+            modules, ["bad", "good"]
+        )
+
+        self.assertIsInstance(report[0][1], PluginEntryError)
         self.assertIsNone(report[1][1])
         self.assertEqual(hooks, ())
         self.assertEqual(timings, {})
@@ -220,7 +240,7 @@ class TestCollectBackgrounds(unittest.TestCase):
 
     def test_declared_task_handlers_returned(self) -> None:
         """回归点 8：声明了任务处理的插件交出处理清单"""
-        declared = TaskHandler(kind="AI.chat", run=_handle)
+        declared = QueuedAction(kind="AI.chat", run=_handle)
         modules = {"AI": _plugin(task_handlers=(declared,)), "help": _plugin()}
 
         (_, _, handlers, _), _ = _register_modules(modules, ["AI", "help"])
@@ -370,13 +390,34 @@ class TestServiceRunsBeforeRun(unittest.IsolatedAsyncioTestCase):
         self.assertIsInstance(sent[0][1], ValueError)
         self.assertEqual(adapter.closed, 1)
 
+    def test_two_entry_classes_are_refused(self) -> None:
+        """模块里两只入口类即记失败，装载侧不猜用哪只
+
+        - 这条红了说明取第一只就算数，插件会静默少一半能力
+        """
+        first = _plugin(name="two")
+        second = type("SecondPlugin", (BasePlugin,), {})
+        second.__module__ = "two"
+        modules = {
+            "bad": SimpleNamespace(
+                __name__="two", FakePlugin=first.FakePlugin, SecondPlugin=second
+            ),
+            "good": _plugin(),
+        }
+
+        (report, _, _, _), routers = _register_modules(modules, ["bad", "good"])
+
+        self.assertIsInstance(report[0][1], PluginEntryError)
+        self.assertIn("入口类有 2 只", report[0][1].detail)
+        self.assertIsNone(report[1][1])
+
 
 class TestAIPluginDeclares(unittest.TestCase):
     """回归点 6"""
 
     def test_cleanup_loop_is_declared(self) -> None:
-        """AI 插件把过期清理协程、问答任务处理与三个平台机会的订阅交进契约"""
-        from bundled.AI import spec
+        """AI 插件把过期清理循环、问答动作与三个平台机会的订阅交进契约"""
+        from bundled.AI import AIPlugin
         from bundled.AI.core import purge_on_identity_changed
         from bundled.AI.services import (
             chat_task_handler,
@@ -385,10 +426,11 @@ class TestAIPluginDeclares(unittest.TestCase):
             wake_cleanup,
         )
 
-        self.assertEqual(spec.backgrounds, (cleanup_loop,))
-        self.assertEqual(spec.task_handlers, (chat_task_handler,))
+        plugin = AIPlugin()
+        self.assertEqual(plugin.background_loops(), (cleanup_loop,))
+        self.assertEqual(plugin.queued_actions(), (chat_task_handler,))
         self.assertEqual(
-            spec.timings,
+            plugin.timings(),
             (
                 PluginTiming(PlatformTiming.BEFORE_ENGINE_RUN, report_lost_tasks),
                 PluginTiming(
