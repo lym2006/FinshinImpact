@@ -73,6 +73,10 @@ UV_EXE_NAME = "uv.exe"
 # 安装期注入的代理环境变量名，拉起主程序前剔除
 PROXY_ENV_VARS = ("HTTP_PROXY", "HTTPS_PROXY")
 
+# 包内适配器清单的相对路径与依赖键名，与 src 侧词表同值，两处改名必须同步
+_ADAPTER_MANIFEST_GLOB = "src/adapters/*/adapter.toml"
+_ADAPTER_DEPS_KEY = "deps"
+
 
 def _pyproject_data(root: Path) -> dict:
     """读取指定包根内 pyproject 的解析结果"""
@@ -136,6 +140,24 @@ def remote_release_notes(version: str, *, proxy_url: str | None = None) -> str:
 def dependencies(root: Path) -> list[str]:
     """获取运行依赖清单"""
     return list(_pyproject_data(root)["project"]["dependencies"])
+
+
+def adapter_dependencies(root: Path) -> list[str]:
+    """汇总包内各适配器清单声明的依赖
+
+    - 逐个适配器目录读清单，读不到或解析失败的整只跳过
+    - 只收字符串项，非数组与数组里的非字符串一概不要
+    """
+    pins: list[str] = []
+    for path in sorted(root.glob(_ADAPTER_MANIFEST_GLOB)):
+        try:
+            data = tomllib.loads(path.read_text(encoding="utf-8"))
+        except (OSError, tomllib.TOMLDecodeError):
+            continue
+        deps = data.get(_ADAPTER_DEPS_KEY)
+        if isinstance(deps, list):
+            pins.extend(item for item in deps if isinstance(item, str))
+    return pins
 
 
 def _tool_settings(root: Path) -> dict:

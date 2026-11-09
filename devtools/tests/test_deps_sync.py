@@ -3,6 +3,7 @@
 
 - 同步先 compile 闭包再 sync，装过的开发工具并入保留清单
 - 整批失败即返回保留清单全体，开发模式只回手动命令
+- 保留清单由核心依赖、适配器声明依赖与启用插件依赖三源并成
 """
 
 import sys
@@ -17,7 +18,7 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
-from services.env_setup import deps_install  # noqa: E402
+from services.env_setup import deps_install, deps_manifest  # noqa: E402
 
 _KEEP = ["aiogram==3.29.1", "pillow==12.1.1"]
 _DEV_PIN = "ruff==0.16.3"
@@ -70,6 +71,22 @@ class TestSyncEnv(unittest.TestCase):
 
         self.assertEqual(deps_install.sync_env(list(_KEEP)), list(_KEEP))
         self.run.assert_not_called()
+
+
+class TestKeepUnion(unittest.TestCase):
+    """三源并成的保留清单"""
+
+    def test_adapter_deps_are_kept(self) -> None:
+        """适配器声明的库进保留清单，同步环境不删引擎依赖"""
+        core = ["pyside6-essentials==6.11.2"]
+        adapter = ["aiogram==3.29.1"]
+        plugin = ["pillow==12.1.1"]
+        with (
+            patch.object(deps_manifest, "_core_dependencies", lambda: core),
+            patch.object(deps_manifest, "adapter_deps_union", lambda: adapter),
+            patch.object(deps_manifest, "_enabled_deps_union", lambda: plugin),
+        ):
+            self.assertEqual(deps_manifest.keep_union(), [*core, *adapter, *plugin])
 
 
 if __name__ == "__main__":
