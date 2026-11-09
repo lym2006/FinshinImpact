@@ -91,6 +91,7 @@
 - 🚀 **发布工作流与打包**：[`docs/release-workflow.md`](docs/release-workflow.md)、[`docs/packaging.md`](docs/packaging.md)，commit 模板 [`.gitmessage`](.gitmessage)
 - 📚 **工程经验**（实测踩坑与验证方法）：[`docs/lessons/README.md`](docs/lessons/README.md)
 - 🧩 **插件清单模板**：[`assets/plugin.example.toml`](assets/plugin.example.toml)，配置字段表单源在 [`src/finshin_sdk/domain/config/`](src/finshin_sdk/domain/config/)
+- 📦 **接口包**：本体与插件、适配器共用的形状都在 [`src/finshin_sdk/`](src/finshin_sdk/)，只写插件或适配器不必 clone 主仓源码，先打这只包再装：`uv build src/finshin_sdk --wheel`
 
 [⤴️ 返回目录](#menu)
 
