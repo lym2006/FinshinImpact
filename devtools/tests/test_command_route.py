@@ -5,6 +5,7 @@
 """
 
 import sys
+import tempfile
 import unittest
 from datetime import datetime
 from pathlib import Path
@@ -440,9 +441,12 @@ class TestCtxReachesHandlers(unittest.IsolatedAsyncioTestCase):
     """归一上下文经完整分发链路注入"""
 
     def setUp(self) -> None:
+        # 帮助图桩件要落在真实文件上，取体积那句读的就是它
+        image = Path(tempfile.mkdtemp()) / "help.png"
+        image.write_bytes(b"fake-png-bytes")
         for name, value in (
             ("help_list", _MENU),
-            ("generate_image", lambda: Path("help.png")),
+            ("generate_image", lambda: image),
             ("resolve_single_help", lambda head: f"单命令:{head}"),
             ("resolve_usage_hint", lambda head: f"用法:{head}"),
         ):

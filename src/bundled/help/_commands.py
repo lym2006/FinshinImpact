@@ -9,6 +9,7 @@
 """
 
 import asyncio
+import time
 
 from finshin_sdk import HandlerContext
 from finshin_sdk.domain import (
@@ -20,6 +21,7 @@ from finshin_sdk.domain import (
     bind_command,
 )
 from finshin_sdk.dto import CommandDTO, OutboundPayloadDTO
+from utils import get_logger
 
 from .._shared.messages import BotMessage
 from ._services import (
@@ -35,6 +37,9 @@ _HELP_MENU = "help"  # 帮助菜单命令名
 _MAX_FLAGS = 1
 _MAX_FLAGS_WITH_HELP = 2  # -h 之外还可带一个
 _MAX_ARGS = 1  # 清单登记过 args 的命令只收一个位置参数
+
+
+_logger = get_logger("Plg.Help")
 
 
 def _bind(command: CommandDTO) -> BoundCommand:
@@ -142,10 +147,21 @@ async def _show_single_help(platform_raw: object, ctx: HandlerContext) -> None:
 
 
 async def _show_menu(platform_raw: object, ctx: HandlerContext) -> None:
-    """以图片形式发送帮助菜单"""
+    """以图片形式发送帮助菜单
+
+    - 取图与上传分开计时，慢在哪一段一眼看得见
+    """
+    started = time.perf_counter()
+
     # 渲染可能触发绘制，放线程池防卡事件循环
     path = await asyncio.to_thread(generate_image)
+    drawn = time.perf_counter()
     await ctx.respond(OutboundPayloadDTO(kind=ContentKind.PHOTO, local_path=str(path)))
+    sent = time.perf_counter()
+    _logger.debug(
+        f"帮助图送出：取图 {(drawn - started) * 1000:.0f} 毫秒、"
+        f"上传 {(sent - drawn) * 1000:.0f} 毫秒、图 {path.stat().st_size // 1024} KB"
+    )
 
 
 ROUTES = (
