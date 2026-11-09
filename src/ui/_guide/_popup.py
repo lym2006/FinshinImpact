@@ -7,6 +7,7 @@
 from PySide6.QtWidgets import QMessageBox
 
 from skin.qss import build_bootstrap_qss
+from skin.theme import NOTICE_DIALOG
 
 from .._lifecycle import ensure_app
 
@@ -20,5 +21,8 @@ def show_popup(title_text: str, body: str, *, icon_warning: bool = True) -> None
         QMessageBox.Icon.Warning if icon_warning else QMessageBox.Icon.Information
     )
     box.setWindowTitle(title_text)
+
+    # 长正文由 QMessageBox 自己按屏宽折，这里只钉住别被短句收成一根细条
+    box.setMinimumWidth(NOTICE_DIALOG.width)
     box.setText(body)
     box.exec()

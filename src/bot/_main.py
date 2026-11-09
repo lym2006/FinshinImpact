@@ -16,6 +16,7 @@ from typing import cast
 from exceptions import MAP_KEY_ADAPTER, MAPS, AdapterError
 from skin.messages import CheckMessage, MiscMessage
 from skin.theme import WINDOW
+from system.native_dialog import describe
 from system.profile_env import get_profile
 from ui import (
     BaseController,
@@ -29,7 +30,7 @@ from ui import (
 )
 from utils import get_logger
 from utils.lifecycle import shutdown_all
-from utils.paths import LOGS_DIR, PLATFORM
+from utils.paths import PLATFORM
 
 from ._adapter_host import parts_for
 from ._managers import BotManager
@@ -114,7 +115,7 @@ class Main:
             return 1
         except Exception as e:
             self.logger.send_error("程序启动异常", e)
-            self._pop_failure(MiscMessage.STARTUP_FAIL_HINT.format(logs=LOGS_DIR))
+            self._pop_failure(MiscMessage.STARTUP_FAIL_HINT.format(detail=describe(e)))
             return 1
         finally:
             self._cleanup()

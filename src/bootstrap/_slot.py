@@ -17,7 +17,7 @@ from system.instance_lock import (
     acquire_instance_lock,
     release_bootstrap_lock,
 )
-from system.native_dialog import show_error
+from system.native_dialog import describe, show_error
 from system.profile_env import get_profile, set_profile
 
 # 主程序 GUI 装配链，分步导入时逐模块各泵一轮
@@ -210,15 +210,12 @@ def _pop_crash(exc: Exception) -> None:
     """把启动炸点报给人看
 
     - 这一段日志器还没挂上，屏幕上那句是唯一出口
-    - 只报异常类名，异常原文与堆栈都不上屏
+    - 带类名与消息那一行，调用链不上屏
     """
     from skin.messages import MiscMessage
     from skin.theme import WINDOW
 
-    show_error(
-        WINDOW.title,
-        MiscMessage.STARTUP_CRASH.format(kind=type(exc).__name__),
-    )
+    show_error(WINDOW.title, MiscMessage.STARTUP_CRASH.format(detail=describe(exc)))
 
 
 def _guide() -> int:

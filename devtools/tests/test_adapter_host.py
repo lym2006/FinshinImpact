@@ -267,12 +267,15 @@ class TestAdapterHost(unittest.TestCase):
         self.assertEqual(popped, ["这个平台的适配器要接口包 9.9.9 以上，本机是 0.1.0"])
         self.assertEqual(events, ["dismiss", "popup"])
 
-    def test_unknown_startup_error_pops_without_details(self) -> None:
-        """未知启动异常只报一句要去看日志，异常原文不上屏"""
+    def test_unknown_startup_error_pops_with_one_line_detail(self) -> None:
+        """未知启动异常把类名与消息那一行写上屏
+
+        - 调用链不落屏，落调试日志
+        """
         popped: list[str] = []
 
         def break_out(_platform: object) -> None:
-            raise RuntimeError("内部细节不许进界面")
+            raise RuntimeError("缺了某个模块")
 
         with (
             patch.object(main_mod, "ensure_app", lambda: object()),
@@ -281,8 +284,8 @@ class TestAdapterHost(unittest.TestCase):
         ):
             self.assertEqual(main_mod.Main(on_ready=None).main(), 1)
 
-        self.assertTrue(popped[0].startswith("程序启动失败，详情见日志"))
-        self.assertNotIn("内部细节不许进界面", popped[0])
+        self.assertIn("RuntimeError: 缺了某个模块", popped[0])
+        self.assertNotIn("Traceback", popped[0])
 
     def test_assemble_hands_over_runtime_only(self) -> None:
         """入口模块的装配只交运行时
