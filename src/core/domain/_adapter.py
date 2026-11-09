@@ -22,7 +22,6 @@ class AdapterManifestKey(StrEnum):
     """适配器清单键名"""
 
     PLATFORM = "platform"
-    VERSION = "version"
     DEPS = "deps"
 
 
@@ -38,6 +37,5 @@ class AdapterFieldSpec:
 
 ADAPTER_MANIFEST_FIELDS: tuple[AdapterFieldSpec, ...] = (
     AdapterFieldSpec(AdapterManifestKey.PLATFORM, str, "", required=True),
-    AdapterFieldSpec(AdapterManifestKey.VERSION, str, "", required=True),
     AdapterFieldSpec(AdapterManifestKey.DEPS, list, ()),
 )

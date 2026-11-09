@@ -18,6 +18,5 @@ class AdapterManifestDTO:
     """
 
     platform: Platform
-    version: str
     deps: tuple[str, ...]
     entry: str

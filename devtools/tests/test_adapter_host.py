@@ -116,36 +116,36 @@ class TestAdapterHost(unittest.TestCase):
                 return manifest_mod.load_adapter_manifests()
 
     def test_full_manifest_is_read(self) -> None:
-        """齐两项的清单读出导入路径
+        """齐必填项的清单读出导入路径
 
         - 清单多写一行入口模块名按未知键忽略
         """
-        manifests = self._scan('platform = "tg"\nversion = "1.2.3"\nentry = "other"\n')
-        manifest = manifests[Platform.TELEGRAM]
-        self.assertEqual(manifest.version, "1.2.3")
-        self.assertEqual(manifest.entry, "adapters.telegram.entry")
+        manifests = self._scan('platform = "tg"\nentry = "other"\n')
+        self.assertEqual(manifests[Platform.TELEGRAM].entry, "adapters.telegram.entry")
 
     def test_incomplete_manifest_is_dropped(self) -> None:
-        """缺必填项的清单不进表"""
-        self.assertEqual(self._scan('platform = "tg"\n'), {})
+        """缺必填项的清单不进表
+
+        - 空文件与只写依赖的都不进表
+        """
+        self.assertEqual(self._scan(""), {})
+        self.assertEqual(self._scan('deps = ["httpx"]\n'), {})
 
     def test_unknown_platform_is_dropped(self) -> None:
         """平台标识认不出的清单不进表"""
-        manifests = self._scan('platform = "nope"\nversion = "1"\n')
+        manifests = self._scan('platform = "nope"\n')
         self.assertEqual(manifests, {})
 
     def test_declared_deps_are_read(self) -> None:
         """声明依赖的清单按顺序读出依赖表"""
-        manifests = self._scan(
-            'platform = "tg"\nversion = "1"\ndeps = ["aiogram==3.29.1", "httpx"]\n'
-        )
+        manifests = self._scan('platform = "tg"\ndeps = ["aiogram==3.29.1", "httpx"]\n')
         self.assertEqual(
             manifests[Platform.TELEGRAM].deps, ("aiogram==3.29.1", "httpx")
         )
 
     def test_absent_deps_reads_empty(self) -> None:
         """没写依赖的清单读出空表照样进表"""
-        manifests = self._scan('platform = "tg"\nversion = "1"\n')
+        manifests = self._scan('platform = "tg"\n')
         self.assertEqual(manifests[Platform.TELEGRAM].deps, ())
 
     def test_bad_deps_drops_manifest(self) -> None:
@@ -154,12 +154,8 @@ class TestAdapterHost(unittest.TestCase):
         - 整项不是数组
         - 数组里有空串或非字符串
         """
-        self.assertEqual(
-            self._scan('platform = "tg"\nversion = "1"\ndeps = "httpx"\n'), {}
-        )
-        self.assertEqual(
-            self._scan('platform = "tg"\nversion = "1"\ndeps = ["", 3]\n'), {}
-        )
+        self.assertEqual(self._scan('platform = "tg"\ndeps = "httpx"\n'), {})
+        self.assertEqual(self._scan('platform = "tg"\ndeps = ["", 3]\n'), {})
 
     def test_listed_platform_returns_parts(self) -> None:
         """有清单的平台取到四件，四件都能调"""
