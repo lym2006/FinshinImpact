@@ -79,7 +79,6 @@ async def _fetch(
             headers=_HEADER,
             timeout=timeout,
             connect_timeout=_CONNECT_TIMEOUT,
-            max_retries=1,
         )
         return cast(dict[str, Any], content)
     except HTTPStatusError as e:
