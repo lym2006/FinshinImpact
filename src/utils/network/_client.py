@@ -5,7 +5,6 @@
 - SSE 解析与代理注入
 """
 
-import asyncio
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any, Literal
@@ -17,10 +16,6 @@ from exceptions import ConnectionFailedError, HTTPStatusError, RequestTimeoutErr
 # 请求默认超时：读、写与连接池三档共用
 _DEFAULT_TIMEOUT = 90.0
 _CONNECT_TIMEOUT = 10.0
-
-# 请求重试
-_MAX_RETRIES = 3
-_RETRY_DELAY = 1.0  # 重试间隔秒
 
 
 class BaseClient:
@@ -97,35 +92,15 @@ class BaseClient:
         proxy: str | None = None,
         timeout: float = _DEFAULT_TIMEOUT,
         connect_timeout: float = _CONNECT_TIMEOUT,
-        max_retries: int = _MAX_RETRIES,
-        retry_delay: float = _RETRY_DELAY,
     ) -> dict[str, Any] | str | None:
-        """发起 GET 请求"""
-        for attempt in range(1, max_retries + 1):
-            try:
-                async with cls._create_client(
-                    base_url=base_url,
-                    headers=headers,
-                    proxy=proxy,
-                    timeout=timeout,
-                    connect_timeout=connect_timeout,
-                ) as client:
-                    response = await client.get(request_path)
-                    cls._deal_with_exception(response, "GET")
-                    match method:
-                        case "json":
-                            return response.json()
-                        case "text":
-                            return response.text
-
-            except (ConnectionFailedError, RequestTimeoutError):
-                # 对网络异常（连接失败、超时）进行重试
-                if attempt < max_retries:
-                    await asyncio.sleep(retry_delay * attempt)  # 递增延迟
-                    continue  # 重试
-                else:
-                    raise  # 耗尽次数
-
-            except HTTPStatusError:
-                # HTTP 状态码错误不重试
-                raise
+        """发起一次 GET 请求，网络与状态码异常原样上抛"""
+        async with cls._create_client(
+            base_url=base_url,
+            headers=headers,
+            proxy=proxy,
+            timeout=timeout,
+            connect_timeout=connect_timeout,
+        ) as client:
+            response = await client.get(request_path)
+            cls._deal_with_exception(response, "GET")
+            return response.json() if method == "json" else response.text

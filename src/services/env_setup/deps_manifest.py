@@ -263,12 +263,9 @@ def dev_dependencies() -> list[str]:
     return list(optional.get("dev", []))
 
 
-def _enabled_deps_union(exclude_code: str = "") -> list[str]:
-    """汇总全部实例已启用插件的依赖并集
-
-    - exclude_code 为本次操作发起实例，卸载判定须排除
-    """
-    return _enabled_field_union(exclude_code, ManifestKey.DEPS)
+def _enabled_deps_union() -> list[str]:
+    """汇总全部实例已启用插件的依赖并集"""
+    return _enabled_field_union(ManifestKey.DEPS)
 
 
 def keep_union() -> list[str]:
@@ -280,8 +277,8 @@ def keep_union() -> list[str]:
     return [*_core_dependencies(), *adapter_deps_union(), *_enabled_deps_union()]
 
 
-def _enabled_field_union(exclude_code: str, field: str) -> list[str]:
-    """按清单字段汇总其他实例的启用并集
+def _enabled_field_union(field: str) -> list[str]:
+    """按清单字段汇总全实例的启用并集
 
     - 实例目录逐个子目录扫状态文件，目录不存在返回空表
     """
@@ -291,7 +288,7 @@ def _enabled_field_union(exclude_code: str, field: str) -> list[str]:
 
     manifests = load_manifests(plugins_roots())
     for path in sorted(INSTANCES_DIR.iterdir()):
-        if not path.is_dir() or path.name == exclude_code:
+        if not path.is_dir():
             continue
         enabled = set(load_state(path.name).get(StateKey.ENABLED, []))
         if not enabled:
