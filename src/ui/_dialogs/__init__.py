@@ -12,7 +12,6 @@ from ._check import (
     current_check_window,
     open_check_window,
 )
-from ._follow import follow_above
 from ._link import LinkDialog
 from ._notice import NoticeDialog
 from ._persona import PersonaResolveDialog, PersonaSyncDialog
@@ -39,7 +38,6 @@ __all__ = [
     "CheckDialog",
     "Round",
     "current_check_window",
-    "follow_above",
     "open_check_window",
     "close_restart_wait",
     "finish_restart_wait",

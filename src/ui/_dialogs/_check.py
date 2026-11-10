@@ -11,7 +11,6 @@ from collections.abc import Callable
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QCloseEvent, QKeyEvent
 from PySide6.QtWidgets import (
-    QApplication,
     QHBoxLayout,
     QLabel,
     QVBoxLayout,
@@ -23,7 +22,7 @@ from skin.theme import CHECK_DIALOG, ButtonStyle, ObjectName
 from utils.network import FrameKey, RowId, RowStatus
 
 from .._lifecycle import Ticker
-from .._primitives import make_button
+from .._primitives import bring_front, make_button
 from ._base import BaseDialog
 from ._table import RowTable
 
@@ -166,17 +165,9 @@ class CheckDialog(BaseDialog):
     ) -> None:
         """把本窗提到本程序窗口最前
 
-        - 藏着的窗不参与排序，提它没意义
-        - 有别的模态窗开着就让位，免得抢走它正在收的输入
-        - 被跟的那只窗自己模态不算拦路，照样提顶
-        - 只排序不抢焦点填 False：向导里正在打字，不该被浮顶打断
+        - 让位与提顶的判据在层序工具那一只手里
         """
-        modal = QApplication.activeModalWidget()
-        if not self.isVisible() or (modal is not None and modal is not owner):
-            return
-        self.raise_()
-        if grab_focus:
-            self.activateWindow()
+        bring_front(self, grab_focus, owner)
 
     @staticmethod
     def _texts(round_id: str) -> tuple[str, str, str, str]:

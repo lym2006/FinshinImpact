@@ -7,6 +7,7 @@
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Any
 
 from finshin_sdk.domain import ConfigKey, FieldKey, ProxyMode
 from skin.messages import CheckMessage
@@ -167,15 +168,28 @@ _VERIFY_ROWS = (
 )
 
 
-def verify_skeleton() -> list[dict]:
-    """等待态占位表
-
-    - 校验计划生成前的初始显示
-    """
+def _pending_table(rows: tuple[tuple[str, str, Any, str], ...]) -> list[dict]:
+    """按给定行序铺等待态占位表"""
     return [
         {"id": rid, "title": title, "status": RowStatus.PENDING, "detail": ""}
-        for rid, title, _, _ in _VERIFY_ROWS
+        for rid, title, _, _ in rows
     ]
+
+
+def verify_skeleton() -> list[dict]:
+    """校验轮的等待态占位表
+
+    - 校验计划生成前的初始显示，含本地校验行
+    """
+    return _pending_table(_VERIFY_ROWS)
+
+
+def probe_skeleton() -> list[dict]:
+    """诊断轮的等待态占位表
+
+    - 诊断不跑本地校验，那一行不出表，首帧到末帧行数一致
+    """
+    return _pending_table(tuple(row for row in _VERIFY_ROWS if row[0] != RowId.LOCAL))
 
 
 _TAIL_ROWS = (RowId.LOCAL, RowId.ADVICE)

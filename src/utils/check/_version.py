@@ -6,6 +6,7 @@
 - 从 GitHub release 正文取版本变化内容
 """
 
+import asyncio
 import re
 import tomllib
 from dataclasses import dataclass
@@ -14,11 +15,13 @@ from typing import Any, Literal, NoReturn, cast
 from packaging.version import Version
 
 from exceptions import (
+    ConnectionFailedError,
     HTTPStatusError,
     LocalVersionError,
     NetworkError,
     NewVersionError,
     RemoteVersionError,
+    RequestTimeoutError,
     describe_error,
 )
 from skin.messages import VersionMessage
@@ -32,7 +35,7 @@ _RELEASE_BASE_URL = "https://api.github.com"
 _RELEASE_PATH = "/repos/lym2006/FinshinImpact/releases?per_page={size}&page={page}"
 _HEADER = {"User-Agent": "Python-Script"}
 
-# 检查类请求失败即报，重试一次即止，不拖满等待
+# 建连失败与超时重发一次即止，不拖满等待
 _TIMEOUT = 3.0  # 版本页读取超时 3 秒
 _CONNECT_TIMEOUT = 2.0  # 建连超时 2 秒
 _TIMEOUT_RELEASE = 10.0  # release 正文读取超时 10 秒
@@ -63,6 +66,50 @@ def _get_local_version() -> str | NoReturn:
         raise LocalVersionError(VersionMessage.LOCAL_BROKEN) from e
 
 
+class _VersionClient(BaseClient):
+    """版本页与 release 接口的取件客户端
+
+    - 建连失败或超时等一秒重发一次，两次都坏才上抛
+    """
+
+    _RETRY_DELAY = 1.0  # 重发前的等待秒数
+
+    @classmethod
+    async def _once(
+        cls,
+        method: Literal["json", "text"],
+        base_url: str,
+        request_path: str,
+        headers: dict[str, Any] | None,
+        timeout: float,
+    ) -> dict[str, Any] | str | None:
+        """取一份内容，异常原样上抛"""
+        return await cls.get_content(
+            method=method,
+            base_url=base_url,
+            request_path=request_path,
+            headers=headers,
+            timeout=timeout,
+            connect_timeout=_CONNECT_TIMEOUT,
+        )
+
+    @classmethod
+    async def fetch(
+        cls,
+        method: Literal["json", "text"],
+        base_url: str,
+        request_path: str,
+        headers: dict[str, Any] | None,
+        timeout: float,
+    ) -> dict[str, Any] | str | None:
+        """取一份内容，建连失败或超时重发一次"""
+        try:
+            return await cls._once(method, base_url, request_path, headers, timeout)
+        except (ConnectionFailedError, RequestTimeoutError):
+            await asyncio.sleep(cls._RETRY_DELAY)
+            return await cls._once(method, base_url, request_path, headers, timeout)
+
+
 async def _fetch(
     path: str,
     timeout: float,
@@ -72,13 +119,12 @@ async def _fetch(
 ) -> dict[str, Any] | str | NoReturn:
     """读取远程内容指定路径"""
     try:
-        content = await BaseClient.get_content(
+        content = await _VersionClient.fetch(
             method=method,
             base_url=base_url,
             request_path=path,
             headers=_HEADER,
             timeout=timeout,
-            connect_timeout=_CONNECT_TIMEOUT,
         )
         return cast(dict[str, Any], content)
     except HTTPStatusError as e:
