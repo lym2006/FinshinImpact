@@ -21,7 +21,7 @@ from pack_spec import (
 
 from . import dialogs, instancelock
 
-_ICON_REFRESH_TIMEOUT = 5.0  # 图标缓存刷新超时 5 秒
+_ICON_REFRESH_TIMEOUT = 5.0  # 秒
 _SWAP_FAST_TIMEOUT = 5.0  # 快交接静默等待上限 5 秒
 _SWAP_SOOTHE_MS = 20_000  # 慢路径安抚弹窗驻留 20 秒
 _HANDOFF_POLL_TICK = 0.5  # 抢锁轮询间隔 0.5 秒

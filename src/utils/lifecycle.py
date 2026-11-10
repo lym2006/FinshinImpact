@@ -49,7 +49,6 @@ def unregister_lifecycle(target: _TargetType, type_: _LifecycleType) -> None:
 def shutdown_all() -> list[str]:
     """进程退出时统一清理
 
-    - 线程安全且幂等
     - 返回失败项描述列表，由调用方记录
     """
     with _registry_lock:

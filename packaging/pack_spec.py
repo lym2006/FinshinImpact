@@ -1,7 +1,7 @@
 # packaging/pack_spec.py
 """打包共享规格
 
-- 产物身份名、发布地址与 Windows 协议值的标识符单源
+- 产物身份名、发布地址与 Windows 协议值的常量表
 - 版本页、发布说明与依赖清单的读取入口
 """
 
@@ -57,7 +57,7 @@ SHELL_EXE = EXE_NAME
 SHELL_PENDING = "_shell_update"
 SHELL_BAK_SUFFIX = ".old"
 
-# 与 app_identity.py 是同一份约定，两处改名必须同步：任务栏身份锚定到壳 exe 路径
+# 与本体身份件是同一份约定，两处改名必须同步：任务栏身份锚定到壳 exe 路径
 AUMID_ANCHOR_VAR = "FINSHINIMPACT_EXE_PATH"
 
 # Windows 进程创建标志，协议值与系统语义一致
@@ -163,7 +163,7 @@ def adapter_dependencies(root: Path) -> list[str]:
 def _tool_settings(root: Path) -> dict:
     """读取 [tool.finshin-impact] 表
 
-    - 换源序列与缓存目录的单源，引导期装库器读同一张表
+    - 换源序列与缓存目录的读取处，引导期装库器读同一张表
     """
     data = _pyproject_data(root)
     return data.get("tool", {}).get(data["project"]["name"], {})
@@ -172,9 +172,11 @@ def _tool_settings(root: Path) -> dict:
 def require_setting(root: Path, key: str) -> Any:
     """取配置表键值，缺键即报错
 
-    - 代码不写默认值，避免出现第二份不一致的副本
+    - 缺键即报错，代码不写第二份默认值
     """
     settings = _tool_settings(root)
+
+    # 再写一份默认值就会与表里的值不一致
     if key not in settings:
         raise RuntimeError(f"pyproject 缺 [tool.finshin-impact].{key}")
     return settings[key]

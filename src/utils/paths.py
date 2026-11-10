@@ -1,8 +1,8 @@
 # src/utils/paths.py
-"""实例路径单源
+"""实例路径表
 
 - 按实例身份码派生实例根目录与其下配置、人设、数据、日志路径
-- 导入期身份码必须已由 bootstrap 写入，取值即冻结
+- 导入期身份码必须已写入环境变量，取值即冻结
 """
 
 from exceptions import ProfileMissingError

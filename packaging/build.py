@@ -3,7 +3,7 @@
 
 - 编译启动器并组装 zip 发布物
 - 暂存区源码用随包嵌入式解释器预编字节码，用户解压即热
-- 原料下载在 pack_fetch，发布自检在 pack_release
+- 原料下载与发布自检各有独立脚本
 """
 
 import argparse
@@ -91,9 +91,10 @@ def _build_launcher() -> Path:
     """创建启动器
 
     - 编译启动器源码为无控制台单目录 exe
-    - onedir 不解压不压缩，降低杀毒软件误报
+    - 打包形态用 onedir，不解压不压缩
     - 产物指纹未变时复用已编译产物，避免用户端重复下载
     """
+    # onedir 不解压不压缩，降低杀毒软件误报
     out = DIST / "_launcher" / APP_NAME
     stamp = DIST / "_launcher" / ".launcher_sha"
     fp = _launcher_fingerprint()
@@ -149,11 +150,12 @@ def _write_runtime_seed(launcher_dir: Path) -> None:
 
 
 def _precompile_stage() -> None:
-    """用随包嵌入式解释器预编暂存区源码字节码
+    """预编暂存区源码字节码
 
-    - checked-hash 失效模式，pyc 不认 mtime，扛得住 zip 往返
+    - 按内容哈希判失效
     - 构建机解释器版本与嵌入式不一致也不作废产物
     """
+    # pyc 不认 mtime，checked-hash 才扛得住 zip 往返
     with tempfile.TemporaryDirectory(prefix="finshin-embed-") as tmp:
         embed = Path(tmp) / "embed"
         with zipfile.ZipFile(pack_fetch.fetch_embed()) as zf:

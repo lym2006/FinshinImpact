@@ -35,7 +35,7 @@ __all__ = [
 def _io() -> ConfigIO:
     """取得配置读写器
 
-    - 每次调用按当前 CONFIG_FILE 构造
+    - 每次调用按当前配置文件路径构造
     """
     return ConfigIO(CONFIG_FILE)
 

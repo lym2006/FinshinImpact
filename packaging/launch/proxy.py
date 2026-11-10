@@ -7,7 +7,7 @@
 
 import os
 
-# 注册表代理值名，与 src/system/registry.py 同值（exe 不导入 src）
+# 注册表代理值名，与本体注册表读件同值（exe 不导入 src）
 _PROXY_ENABLE_VALUE = "ProxyEnable"
 _PROXY_SERVER_VALUE = "ProxyServer"
 
@@ -50,8 +50,7 @@ def system_proxy_url() -> str | None:
 def apply_system_proxy() -> None:
     """注册表系统代理临时注入环境变量
 
-    - 仅供安装期子进程使用，_launch 会剔除
-    - 启动器自身取数走 netio 的 opener，不读这份环境变量
+    - 仅供安装期子进程使用，拉起主程序前会剔除
     """
     proxy = system_proxy_url()
     if not proxy:
