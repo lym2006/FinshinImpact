@@ -26,10 +26,6 @@ class PrincipalRepository(ABC):
     async def upsert(self, principal: PrincipalDTO, display_name: str) -> PrincipalDTO:
         """写入或更新主体"""
 
-    @abstractmethod
-    async def find_by_key(self, key: PrincipalKey) -> PrincipalDTO | None:
-        """按唯一键查询"""
-
 
 class SessionRepository(ABC):
     """会话仓储"""

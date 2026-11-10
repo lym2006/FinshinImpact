@@ -104,8 +104,10 @@ class TestTaskLedger(unittest.IsolatedAsyncioTestCase):
         row = await self._row("111")
         assert row is not None
         self.assertEqual(row.status, TaskStatus.PENDING)
-        principal = await self.repos.principal.find_by_key(row.principal.key)
-        self.assertIsNotNone(principal)
+        # 主体行没有对外读口，直接查库确认账本确实一并写上
+        conn = await get_connection(self.db)
+        async with conn.execute("SELECT COUNT(*) FROM principal") as cursor:
+            self.assertEqual((await cursor.fetchone())[0], 1)
         self.assertEqual(self.faults, [])
 
     async def test_same_principal_shares_one_row(self) -> None:

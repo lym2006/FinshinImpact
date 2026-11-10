@@ -47,14 +47,6 @@ class SqlitePrincipalRepository(PrincipalRepository):
         await self._conn.commit()
         return principal
 
-    async def find_by_key(self, key: PrincipalKey) -> PrincipalDTO | None:
-        """按唯一键查询"""
-        async with self._conn.execute(
-            f"SELECT {_SELECT_COLUMNS} FROM principal WHERE key = ?", (key,)
-        ) as cursor:
-            row = await cursor.fetchone()
-        return _to_dto(row) if row is not None else None
-
 
 def _to_dto(row: aiosqlite.Row) -> PrincipalDTO:
     """行转主体快照"""
