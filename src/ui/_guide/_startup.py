@@ -11,17 +11,10 @@
 
 from PySide6.QtWidgets import QMessageBox
 
-from finshin_sdk.domain import BUNDLED_PLUGIN_PRIORITY, ManifestKey, StateKey
+from finshin_sdk.domain import ManifestKey
 from services.env_setup.assets import install_assets, is_asset_installed
 from services.env_setup.deps_install import install_deps
-from services.env_setup.deps_manifest import (
-    catalog_digest,
-    load_manifests,
-    load_state,
-    plugins_roots,
-    save_state,
-    top_package_name,
-)
+from services.env_setup.deps_startup import disable_failed, target_manifests
 from services.env_setup.subprocess_ops import ProgressCallback, emit, is_pin_installed
 from services.env_setup.toolchain import dev_mode
 from skin.messages import PluginMessage
@@ -33,31 +26,13 @@ from ._progress import run_with_progress
 _Pending = tuple[str, list[str], list[str]]
 
 
-def _target_manifests(code: str) -> list[dict]:
-    """取本实例应结算的插件清单
-
-    - 范围是随包插件与本实例启用集
-    - 随包插件不看勾选，读取侧恒并入
-    """
-    roots = plugins_roots()
-    if not roots:
-        return []
-    enabled = set(load_state(code).get(StateKey.ENABLED, []))
-    return [
-        manifest
-        for manifest in load_manifests(roots)
-        if manifest[ManifestKey.NAME] in BUNDLED_PLUGIN_PRIORITY
-        or manifest[ManifestKey.NAME] in enabled
-    ]
-
-
 def _collect_missing(code: str) -> list[_Pending]:
     """逐插件实测并汇总补装计划
 
     - 空表即环境齐全，启动免结算直接放行
     """
     plan: list[_Pending] = []
-    for manifest in _target_manifests(code):
+    for manifest in target_manifests(code):
         missing = [
             pin for pin in manifest[ManifestKey.DEPS] if not is_pin_installed(pin)
         ]
@@ -86,42 +61,6 @@ def _install_missing(
     return failed
 
 
-def _disable_failed(code: str, failed: list[str]) -> list[str]:
-    """把安装失败的启用插件移出启用集并落盘
-
-    - 失败项按顶层包名或资源声明命中哪个插件就禁哪个
-    - 命中不了具体插件（整轮异常）时启用集全禁
-    - 只改启用集，不动已装库
-    """
-    roots = plugins_roots()
-    if not roots:
-        return []
-    enabled = [
-        name
-        for name in load_state(code).get(StateKey.ENABLED, [])
-        if isinstance(name, str)
-    ]
-    if not enabled:
-        return []
-
-    tops = {top_package_name(item) for item in failed}
-    dropped: list[str] = []
-    for manifest in load_manifests(roots):
-        name = manifest[ManifestKey.NAME]
-        if name not in enabled:
-            continue
-        deps = {top_package_name(pin) for pin in manifest[ManifestKey.DEPS]}
-        assets = set(manifest[ManifestKey.ASSETS])
-        if deps & tops or assets & set(failed):
-            dropped.append(name)
-    if not dropped:
-        dropped = list(enabled)
-
-    keep = [name for name in enabled if name not in dropped]
-    save_state(code, keep, catalog_digest(load_manifests(roots)))
-    return dropped
-
-
 def settle_runtime(code: str) -> None:
     """启动前结算 runtime 依赖，装完才放行启动
 
@@ -137,7 +76,7 @@ def settle_runtime(code: str) -> None:
     failed = run_with_progress(
         PluginMessage.PROGRESS_RUNTIME, lambda on_line: _install_missing(plan, on_line)
     )
-    dropped = _disable_failed(code, failed) if failed else []
+    dropped = disable_failed(code, failed) if failed else []
     if not failed:
         return
     ensure_app()
