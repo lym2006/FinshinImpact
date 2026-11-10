@@ -12,6 +12,9 @@ python devtools\check_coding_style.py
 # 只扫指定目录或文件
 python devtools\check_coding_style.py src\bot
 
+# 交付闸门跑的是全量三根，漏掉后两根就是漏扫
+python devtools\check_coding_style.py src packaging devtools
+
 # 只看规则明确可判的硬性违规
 python devtools\check_coding_style.py --hard-only
 
@@ -19,7 +22,7 @@ python devtools\check_coding_style.py --hard-only
 python devtools\check_coding_style.py --section 注释
 ```
 
-- 目标就是命令行给的那几个路径，不给默认 `src` 一个。
+- 命令行给了路径就只扫那几个，没给即默认扫 `src`。
 - 「合计 … 扫描 N 个目标」那行的 N 报的是路径条数，跟违规多少无关。
 - 每条违规带标记：
   - `[H]` 硬性，规则明确可判，须改。

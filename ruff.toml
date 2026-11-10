@@ -49,7 +49,8 @@ extend-ignore-names = [
 ]
 
 [lint.isort]
-known-first-party = ["plugins", "utils", "core", "data", "services", "adapters", "bot"]
+known-first-party = ["adapters", "bootstrap", "bot", "bundled", "core", "data",
+                   "exceptions", "finshin_sdk", "services", "skin", "system", "ui", "utils"]
 
 [format]
 quote-style = "double"  # 普通字符串强制使用双引号 ""

@@ -44,7 +44,7 @@
 - 引导期窗体与主窗同为视图层，只消费服务层函数，不自己算。
 - 代发平台要实现的两份抽象接口只从 `finshin_sdk` 取，本体不直接引适配器。
 - 平台框架（aiogram）只许 `src/adapters/` 引，其余各处一律不引，这条由依赖契约钉死。
-- 接口包对外只代发插件与适配器真要用的那几样；只给随包件用的形状留在本体侧（如内部入口基类住 `core.contracts`），别放上对外那一面。
+- 接口包对外只代发插件与适配器真要用的那几样，没人用的形状留在本体侧，别放上对外那一面。
 
 ## Docstring
 
@@ -186,7 +186,7 @@
 - 配置与领域两级门面不 re-export，理由见 [lessons/layering.md](lessons/layering.md)。
 - 词表按变更范围归层：与某 DTO 字段共变的进该 DTO 文件，横切适配层与存储的进接口包的领域层 `finshin_sdk/domain`。
 - 同域成员不重复域前缀：类名或裸常量前缀已表达域义，成员只写语义本体。
-- 如 `RowStatus.SKIP` 不写成 `ROW_STATUS_SKIP`，`CheckMessage.TIMEOUT` 不写成 `_CHECK_TIMEOUT`。
+- 如 `RowStatus.SKIP` 不写成 `ROW_STATUS_SKIP`，`CheckMessage.COUNTDOWN` 不写成 `_CHECK_COUNTDOWN`。
 - 域与域靠语义区分，命名格式全文件一致。
 - 域外可见的裸常量一律 `DOMAIN_MEANING[_UNIT]`（如 `PUSH_MAX_RETRIES`、`CONNECT_TIMEOUT_MS`），私有加 `_` 前缀（如 `_PUSH_MAX_RETRIES`），禁止混用其他样式。
 
