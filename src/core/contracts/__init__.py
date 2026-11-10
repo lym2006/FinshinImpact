@@ -1,11 +1,10 @@
 # src/core/contracts/__init__.py
 """契约门面
 
-- 定义数据存放与插件召唤的出入口
-- 只包含抽象接口与能力定义，不放实现
+- 定义数据存放的出入口
+- 只包含抽象接口，不放实现
 """
 
-from ._plugin import BundledPlugin, CapabilityCall
 from ._repository import (
     GrantRepository,
     MediaRepository,
@@ -15,9 +14,6 @@ from ._repository import (
 )
 
 __all__ = [
-    # 插件
-    "CapabilityCall",
-    "BundledPlugin",
     # 仓储
     "PrincipalRepository",
     "SessionRepository",

@@ -29,20 +29,25 @@ _PluginHandler = Callable[..., Awaitable[None]]
 ActionRun = Callable[..., Awaitable[None]]
 
 # 时机订阅的处理函数，收平台召唤时交代的那一份能力
-PluginTimingRun = Callable[..., Awaitable[None]]
+MomentRun = Callable[..., Awaitable[None]]
 
 
-class PlatformTiming(StrEnum):
+class PlatformMoment(StrEnum):
     """平台会说出口的机会
 
     - 加新机会在这里加一名，不在插件入口基类上加方法
     - 名字只说平台发生了什么，不说插件该干什么
+    - 插件在入口类上订阅，订了就轮到
     """
 
+    # 轮询开跑前在服务线程的事件循环上轮到，件报错记一笔后接着跑下一个
     BEFORE_ENGINE_RUN = auto()
+
+    # 主人或生效正文变了即轮到，排在清历史那一步
     IDENTITY_CHANGED = auto()
 
-    # 校验通过即说出口，落盘排在随后由界面动手
+    # 校验通过即说出口，此刻内存里已是刚验过的值
+    # 落盘排在随后由界面动手，盘上可能还是旧值
     CONFIG_VERIFIED = auto()
 
 
@@ -69,21 +74,21 @@ class MessageRoute:
 
 
 @dataclass(frozen=True, slots=True)
-class PluginTiming:
+class MomentSubscription:
     """一条时机订阅
 
-    - timing 决定什么时候轮到，run 收平台交代的那一份能力
+    - moment 决定什么时候轮到，run 收平台交代的那一份能力
     - 同一时机交多条即按交出的顺序跑
     """
 
-    timing: PlatformTiming
-    run: PluginTimingRun
+    moment: PlatformMoment
+    run: MomentRun
 
 
 class BasePlugin:
     """插件入口基类
 
-    - 三只方法都可以不写，不写即没有那一类能力
+    - 四只方法都可以不写，不写即没有那一类能力
     - 交出的清单按交出的顺序生效，本体不认识具体能力
     """
 
@@ -97,6 +102,10 @@ class BasePlugin:
 
     def queued_actions(self) -> tuple[QueuedAction, ...]:
         """可排队的动作清单"""
+        return ()
+
+    def platform_moments(self) -> tuple[MomentSubscription, ...]:
+        """订阅的平台机会清单"""
         return ()
 
 

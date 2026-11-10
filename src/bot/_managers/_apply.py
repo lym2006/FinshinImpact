@@ -6,7 +6,7 @@
 
 from typing import TYPE_CHECKING
 
-from finshin_sdk.domain import ConfigKey, ConfigSection, FieldKey, PlatformTiming
+from finshin_sdk.domain import ConfigKey, ConfigSection, FieldKey, PlatformMoment
 from skin.messages import CheckMessage, DialogMessage
 from system.profile_env import get_profile, read_token
 from ui import gui_bridge
@@ -125,7 +125,7 @@ class ConfigApplier:
         - 跳过重启与真重启两支都走这里，订阅侧不必自己分辨
         """
         gui_bridge.config_ready_changed.emit(True)
-        hooks = self._host._service_manager.hooks_for(PlatformTiming.CONFIG_VERIFIED)
+        hooks = self._host._service_manager.runs_for(PlatformMoment.CONFIG_VERIFIED)
         call = self._host._service_manager.capability_call()
         for hook in hooks:
             await hook(call)
@@ -168,7 +168,7 @@ class ConfigApplier:
 
         - 没件订阅「身份变了」即不清也不落基准，下一轮或读取侧对账补上
         """
-        hooks = self._host._service_manager.hooks_for(PlatformTiming.IDENTITY_CHANGED)
+        hooks = self._host._service_manager.runs_for(PlatformMoment.IDENTITY_CHANGED)
         if not hooks:
             return False
         call = self._host._service_manager.capability_call()

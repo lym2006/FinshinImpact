@@ -10,8 +10,9 @@ import asyncio
 from collections import defaultdict
 from pathlib import Path
 
-from core.contracts import CapabilityCall, SessionRepository
+from core.contracts import SessionRepository
 from data import build_repositories, get_connection
+from finshin_sdk import CapabilityCall
 from finshin_sdk.domain.ids import SessionKey
 from finshin_sdk.dto import MessageDTO, SessionDTO, SessionPatchDTO
 from utils import get_logger
@@ -103,10 +104,7 @@ async def _purge_history() -> None:
 
 
 async def purge_on_identity_changed(call: CapabilityCall) -> None:
-    """轮到「身份变了」这个平台机会，清掉全部会话与落盘记录
-
-    - 交来的交代用不上，清历史不需要对外说话
-    """
+    """身份变更后的会话与落盘记录清理"""
     await _purge_history()
 
 
@@ -142,7 +140,7 @@ def _set_pending_mark(pending: bool) -> None:
 
 
 def _purge_records() -> bool:
-    """删净落盘记录，交出是否一个不剩
+    """落盘记录清理结果
 
     - 单个删不掉继续删其他的
     """
@@ -157,7 +155,7 @@ def _purge_records() -> bool:
 
 
 async def purge_stale(persona: str, session_key: SessionKey) -> SessionDTO:
-    """库里人设版本对不上即清全部历史，交出清理后的快照
+    """人设版本不符时的历史清理
 
     - 换过人设或主人而不重开程序时，读取与问答两条路都在此收口
     - 这一条是兜底路径，动手必记一行，禁静默删掉所有人的历史

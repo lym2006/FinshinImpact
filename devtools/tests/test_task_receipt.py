@@ -27,13 +27,13 @@ set_profile("tg.000000")
 from bundled.AI.config import ai_config  # noqa: E402
 from bundled.AI.services import _receipt  # noqa: E402
 from bundled.AI.services._receipt import report_lost_tasks  # noqa: E402
-from core.contracts import CapabilityCall  # noqa: E402
 from data import (  # noqa: E402
     build_repositories,
     close_all,
     get_connection,
     run_migrations,
 )
+from finshin_sdk import CapabilityCall  # noqa: E402
 from finshin_sdk.domain import (  # noqa: E402
     Platform,
     TaskStatus,

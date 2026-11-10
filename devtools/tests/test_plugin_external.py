@@ -35,6 +35,7 @@ from finshin_sdk.domain import (  # noqa: E402
     PLUGINS_PKG,
     HelpKey,
     ManifestKey,
+    PlatformMoment,
     PluginClaim,
     resolve_claims,
 )
@@ -104,7 +105,7 @@ role = "{role}"
 """
 _CONTRACT_ENTRY = """
 from finshin_sdk import BasePlugin, BackgroundLoop, MessageRoute, QueuedAction
-from finshin_sdk.domain import PlatformTiming, PluginTiming
+from finshin_sdk.domain import PlatformMoment, MomentSubscription
 
 
 async def _hit(raw: object, ctx: object) -> bool:
@@ -137,8 +138,8 @@ class DemoPlugin(BasePlugin):
     def queued_actions(self) -> tuple[QueuedAction, ...]:
         return (QueuedAction(kind="demo.chat", run=_task),)
 
-    def timings(self) -> tuple[PluginTiming, ...]:
-        return (PluginTiming(PlatformTiming.BEFORE_ENGINE_RUN, _on_call),)
+    def platform_moments(self) -> tuple[MomentSubscription, ...]:
+        return (MomentSubscription(PlatformMoment.BEFORE_ENGINE_RUN, _on_call),)
 """
 
 # 动作名挂在别家名下的入口，装载侧应拒收
@@ -415,7 +416,7 @@ class TestExternalContract(ExternalRootCase):
 
         - 这条红了说明交出的形状改了，照这份写的外部插件装不上
         """
-        manifests, (report, backgrounds, handlers, timings), sink = (
+        manifests, (report, backgrounds, handlers, platform_moments), sink = (
             self._register_installed(
                 {"__init__.py": _CONTRACT_ENTRY},
                 _CONTRACT_MANIFEST.format(role="member"),
@@ -432,7 +433,8 @@ class TestExternalContract(ExternalRootCase):
         self.assertEqual(len(sink.routers[0]), 1)
         self.assertEqual(len(backgrounds), 1)
         self.assertEqual(handlers[0].kind, "demo.chat")
-        self.assertEqual(timings, {}, "外部件交的时机订阅不收")
+        self.assertEqual(list(platform_moments), [PlatformMoment.BEFORE_ENGINE_RUN])
+        self.assertEqual(len(platform_moments[PlatformMoment.BEFORE_ENGINE_RUN]), 1)
 
     def test_role_mismatch_recorded_as_failure(self) -> None:
         """清单写的权限档与路由上的守卫对不上即记权限错

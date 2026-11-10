@@ -2,13 +2,14 @@
 """控制器异常装饰器
 
 - 业务异常拦截，保障 GUI 线程存活
+- 兜住调用那一半走本体公共件，这里只留日志那一句
 """
 
 from collections.abc import Callable
-from functools import wraps
-from typing import ParamSpec, TypeVar, cast
+from typing import ParamSpec, TypeVar
 
 from skin.messages import MiscMessage
+from utils.error_guard import guard
 from utils.logger import get_logger
 
 _logger = get_logger("GUI.Guard")
@@ -18,22 +19,18 @@ P = ParamSpec("P")
 T = TypeVar("T")
 
 
+def _report(exc: Exception, stage: str) -> None:
+    """拦截的报错只落日志，按钮事件不外弹"""
+    _logger.send_error(stage, exc)
+
+
 def gui_guard(func: Callable[P, T]) -> Callable[P, T]:
     """GUI 按钮事件安全装饰器
 
     - 拦截业务异常并记日志
     """
-
-    @wraps(func)
-    def wrapper(*args: P.args, **kwargs: P.kwargs) -> T | None:
-        try:
-            return func(*args, **kwargs)
-
-        except Exception as e:
-            _logger.send_error(
-                MiscMessage.GUARD_EXEC_ERROR.format(name=func.__name__), e
-            )
-
-        return
-
-    return cast(Callable[P, T], wrapper)
+    return guard(
+        MiscMessage.GUARD_EXEC_ERROR.format(name=func.__name__),
+        _report,
+        catch_all=True,
+    )(func)

@@ -3,12 +3,11 @@
 
 - 致命与可恢复两级路由规则
 - 将异常分发到对应的 GUI 信号
+- 兜住调用那一半走本体公共件，这里只留分发
 """
 
-import functools
-import inspect
 from collections.abc import Callable
-from typing import Any, ParamSpec, TypeVar, cast
+from typing import ParamSpec, TypeVar
 
 from exceptions import (
     BotError,
@@ -17,6 +16,7 @@ from exceptions import (
 )
 from skin.messages import ConfigMessage, MiscMessage
 from ui import gui_bridge
+from utils.error_guard import guard
 from utils.logger import get_logger
 
 P = ParamSpec("P")
@@ -64,6 +64,14 @@ def _route_unexpected(exc: Exception, stage: str) -> None:
     gui_bridge.request_notice.emit(f"{stage}\n{MiscMessage.UNKNOWN_ERROR}", True)
 
 
+def _handle(exc: Exception, stage: str) -> None:
+    """收异常本体与哪一步，按两级分发"""
+    if isinstance(exc, BotError):
+        _route(exc, stage)
+    else:
+        _route_unexpected(exc, stage)
+
+
 def error_guard(
     stage: str, catch_all: bool = False, reraise: bool = False
 ) -> Callable[[Callable[P, T]], Callable[P, T]]:
@@ -72,41 +80,4 @@ def error_guard(
     - catch_all 为真时未知异常也按致命路由
     - reraise 为真时路由信号后继续上抛
     """
-    guard_exceptions: tuple[type[Exception], ...] = (
-        (BotError, Exception) if catch_all else (BotError,)
-    )
-
-    def _handle(exc: Exception) -> None:
-        if isinstance(exc, BotError):
-            _route(exc, stage)
-        else:
-            _route_unexpected(exc, stage)
-
-    def decorator(func: Callable[P, T]) -> Callable[P, T]:
-        if inspect.iscoroutinefunction(func):
-
-            @functools.wraps(func)
-            async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
-                try:
-                    return await func(*args, **kwargs)
-                except guard_exceptions as exc:
-                    _handle(exc)
-                    if reraise:
-                        raise
-                    return None
-
-            return cast("Callable[P, T]", async_wrapper)
-
-        @functools.wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> Any:
-            try:
-                return func(*args, **kwargs)
-            except guard_exceptions as exc:
-                _handle(exc)
-                if reraise:
-                    raise
-                return None
-
-        return wrapper
-
-    return decorator
+    return guard(stage, _handle, catch_all=catch_all, reraise=reraise)
