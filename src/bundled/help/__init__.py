@@ -7,12 +7,7 @@
 
 import asyncio
 
-from finshin_sdk.domain import (
-    BasePlugin,
-    MessageRoute,
-    MomentSubscription,
-    PlatformMoment,
-)
+from finshin_sdk import BasePlugin, MessageRoute, MomentSubscription, PlatformMoment
 
 from ._commands import ROUTES
 from ._services import prewarm

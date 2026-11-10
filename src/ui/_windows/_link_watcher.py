@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 from PySide6.QtCore import QObject
 
 from skin.messages import EngineMessage
-from utils.logger import get_logger
+from utils import get_logger
 from utils.network import LinkStatus, link_report
 
 from .._dialogs import LinkDialog, SettingsDialog, current_check_window

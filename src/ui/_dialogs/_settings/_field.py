@@ -22,14 +22,8 @@ from PySide6.QtWidgets import (
 from skin.messages import ConfigMessage
 from skin.qss import build_error_label_qss, build_pending_label_qss
 from skin.theme import GLOBAL, SETTINGS_DIALOG
-from utils.config.models import (
-    AppConfigData,
-    AppSchema,
-    ConfigValue,
-    FieldSchema,
-    TabData,
-    is_blank,
-)
+from utils.config import AppConfigData, AppSchema
+from utils.config.models import ConfigValue, FieldSchema, TabData, is_blank
 
 from ..._primitives import make_combo
 from ._list_widget import ConfigListRow

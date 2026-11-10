@@ -7,7 +7,8 @@
 import asyncio
 from collections.abc import Callable, Iterable
 
-from finshin_sdk.domain import ActionRun, QueuedAction
+from finshin_sdk import QueuedAction
+from finshin_sdk.domain import ActionRun
 from finshin_sdk.domain.ids import SessionKey
 
 from ._ledger import TaskLedger

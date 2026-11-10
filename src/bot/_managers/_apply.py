@@ -6,7 +6,8 @@
 
 from typing import TYPE_CHECKING
 
-from finshin_sdk.domain import ConfigKey, ConfigSection, FieldKey, PlatformMoment
+from finshin_sdk import PlatformMoment
+from finshin_sdk.domain import ConfigKey, ConfigSection, FieldKey
 from skin.messages import CheckMessage, DialogMessage
 from system.profile_env import get_profile, read_token
 from ui import gui_bridge

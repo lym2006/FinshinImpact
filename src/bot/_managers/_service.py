@@ -12,8 +12,8 @@ from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING
 
 from exceptions import describe_error
-from finshin_sdk import CapabilityCall, PlatformAssembly
-from finshin_sdk.domain import ContentKind, PlatformMoment
+from finshin_sdk import CapabilityCall, PlatformAssembly, PlatformMoment
+from finshin_sdk.domain import ContentKind
 from finshin_sdk.dto import OutboundPayloadDTO, PluginManifestDTO
 from skin.messages import EngineMessage
 from utils.paths import PLATFORM

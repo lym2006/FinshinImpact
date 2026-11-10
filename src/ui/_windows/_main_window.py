@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
 )
 
 from skin.theme import BodyTheme, FontTheme, ObjectName, ToolbarTheme, WindowTheme
-from utils.logger import get_logger
+from utils import get_logger
 
 from .._dialogs import (
     BaseDialog,

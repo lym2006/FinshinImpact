@@ -25,7 +25,8 @@ from PySide6.QtWidgets import (
 
 from finshin_sdk.domain import ConfigGroup, ConfigKey, ConfigSection
 from skin.theme import GLOBAL, SETTINGS_DIALOG, ButtonStyle, ObjectName
-from utils.config.models import AppSchema, TabSchema
+from utils.config import AppSchema
+from utils.config.models import TabSchema
 from utils.network import uses_configured_proxy
 
 from ..._primitives import make_button
