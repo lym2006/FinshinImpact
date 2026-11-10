@@ -6,6 +6,7 @@
 """
 
 import asyncio
+from typing import cast
 
 from PySide6.QtCore import QThread, Signal
 
@@ -17,6 +18,7 @@ from utils.check import ReleaseNote, check_updates, release_history
 
 from ..._dialogs import NoticeDialog, ReleaseNotesDialog, WaitDialog
 from ._base import BaseController
+from ._worker import run_waiting_worker
 
 _logger = get_logger("GUI.Version")
 
@@ -74,29 +76,12 @@ class VersionController(BaseController):
         # 面板只记首行摘要，新版提示文案与成败态一并透出
         dialog = WaitDialog(WAIT_DIALOG.check_text, parent=self.gui, cancelable=True)
         worker = _VersionWorker()
-        result: list[tuple[str, list, str, bool]] = []
-
-        def _collect(text: str, notes: list, focus: str, passed: bool) -> None:
-
-            # 先存结果再收窗：finish 自动 accept，防暂存被 disconnect 掐断
-            result.append((text, notes, focus, passed))
-            dialog.finish(text, passed)
-
-        worker.done.connect(_collect)
-        worker.start()
-        try:
-            dialog.exec()
-        finally:
-            # 用户先行关窗：摘除回执防迟到结果触碰已关窗口
-            worker.done.disconnect()
-            worker.requestInterruption()
-            worker.wait()
-
-        if not result:
+        frames = run_waiting_worker(dialog, worker, worker.done)
+        if not frames:
             self.logger.info("用户取消版本检查")
             return
 
-        msg, notes, focus, passed = result[0]
+        msg, notes, focus, passed = cast(tuple[str, list, str, bool], frames[0])
         head = next((ln.strip() for ln in msg.splitlines() if ln.strip()), msg)
         if passed:
             self.logger.debug(f"版本检查：{head}")

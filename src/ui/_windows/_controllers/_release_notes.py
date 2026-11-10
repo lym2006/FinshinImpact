@@ -5,6 +5,7 @@
 """
 
 import asyncio
+from typing import cast
 
 from PySide6.QtCore import QThread, Signal
 
@@ -15,6 +16,7 @@ from utils.check import release_history
 
 from ..._dialogs import NoticeDialog, ReleaseNotesDialog, WaitDialog
 from ._base import BaseController
+from ._worker import run_waiting_worker
 
 _logger = get_logger("GUI.ReleaseNotes")
 
@@ -59,29 +61,12 @@ class ReleaseNotesController(BaseController):
             RELEASE_NOTES_DIALOG.loading, parent=self.gui, cancelable=True
         )
         worker = _ReleaseNotesWorker()
-        result: list[tuple[str, list, bool]] = []
-
-        def _collect(text: str, notes: list, passed: bool) -> None:
-
-            # 先存结果再收窗：finish 自动 accept，防暂存被 disconnect 掐断
-            result.append((text, notes, passed))
-            dialog.finish(text, passed)
-
-        worker.done.connect(_collect)
-        worker.start()
-        try:
-            dialog.exec()
-        finally:
-            # 用户先行关窗：摘除回执防迟到结果触碰已关窗口
-            worker.done.disconnect()
-            worker.requestInterruption()
-            worker.wait()
-
-        if not result:
+        frames = run_waiting_worker(dialog, worker, worker.done)
+        if not frames:
             self.logger.info("用户取消版本变化拉取")
             return
 
-        msg, notes, passed = result[0]
+        msg, notes, passed = cast(tuple[str, list, bool], frames[0])
         if not passed:
             self.logger.error(f"版本变化拉取失败：{msg}")
             NoticeDialog.notify(msg, parent=self.gui)
