@@ -6,6 +6,14 @@
 
 ## [Unreleased]
 
+### 📝 Planned
+
+- **跨平台**：QQ 平台实装。
+
+---
+
+## [1.0.0-alpha.7.dev4] - 2026-11-11
+
 ### ⚠️ Breaking Changes
 
 - **接口包撤掉四处没人用的形状**：
@@ -25,7 +33,7 @@
   - 时机那几样一并归到 moment 词根：`PlatformTiming` 叫 `PlatformMoment`、`PluginTiming` 叫 `MomentSubscription`、`PluginTimingRun` 叫 `MomentRun`。
   - `PluginSpec` 那只袋子删掉。
 - **任务动作名从封闭词表改成带归属的字符串**：
-  - 动作名写成「插件名.动作」，装载时校验前段等于插件名，别人名下的动作名整只拒装。
+  - 动作名写成「插件名.动作」，装载时校验前段等于插件名。别人名下的动作名整只拒装。
   - 内置对话的动作名由 `chat` 改成 `AI.chat`，旧名那几行不再有人认领，升级时未跑完的任务行本来就一律判失败，不用额外补迁移。
 
 ### ✨ Added
@@ -91,10 +99,6 @@
 - **插件一个都没装上与字体那几条补上人话**：
   - 此前这两族没有文案模板，屏上只剩 `PluginsMissingError`、`FontLoadError` 这类英文名。
   - 补上插件全灭、字体缺失、字体读不出、无家族名、字体注册失败与仪表盘写入失败六句。
-
-### 📝 Planned
-
-- **跨平台**：QQ 平台实装。
 
 ---
 
