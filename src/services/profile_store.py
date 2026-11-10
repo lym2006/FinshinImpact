@@ -5,11 +5,10 @@
 - 从 token 推导身份码并落盘新实例
 """
 
-import json
 import re
 import shutil
 import time
-from pathlib import Path
+from typing import Any
 
 from finshin_sdk.domain import Platform, make_profile_code, platform_of_profile
 from system.atomic_write import write_bytes_atomic
@@ -87,7 +86,7 @@ def list_profiles() -> list[tuple[str, str]]:
         data = read_profile_data(path.name)
         last_used = data.get(_LAST_USED_KEY)
         stamp = float(last_used) if isinstance(last_used, (int, float)) else 0.0
-        profiles.append((stamp, path.name, _read_remark(path)))
+        profiles.append((stamp, path.name, _remark_of(data)))
 
     profiles.sort(key=lambda item: (item[0], item[1]))
     profiles.reverse()
@@ -111,8 +110,8 @@ def touch_profile(code: str) -> None:
 
 
 def remark_of(code: str) -> str:
-    """取实例备注名，缺失返回空串"""
-    return str(read_profile_data(code).get(_REMARK_KEY, ""))
+    """按身份码取实例备注名"""
+    return _remark_of(read_profile_data(code))
 
 
 def create_profile(code: str, token: str, remark: str) -> None:
@@ -168,14 +167,9 @@ def delete_profile(code: str) -> bool:
     return not target.is_dir()
 
 
-def _read_remark(target: Path) -> str:
-    """读取实例备注名
+def _remark_of(data: dict[str, Any]) -> str:
+    """取实例备注名
 
-    - 按传入目录直接读取，不重走身份码净化
-    - 文件缺失或损坏一律当空备注，不阻断选择窗
+    - 没填或类型不对即交空串，不阻断选择窗
     """
-    try:
-        data = json.loads((target / INSTANCE_PROFILE_NAME).read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return ""
-    return str(data.get(_REMARK_KEY, "")) if isinstance(data, dict) else ""
+    return str(data.get(_REMARK_KEY, ""))

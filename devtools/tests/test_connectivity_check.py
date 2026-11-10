@@ -787,16 +787,29 @@ class TestSingleRowPlan(unittest.TestCase):
     """回归点
 
     - 单路模式校验表裁剪为本路、本地与结论三行
+    - 本地行只属校验轮，诊断轮不传本地帧即不出这行
     """
 
     def test_cfg_single_rows(self) -> None:
         """单路配置表只剩三行"""
-        from utils.network import plan_channels, verify_plan
+        from utils.network import RowId, RowStatus, plan_channels, verify_plan
         from utils.network.probe import single_row_of
 
         channels = plan_channels("http://127.0.0.1:9999", None, mode="cfg")
-        rows = verify_plan(channels, single=single_row_of("cfg"))
+        rows = verify_plan(
+            channels,
+            local_frame={"id": RowId.LOCAL, "status": RowStatus.OK, "detail": ""},
+            single=single_row_of("cfg"),
+        )
         self.assertEqual([r["id"] for r in rows], ["cfg", "local", "advice"])
+
+    def test_no_local_frame_drops_local_row(self) -> None:
+        """不传本地帧即不出本地行，诊断那一路靠这个"""
+        from utils.network import RowId, plan_channels, verify_plan
+
+        channels = plan_channels("http://127.0.0.1:9999", None, mode="auto")
+        rows = verify_plan(channels)
+        self.assertNotIn(RowId.LOCAL, [r["id"] for r in rows])
 
     def test_auto_single_none(self) -> None:
         """自动模式不裁行"""
