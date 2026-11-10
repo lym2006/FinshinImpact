@@ -18,9 +18,17 @@ T = TypeVar("T")
 # 反馈去向：收异常本体与「哪一步」，写日志还是上屏由它自己定
 _Report = Callable[[Exception, str], None]
 
+# 哪一步：写死一句，或按本次实参现算（装饰方法时要点名是哪个实例）
+_Stage = str | Callable[..., str]
+
+
+def _text_of(stage: _Stage, args: tuple[Any, ...]) -> str:
+    """取这一次调用的步骤名"""
+    return stage(*args) if callable(stage) else stage
+
 
 def guard(
-    stage: str,
+    stage: _Stage,
     report: _Report,
     *,
     catch_all: bool = False,
@@ -31,6 +39,7 @@ def guard(
     - catch_all 为真时表外异常也接住，为假时只接本族
     - reraise 为真时交代完继续上抛，为假时接住即完
     - 反馈去向只在被兜住那一刻调用一次
+    - stage 可以是按本次实参现算的一句
     """
     caught: tuple[type[Exception], ...] = (
         (BotError, Exception) if catch_all else (BotError,)
@@ -44,7 +53,7 @@ def guard(
                 try:
                     return await func(*args, **kwargs)
                 except caught as exc:
-                    report(exc, stage)
+                    report(exc, _text_of(stage, args))
                     if reraise:
                         raise
                     return None
@@ -56,7 +65,7 @@ def guard(
             try:
                 return func(*args, **kwargs)
             except caught as exc:
-                report(exc, stage)
+                report(exc, _text_of(stage, args))
                 if reraise:
                     raise
                 return None
