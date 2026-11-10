@@ -3,7 +3,6 @@
 
 - 致命与可恢复两级路由规则
 - 将异常分发到对应的 GUI 信号
-- 兜住调用那一半走本体公共件，这里只留分发
 """
 
 from collections.abc import Callable
@@ -27,7 +26,7 @@ def _setup_errors(exc: BotError) -> dict[str, str]:
     """向导字段级错误
 
     - 缺键异常须带字段标识，否则面板无标红
-    - 整段缺失时 missing_key 是 section 名，字段键取点路径尾段
+    - 整段缺失时缺的是段名，字段键取点路径尾段
     """
     if isinstance(exc, ConfigPathMissingError):
         return {exc.key_path.rpartition(".")[2]: ConfigMessage.REQUIRED_MARK}

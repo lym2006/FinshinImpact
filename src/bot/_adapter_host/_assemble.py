@@ -15,10 +15,7 @@ from ._parts import parts_for
 def assemble_platform(
     platform: Platform, token: str, proxy: str | None
 ) -> PlatformAssembly:
-    """装配一个平台的运行时与插件清单
-
-    - 日志中间件与插件注册归本体，适配器只交出挂载口与清单编译器
-    """
+    """装配一个平台的运行时与插件清单"""
     adapter = parts_for(platform).assemble(token, proxy)
     adapter.attach_middleware(LoggingMiddleware())
     report, loops, actions, platform_moments = register_plugins(

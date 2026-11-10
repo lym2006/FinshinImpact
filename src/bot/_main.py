@@ -64,7 +64,7 @@ class Main:
     def main(self) -> int:
         """主函数"""
         try:
-            # 实例锁由 bootstrap 统一抢占
+            # 实例锁由引导层统一抢占
             app = ensure_app()
 
             platform_parts = parts_for(PLATFORM)

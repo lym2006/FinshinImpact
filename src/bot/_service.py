@@ -28,7 +28,10 @@ _logger = get_logger("Service")
 
 
 class AdapterRuntime:
-    """适配器运行时，一个平台一条线程一个事件循环"""
+    """适配器运行时
+
+    - 一个平台一条线程一个事件循环
+    """
 
     def __init__(
         self,
@@ -99,9 +102,8 @@ class AdapterRuntime:
             try:
                 # 适配器的停止是协程：threadsafe 投递才会 await，同步调度传协程不会真停
                 asyncio.run_coroutine_threadsafe(self._adapter.stop(), self._loop)
-
-                # polling 停止后收尾关闭 loop（轮询协程退出时自行处理）
             except RuntimeError:
+                # polling 停止后收尾关闭 loop（轮询协程退出时自行处理）
                 pass
 
         if not self._idle_event.wait(timeout=_IDLE_WAIT_TIMEOUT):
@@ -161,10 +163,7 @@ class AdapterRuntime:
             self._idle_event.set()
 
     async def _run_before_run(self) -> None:
-        """轮到「引擎开跑前」，逐个跑订阅了它的件
-
-        - 件里的异常由装载侧包的那层兜住，这里不重复兜
-        """
+        """轮到「引擎开跑前」，逐个跑订阅了它的件"""
         for hook in self._before_run:
             await hook(self._capability)
 

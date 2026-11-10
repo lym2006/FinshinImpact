@@ -62,7 +62,7 @@ class SettingsManager(BaseManager):
     """配置加载与验证管理器
 
     - 加载配置、探测连通性
-    - 致命错误弹窗终止，可恢复错误进 last_errors 供向导标注
+    - 校验失败的字段级错误留在本类清单，供向导标注
     """
 
     LOGGER_NAME = "Settings"

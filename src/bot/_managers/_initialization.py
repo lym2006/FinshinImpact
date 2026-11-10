@@ -47,10 +47,11 @@ class InitializationManager(BaseManager):
     def sync_persona(self) -> bool:
         """内置模板对账
 
-        - 对账可能补建过副本，按存档重装一遍才是最终正文
         - 返回正文是否自动换过新版
         """
         result = sync_persona_template()
+
+        # 对账可能补建过副本，按存档重装一遍才是最终正文
         load_persona_cache()
         if result == PersonaSync.NOTIFY:
             gui_bridge.request_persona_update.emit()
@@ -79,7 +80,6 @@ class InitializationManager(BaseManager):
         """补做迁移并拒绝读不懂的库结构
 
         - 库连接打开即挂上退出清理，进程退出时合并 WAL
-        - 中断任务此处不判死：活行留给引擎起来后先交代再结算
         """
         conn = await get_connection(DB_FILE)
         register_lifecycle(close_all, "SQLite 库连接", "hook_async")

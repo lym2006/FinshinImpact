@@ -20,10 +20,7 @@ from ._signal import SignalHandler
 
 
 class BotManager:
-    """Bot 业务管理器
-
-    - 配置应用与信号处理分别委托 ConfigApplier 和 SignalHandler
-    """
+    """Bot 业务管理器"""
 
     def __init__(self, loop: asyncio.AbstractEventLoop) -> None:
         if hasattr(self, "_is_initialized") and self._is_initialized:
