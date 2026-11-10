@@ -116,3 +116,33 @@ class EntryGuardCase(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LaunchCardCleanup(unittest.TestCase):
+    """提示卡的收口盖到哪一段"""
+
+    def test_import_failure_still_closes_card(self) -> None:
+        """导入段炸掉，卡片先收掉再往上抛
+
+        - 留一张计时卡在报错窗后面继续走表，就是要修的形态
+        """
+        closed: list[int] = []
+
+        class _Card:
+            def close(self) -> None:
+                closed.append(1)
+
+        def break_imports() -> None:
+            raise ImportError("no module named 'bot'")
+
+        with (
+            patch.object(slot, "_acquire_slot", lambda: None),
+            patch.object(slot, "_handle", lambda _result: None),
+            patch.object(slot, "get_profile", lambda: "tg.000000"),
+            patch("ui.show_launch_wait", lambda _profile: _Card()),
+            patch.object(slot, "_pump_imports", break_imports),
+        ):
+            with self.assertRaises(ImportError):
+                slot._guide()
+
+        self.assertEqual(closed, [1])

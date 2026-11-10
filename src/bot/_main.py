@@ -47,8 +47,12 @@ class Main:
         on_ready: Callable[[], None] | None = None,
         close_wait: Callable[[], None] | None = None,
         t0: float | None = None,
+        warm_faults: tuple[str, ...] = (),
     ) -> None:
         self.logger = get_logger("Main")
+        for fault in warm_faults:
+            # 引导段还没 logger，那几行只能现在补落
+            self.logger.debug(fault)
         self._on_ready = on_ready
         self._close_wait = close_wait
         self._t0 = t0 if t0 is not None else time.monotonic()
