@@ -16,8 +16,8 @@ from ._handler import create_file_handler
 _initialized = False  # 模块级状态
 _setup_lock = threading.Lock()
 
-# 全局派生格式器（对外提供）
-FORMATTER = create_formatter()
+# 派生格式器：文件日志自用，仪表盘那份对外
+_FORMATTER = create_formatter()
 GUI_FORMATTER = create_formatter(marked=True)
 
 
@@ -26,8 +26,6 @@ __all__ = [
     "get_logger",
     # 增强型日志器类
     "BotLogger",
-    # 日志格式
-    "FORMATTER",
     # 仪表盘日志格式（带语义标记）
     "GUI_FORMATTER",
 ]
@@ -62,8 +60,8 @@ def get_logger(name: str = "") -> BotLogger:
         bot_logger.propagate = False  # 绝对不向根 Logger 冒泡
 
         # 文件 Handler（简化版与详细版）
-        bot_logger.addHandler(create_file_handler(FORMATTER, BOT_LOG))
-        bot_logger.addHandler(create_file_handler(FORMATTER, DEBUG_LOG, logging.DEBUG))
+        bot_logger.addHandler(create_file_handler(_FORMATTER, BOT_LOG))
+        bot_logger.addHandler(create_file_handler(_FORMATTER, DEBUG_LOG, logging.DEBUG))
         _initialized = True  # 标记初始化完成
 
     return logger

@@ -9,8 +9,8 @@ from collections.abc import Callable
 from typing import ParamSpec, TypeVar
 
 from skin.messages import MiscMessage
+from utils import get_logger
 from utils.error_guard import guard
-from utils.logger import get_logger
 
 _logger = get_logger("GUI.Guard")
 

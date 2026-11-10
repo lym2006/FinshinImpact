@@ -6,7 +6,7 @@
 - 订阅引擎开跑前、身份变更与配置校验通过三个平台机会
 """
 
-from finshin_sdk.domain import (
+from finshin_sdk import (
     BackgroundLoop,
     BasePlugin,
     MessageRoute,

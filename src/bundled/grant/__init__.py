@@ -4,7 +4,7 @@
 - /grant 与 /ungrant：管理命令的授权名单
 """
 
-from finshin_sdk.domain import BasePlugin, MessageRoute
+from finshin_sdk import BasePlugin, MessageRoute
 
 from ._commands import ROUTES
 

@@ -10,8 +10,8 @@ from PySide6.QtCore import QThread, Signal
 
 from exceptions import VersionError, describe_error
 from skin.theme import RELEASE_NOTES_DIALOG, WAIT_DIALOG
+from utils import get_logger
 from utils.check import release_history
-from utils.logger import get_logger
 
 from ..._dialogs import NoticeDialog, ReleaseNotesDialog, WaitDialog
 from ._base import BaseController

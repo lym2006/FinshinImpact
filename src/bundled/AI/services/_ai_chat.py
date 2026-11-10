@@ -7,8 +7,7 @@
 from asyncio import CancelledError
 
 from exceptions import MessageVanishedError
-from finshin_sdk import HandlerContext
-from finshin_sdk.domain import QueuedAction
+from finshin_sdk import HandlerContext, QueuedAction
 from services.tasks import TaskItem, get_task_service
 from utils import get_logger
 

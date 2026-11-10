@@ -15,8 +15,7 @@ from PySide6.QtWidgets import QDialog, QWidget
 from finshin_sdk.domain import ConfigKey, ConfigSection, ProxyMode
 from skin.messages import CheckMessage
 from system.profile_env import get_profile, read_token
-from utils import config_manager
-from utils.logger import get_logger
+from utils import config_manager, get_logger
 from utils.network import FrameKey, RowId, RowStatus, fault_row_of, verify_skeleton
 
 from ..._bridge import gui_bridge

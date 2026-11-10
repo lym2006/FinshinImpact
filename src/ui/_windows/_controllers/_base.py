@@ -7,7 +7,7 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, ClassVar
 
-from utils.logger import get_logger
+from utils import get_logger
 
 from ._decorator import gui_guard
 

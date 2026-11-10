@@ -9,7 +9,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QShowEvent
 from PySide6.QtWidgets import QDialog, QWidget
 
-from utils.logger import get_logger
+from utils import get_logger
 
 _logger = get_logger("GUI.Dialog")
 
