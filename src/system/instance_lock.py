@@ -28,7 +28,7 @@ def _instance_mutex_name() -> str:
     """实例锁名
 
     - 统一入口保证锁名前身份码已就位
-    - 身份码为空时锁后缀为空，全机共用一把锁，宁可误拦
+    - 身份码为空时锁后缀为空，全机共用一把锁，误拦优先
     """
     return _MUTEX_PREFIX + get_profile()
 
@@ -37,7 +37,7 @@ def _create(name: str) -> tuple[int | None, bool]:
     """创建命名互斥体
 
     - 返回 (持有的句柄, 是否抢到)
-    - 创建失败视为异常环境，宁可放行
+    - 创建失败视为异常环境，放行优先
     """
     handle = _CreateMutexW(None, False, name)
     if not handle:

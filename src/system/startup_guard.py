@@ -2,7 +2,6 @@
 """发布包入口的最后兜底
 
 - 主程序导入之前就炸时，双击本没有任何出口，这里补一句系统弹窗
-- 只依赖标准库与系统消息框，样式层与界面库都可能正是坏掉的那个
 """
 
 from collections.abc import Iterator
@@ -21,5 +20,6 @@ def startup_guard() -> Iterator[None]:
     try:
         yield
     except Exception as exc:
+        # 样式层与界面库都可能正是坏掉的那个，这里只走标准库与系统消息框
         show_error(_GUARD_TITLE, f"{_GUARD_HEAD}\n{describe(exc)}")
         raise SystemExit(1) from exc

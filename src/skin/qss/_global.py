@@ -102,7 +102,7 @@ QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
     background: none;
 }}"""
 
-_GLOBAL_QSS = "\n".join(  # 全局 QSS 拼接
+_GLOBAL_QSS = "\n".join(
     [
         _BODY_QSS,
         _TOOLBAR_QSS,

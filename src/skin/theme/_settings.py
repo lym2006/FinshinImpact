@@ -2,7 +2,7 @@
 """配置面板弹窗令牌
 
 - 定义配置编辑弹窗与列表项的尺寸、文案与配色
-- 弹窗话术字段一律代理引用 messages
+- 弹窗话术字段一律代理引用文案表
 """
 
 from dataclasses import dataclass
@@ -112,7 +112,7 @@ class SettingsDialogTheme:
 
     # 错误标注
     error_color: str = "#E06C75"
-    pending_color: str = "#D7BA7D"  # 验证失败字段/标签页的标红色
+    pending_color: str = "#D7BA7D"  # 待检字段/标签页的标注色
     error_font_size: int = 11  # SETUP 提示语字号
     error_font_family: str = "Microsoft YaHei"  # SETUP 提示语字体
 
