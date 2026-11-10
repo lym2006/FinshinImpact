@@ -107,7 +107,6 @@ class MediaRepository(ABC):
 class GrantRepository(ABC):
     """命令授权仓储
 
-    - 主人名单不靠本表判定
     - 键为用户在本平台的 id，库随实例分开
     """
 

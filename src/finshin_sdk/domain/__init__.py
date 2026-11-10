@@ -1,7 +1,7 @@
 # src/finshin_sdk/domain/__init__.py
 """领域类型门面
 
-- 定义业务类型，将不同平台的原始类型归一化
+- 业务类型与跨平台归一的原始类型
 """
 
 from ._adapter import (

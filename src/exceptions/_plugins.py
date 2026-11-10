@@ -2,7 +2,7 @@
 """插件异常族
 
 - 定义插件注册与生命周期异常
-- 注册失败的定性文案按异常类收进 PLUGINS_MAP，异常本体走调试日志
+- 注册失败的定性文案按异常类收进同文件文案表，异常本体走调试日志
 """
 
 from ._base import BotError
@@ -21,7 +21,7 @@ class PluginsMissingError(PluginsError):
 class PluginEntryError(PluginsError):
     """插件入口类不对
 
-    - detail 写明是模块里没有子类，还是不止一只
+    - 判因写明是模块里没有子类，还是不止一只
     """
 
     def __init__(self, detail: str) -> None:
@@ -40,7 +40,7 @@ class PluginDependencyError(PluginsError):
 class PluginLoadError(PluginsError):
     """插件加载抛错
 
-    - kind 取异常类名，面板只报到哪一类
+    - 异常类名随异常携带，面板只报到哪一类
     """
 
     def __init__(self, kind: str) -> None:
@@ -51,7 +51,8 @@ class PluginLoadError(PluginsError):
 class PluginImportError(PluginsError):
     """外部插件引了本体内部
 
-    - target 是它想引的名字，where 落在哪份文件哪一行
+    - 被引用的内部模块名随异常携带
+    - 出处落在哪份文件哪一行随异常携带
     """
 
     def __init__(self, plugin: str, target: str, where: str) -> None:
@@ -64,7 +65,7 @@ class PluginImportError(PluginsError):
 class PluginRoleError(PluginsError):
     """命令权限声明与守卫不一致
 
-    - cmd 记对不上的命令名，本体走调试日志
+    - 对不上的命令名随异常携带，本体走调试日志
     """
 
     def __init__(self, cmd: str) -> None:

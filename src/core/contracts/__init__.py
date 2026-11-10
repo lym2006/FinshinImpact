@@ -1,8 +1,7 @@
 # src/core/contracts/__init__.py
 """契约门面
 
-- 定义数据存放的出入口
-- 只包含抽象接口，不放实现
+- 数据存放的出入口
 """
 
 from ._repository import (

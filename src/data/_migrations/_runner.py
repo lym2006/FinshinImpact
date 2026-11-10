@@ -34,6 +34,7 @@ _BACKUP_KEEP = 3  # 超出份数即删最旧
 
 # 含微秒，同一秒内连续迁移才不会互相覆盖
 _BACKUP_STAMP = "%Y%m%d-%H%M%S-%f"
+
 _BACKUP_SUFFIX = ".db"
 _VERSION_TABLE = "schema_version"
 
@@ -72,9 +73,9 @@ async def purge_dead_tasks(conn: aiosqlite.Connection) -> int:
     """把中断在半途的任务判为失败
 
     - 返回判死条数
-    - 死行不清，每次启动都把它们当欠账重补一遍
     """
     async with conn.execute(
+        # 死行不清，每次启动都把欠账重补一遍
         "UPDATE task SET status = ? WHERE status IN (?, ?)",
         (TaskStatus.FAILED, TaskStatus.PENDING, TaskStatus.RUNNING),
     ) as cursor:

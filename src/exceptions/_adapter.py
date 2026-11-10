@@ -14,7 +14,7 @@ class AdapterError(BotError):
 class AdapterMissingError(AdapterError):
     """平台适配器未安装
 
-    - platform 取平台标识，面板那句取它
+    - 平台标识随异常携带，面板那句从这里取
     """
 
     fatal = True  # 出路是装件，向导改配置修不了这个
@@ -27,7 +27,8 @@ class AdapterMissingError(AdapterError):
 class AdapterOutOfDateError(AdapterError):
     """适配器要的接口版本比本机新
 
-    - requires 取清单写的下限，sdk 取本机接口包的版本
+    - 清单写的版本下限随异常携带
+    - 本机接口包的版本号随异常携带
     """
 
     fatal = True  # 出路是更新适配器，向导改配置修不了这个

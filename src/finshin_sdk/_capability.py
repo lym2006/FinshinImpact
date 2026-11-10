@@ -14,7 +14,7 @@ from .dto import PrincipalDTO
 class CapabilityCall:
     """平台召唤插件时交代的东西
 
-    - 要往外说话的件从这里拿，用不上的件忽略它
+    - 要往外说话的件从这里拿
     - 只带「发给谁」与「说什么」，要发出去的内容由平台拼好
     """
 

@@ -16,7 +16,7 @@ from ._identity import MsgReferenceDTO, PrincipalDTO
 class OutboundPayloadDTO:
     """外发负载
 
-    - kind 分派文字与媒体两种形态
+    - 种类分派文字与媒体两种形态
     """
 
     kind: ContentKind
@@ -29,11 +29,11 @@ class OutboundPayloadDTO:
 class CommandDTO:
     """命令片段
 
-    - matched 为真时 head 与 pieces 才有效
-    - pieces 是命令头之后的片段，顺序原样保留
+    - 命中为真时命令头与片段才有效
+    - 片段是命令头之后的内容，顺序原样保留
     - 哪一段是开关、哪一段是参数要按插件清单才判得出，绑定交给读清单的那一步
     - 短横开头的片段只校验形状，支持哪些开关由插件清单声明
-    - format_error 标记以命令前缀开头但形态非法的消息
+    - 形态标记位记下以命令前缀开头但形态非法的消息
     """
 
     matched: bool = False

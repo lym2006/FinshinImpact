@@ -36,7 +36,7 @@ _JOIN_PUMP_S = 0.2
 class _SlotResult(IntEnum):
     """启动资格结果
 
-    - 值只作分支标识，不参与比较
+    - 值只作分支标识
     """
 
     RUN = 0
@@ -92,9 +92,9 @@ def _acquire_slot() -> _SlotResult:
 
 
 def _handle(result: _SlotResult) -> int | None:
-    """非 RUNNING 结果的处理
+    """非放行结果的处理
 
-    - 返回退出码，RUNNING 返回 None 交调用方继续启动
+    - 返回退出码，放行时返回 None 交调用方继续启动
     - 选窗取消时静默退出
     - 引导锁被占与实例冲突各弹对应提示
     """
@@ -121,7 +121,7 @@ def _handle(result: _SlotResult) -> int | None:
 def _pump() -> None:
     """泵一轮事件让提示卡应答重绘
 
-    - 秒表与重绘全靠本函数泵出，泵点越密跳秒越顺
+    - 秒表与重绘由本函数泵出，泵点越密跳秒越顺
     """
     from ui import pump_events
 
@@ -172,7 +172,10 @@ def _preload_engine_worker() -> None:
 
 
 def _wait_preload(thread: threading.Thread) -> None:
-    """泵着等预热线程收尾，等待期秒表照常逐秒走"""
+    """泵着等预热线程收尾
+
+    - 等待期秒表照常逐秒走
+    """
     while thread.is_alive():
         thread.join(_JOIN_PUMP_S)
         _pump()
@@ -183,13 +186,15 @@ def _pump_imports() -> threading.Thread:
     """后台预热打底，主线程分步导入装配链并步间泵事件
 
     - utils 与引擎交后台线程，主线程泵到 utils 落位才续导 GUI 链
-    - GUI 链与 aiogram 预热并行，拆步顺序与机器人入口的顶层导入对齐
-    - 引擎预热可重复调用，入口里原着那一次留着兜底
+    - GUI 链与 aiogram 预热并行
+    - 引擎预热可重复调用
     """
     preload = _preload_engine_async()
     while not _UTILS_READY.is_set():
         _UTILS_READY.wait(_JOIN_PUMP_S)
         _pump()
+
+    # 拆步顺序与机器人入口的顶层导入对齐
     for name in _GUI_MODULES:
         importlib.import_module(name)
         _pump()
@@ -202,11 +207,12 @@ def main() -> int:
     """引导入口
 
     - 资格判定与主程序装配全程套最后兜底
-    - 兜底走系统原生弹窗：这一步界面库与主程序都可能正是坏掉的那个
+    - 兜底走系统原生弹窗
     """
     try:
         return _guide()
     except Exception as e:
+        # 这一步界面库与主程序都可能正是坏掉的那个，兜底只走系统原生弹窗
         _pop_crash(e)
         return 1
 
@@ -214,7 +220,7 @@ def main() -> int:
 def _pop_crash(exc: Exception) -> None:
     """把启动炸点报给人看
 
-    - 这一段日志器还没挂上，屏幕上那句是唯一出口
+    - 这一段日志器还没挂上，只能靠屏幕那一句报给人
     - 带类名与消息那一行，调用链不上屏
     """
     from skin.messages import MiscMessage

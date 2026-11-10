@@ -15,7 +15,7 @@ class HelpFlagDTO:
     """帮助菜单的单只开关
 
     - 与 plugin.toml 的 flags 每项同构，前两段是「开关 说明」
-    - value 是第三段写的值名，非空即这只开关要带值
+    - 第三段写的值名非空即这只开关要带值
     """
 
     name: str
@@ -28,10 +28,10 @@ class HelpCommandDTO:
     """帮助菜单单命令
 
     - 与 plugin.toml 的 [[help.commands]] 同构
-    - flags 每项是一只开关，顺序即帮助图上的列出顺序
+    - 开关项每项是一只开关，顺序即帮助图上的列出顺序
     - -h 全命令默认可用，不必登记
-    - args 是命令后面要带的内容，空即不收
-    - role 缺省为用户档，即谁都能使
+    - 参数说明是命令后面要带的内容，空即不收
+    - 权限档缺省为用户档，即谁都能使
     """
 
     cmd: str
@@ -45,8 +45,8 @@ class HelpCommandDTO:
 class HelpSectionDTO:
     """帮助菜单贡献段
 
-    - section 为空不进标题行
-    - note 为空省略备注行
+    - 段名为空不进标题行
+    - 备注为空省略备注行
     """
 
     section: str = ""
@@ -58,10 +58,10 @@ class HelpSectionDTO:
 class PluginManifestDTO:
     """插件自描述清单
 
-    - module 是按所在根目录的顶层包名拼出的插件导入路径
-    - deps 只写顶层依赖的 pin 版本串，不含传递依赖
-    - assets 值为「模块名 资源名」两段
-    - 目录摘要不含 summary，描述改动不触发弹面板
+    - 插件导入路径按所在根目录的顶层包名拼出
+    - 依赖项只写顶层依赖的 pin 版本串，不含传递依赖
+    - 资源值为「模块名 资源名」两段
+    - 描述改动不触发弹面板
     """
 
     name: str

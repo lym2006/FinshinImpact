@@ -29,7 +29,7 @@ class PlatformAssembly:
     """一个平台装配出来的件
 
     - 适配器交运行时托管，其余四件交装配层登记
-    - report 行是 (插件清单, 失败异常)，成功那项异常记 None
+    - 报告行每项是 (插件清单, 失败异常)，成功那项异常记 None
     """
 
     adapter: BaseAdapter
@@ -43,8 +43,8 @@ class PlatformAssembly:
 class AdapterParts:
     """适配器入口模块交出的四件
 
-    - assemble 收 token 与代理，回这个平台的运行时
-    - engine_preload 只付引擎导入费，不等配置
+    - 收 token 与代理，回这个平台的运行时
+    - 引擎预热只付导入费
     """
 
     assemble: Callable[[str, str | None], BaseAdapter]

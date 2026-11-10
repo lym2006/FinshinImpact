@@ -1,7 +1,7 @@
 # src/finshin_sdk/dto/__init__.py
 """数据传输对象门面
 
-- 定义跨层传递的不可变数据快照
+- 跨层传递的不可变数据快照
 """
 
 from ._adapter import AdapterManifestDTO
