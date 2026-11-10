@@ -6,7 +6,6 @@
 
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any
 
 # 适配器树顶层包名，find_spec 与动态导入路径共用同值
 ADAPTERS_PKG = "adapters"
@@ -32,12 +31,11 @@ class AdapterFieldSpec:
 
     key: AdapterManifestKey
     value_type: type
-    default: Any
     required: bool = False
 
 
 ADAPTER_MANIFEST_FIELDS: tuple[AdapterFieldSpec, ...] = (
-    AdapterFieldSpec(AdapterManifestKey.PLATFORM, str, "", required=True),
-    AdapterFieldSpec(AdapterManifestKey.DEPS, list, ()),
-    AdapterFieldSpec(AdapterManifestKey.REQUIRES_SDK, str, ""),
+    AdapterFieldSpec(AdapterManifestKey.PLATFORM, str, required=True),
+    AdapterFieldSpec(AdapterManifestKey.DEPS, list),
+    AdapterFieldSpec(AdapterManifestKey.REQUIRES_SDK, str),
 )

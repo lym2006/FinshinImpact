@@ -8,7 +8,6 @@ from dataclasses import dataclass
 
 from ..domain import ContentKind
 from ..domain.ids import MessageId
-from ._identity import MsgReferenceDTO
 
 
 @dataclass(frozen=True, slots=True)
@@ -20,8 +19,6 @@ class ContentDTO:
 
     text: str = ""  # 文字正文，媒体消息是种类标记加附文，无附文即空
     file_name: str = ""
-    file_token: str = ""  # 平台侧文件标识，惰性下载
-    origin_ref: MsgReferenceDTO | None = None  # 媒体所在消息，引用或附带媒体时非空
     media: tuple["MediaEntryDTO", ...] = ()
 
 

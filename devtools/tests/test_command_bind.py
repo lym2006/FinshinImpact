@@ -58,11 +58,6 @@ class TestBindCommand(unittest.TestCase):
     def test_empty_pieces_bind_empty(self) -> None:
         self.assertEqual(bind_command((), _TAKES_VALUE), BoundCommand())
 
-    def test_value_of_reads_declared_pair(self) -> None:
-        bound = bind_command(("-t", "5"), _TAKES_VALUE)
-        self.assertEqual(bound.value_of("-t"), "5")
-        self.assertEqual(bound.value_of("-i"), "")
-
 
 class TestBindAgainstSpecs(unittest.TestCase):
     """按清单声明挑出带值开关"""

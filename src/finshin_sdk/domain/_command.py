@@ -44,13 +44,6 @@ class BoundCommand:
     flags: tuple[tuple[str, str], ...] = ()
     args: tuple[str, ...] = ()
 
-    def value_of(self, name: str) -> str:
-        """取该开关绑到的值，没带这只开关返回空串"""
-        for flag, value in self.flags:
-            if flag == name:
-                return value
-        return ""
-
 
 def is_flag_name(token: str) -> bool:
     """判定这段文本是开关名

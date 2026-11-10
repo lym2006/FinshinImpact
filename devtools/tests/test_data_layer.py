@@ -34,7 +34,6 @@ from finshin_sdk.domain import (  # noqa: E402
 from finshin_sdk.domain.ids import (  # noqa: E402
     ContainerKey,
     MessageId,
-    PrincipalKey,
     SessionKey,
     TaskId,
     UserId,
@@ -297,12 +296,6 @@ class TestPrincipal(_RealDb):
 
         self.assertEqual(
             await self.repos.principal.upsert(principal, "张三"), principal
-        )
-        self.assertEqual(
-            await self.repos.principal.find_by_key(principal.key), principal
-        )
-        self.assertIsNone(
-            await self.repos.principal.find_by_key(PrincipalKey("tg.g1.9"))
         )
 
     async def test_display_name_is_overwritten(self) -> None:
