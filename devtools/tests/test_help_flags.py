@@ -275,6 +275,16 @@ class TestMenuEntries(unittest.TestCase):
             second = _services._menu_digest()
         self.assertNotEqual(first, second)
 
+    def test_digest_follows_encoding(self) -> None:
+        """落盘编码档一变即重画，老图不会被当成新编码的缓存留着
+
+        - 这条红了说明改存法后老用户一直拿旧体积的图
+        """
+        first = _services._menu_digest()
+        with patch.object(_services._HELP, "palette_colors", 32):
+            second = _services._menu_digest()
+        self.assertNotEqual(first, second)
+
 
 class _SpecStubMixin(unittest.TestCase):
     """按固定清单挂上 help_list 与 command_specs"""

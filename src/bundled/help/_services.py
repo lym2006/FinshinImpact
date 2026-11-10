@@ -10,8 +10,6 @@ import threading
 from pathlib import Path
 from typing import TypeAlias
 
-from PIL import Image, ImageDraw, ImageFont
-
 from finshin_sdk.domain import CommandFlag, CommandRole, PluginFileName
 from finshin_sdk.dto import HelpCommandDTO, HelpFlagDTO
 from system.profile_env import ASSET_FONT_NAME, ASSETS_DIR
@@ -20,6 +18,7 @@ from utils.paths import HELP_IMAGE, PROFILE_DIR
 from utils.plugin import enabled_manifests
 
 from .._shared.messages import BotMessage
+from ._render import HelpRenderConfig, draw_menu
 
 # 菜单行三元组：行类型、行文本、命令清单项（非命令行留空）
 _MenuRow: TypeAlias = tuple[str, str, HelpCommandDTO | None]
@@ -38,19 +37,7 @@ _DIGEST_PATH = HELP_IMAGE.with_suffix(".digest")
 _RENDER_LOCK = threading.Lock()
 _FONT_PATH = ASSETS_DIR / ASSET_FONT_NAME  # 字体是全局资源，不随实例复制
 _logger = get_logger("Plg.Help")
-
-
-class _HelpRenderConfig:
-    """帮助菜单图片渲染配置"""
-
-    font_size: int = 30
-    line_spacing: int = 18  # 行间距
-    padding: int = 15  # 画布边距
-    column_gap: int = 60  # 左列与说明列的像素间距
-    flag_indent: int = 4  # 开关行缩进字符数
-    color_mode: str = "RGB"  # PIL 色彩模式
-    bg_color: str = "#FFFFFF"  # 背景色
-    text_color: str = "#000000"  # 文字颜色
+_HELP = HelpRenderConfig()
 
 
 # 帮助图首尾两段全局说明，不挂任何插件
@@ -104,9 +91,6 @@ def _build_menu_data() -> list[_MenuRow]:
     return rows
 
 
-_HELP = _HelpRenderConfig()
-
-
 def _build_help_menu() -> tuple[
     dict[str, str], dict[str, HelpCommandDTO], list[_MenuEntry]
 ]:
@@ -149,7 +133,7 @@ def _menu_digest() -> str:
 
 
 def _layout_stamp() -> str:
-    """把排版参数拼成指纹的一段"""
+    """把排版参数与落盘编码档拼成指纹的一段"""
     sizes = (
         _HELP.font_size,
         _HELP.line_spacing,
@@ -157,7 +141,8 @@ def _layout_stamp() -> str:
         _HELP.column_gap,
         _HELP.flag_indent,
     )
-    return "layout|" + "|".join(str(size) for size in sizes)
+    head = "layout|" + "|".join(str(size) for size in sizes)
+    return f"{head}|enc|P{_HELP.palette_colors}"
 
 
 def _cache_hit(digest: str) -> bool:
@@ -247,13 +232,18 @@ def generate_image() -> Path:
 
 
 def _render_menu(digest: str) -> Path:
-    """绘制菜单图片并写指纹文件
+    """按菜单行序出图并写指纹文件
 
-    - 仅缓存未命中时调用
-    - 左列取最宽一条定列宽，说明列按像素对齐
-    - 段名与空行不分列，空行绘成整行留白
+    - 仅缓存未命中时调用，画图那段在 `_render.py`
+    - 图与指纹成对落盘，缺一即判缓存未命中
     """
-    font = ImageFont.truetype(_FONT_PATH, _HELP.font_size)
+    draw_menu(_menu_cells(), _HELP, _FONT_PATH, _SAVE_PATH)
+    _DIGEST_PATH.write_text(digest, encoding="utf-8")
+    return _SAVE_PATH
+
+
+def _menu_cells() -> list[tuple[str, str | None]]:
+    """把菜单行序转成画图的左右两列"""
     cells: list[tuple[str, str | None]] = []
     for item_type, label, note in _display_order:
         if item_type == "command":
@@ -262,38 +252,4 @@ def _render_menu(digest: str) -> Path:
             cells.append((f"{'':<{_HELP.flag_indent}}{label}", note))
         else:
             cells.append((label, None))
-
-    padding = _HELP.padding
-    left_width = max(
-        (font.getlength(left) for left, note in cells if note is not None), default=0.0
-    )
-    desc_x = padding + left_width + _HELP.column_gap
-    max_width = max(
-        (
-            desc_x + font.getlength(note) if note is not None else font.getlength(left)
-            for left, note in cells
-        ),
-        default=0.0,
-    )
-
-    line_height = _HELP.line_spacing + _HELP.font_size
-    img = Image.new(
-        _HELP.color_mode,
-        (int(max_width) + padding * 2, len(cells) * line_height + padding * 2),
-        _HELP.bg_color,
-    )
-    dr = ImageDraw.Draw(img)
-
-    for i, (left, note) in enumerate(cells):
-        y = padding + i * line_height
-        if note is None:
-            dr.text((padding, y), left, font=font, fill=_HELP.text_color)
-            continue
-        dr.text((padding, y), left, font=font, fill=_HELP.text_color)
-        dr.text((desc_x, y), note, font=font, fill=_HELP.text_color)
-
-    # 图与指纹成对落盘，缺一即判缓存未命中
-    _SAVE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    img.save(_SAVE_PATH)
-    _DIGEST_PATH.write_text(digest, encoding="utf-8")
-    return _SAVE_PATH
+    return cells
