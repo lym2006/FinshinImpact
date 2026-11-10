@@ -20,6 +20,7 @@ from system.profile_env import set_profile  # noqa: E402
 set_profile("tg.000000")
 
 from finshin_sdk.domain import ManifestKey, StateKey  # noqa: E402
+from services.env_setup import deps_startup  # noqa: E402
 from ui._guide import _startup  # noqa: E402
 
 _SENTINEL = Path("plugins-sentinel")
@@ -34,21 +35,25 @@ _AI = {
     ManifestKey.ASSETS: [],
 }
 
-_PATCHED = (
-    "plugins_roots",
-    "load_manifests",
-    "load_state",
-    "catalog_digest",
-    "is_pin_installed",
-    "is_asset_installed",
-    "install_deps",
-    "install_assets",
-    "save_state",
-    "dev_mode",
-    "run_with_progress",
-    "ensure_app",
-    "QMessageBox",
-)
+_PATCHED = {
+    _startup: (
+        "is_pin_installed",
+        "is_asset_installed",
+        "install_deps",
+        "install_assets",
+        "dev_mode",
+        "run_with_progress",
+        "ensure_app",
+        "QMessageBox",
+    ),
+    deps_startup: (
+        "plugins_roots",
+        "load_manifests",
+        "load_state",
+        "save_state",
+        "catalog_digest",
+    ),
+}
 
 
 class _StartupBase(unittest.TestCase):
@@ -58,8 +63,9 @@ class _StartupBase(unittest.TestCase):
         self.stack = ExitStack()
         self.addCleanup(self.stack.close)
         self.m: dict[str, MagicMock] = {}
-        for name in _PATCHED:
-            self.m[name] = self.stack.enter_context(patch.object(_startup, name))
+        for module, names in _PATCHED.items():
+            for name in names:
+                self.m[name] = self.stack.enter_context(patch.object(module, name))
         self.m["plugins_roots"].return_value = [_SENTINEL]
         self.m["load_manifests"].return_value = [_AI, _WEB]
         self.m["load_state"].return_value = {StateKey.ENABLED: ["webshot"]}
@@ -193,14 +199,14 @@ class TestDisableFailed(_StartupBase):
         }
         self.m["load_manifests"].return_value = [_AI, _WEB, other]
 
-        dropped = _startup._disable_failed("AAAA", ["playwright==1.62.0"])
+        dropped = deps_startup.disable_failed("AAAA", ["playwright==1.62.0"])
 
         self.assertEqual(dropped, ["webshot"])
         self.m["save_state"].assert_called_once_with("AAAA", ["other"], "cat")
 
     def test_drops_plugin_matched_by_asset(self) -> None:
         """失败项是资源声明串，同样命中所属插件"""
-        dropped = _startup._disable_failed(
+        dropped = deps_startup.disable_failed(
             "AAAA", ["playwright chromium-headless-shell"]
         )
 
@@ -208,7 +214,7 @@ class TestDisableFailed(_StartupBase):
 
     def test_unmatched_failure_drops_all_enabled(self) -> None:
         """失败项命中不了具体插件（整轮异常），启用集全禁"""
-        dropped = _startup._disable_failed("AAAA", ["任务异常中止"])
+        dropped = deps_startup.disable_failed("AAAA", ["任务异常中止"])
 
         self.assertEqual(dropped, ["webshot"])
         self.m["save_state"].assert_called_once_with("AAAA", [], "cat")
@@ -217,7 +223,7 @@ class TestDisableFailed(_StartupBase):
         """启用集为空无需落盘"""
         self.m["load_state"].return_value = {StateKey.ENABLED: []}
 
-        dropped = _startup._disable_failed("AAAA", ["playwright==1.62.0"])
+        dropped = deps_startup.disable_failed("AAAA", ["playwright==1.62.0"])
 
         self.assertEqual(dropped, [])
         self.m["save_state"].assert_not_called()
@@ -226,7 +232,7 @@ class TestDisableFailed(_StartupBase):
         """一根插件目录都定位不到时直接空手而归"""
         self.m["plugins_roots"].return_value = []
 
-        self.assertEqual(_startup._disable_failed("AAAA", ["x==1.0"]), [])
+        self.assertEqual(deps_startup.disable_failed("AAAA", ["x==1.0"]), [])
 
 
 if __name__ == "__main__":
