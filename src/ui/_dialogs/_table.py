@@ -44,7 +44,7 @@ class RowTable(QTextEdit):
         self._margin = cfg.row_margin
         self._countdown = cfg.countdown
 
-        # {行id: [标题, 状态, 详情]}：渲染的唯一数据源
+        # {行id: [标题, 状态, 详情]}：渲染全部从这张表出
         self._rows: dict[str, list[str]] = {}
 
         # {行id: 预算秒}：开局帧携带，仅通道行有

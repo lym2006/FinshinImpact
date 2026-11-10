@@ -60,7 +60,7 @@ class _PluginSearch(QWidget):
     def __init__(self, rows: ThemedList) -> None:
         """接上要筛的清单，行上的最小清单按 ROLE_MANIFEST 取
 
-        - rows 由 build_searchable_list 创建，本件只切每行的显隐
+        - 清单由装配入口创建，本件只切每行的显隐
         """
         super().__init__()
         self._rows = rows

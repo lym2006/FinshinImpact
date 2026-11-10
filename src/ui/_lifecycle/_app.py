@@ -1,7 +1,7 @@
 # src/ui/_lifecycle/_app.py
 """应用实例与事件泵
 
-- 全进程 QApplication 唯一出生口，建实例即挂图标
+- 全进程 QApplication 的出生口，建实例即挂图标
 - 单轮事件泵供导入期垫住界面重绘
 """
 

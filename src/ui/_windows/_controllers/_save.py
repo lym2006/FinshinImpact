@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 class SaveCoordinator:
     """保存流程协调器
 
-    - 与 SettingsController 一对一绑定，读它的面板、模式与就绪缓存
+    - 与配置控制器一对一绑定，读它的面板、模式与就绪缓存
     - 落盘失败只解锁面板，候选原样留着待下次保存
     """
 

@@ -22,7 +22,7 @@ class BaseDialog(QDialog):
     def __init__(self, parent: QWidget | None = None, title: str = "") -> None:
         super().__init__(parent=parent)
 
-        self.setWindowTitle(title)  # 基础窗口属性
+        self.setWindowTitle(title)
         self.setWindowModality(Qt.WindowModality.WindowModal)
 
     def showEvent(self, event: QShowEvent) -> None:  # noqa: N802

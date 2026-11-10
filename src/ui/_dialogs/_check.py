@@ -109,7 +109,7 @@ class CheckDialog(BaseDialog):
         self._btn = make_button(CHECK_DIALOG.cancel_text, ButtonStyle.PRIMARY)
         self._btn.clicked.connect(self.reject)
 
-        # 进行中唯一出口是「取消」，不可中断轮宁可没按钮，也不给假出口
+        # 进行中的出口是「取消」，不可中断轮没按钮，不给假出口
         self._btn.setVisible(False)
         layout.addWidget(self._btn, alignment=Qt.AlignmentFlag.AlignRight)
 

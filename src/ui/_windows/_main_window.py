@@ -68,7 +68,6 @@ class BotGUI(QMainWindow):
         self._hidden_actions = {"shutdown"}  # 不渲染只回调的按钮
         self._logger = get_logger("GUI")
 
-        # 基础窗口属性设置
         self.setWindowTitle(self._windows.title)
         self.resize(self._windows.width, self._windows.height)
         self.setMinimumSize(self._windows.min_width, self._windows.min_height)
@@ -83,7 +82,7 @@ class BotGUI(QMainWindow):
         self._dashboard = DashboardWidget(self._fonts)
         self._text_handler: logging.Handler = TextHandler(self._dashboard, formatter)
 
-        self._build_ui()  # 构建纯 UI 界面
+        self._build_ui()
 
     def _build_ui(self) -> None:
         """组装窗口的整体布局结构"""
@@ -95,12 +94,12 @@ class BotGUI(QMainWindow):
         main_layout = QVBoxLayout(central)
         main_layout.setSpacing(self._body.padding)
 
-        self._build_toolbar(main_layout)  # 顶部工具栏
+        self._build_toolbar(main_layout)
 
         # 仪表盘区域
         main_layout.addWidget(self._dashboard)
 
-        self.setStyleSheet(self._qss)  # 应用全局 QSS 样式表
+        self.setStyleSheet(self._qss)
 
     def _build_toolbar(self, parent_layout: QVBoxLayout) -> None:
         """渲染顶部工具栏及按钮控件"""

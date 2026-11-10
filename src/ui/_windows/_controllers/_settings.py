@@ -4,7 +4,7 @@
 - 向导调度、二次确认与热重载
 - 面板与业务弹窗同为窗口模态：EDIT/SETUP 同实例原地切换
 - 重启等待窗原地换成结果，一路只出这一只窗
-- 保存与落盘交 SaveCoordinator，校验轮交 VerifyCoordinator 协调
+- 保存与落盘、校验轮各交一只协调器
 """
 
 from skin.messages import CheckMessage
@@ -131,7 +131,7 @@ class SettingsController(BaseController):
         """关闭面板并报出结果
 
         - 先关窗再提示，标红残留随窗消失
-        - 结果已落在重启那只窗上即不再另跳提示窗
+        - 结果已落在重启那只窗上即不另跳提示窗
         """
         if self._panel is None:
             return

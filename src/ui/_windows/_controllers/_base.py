@@ -23,7 +23,7 @@ class BaseController(ABC):
     """
 
     # 子类必须声明这两个属性，否则实例化时会报错
-    LOGGER_NAME: ClassVar[str]  # 日志器名称
+    LOGGER_NAME: ClassVar[str]
     BTN_KEY: ClassVar[str]  # 绑定的按钮标识（如 "func"，底层会自动拼接为 "btn_func"）
 
     @abstractmethod
@@ -45,5 +45,5 @@ class BaseController(ABC):
     @gui_guard
     def execute(self) -> None:
         """业务执行入口"""
-        # gui_guard 装饰器拦截异常并记日志，防 GUI 线程卡死
+        # 异常由装饰器拦截并记日志，防 GUI 线程卡死
         self._execute()

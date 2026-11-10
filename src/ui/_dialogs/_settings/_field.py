@@ -2,7 +2,7 @@
 """字段渲染
 
 - 按 schema 渲染表单控件与标签
-- 持有控件表与标签表，恢复登记委托 ResetRegistry
+- 持有控件表与标签表，恢复登记另交一只登记表件
 """
 
 from copy import deepcopy

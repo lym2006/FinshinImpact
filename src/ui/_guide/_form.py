@@ -26,7 +26,7 @@ from system.profile_env import read_token
 
 from .._primitives import make_button, make_combo
 
-# 平台下拉项，显示文案归 messages 单源
+# 平台下拉项，显示文案在文案层单源维护
 _PLATFORM_ITEMS = (
     (Platform.TELEGRAM, PickerMessage.NEW_PLATFORM_TELEGRAM),
     (Platform.QQ, PickerMessage.NEW_PLATFORM_QQ),
