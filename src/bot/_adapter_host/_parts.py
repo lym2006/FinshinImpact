@@ -19,7 +19,6 @@ def parts_for(platform: Platform) -> AdapterParts:
 
     - 清单缺席或字段非法即缺件
     - 清单要的接口版本比本机新即拒载，拒在导入入口之前
-    - 入口模块在这一步才导入
     """
     manifest = load_adapter_manifests().get(platform)
     if manifest is None:

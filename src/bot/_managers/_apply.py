@@ -43,7 +43,7 @@ class ConfigApplier:
     async def apply_config(self) -> None:
         """应用当前配置
 
-        - 校验通过才重启服务，引擎只吃验过的值
+        - 校验通过才重启服务
         - 没过即把内存回退并交向导说话
         """
         host = self._host
@@ -201,7 +201,6 @@ class ConfigApplier:
     def get_config_func(self) -> tuple[str, str]:
         """读取 Token 与生效 Proxy
 
-        - 供引擎与运行参数指纹读取
         - 校验通过后返回生效通道，未校验时返回配置原值
         """
         token, cfg = self.get_raw_config_func()

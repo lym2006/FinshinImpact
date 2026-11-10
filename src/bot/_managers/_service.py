@@ -99,8 +99,9 @@ class ServiceManager(BaseManager):
     def _log_plugin_report(
         self, report: Sequence[tuple[PluginManifestDTO, Exception | None]]
     ) -> None:
-        """逐条落插件加载结果，失败行带映射文案
+        """逐条落插件加载结果
 
+        - 失败行带映射文案
         - 成功行报导入路径，看得出这只插件来自哪一根目录
         """
         total = len(report)
@@ -124,7 +125,10 @@ class ServiceManager(BaseManager):
             )
 
     def _report_task_fault(self, item: TaskItem, error: Exception) -> None:
-        """任务派发失败的行落在面板，异常本体下沉调试日志"""
+        """任务派发失败的行落在面板
+
+        - 异常本体下沉调试日志
+        """
         self.logger.send_error(EngineMessage.TASK_FAULT.format(kind=item.kind), error)
 
     def _report_ledger_fault(self, item: TaskItem, error: Exception) -> None:
