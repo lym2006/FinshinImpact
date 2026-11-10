@@ -6,7 +6,6 @@
 """
 
 import importlib.util
-import tomllib
 from pathlib import Path
 from typing import Any
 
@@ -19,6 +18,7 @@ from finshin_sdk.domain import (
     Platform,
 )
 from finshin_sdk.dto import AdapterManifestDTO
+from system.toml_read import read_toml
 
 # 清单标量字段与期望类型
 _SCALAR_TYPES: dict[str, type] = {
@@ -85,12 +85,8 @@ def _read_manifest(path: Path, dir_name: str) -> AdapterManifestDTO | None:
     - 数组字段缺省为空表，出现非字符串或空串项同样整份拒收
     - 未知键忽略，入口模块按本体规定的名字定位
     """
-    if not path.is_file():
-        return None
-
-    try:
-        data = tomllib.loads(path.read_text(encoding="utf-8"))
-    except (OSError, tomllib.TOMLDecodeError):
+    data = read_toml(path)
+    if data is None:
         return None
 
     kwargs: dict[str, Any] = {}
