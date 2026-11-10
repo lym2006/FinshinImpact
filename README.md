@@ -20,7 +20,7 @@
 1. **代理**：下载走国内镜像可免代理，运行期连 `Telegram` 和检查更新需开代理。
 2. **下载**：取最新的 `FinshinImpact-vX.Y.Z.zip`，别下 `Source code`（不含启动器）。[国内镜像](https://gh-proxy.com/#https://github.com/lym2006/FinshinImpact/releases) ｜ [Releases](https://github.com/lym2006/FinshinImpact/releases)。
 3. **解压**：任意可写目录，如 `D:\FinshinImpact`。
-4. **首启**：双击 `FinshinImpact\FinshinImpact.exe`，自动装好运行环境，期间保持联网。插件依赖与浏览器内核在启用该插件时按需安装。
+4. **首启**：双击 `FinshinImpact\FinshinImpact.exe`，自动装好运行环境，期间保持联网。启用插件的依赖与浏览器内核在每次启动前的结算里一并装上。
 5. **建实例**：「选择机器人」点「新建」填 Bot Token，再经配置向导填 API Key 与主人 ID 即开始收发。同机可并存多个实例。
 
 **注意**：升级会整树替换 `src\` 与 `assets\`，自定义文件别放这两处。
@@ -100,9 +100,10 @@
 ## ⬆️ 旧版迁移<a id="previous"></a>
 
 - **v1.0.0-alpha.7.dev4**：
-  - 外部插件写法：入口改成 `__init__.py` 里的一只 `BasePlugin` 子类，一只模块只准有一只；挂在模块里的 `spec` 那套不再读取，`plugin.toml` 不用改。
+  - 外部插件写法：入口改成 `__init__.py` 里的一只 `BasePlugin` 子类，一只模块只准有一只。挂在模块里的 `spec` 那套不再读取，`plugin.toml` 不用改。
   - 外部插件只准引 `finshin_sdk`：引到本体各层（`utils`、`core`、`services` 一类）的整只拒装，面板写明哪份文件哪一行。
   - 交出的东西换了名字：`PluginRoute` 叫 `MessageRoute`、`PluginBackground` 叫 `BackgroundLoop`、`TaskHandler` 叫 `QueuedAction`。
+  - 时机订阅那几样归到 moment 词根：`PlatformTiming` 叫 `PlatformMoment`、`PluginTiming` 叫 `MomentSubscription`、`PluginTimingRun` 叫 `MomentRun`。
   - 只写插件或适配器不必 clone 主仓源码：先打接口包再装，`uv build src/finshin_sdk --wheel`。
   - 启动失败当场弹窗：平台适配器没装、要的接口版本比本机新、引导段炸掉，都会弹一句人话，不再只是启动卡消失。
   - 库与记录：结构没动，不用搬。

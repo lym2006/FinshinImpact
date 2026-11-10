@@ -12,7 +12,7 @@ summary = "summary"
 # 本插件独有的库，随包插件的库与公共库走 pyproject
 deps = ["markdown==3.10.2"]
 
-# 非 pip 资源，两段式「模块名 资源名」，启用时面板装、取消无主即卸，无则留空
+# 非 pip 资源，两段式「模块名 资源名」，启动前结算时装上，不随取消勾选清除，无则留空
 assets = ["playwright chromium-headless-shell"]
 
 # 帮助菜单贡献，可多段

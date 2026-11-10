@@ -62,9 +62,7 @@ def _require_icon() -> bytes:
     - 缺图标即中止构建，不静默放行
     """
     if not _ICON.is_file():
-        raise SystemExit(
-            f"缺少图标文件 {_ICON}，先生成 app.ico 再构建（见 docs/packaging.md 图标一节）"
-        )
+        raise SystemExit(f"缺少图标文件 {_ICON}，先生成 app.ico 再构建")
     return _ICON.read_bytes()
 
 

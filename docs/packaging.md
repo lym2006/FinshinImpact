@@ -77,6 +77,7 @@ python packaging\build.py
 参数：
 
 - `--no-launcher`：跳过编译环节。
+- `--force`：版本号带 `-dev` 后缀时放行构建，日常发布不加。
 - `--check`：自检七行，本地版本号、远端 tag、本地 zip（大小与 sha256 前缀）、在线版本页、发布物官方直连、发布物 gh-proxy 与 ghproxy.net 两条镜像。
   - 后三行探测远端资产，大小与本地包一致才算上传闭环。
   - 推 tag 前报"tag 缺失"、发布前报"不可达"属正常。
