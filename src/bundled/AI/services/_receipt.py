@@ -8,8 +8,8 @@
 import random
 import re
 
-from core.contracts import CapabilityCall
 from data import build_repositories, get_connection, purge_dead_tasks
+from finshin_sdk import CapabilityCall
 from finshin_sdk.domain import ChatRole
 from finshin_sdk.domain.ids import ContainerKey
 from finshin_sdk.dto import PrincipalDTO, TaskDTO
@@ -80,7 +80,7 @@ async def report_lost_tasks(call: CapabilityCall) -> None:
 
 
 def _one_per_container(rows: tuple[TaskDTO, ...]) -> list[PrincipalDTO]:
-    """同会话的多行欠账只留首个欠答者，按欠账出现的先后排"""
+    """取各会话的首个欠答者"""
     targets: dict[ContainerKey, PrincipalDTO] = {}
     for row in rows:
         targets.setdefault(row.principal.container, row.principal)
@@ -88,7 +88,7 @@ def _one_per_container(rows: tuple[TaskDTO, ...]) -> list[PrincipalDTO]:
 
 
 async def _compose_line(used: set[str]) -> str:
-    """现写候选里随机挑一句说，本次启动说过的那句不重取
+    """抽一句现写候选话术
 
     - 候选全说过时随机重取，这个会话不漏
     """
@@ -102,7 +102,7 @@ async def _compose_line(used: set[str]) -> str:
 
 
 async def _compose_candidates() -> list[str]:
-    """交当前人设现写一轮，把几句候选拆开交出"""
+    """按当前人设现写候选话术"""
     persona = ai_config.init[0]["content"]
 
     # 指令并进用户轮会被人设的抗注入条款当成外人使唤
@@ -120,7 +120,7 @@ async def _compose_candidates() -> list[str]:
 
 
 def _split_candidates(raw: str) -> list[str]:
-    """把现写的候选按行拆开，去掉编号、项目符号与包裹的引号"""
+    """把候选话术按行拆开"""
     lines: list[str] = []
     for chunk in raw.splitlines():
         text = _LIST_MARK_RE.sub("", chunk).strip().strip(_QUOTE_CHARS).strip()

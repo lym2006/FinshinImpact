@@ -34,8 +34,8 @@ from aiogram.methods import GetMe  # noqa: E402
 from adapters.telegram.session import is_link_failure  # noqa: E402
 from bot._managers import BotManager, _apply  # noqa: E402
 from bot._service import AdapterRuntime  # noqa: E402
-from core.contracts import CapabilityCall  # noqa: E402
-from finshin_sdk.domain import FieldKey, Platform, PlatformTiming  # noqa: E402
+from finshin_sdk import CapabilityCall  # noqa: E402
+from finshin_sdk.domain import FieldKey, Platform, PlatformMoment  # noqa: E402
 from skin.messages import DialogMessage  # noqa: E402
 from ui import gui_bridge  # noqa: E402
 
@@ -473,8 +473,8 @@ class TestIdentityReset(ManagerFlowTestBase):
         for patcher in (
             patch.object(
                 self.manager._service_manager,
-                "_timing_hooks",
-                {PlatformTiming.IDENTITY_CHANGED: (_reset,)} if with_reset else {},
+                "_moment_runs",
+                {PlatformMoment.IDENTITY_CHANGED: (_reset,)} if with_reset else {},
             ),
             patch.object(_apply, "applied_persona_text", lambda: text["v"]),
             patch.object(_apply.config_manager, "get", _read),
@@ -533,8 +533,8 @@ class TestIdentityReset(ManagerFlowTestBase):
 
         with patch.object(
             self.manager._service_manager,
-            "_timing_hooks",
-            {PlatformTiming.IDENTITY_CHANGED: (reset,)},
+            "_moment_runs",
+            {PlatformMoment.IDENTITY_CHANGED: (reset,)},
         ):
             await applier.apply_config()
 
@@ -577,8 +577,8 @@ class TestCommitPersona(ManagerFlowTestBase):
         for patcher in (
             patch.object(
                 self.manager._service_manager,
-                "_timing_hooks",
-                {PlatformTiming.IDENTITY_CHANGED: (_reset,)},
+                "_moment_runs",
+                {PlatformMoment.IDENTITY_CHANGED: (_reset,)},
             ),
             patch.object(_apply, "save_persona_text", _save_text),
             patch.object(_apply, "save_applied_persona", _save_cache),

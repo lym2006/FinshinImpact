@@ -11,8 +11,8 @@ from typing import Any
 from ._adapter import BaseAdapter
 from .domain import (
     BackgroundLoop,
-    PlatformTiming,
-    PluginTimingRun,
+    MomentRun,
+    PlatformMoment,
     QueuedAction,
 )
 from .dto import PluginManifestDTO
@@ -36,7 +36,7 @@ class PlatformAssembly:
     report: Sequence[tuple[PluginManifestDTO, Exception | None]]
     background_loops: tuple[BackgroundLoop, ...]
     queued_actions: tuple[QueuedAction, ...]
-    timings: dict[PlatformTiming, tuple[PluginTimingRun, ...]]
+    platform_moments: dict[PlatformMoment, tuple[MomentRun, ...]]
 
 
 @dataclass(frozen=True, slots=True)

@@ -9,9 +9,8 @@
 
 import importlib
 from types import ModuleType
-from typing import Any
+from typing import Any, cast
 
-from core.contracts import BundledPlugin
 from exceptions import (
     PluginDependencyError,
     PluginEntryError,
@@ -29,17 +28,18 @@ from finshin_sdk.domain import (
     BasePlugin,
     CommandRole,
     MessageRoute,
-    PlatformTiming,
+    MomentRun,
+    MomentSubscription,
+    PlatformMoment,
     PluginFileName,
     PluginMark,
-    PluginTiming,
-    PluginTimingRun,
     QueuedAction,
     RouteSink,
     is_own_action,
 )
 from finshin_sdk.dto import PluginManifestDTO
 
+from ..error_guard import guard
 from ..logger import get_logger
 from ..paths import PROFILE_DIR
 from ._manifest import enabled_manifests
@@ -55,7 +55,7 @@ _RegisterResult = tuple[
     _PluginReport,
     tuple[BackgroundLoop, ...],
     tuple[QueuedAction, ...],
-    dict[PlatformTiming, tuple[PluginTimingRun, ...]],
+    dict[PlatformMoment, tuple[MomentRun, ...]],
 ]
 
 
@@ -73,7 +73,7 @@ def register_plugins(
     report: _PluginReport = []
     backgrounds: list[BackgroundLoop] = []
     handlers: list[QueuedAction] = []
-    timings: dict[PlatformTiming, list[PluginTimingRun]] = {}
+    platform_moments: dict[PlatformMoment, list[MomentRun]] = {}
     success_count = 0
 
     for manifest in _resolve_plugins():
@@ -86,18 +86,19 @@ def register_plugins(
             entry = _entry_class(manifest, importlib.import_module(manifest.module))
             plugin = entry()
 
-            routes, loops, actions, moments = _collect(plugin, manifest)
+            routes, loops, actions, subs = _collect(plugin, manifest)
 
             _check_roles(manifest, routes)
             sink.include_router(build_router(routes))
             backgrounds.extend(loops)
             handlers.extend(actions)
-            for timing, runs in _grouped_timings(moments).items():
-                for run in _checked_hooks(runs, f"timings.{timing}"):
-                    timings.setdefault(timing, []).append(run)
+            for moment, runs in _grouped_moments(subs).items():
+                for run in _checked_hooks(runs, f"platform_moments.{moment}"):
+                    guarded = _guarded_moment(run, manifest.name, moment)
+                    platform_moments.setdefault(moment, []).append(guarded)
             report.append((manifest, None))
             success_count += 1
-            _log_receipt(manifest.name, routes, loops, actions, moments)
+            _log_receipt(manifest.name, routes, loops, actions, subs)
 
         except ModuleNotFoundError as e:
             # 插件本身不存在与插件内部缺依赖分开报，两者用户动作不同
@@ -126,7 +127,7 @@ def register_plugins(
         report,
         tuple(backgrounds),
         tuple(handlers),
-        {timing: tuple(runs) for timing, runs in timings.items()},
+        {moment: tuple(runs) for moment, runs in platform_moments.items()},
     )
 
 
@@ -158,12 +159,12 @@ def _log_receipt(
     routes: tuple[MessageRoute, ...],
     loops: tuple[Any, ...],
     actions: tuple[QueuedAction, ...],
-    moments: tuple[PluginTiming, ...],
+    subs: tuple[MomentSubscription, ...],
 ) -> None:
     """把这只插件实际交出多少东西落到调试日志"""
     _logger.debug(
         f"插件 {name} 交出：路由 {len(routes)} 条、循环 {len(loops)} 个、"
-        f"动作 {len(actions)} 个、时机 {len(moments)} 个"
+        f"动作 {len(actions)} 个、时机 {len(subs)} 个"
     )
 
 
@@ -173,17 +174,14 @@ def _collect(
     tuple[MessageRoute, ...],
     tuple[Any, ...],
     tuple[QueuedAction, ...],
-    tuple[PluginTiming, ...],
+    tuple[MomentSubscription, ...],
 ]:
-    """收入口类交出的四样清单，形态不对当场报错
-
-    - 时机订阅只认内部基类，外部件交上来不收
-    """
+    """收入口类交出的四样清单，形态不对当场报错"""
     return (
         _checked_routes(plugin.message_routes()),
         _checked_hooks(plugin.background_loops(), "background_loops"),
         _checked_actions(plugin.queued_actions(), manifest.name),
-        plugin.timings() if isinstance(plugin, BundledPlugin) else (),
+        plugin.platform_moments(),
     )
 
 
@@ -218,21 +216,38 @@ def _checked_actions(declared: object, plugin_name: str) -> tuple[QueuedAction, 
     return tuple(checked)
 
 
-def _grouped_timings(
+def _grouped_moments(
     declared: object,
-) -> dict[PlatformTiming, tuple[PluginTimingRun, ...]]:
+) -> dict[PlatformMoment, tuple[MomentRun, ...]]:
     """把插件交出的时机订阅按时机名归组
 
     - 不是时机订阅的条目直接报错，装配期就出声
     """
     if not isinstance(declared, (list, tuple)):
-        raise TypeError("timings 必须是时机订阅的列表或元组")
-    grouped: dict[PlatformTiming, list[PluginTimingRun]] = {}
+        raise TypeError("platform_moments 必须是时机订阅的列表或元组")
+    grouped: dict[PlatformMoment, list[MomentRun]] = {}
     for item in declared:
-        if not isinstance(item, PluginTiming):
-            raise TypeError(f"timings 里混进了非时机订阅的条目: {item!r}")
-        grouped.setdefault(item.timing, []).append(item.run)
-    return {timing: tuple(runs) for timing, runs in grouped.items()}
+        if not isinstance(item, MomentSubscription):
+            raise TypeError(f"platform_moments 里混进了非时机订阅的条目: {item!r}")
+        grouped.setdefault(item.moment, []).append(item.run)
+    return {moment: tuple(runs) for moment, runs in grouped.items()}
+
+
+def _report_moment(exc: Exception, stage: str) -> None:
+    """时机件的报错只落调试日志，不外弹"""
+    _logger.send_error(f"{stage}的件出错", exc)
+
+
+def _guarded_moment(run: MomentRun, plugin: str, moment: PlatformMoment) -> MomentRun:
+    """给插件交出的时机协程包一层兜底
+
+    - 件里抛出的错落一行日志，带上插件名与时机名
+    - 三条时机的派发处因此都不必各自兜
+    """
+    guarded = guard(f"插件 {plugin} 在时机 {moment}", _report_moment, catch_all=True)(
+        run
+    )
+    return cast("MomentRun", guarded)
 
 
 def _checked_hooks(declared: object, field: str) -> tuple[Any, ...]:

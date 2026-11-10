@@ -11,10 +11,9 @@ import asyncio
 from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING
 
-from core.contracts import CapabilityCall
 from exceptions import describe_error
-from finshin_sdk import PlatformAssembly
-from finshin_sdk.domain import ContentKind, PlatformTiming
+from finshin_sdk import CapabilityCall, PlatformAssembly
+from finshin_sdk.domain import ContentKind, PlatformMoment
 from finshin_sdk.dto import OutboundPayloadDTO, PluginManifestDTO
 from skin.messages import EngineMessage
 from utils.paths import PLATFORM
@@ -23,7 +22,7 @@ from .._adapter_host import assemble_platform
 from ._base import BaseManager
 
 if TYPE_CHECKING:
-    from finshin_sdk.domain import PluginTimingRun
+    from finshin_sdk.domain import MomentRun
     from finshin_sdk.dto import PrincipalDTO
     from services.tasks import TaskItem
 
@@ -44,11 +43,11 @@ class ServiceManager(BaseManager):
         self._service: AdapterRuntime | None = None
 
         # 插件订阅的平台机会，随本次注册收集
-        self._timing_hooks: dict[PlatformTiming, tuple[PluginTimingRun, ...]] = {}
+        self._moment_runs: dict[PlatformMoment, tuple[MomentRun, ...]] = {}
 
-    def hooks_for(self, timing: PlatformTiming) -> tuple[PluginTimingRun, ...]:
+    def runs_for(self, moment: PlatformMoment) -> tuple[MomentRun, ...]:
         """订阅了这个平台时机的件，按交出的先后排"""
-        return self._timing_hooks.get(timing, ())
+        return self._moment_runs.get(moment, ())
 
     def capability_call(self) -> CapabilityCall:
         """召唤插件时交代的那份能力
@@ -75,7 +74,7 @@ class ServiceManager(BaseManager):
 
         self.logger.debug(EngineMessage.CREATING)
         parts = self._create_components()
-        self._timing_hooks = parts.timings
+        self._moment_runs = parts.platform_moments
         self._log_plugin_report(parts.report)
         configure_task_service(
             parts.queued_actions,
@@ -86,7 +85,7 @@ class ServiceManager(BaseManager):
             parts.adapter,
             self.capability_call(),
             parts.background_loops,
-            self.hooks_for(PlatformTiming.BEFORE_ENGINE_RUN),
+            self.runs_for(PlatformMoment.BEFORE_ENGINE_RUN),
         )
 
         await asyncio.to_thread(self._service.start)

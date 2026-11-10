@@ -30,20 +30,20 @@ set_profile("tg.000000")
 
 from bot import _service as service_module  # noqa: E402
 from bot._service import AdapterRuntime  # noqa: E402
-from core.contracts import BundledPlugin, CapabilityCall  # noqa: E402
 from exceptions import (  # noqa: E402
     PluginDependencyError,
     PluginEntryError,
     PluginLoadError,
     PluginMissingError,
 )
+from finshin_sdk import CapabilityCall  # noqa: E402
 from finshin_sdk.domain import (  # noqa: E402
     PLUGINS_PKG,
     BasePlugin,
     MessageRoute,
+    MomentSubscription,
     Platform,
-    PlatformTiming,
-    PluginTiming,
+    PlatformMoment,
     QueuedAction,
 )
 from utils.plugin import _register  # noqa: E402
@@ -107,18 +107,19 @@ def _compile(routes: object) -> SimpleNamespace:
 def _plugin(name: str = "Fake", **fields: object) -> SimpleNamespace:
     """拼一只假插件模块，入口类按交出的字段回话
 
-    - 关键字参数按三只入口方法名交：background_loops、queued_actions、timings
+    - 关键字参数按入口方法名交：background_loops、queued_actions、platform_moments
+    - 路由清单固定交一条，装载侧不认空清单
     - 入口类的所属模块名对齐假模块，装载侧据此认出它定义在本模块
     """
     routes = (MessageRoute(_never, _handle),)
     entry = type(
         "FakePlugin",
-        (BundledPlugin,),
+        (BasePlugin,),
         {
             "message_routes": lambda self: routes,
             "background_loops": lambda self: fields.get("background_loops", ()),
             "queued_actions": lambda self: fields.get("queued_actions", ()),
-            "timings": lambda self: fields.get("timings", ()),
+            "platform_moments": lambda self: fields.get("platform_moments", ()),
         },
     )
     entry.__module__ = name
@@ -138,6 +139,19 @@ async def _say(principal: object, text: str) -> None:
 _CAPABILITY = CapabilityCall(say=_say)  # 召唤插件时交出去的那份交代
 
 
+def _sub(run: object) -> MomentSubscription:
+    """一条「引擎开跑前」的订阅"""
+    return MomentSubscription(PlatformMoment.BEFORE_ENGINE_RUN, run)  # type: ignore[arg-type]
+
+
+def _names(platform_moments: dict) -> dict:
+    """把交出的协程换成名字看，装载侧包过一层，比对原对象没意义"""
+    return {
+        moment: [run.__name__ for run in runs]
+        for moment, runs in platform_moments.items()
+    }
+
+
 class TestCollectBackgrounds(unittest.TestCase):
     """回归点 1/2/3/7"""
 
@@ -146,14 +160,20 @@ class TestCollectBackgrounds(unittest.TestCase):
         modules = {
             "AI": _plugin(
                 background_loops=(_noop,),
-                timings=(PluginTiming(PlatformTiming.IDENTITY_CHANGED, _noop),),
+                platform_moments=(
+                    MomentSubscription(PlatformMoment.IDENTITY_CHANGED, _noop),
+                ),
             )
         }
 
-        (report, hooks, _, timings), routers = _register_modules(modules, ["AI"])
+        (report, hooks, _, platform_moments), routers = _register_modules(
+            modules, ["AI"]
+        )
 
         self.assertEqual(hooks, (_noop,))
-        self.assertEqual(timings, {PlatformTiming.IDENTITY_CHANGED: (_noop,)})
+        self.assertEqual(
+            _names(platform_moments), {PlatformMoment.IDENTITY_CHANGED: ["_noop"]}
+        )
         self.assertEqual([(m.name, e) for m, e in report], [("AI", None)])
         self.assertEqual(len(routers), 1)
         self.assertEqual(len(routers[0].compiled), 1)
@@ -162,12 +182,12 @@ class TestCollectBackgrounds(unittest.TestCase):
         """没交入口类的插件记失败且不交出协程"""
         modules = {"bad": _bare_module(background_loops=(_noop,)), "good": _plugin()}
 
-        (report, hooks, _, timings), routers = _register_modules(
+        (report, hooks, _, platform_moments), routers = _register_modules(
             modules, ["bad", "good"]
         )
 
         self.assertEqual(hooks, ())
-        self.assertEqual(timings, {}, "没交入口类的插件不该交出时机订阅")
+        self.assertEqual(platform_moments, {}, "没交入口类的插件不该交出时机订阅")
         self.assertEqual(len(routers), 1)
         self.assertIsInstance(report[0][1], PluginEntryError)
         self.assertIsNone(report[1][1])
@@ -176,14 +196,14 @@ class TestCollectBackgrounds(unittest.TestCase):
         """模块里只有 router 而没有入口类即记失败"""
         modules = {"bad": _bare_module(router=object()), "good": _plugin()}
 
-        (report, hooks, _, timings), routers = _register_modules(
+        (report, hooks, _, platform_moments), routers = _register_modules(
             modules, ["bad", "good"]
         )
 
         self.assertIsInstance(report[0][1], PluginEntryError)
         self.assertIsNone(report[1][1])
         self.assertEqual(hooks, ())
-        self.assertEqual(timings, {})
+        self.assertEqual(platform_moments, {})
         self.assertEqual(len(routers), 1)
 
     def test_module_missing_kinds(self) -> None:
@@ -204,10 +224,10 @@ class TestCollectBackgrounds(unittest.TestCase):
         """声明里混进非 callable 只丢该成员"""
         modules = {"AI": _plugin(background_loops=(_noop, "拼错了"))}
 
-        (_, hooks, _, timings), _ = _register_modules(modules, ["AI"])
+        (_, hooks, _, platform_moments), _ = _register_modules(modules, ["AI"])
 
         self.assertEqual(hooks, (_noop,))
-        self.assertEqual(timings, {})
+        self.assertEqual(platform_moments, {})
 
     def test_bad_shape_reported_and_excluded(self) -> None:
         """backgrounds 不是列表或元组即记失败，协程不收"""
@@ -216,12 +236,12 @@ class TestCollectBackgrounds(unittest.TestCase):
             "good": _plugin(background_loops=(_noop,)),
         }
 
-        (report, hooks, _, timings), routers = _register_modules(
+        (report, hooks, _, platform_moments), routers = _register_modules(
             modules, ["bad", "good"]
         )
 
         self.assertEqual(hooks, (_noop,))
-        self.assertEqual(timings, {})
+        self.assertEqual(platform_moments, {})
         self.assertEqual(len(routers), 1)
         self.assertEqual([m.name for m, _ in report], ["bad", "good"])
         self.assertIsInstance(report[0][1], PluginLoadError)
@@ -231,10 +251,12 @@ class TestCollectBackgrounds(unittest.TestCase):
         """未声明常驻协程的插件照常注册，协程为空"""
         modules = {"help": _plugin()}
 
-        (report, hooks, handlers, timings), _ = _register_modules(modules, ["help"])
+        (report, hooks, handlers, platform_moments), _ = _register_modules(
+            modules, ["help"]
+        )
 
         self.assertEqual(hooks, ())
-        self.assertEqual(timings, {})
+        self.assertEqual(platform_moments, {})
         self.assertEqual(handlers, ())
         self.assertEqual([(m.name, e) for m, e in report], [("help", None)])
 
@@ -247,38 +269,49 @@ class TestCollectBackgrounds(unittest.TestCase):
 
         self.assertEqual(handlers, (declared,))
 
-    def test_timings_grouped_by_platform_moment(self) -> None:
+    def test_subscriptions_grouped_by_platform_moment(self) -> None:
         """回归点 9：时机订阅按时机归组交出，同组按交出的先后排
 
         - 形态非法的整条插件记失败，一条订阅不收
         """
         second = _plugin(
-            timings=(
-                PluginTiming(PlatformTiming.BEFORE_ENGINE_RUN, _handle),
-                PluginTiming(PlatformTiming.BEFORE_ENGINE_RUN, _noop),
+            platform_moments=(
+                MomentSubscription(PlatformMoment.BEFORE_ENGINE_RUN, _handle),
+                MomentSubscription(PlatformMoment.BEFORE_ENGINE_RUN, _noop),
             )
         )
         modules = {
-            "bad": _plugin(timings=_noop),
+            "bad": _plugin(platform_moments=_noop),
             "AI": _plugin(
-                timings=(PluginTiming(PlatformTiming.IDENTITY_CHANGED, _noop),)
+                platform_moments=(
+                    MomentSubscription(PlatformMoment.IDENTITY_CHANGED, _noop),
+                )
             ),
             "other": second,
         }
 
-        (report, _, _, timings), _ = _register_modules(modules, ["AI", "other", "bad"])
+        (report, _, _, platform_moments), _ = _register_modules(
+            modules, ["AI", "other", "bad"]
+        )
 
-        self.assertEqual(timings[PlatformTiming.IDENTITY_CHANGED], (_noop,))
-        self.assertEqual(timings[PlatformTiming.BEFORE_ENGINE_RUN], (_handle, _noop))
+        self.assertEqual(
+            _names(platform_moments)[PlatformMoment.IDENTITY_CHANGED], ["_noop"]
+        )
+        self.assertEqual(
+            _names(platform_moments)[PlatformMoment.BEFORE_ENGINE_RUN],
+            ["_handle", "_noop"],
+        )
         self.assertIsInstance(report[2][1], PluginLoadError)
 
-    def test_non_plugin_timing_entry_rejected(self) -> None:
-        """timings 里混进非订阅条目即整条插件记失败"""
-        modules = {"alpha": _plugin(timings=(_noop,)), "beta": _plugin()}
+    def test_non_moment_entry_rejected(self) -> None:
+        """时机清单里混进非订阅条目即整条插件记失败"""
+        modules = {"alpha": _plugin(platform_moments=(_noop,)), "beta": _plugin()}
 
-        (report, _, _, timings), _ = _register_modules(modules, ["alpha", "beta"])
+        (report, _, _, platform_moments), _ = _register_modules(
+            modules, ["alpha", "beta"]
+        )
 
-        self.assertEqual(timings, {})
+        self.assertEqual(platform_moments, {})
         self.assertIsInstance(report[0][1], PluginLoadError)
         self.assertIsNone(report[1][1])
 
@@ -372,7 +405,10 @@ class TestServiceRunsBeforeRun(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(seen, [_CAPABILITY, "轮询开跑"])
 
     async def test_before_run_crash_is_logged_and_polling_runs(self) -> None:
-        """订阅了引擎开跑前的件抛错只落日志，轮询照常开跑、收尾照常释放连接"""
+        """订阅的件抛错只落日志，轮询照常开跑、收尾照常释放连接
+
+        - 兜底在装载侧那一层，日志带上插件名与时机名
+        """
         sent: list[tuple[str, BaseException]] = []
 
         def _send_error(desc: str, exc: BaseException) -> None:
@@ -381,13 +417,19 @@ class TestServiceRunsBeforeRun(unittest.IsolatedAsyncioTestCase):
         async def boom(call: CapabilityCall) -> None:
             raise ValueError("交代失败")
 
+        (_, _, _, platform_moments), _ = _register_modules(
+            {"AI": _plugin(platform_moments=(_sub(boom),))}, ["AI"]
+        )
+        guarded = platform_moments[PlatformMoment.BEFORE_ENGINE_RUN][0]
+
         adapter = _FakeAdapter()
-        service = AdapterRuntime(adapter, _CAPABILITY, (), (boom,))  # type: ignore[arg-type]
-        with patch.object(service_module._logger, "send_error", new=_send_error):
+        service = AdapterRuntime(adapter, _CAPABILITY, (), (guarded,))  # type: ignore[arg-type]
+        with patch.object(_register._logger, "send_error", new=_send_error):
             await service._polling_task()
 
-        self.assertEqual(len(sent), 1, "引擎开跑前的件异常应记录一次")
+        self.assertEqual(len(sent), 1, "订阅的件异常应记录一次")
         self.assertIsInstance(sent[0][1], ValueError)
+        self.assertIn("AI", sent[0][0], "日志要点名是哪只插件的件")
         self.assertEqual(adapter.closed, 1)
 
     def test_two_entry_classes_are_refused(self) -> None:
@@ -430,13 +472,13 @@ class TestAIPluginDeclares(unittest.TestCase):
         self.assertEqual(plugin.background_loops(), (cleanup_loop,))
         self.assertEqual(plugin.queued_actions(), (chat_task_handler,))
         self.assertEqual(
-            plugin.timings(),
+            plugin.platform_moments(),
             (
-                PluginTiming(PlatformTiming.BEFORE_ENGINE_RUN, report_lost_tasks),
-                PluginTiming(
-                    PlatformTiming.IDENTITY_CHANGED, purge_on_identity_changed
+                MomentSubscription(PlatformMoment.BEFORE_ENGINE_RUN, report_lost_tasks),
+                MomentSubscription(
+                    PlatformMoment.IDENTITY_CHANGED, purge_on_identity_changed
                 ),
-                PluginTiming(PlatformTiming.CONFIG_VERIFIED, wake_cleanup),
+                MomentSubscription(PlatformMoment.CONFIG_VERIFIED, wake_cleanup),
             ),
         )
 
@@ -451,8 +493,8 @@ class TestHelpPluginDeclares(unittest.TestCase):
         plugin = HelpPlugin()
         self.assertEqual(len(plugin.message_routes()), 3)
         self.assertEqual(
-            [item.timing for item in plugin.timings()],
-            [PlatformTiming.BEFORE_ENGINE_RUN],
+            [item.moment for item in plugin.platform_moments()],
+            [PlatformMoment.BEFORE_ENGINE_RUN],
         )
 
 

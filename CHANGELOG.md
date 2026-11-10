@@ -9,17 +9,16 @@
 ### ⚠️ Breaking Changes
 
 - **两侧共用的形状搬进接口包，取处跟着改名**：
-  - 领域词表、归一数据快照与处理上下文从 `core` 整只搬进 `finshin_sdk`，`core` 只留仓储与能力契约。
+  - 领域词表、归一数据快照与处理上下文从 `core` 整只搬进 `finshin_sdk`，`core` 只留仓储抽象。
   - 写插件与写适配器要引用的那几样改从 `finshin_sdk` 取，外部插件的导入行要跟着换。
+  - 召唤插件时交代的那一份能力 `CapabilityCall` 同住接口包，写插件的人也能按名字引它。
 - **插件入口改成 `BasePlugin` 子类**：
   - `__init__.py` 里写一只入口类，一只模块只准有一只。
   - 模块属性 `spec` 那套写法不再认。
-  - 三只方法都可以不写，不写即没有那一类能力：`message_routes`、`background_loops`、`queued_actions`。
-  - 交出的东西一并改名：`PluginRoute` 叫 `MessageRoute`、`PluginPredicate` 叫 `RouteMatcher`、`PluginBackground` 叫 `BackgroundLoop`、`TaskHandler` 叫 `QueuedAction`。
+  - 四只方法都可以不写，不写即没有那一类能力：`message_routes`、`background_loops`、`queued_actions`、`platform_moments`。
+  - 交出的东西一并改名：`PluginRoute` 叫 `MessageRoute`、`PluginPredicate` 叫 `RouteMatcher`、`PluginBackground` 叫 `BackgroundLoop`、`TaskHandler` 叫 `QueuedAction`、`timings` 叫 `platform_moments`。
+  - 时机那几样一并归到 moment 词根：`PlatformTiming` 叫 `PlatformMoment`、`PluginTiming` 叫 `MomentSubscription`、`PluginTimingRun` 叫 `MomentRun`。
   - `PluginSpec` 那只袋子删掉。
-- **平台时机订阅收归随包专用**：
-  - 三个时刻（引擎开跑前、身份变更、配置校验通过）照内置对话的需要列的，外部插件交这一份不生效。
-  - 随包件改用 `core.contracts` 的 `BundledPlugin`，多一只 `timings` 方法。
 - **任务动作名从封闭词表改成带归属的字符串**：
   - 动作名写成「插件名.动作」，装载时校验前段等于插件名，别人名下的动作名整只拒装。
   - 内置对话的动作名由 `chat` 改成 `AI.chat`，老库里 `chat` 那几行开机判死，不补说。
@@ -41,6 +40,9 @@
 
 ### 🔧 Changed
 
+- **异常兜底收成本体一件公共件**：内部归一，报错文案、日志级别与弹窗行为一字未变。
+  - 兜住调用、选捕获范围与是否重抛那套搬进 `utils`，反馈去向改成调用处传入。
+  - 界面控制器的装饰器与插件时机的守卫接上同一件公共件，各自落的仍是原来那一句。
 - **异常文案取句收成一个口子**：
   - 各族表照旧写在自己文件里，查表、填参与兜底收成 `describe_error` 一只，七处调用处跟着改口。
   - 族里新加的子类没点名也能落到父类那一句，忘配模板时不再露英文类名。
@@ -63,6 +65,8 @@
 ### 📝 Planned
 
 - **跨平台**：QQ 平台实装。
+
+---
 
 ## [1.0.0-alpha.7.dev3] - 2026-11-09
 

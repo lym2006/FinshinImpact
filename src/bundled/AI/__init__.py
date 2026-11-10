@@ -6,12 +6,12 @@
 - 订阅引擎开跑前、身份变更与配置校验通过三个平台机会
 """
 
-from core.contracts import BundledPlugin
 from finshin_sdk.domain import (
     BackgroundLoop,
+    BasePlugin,
     MessageRoute,
-    PlatformTiming,
-    PluginTiming,
+    MomentSubscription,
+    PlatformMoment,
     QueuedAction,
 )
 
@@ -20,8 +20,8 @@ from .handlers import get_routes
 from .services import chat_task_handler, cleanup_loop, report_lost_tasks, wake_cleanup
 
 
-class AIPlugin(BundledPlugin):
-    """对话、记忆命令与它们背后的清理循环"""
+class AIPlugin(BasePlugin):
+    """对话与记忆命令及清理循环"""
 
     def message_routes(self) -> tuple[MessageRoute, ...]:
         """来向消息的路由清单"""
@@ -35,12 +35,14 @@ class AIPlugin(BundledPlugin):
         """问答动作"""
         return (chat_task_handler,)
 
-    def timings(self) -> tuple[PluginTiming, ...]:
+    def platform_moments(self) -> tuple[MomentSubscription, ...]:
         """平台机会的订阅清单"""
         return (
-            PluginTiming(PlatformTiming.BEFORE_ENGINE_RUN, report_lost_tasks),
-            PluginTiming(PlatformTiming.IDENTITY_CHANGED, purge_on_identity_changed),
-            PluginTiming(PlatformTiming.CONFIG_VERIFIED, wake_cleanup),
+            MomentSubscription(PlatformMoment.BEFORE_ENGINE_RUN, report_lost_tasks),
+            MomentSubscription(
+                PlatformMoment.IDENTITY_CHANGED, purge_on_identity_changed
+            ),
+            MomentSubscription(PlatformMoment.CONFIG_VERIFIED, wake_cleanup),
         )
 
 

@@ -123,6 +123,7 @@ type = layers
 layers =
     finshin_sdk._assembly
     finshin_sdk._context
+    finshin_sdk._capability
     finshin_sdk._adapter
     finshin_sdk.dto
     finshin_sdk.domain

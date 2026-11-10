@@ -9,14 +9,13 @@ import asyncio
 import threading
 from typing import TYPE_CHECKING
 
-from finshin_sdk.domain import BackgroundLoop, PluginTimingRun
+from finshin_sdk.domain import BackgroundLoop, MomentRun
 from skin.messages import EngineMessage
 from utils import get_logger, register_lifecycle, unregister_lifecycle
 from utils.network import link_report
 
 if TYPE_CHECKING:
-    from core.contracts import CapabilityCall
-    from finshin_sdk import BaseAdapter, InteractionPort
+    from finshin_sdk import BaseAdapter, CapabilityCall, InteractionPort
 
 
 # 引擎线程握手
@@ -36,7 +35,7 @@ class AdapterRuntime:
         adapter: "BaseAdapter",
         capability: "CapabilityCall",
         background_loops: tuple[BackgroundLoop, ...] = (),
-        before_run: tuple[PluginTimingRun, ...] = (),
+        before_run: tuple[MomentRun, ...] = (),
     ) -> None:
         self._adapter = adapter
         self._capability = capability
@@ -164,13 +163,10 @@ class AdapterRuntime:
     async def _run_before_run(self) -> None:
         """轮到「引擎开跑前」，逐个跑订阅了它的件
 
-        - 报错的件记一笔后接着跑下一个
+        - 件里的异常由装载侧包的那层兜住，这里不重复兜
         """
         for hook in self._before_run:
-            try:
-                await hook(self._capability)
-            except Exception as e:
-                _logger.send_error("插件在引擎开跑前的件出错", e)
+            await hook(self._capability)
 
     async def _stop_background_loops(self, tasks: list[asyncio.Task]) -> None:
         """收掉插件常驻协程
