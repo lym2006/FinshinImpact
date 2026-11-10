@@ -441,5 +441,20 @@ class TestAIPluginDeclares(unittest.TestCase):
         )
 
 
+class TestHelpPluginDeclares(unittest.TestCase):
+    """回归点：帮助图预热由时机驱动，不在导入期动手"""
+
+    def test_help_subscribes_before_engine_run(self) -> None:
+        """帮助插件交出三条路由，并订阅引擎开跑前"""
+        from bundled.help import HelpPlugin
+
+        plugin = HelpPlugin()
+        self.assertEqual(len(plugin.message_routes()), 3)
+        self.assertEqual(
+            [item.timing for item in plugin.timings()],
+            [PlatformTiming.BEFORE_ENGINE_RUN],
+        )
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
