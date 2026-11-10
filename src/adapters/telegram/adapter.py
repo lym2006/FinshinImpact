@@ -1,7 +1,7 @@
 # src/adapters/telegram/adapter.py
 """Telegram 适配器
 
-- 持有 Bot 与 Dispatcher 并托管启停
+- 持有平台会话与事件分发器并托管启停
 """
 
 from typing import Any
@@ -19,10 +19,11 @@ class TelegramAdapter(BaseAdapter):
     """Telegram 适配器
 
     - 交出事件分发器作路由挂载口、清单编译器与中间件挂载点
-    - 引擎重依赖在函数体内入场，导入这只模块不等它
+    - 引擎重依赖在函数体内入场
     """
 
     def __init__(self, token: str, *, proxy: str | None = None) -> None:
+        # 起主窗不等引擎库，故重依赖到函数体内才入场
         from aiogram import Bot, Dispatcher
 
         self._bot = Bot(token=token, session=SSLUnverifiedSession(proxy=proxy))
@@ -48,7 +49,7 @@ class TelegramAdapter(BaseAdapter):
 
     @property
     def router_builder(self) -> RouterBuilder:
-        """把路由清单编译成 aiogram 的 Router"""
+        """把路由清单编译成平台路由"""
         from .router_bridge import build_router
 
         return build_router

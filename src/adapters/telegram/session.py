@@ -2,7 +2,6 @@
 """SSL 会话
 
 - 代理兼容且免验证的会话
-- Clash 代理握手兼容
 - 链路失败与恢复转交链路上报器
 """
 
@@ -63,6 +62,8 @@ class SSLUnverifiedSession(AiohttpSession):
     ) -> None:
         # 空串归一为 None：TUN/直连场景 proxy 留空时必须真·不走代理
         super().__init__(proxy=proxy or None, timeout=_REQUEST_TIMEOUT, **kwargs)
+
+        # Clash 系代理的握手过不了证书校验，这里按探测需要关掉
         self._connector_init["ssl"] = verify
         self._report_link = report_link
 

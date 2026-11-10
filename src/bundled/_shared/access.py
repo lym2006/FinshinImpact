@@ -1,8 +1,7 @@
 # src/bundled/_shared/access.py
 """命令权限守卫
 
-- 主人档取配置 owner，管理员档为 owner 与被授权用户
-- 档位判定单源在这里，命令与对话门槛都走它
+- 主人档取配置中的主人，管理员档为主人与被授权用户
 - 装饰器按档位拦住无权限的命令
 """
 
@@ -29,7 +28,7 @@ P = ParamSpec("P")
 def _owner_id() -> str:
     """取主人 id
 
-    - 配置里的 owner 串去空白后交出
+    - 主人配置值去空白后交出
     """
     return config_manager.get(ConfigKey.OWNER.path(ConfigSection.CHORE), str).strip()
 
@@ -37,7 +36,7 @@ def _owner_id() -> str:
 async def role_of(principal: PrincipalDTO) -> CommandRole:
     """判定用户权限档
 
-    - 配置 owner 命中即主人档
+    - 命中配置中的主人即主人档
     - 命中授权名单算管理员，其余为用户
     """
     if _owner_id() == principal.user:

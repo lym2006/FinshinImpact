@@ -27,7 +27,7 @@ from finshin_sdk.domain import FieldKey
 from skin.messages import CheckMessage, ConfigMessage
 from utils.network.probe import probe_budget
 
-# 构造期异常消息 → 配置键的解析规则
+# 构造期异常消息里取协议名的规则
 _SCHEME_RE = re.compile(r"Invalid scheme component:\s*(.*)", re.IGNORECASE)
 
 

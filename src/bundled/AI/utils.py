@@ -104,7 +104,6 @@ def split_rounds(rows: _Rows, keep_rounds: int) -> tuple[_Rows, _Rows]:
 class _TurnOverhead:
     """每条消息的打包开销现值
 
-    - 模型侧拼报文时给每条消息补的角色记号不在正文里，字数公式看不见
     - 只由端点回报的读数倒推，换模型下一轮就换成新口径
     - 没拿到过读数即按 0 算，此时窗口只可能刚起头
     """
@@ -113,10 +112,11 @@ class _TurnOverhead:
         self.per_turn = 0
 
     def refresh(self, content: int, actual: int, turns: int) -> None:
-        """按一轮的正文折算、端点读数与消息条数刷新现值
+        """刷新消息打包开销的折算值
 
         - 读数不大于正文折算即视为口径变了，不折进负数
         """
+        # 模型侧给每条消息还补一个角色记号，正文里看不见，只能从读数倒推
         if turns and actual > content:
             self.per_turn = (actual - content) // turns
 
@@ -254,7 +254,7 @@ def compose_user_text(event: InboundEventDTO) -> str:
 def _compose_body(event: InboundEventDTO) -> str:
     """拼入库正文
 
-    - 引用块加裸正文，落盘记录只取其中的裸正文
+    - 引用块加裸正文
     """
     return f"{_quote_block(event)}{event.content.text}"
 

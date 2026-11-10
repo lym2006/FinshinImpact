@@ -3,7 +3,6 @@
 
 - 会话作用域、内容种类与发言人显示名按 Telegram 协议取
 - 被引用消息与带附文的媒体都按种类写占位标记，引用块不交空串
-- 用户 id 与消息定位三元组是适配层对外的最小形状
 """
 
 from collections.abc import Sequence

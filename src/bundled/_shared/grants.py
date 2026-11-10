@@ -47,5 +47,5 @@ async def remove_admin(user: UserId) -> bool:
 
 
 async def list_admins() -> tuple[UserId, ...]:
-    """列出未到期的授权，按授权先后升序"""
+    """列出未到期的授权"""
     return await (await _repo()).list_active()

@@ -57,7 +57,6 @@ async def _triggers_chat(ctx: HandlerContext) -> bool:
             # 私聊：能走到这里的就是有权限的，非命令文本全部接管
             return True
         case ChatScope.GROUP:
-            # 群聊：点名或引用本机器人直接应答，否则须命中触发词（忽略大小写）
             if event.is_mention_bot or event.reply_to_bot:
                 return True
             return any(

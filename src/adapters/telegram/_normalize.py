@@ -21,11 +21,7 @@ _logger = get_logger("Adapter")
 
 
 class NormalizeMiddleware(BaseMiddleware):
-    """归一化中间件
-
-    - 归一成功即向 data 写入 ctx 一个键
-    - 相册条先攒进缓冲，整组到点只走一次事件链
-    """
+    """归一化中间件"""
 
     def __init__(self, interaction: InteractionPort, bot: Bot) -> None:
         super().__init__()

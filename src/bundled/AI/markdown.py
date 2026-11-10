@@ -41,9 +41,9 @@ _PAIR_PATTERNS: tuple[tuple[re.Pattern[str], int | None], ...] = (
 def strip_model_marks(text: str) -> str:
     """把模型给的样式标记洗成纯文本
 
-    - 人设已禁样式，此处是漏网兜底
     - 只去标记符号，正文与换行原样保留
     """
+    # 人设已禁样式，这里只兜漏网的
     cleaned = text
     changed = True
     while changed:

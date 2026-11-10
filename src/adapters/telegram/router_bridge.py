@@ -1,7 +1,7 @@
 # src/adapters/telegram/router_bridge.py
 """插件路由清单编译
 
-- 按清单顺序组装 aiogram 的 Router，每次交出全新一只
+- 按清单顺序组装平台路由，每次交出全新一只
 - 谓词只吃处理上下文，原始事件继续按位置交给处理函数
 """
 
@@ -16,7 +16,7 @@ from finshin_sdk.domain import MessageRoute, RouteMatcher
 
 
 class _Predicate(Filter):
-    """把清单里的谓词包成 aiogram 过滤器
+    """把路由清单里的谓词包成平台过滤器
 
     - 拿不到处理上下文时一律不接管
     """

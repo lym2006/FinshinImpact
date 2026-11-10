@@ -1,7 +1,7 @@
 # src/adapters/telegram/_album.py
 """相册缓冲
 
-- 同组同人的多条更新并成一条放行，满额即放，其余等下一次派发
+- 同组同人的多条更新并成一条放行，其余等下一次派发
 - 放行沿末条更新的事件链走，整组只点一次下游
 """
 
@@ -103,7 +103,7 @@ class AlbumCollector:
         self._pending.clear()
 
     def _schedule(self, key: _AlbumKey) -> None:
-        """挂一次派发后的收口，取走即出表防重复投递"""
+        """挂一次派发后的收口"""
         asyncio.get_running_loop().call_soon(
             lambda: asyncio.ensure_future(self._flush(key))
         )

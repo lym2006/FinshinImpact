@@ -69,7 +69,10 @@ async def _request_summary(text: str) -> str:
 
 
 def _trim_summary(text: str) -> str:
-    """摘要超硬上限即丢掉前段留尾部"""
+    """裁剪超限摘要
+
+    - 丢前段留尾部
+    """
     limit = ai_config.summary_hard_limit
     while (size := estimate_tokens(text)) > limit:
         cut = _first_boundary(text)
