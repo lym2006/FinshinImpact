@@ -793,7 +793,7 @@ class TestSingleRowPlan(unittest.TestCase):
     def test_cfg_single_rows(self) -> None:
         """单路配置表只剩三行"""
         from utils.network import RowId, RowStatus, plan_channels, verify_plan
-        from utils.network.probe import single_row_of
+        from utils.network._probe import single_row_of
 
         channels = plan_channels("http://127.0.0.1:9999", None, mode="cfg")
         rows = verify_plan(
@@ -813,7 +813,7 @@ class TestSingleRowPlan(unittest.TestCase):
 
     def test_auto_single_none(self) -> None:
         """自动模式不裁行"""
-        from utils.network.probe import single_row_of
+        from utils.network._probe import single_row_of
 
         self.assertIsNone(single_row_of("auto"))
 

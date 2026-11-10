@@ -10,21 +10,19 @@ from collections.abc import Awaitable, Callable, Sequence
 
 from finshin_sdk.domain import ProxyMode
 from skin.messages import CheckMessage
+from utils import get_logger
 from utils.check import run_probe_round
-from utils.logger import get_logger
 from utils.network import (
     Channel,
     FrameKey,
     RowId,
     RowStatus,
     detect_system_proxy,
-    via_label,
-)
-from utils.network.probe import (
     plan_channels,
     single_row_of,
     sys_deduped,
     verify_plan,
+    via_label,
 )
 
 from .probe import attempt_channel, preload_engine

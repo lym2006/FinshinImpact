@@ -46,6 +46,23 @@ _BLANK_BY_TYPE: dict[type, ConfigValue] = {
 }
 
 
+def refresh_label(label: QLabel, title: str, err: str | None) -> None:
+    """按校验结果刷新一个字段标签
+
+    - 本项错误标红，前置项未检测到转黄，无错即清样式
+    """
+    if err and err.startswith(ConfigMessage.PENDING_MARK):
+        label.setText(f"❔ {title}")
+        label.setStyleSheet(build_pending_label_qss())
+    elif err:
+        label.setText(title)
+        label.setStyleSheet(build_error_label_qss())
+    else:
+        label.setText(title)
+        label.setStyleSheet("")
+    label.setToolTip(err or "")
+
+
 class FieldBuilder:
     """字段渲染器
 
@@ -174,14 +191,7 @@ class FieldBuilder:
         label_widget.setAlignment(
             Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
         )
-        if err := errors.get(field.key):
-            if err.startswith(ConfigMessage.PENDING_MARK):
-                # 前置项失败导致的"暂未检测"：黄字 ❔，不算本项错误
-                label_widget.setText(f"❔ {field.label}")
-                label_widget.setStyleSheet(build_pending_label_qss())
-            else:
-                label_widget.setStyleSheet(build_error_label_qss())
-            label_widget.setToolTip(err)
+        refresh_label(label_widget, field.label, errors.get(field.key))
         self.labels[field.key] = (label_widget, field.label)
         return label_widget
 
