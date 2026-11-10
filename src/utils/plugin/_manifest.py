@@ -11,7 +11,6 @@
 import importlib.machinery
 import importlib.util
 import sys
-import tomllib
 from pathlib import Path
 from typing import Any
 
@@ -30,6 +29,7 @@ from finshin_sdk.domain import (
 )
 from finshin_sdk.dto import PluginManifestDTO
 from system.profile_env import ROOT_DIR
+from system.toml_read import read_toml
 
 from ._manifest_help import read_help_sections
 
@@ -120,12 +120,8 @@ def _read_manifest(path: Path, dir_name: str, pkg: str) -> PluginManifestDTO | N
     - 未知键忽略，可选字段缺省用 DTO 默认值
     - 导入路径按所在根的顶层包名拼，清单不写这一行
     """
-    if not path.is_file():
-        return None
-
-    try:
-        data = tomllib.loads(path.read_text(encoding="utf-8"))
-    except (OSError, tomllib.TOMLDecodeError):
+    data = read_toml(path)
+    if data is None:
         return None
 
     kwargs: dict[str, Any] = {}
@@ -159,12 +155,8 @@ def _load_instance_enabled(state_path: Path) -> frozenset[str] | None:
     - 只取 enabled 键，随包插件恒启用与回落由 _resolve_enabled 处理
     - 文件不存在或解析失败返回 None，前者即实例从未保存过插件选择
     """
-    if not state_path.is_file():
-        return None
-
-    try:
-        data = tomllib.loads(state_path.read_text(encoding="utf-8"))
-    except (OSError, tomllib.TOMLDecodeError):
+    data = read_toml(state_path)
+    if data is None:
         return None
 
     return frozenset(str(name) for name in data.get(StateKey.ENABLED, []))
@@ -175,12 +167,8 @@ def _load_catalog(state_path: Path) -> str:
 
     - 缺失或损坏返回空串，与任何现算指纹都不等
     """
-    if not state_path.is_file():
-        return ""
-
-    try:
-        data = tomllib.loads(state_path.read_text(encoding="utf-8"))
-    except (OSError, tomllib.TOMLDecodeError):
+    data = read_toml(state_path)
+    if data is None:
         return ""
 
     return str(data.get(StateKey.CATALOG, ""))

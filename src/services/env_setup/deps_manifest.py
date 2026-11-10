@@ -7,7 +7,6 @@
 import hashlib
 import importlib.util
 import re
-import tomllib
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
@@ -23,6 +22,7 @@ from finshin_sdk.domain import (
     StateKey,
 )
 from system.profile_env import INSTANCES_DIR, ROOT_DIR, profile_dir
+from system.toml_read import read_toml
 
 from ..adapter_manifest import adapter_deps_union
 
@@ -57,19 +57,6 @@ def plugins_roots() -> list[Path]:
     return roots
 
 
-def _read_toml(path: Path) -> dict[str, Any] | None:
-    """读取 TOML 文件
-
-    - 缺失或解析失败返回 None
-    """
-    if not path.is_file():
-        return None
-    try:
-        return tomllib.loads(path.read_text(encoding="utf-8"))
-    except (OSError, tomllib.TOMLDecodeError):
-        return None
-
-
 def _scan_rows(plugins_paths: Sequence[Path]) -> list[dict[str, Any]]:
     """按根的顺序逐子目录读出最小清单，同名不去重
 
@@ -82,7 +69,7 @@ def _scan_rows(plugins_paths: Sequence[Path]) -> list[dict[str, Any]]:
             continue
 
         for path in sorted(plugins_path.iterdir()):
-            data = _read_toml(path / PluginFileName.MANIFEST)
+            data = read_toml(path / PluginFileName.MANIFEST)
             if not data or not isinstance(data.get(ManifestKey.NAME), str):
                 continue
             row: dict[str, Any] = {
@@ -202,7 +189,7 @@ def load_state(code: str) -> dict[str, Any]:
 
     - 文件不存在或解析失败返回空字典，前者即实例从未保存过插件选择
     """
-    return _read_toml(_state_path_of(code)) or {}
+    return read_toml(_state_path_of(code)) or {}
 
 
 def panel_needed(code: str) -> bool:
@@ -248,7 +235,7 @@ def _core_dependencies() -> list[str]:
     - 取 pyproject 的 project.dependencies 段
     - 发布包内 pyproject 为随包文件，缺失返回空表由调用方处理
     """
-    data = _read_toml(ROOT_DIR / "pyproject.toml") or {}
+    data = read_toml(ROOT_DIR / "pyproject.toml") or {}
     return list(data.get("project", {}).get("dependencies", []))
 
 
@@ -258,7 +245,7 @@ def dev_dependencies() -> list[str]:
     - 来源 pyproject 的 project.optional-dependencies.dev
     - 仅供同步环境时保留已装工具，缺段返回空表
     """
-    data = _read_toml(ROOT_DIR / "pyproject.toml") or {}
+    data = read_toml(ROOT_DIR / "pyproject.toml") or {}
     optional = data.get("project", {}).get("optional-dependencies", {})
     return list(optional.get("dev", []))
 
