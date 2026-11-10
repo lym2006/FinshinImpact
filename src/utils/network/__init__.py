@@ -8,8 +8,7 @@
 
 from ._client import BaseClient
 from ._link import LinkStatus, link_report
-from ._proxy import detect_system_proxy
-from .probe import (
+from ._probe import (
     NETWORK_ROWS,
     Channel,
     FrameKey,
@@ -18,6 +17,7 @@ from .probe import (
     fault_row_of,
     plan_channels,
     probe_budget,
+    single_row_of,
     sys_deduped,
     uses_configured_proxy,
     uses_system_proxy,
@@ -25,6 +25,7 @@ from .probe import (
     verify_skeleton,
     via_label,
 )
+from ._proxy import detect_system_proxy
 
 __all__ = [
     # HTTP 客户端
@@ -43,6 +44,7 @@ __all__ = [
     # 探测规划
     "plan_channels",
     "probe_budget",
+    "single_row_of",
     "sys_deduped",
     "uses_configured_proxy",
     "uses_system_proxy",

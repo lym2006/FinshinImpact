@@ -31,12 +31,12 @@ from utils.network import (
     fault_row_of,
     link_report,
     plan_channels,
+    single_row_of,
     sys_deduped,
     uses_system_proxy,
     verify_plan,
     via_label,
 )
-from utils.network.probe import single_row_of
 from utils.paths import PLATFORM
 
 from .._adapter_host import parts_for

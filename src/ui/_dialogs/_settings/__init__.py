@@ -12,20 +12,15 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QCloseEvent, QFont, QKeyEvent, QShowEvent
 from PySide6.QtWidgets import QWidget
 
-from skin.messages import ConfigMessage
-from skin.qss import (
-    build_error_label_qss,
-    build_pending_label_qss,
-    build_settings_dialog_qss,
-)
+from skin.qss import build_error_label_qss, build_settings_dialog_qss
 from skin.theme import SETTINGS_DIALOG
-from utils.config.models import AppConfigData, AppSchema
+from utils.config import AppConfigData, AppSchema
 
 from ..._bridge import gui_bridge
 from .._base import BaseDialog
 from ._change import ChangeConfirmDialog
 from ._chrome import ChromeBuilder
-from ._field import FieldBuilder
+from ._field import FieldBuilder, refresh_label
 
 __all__ = [
     # 工作模式
@@ -146,17 +141,7 @@ class SettingsDialog(BaseDialog):
         self._field_errors = dict(field_errors or {})
         bad = self._resolve_error_sections(self._schema)
         for key, (label, title) in self._fields.labels.items():
-            err = self._field_errors.get(key)
-            if err and err.startswith(ConfigMessage.PENDING_MARK):
-                label.setText(f"❔ {title}")
-                label.setStyleSheet(build_pending_label_qss())
-            elif err:
-                label.setText(title)
-                label.setStyleSheet(build_error_label_qss())
-            else:
-                label.setText(title)
-                label.setStyleSheet("")
-            label.setToolTip(err or "")
+            refresh_label(label, title, self._field_errors.get(key))
         self._chrome.set_error_marks(bad)
         self._fields.refresh_resets()
 

@@ -15,8 +15,8 @@ from exceptions import (
 )
 from skin.messages import ConfigMessage, MiscMessage
 from ui import gui_bridge
+from utils import get_logger
 from utils.error_guard import guard
-from utils.logger import get_logger
 
 P = ParamSpec("P")
 T = TypeVar("T")

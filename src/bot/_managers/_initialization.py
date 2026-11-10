@@ -13,12 +13,12 @@ from data import (
 )
 from skin.messages import DialogMessage
 from ui import gui_bridge
+from utils import register_lifecycle
 from utils.init_files import (
     PersonaSync,
     init_project_files,
     sync_persona_template,
 )
-from utils.lifecycle import register_lifecycle
 from utils.paths import DB_BACKUP_DIR, DB_FILE
 from utils.persona import applied_persona_text, load_persona_cache, read_persona_file
 

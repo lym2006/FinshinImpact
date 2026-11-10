@@ -1,4 +1,4 @@
-# src/utils/network/probe.py
+# src/utils/network/_probe.py
 """网络探测共享引擎
 
 - 候选通道规划与进度表行
