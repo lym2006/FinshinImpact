@@ -2,8 +2,7 @@
 """网络栈门面
 
 - 代发 HTTP 客户端、链路状态、系统代理与探测协议键符号
-- 底层实现分列 _client/_link/_proxy/probe，平台无关的校验编排在 utils.check
-- 引擎侧的会话类归 Telegram 适配层，本门面不引 aiogram
+- 底层实现分列子模块，与平台无关的校验编排在检查门面
 """
 
 from ._client import BaseClient

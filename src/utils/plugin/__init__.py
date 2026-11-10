@@ -2,7 +2,7 @@
 """插件工具门面
 
 - 代发清单读取与注册表的多消费方符号
-- 包名单数，与顶层随包插件容器 src/bundled 区分
+- 包名单数，与顶层随包插件容器区分
 """
 
 from ._manifest import enabled_manifests

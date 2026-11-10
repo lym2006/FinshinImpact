@@ -51,12 +51,11 @@ def _extract_embed(runtime: Path) -> None:
 
 
 def _enable_site(runtime: Path) -> None:
-    """放开嵌入式包的 site-packages
-
-    - 默认被注释锁死，uv 装不进第三方包
-    """
+    """放开嵌入式包的 site-packages"""
     pth = next(iter(runtime.glob("python*._pth")))
     text = pth.read_text()
+
+    # 默认那行被注释锁死，uv 装不进第三方包
     if "#import site" in text:
         pth.write_text(text.replace("#import site", "import site"))
 

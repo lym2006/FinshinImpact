@@ -30,7 +30,6 @@ __all__ = [
     "GUI_FORMATTER",
 ]
 
-# 在模块加载时，接管全局 Logger 类
 logging.setLoggerClass(BotLogger)
 
 
@@ -62,6 +61,6 @@ def get_logger(name: str = "") -> BotLogger:
         # 文件 Handler（简化版与详细版）
         bot_logger.addHandler(create_file_handler(_FORMATTER, BOT_LOG))
         bot_logger.addHandler(create_file_handler(_FORMATTER, DEBUG_LOG, logging.DEBUG))
-        _initialized = True  # 标记初始化完成
+        _initialized = True  # 此后走无锁快速路径
 
     return logger

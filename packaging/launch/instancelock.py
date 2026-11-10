@@ -7,7 +7,7 @@
 import ctypes
 from ctypes import wintypes
 
-# 与主程序 instance_lock 的引导锁是同一把，两处改名必须同步
+# 与主程序实例锁是同一把，两处改名必须同步
 # 实例锁名带身份码、启动器无从得知，故只探测引导锁防重复弹选择窗
 _BOOTSTRAP_MUTEX_NAME = "Local\\FinshinImpact-Bootstrap"
 _ERROR_ALREADY_EXISTS = 183

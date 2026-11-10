@@ -58,7 +58,7 @@ class TabSchema:
     - group 与 group_title 定左侧大类，同大类的页并在上排页签里
     """
 
-    title: str  # Tab 标题
+    title: str
     section: ConfigSection  # TOML 顶层键名
     group: ConfigGroup  # 左侧大类标识
     group_title: str  # 大类标题

@@ -115,7 +115,7 @@ class LoggingMiddleware:
     """访问日志中间件
 
     - 读归一化中间件写入的上下文，整组相册只点一次
-    - 不继承引擎基类，只按 handler、event、data 三参被调用
+    - 按 handler、event、data 三参被调用
     """
 
     def __init__(self) -> None:

@@ -1,7 +1,7 @@
 # src/utils/config/_schema.py
 """配置 Schema 组装
 
-- 按平台从 domain 段表组装 AppSchema
+- 按平台从接口包段表组装界面结构
 - 结构与默认取 domain，标题与说明查 messages
 """
 

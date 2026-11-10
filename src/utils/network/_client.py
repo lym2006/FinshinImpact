@@ -71,7 +71,7 @@ class BaseClient:
         proxy: str | None = None,
         timeout: float = _DEFAULT_TIMEOUT,
     ) -> AsyncGenerator[str, None]:
-        """通用的流式 POST 请求"""
+        """流式 POST 请求"""
         async with cls._create_client(
             base_url=base_url, headers=headers, proxy=proxy, timeout=timeout
         ) as client:

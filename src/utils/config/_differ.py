@@ -16,7 +16,7 @@ def compare_configs(
 ) -> tuple[AppConfigData, _LType]:
     """提取配置变更
 
-    - 遍历 Schema，逐字段精准比对
+    - 遍历结构表，逐字段比对
     """
     changes: AppConfigData = {}
     logs: _LType = []
