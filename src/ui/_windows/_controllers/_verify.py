@@ -13,13 +13,8 @@ from utils.config import AppConfigData
 from utils.network import RowId, RowStatus, verify_skeleton
 
 from ..._bridge import gui_bridge
-from ..._dialogs import (
-    CheckDialog,
-    Round,
-    current_check_window,
-    follow_above,
-    open_check_window,
-)
+from ..._dialogs import CheckDialog, Round, current_check_window, open_check_window
+from ..._primitives import follow_above
 
 if TYPE_CHECKING:
     from ._settings import SettingsController

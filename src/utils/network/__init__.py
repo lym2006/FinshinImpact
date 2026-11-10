@@ -17,6 +17,7 @@ from ._probe import (
     fault_row_of,
     plan_channels,
     probe_budget,
+    probe_skeleton,
     single_row_of,
     sys_deduped,
     uses_configured_proxy,
@@ -44,6 +45,7 @@ __all__ = [
     # 探测规划
     "plan_channels",
     "probe_budget",
+    "probe_skeleton",
     "single_row_of",
     "sys_deduped",
     "uses_configured_proxy",

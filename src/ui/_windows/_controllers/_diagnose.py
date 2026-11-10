@@ -16,7 +16,7 @@ from finshin_sdk.domain import ConfigKey, ConfigSection, ProxyMode
 from skin.messages import CheckMessage
 from system.profile_env import get_profile, read_token
 from utils import config_manager, get_logger
-from utils.network import FrameKey, RowId, RowStatus, fault_row_of, verify_skeleton
+from utils.network import FrameKey, RowId, RowStatus, fault_row_of, probe_skeleton
 
 from ..._bridge import gui_bridge
 from ..._dialogs import Round, current_check_window, open_check_window
@@ -134,7 +134,7 @@ class DiagnoseController(BaseController):
         self.logger.debug("打开网络诊断")
         self._red_key = fault_row_of(mode)
         win = open_check_window(self.gui)
-        win.begin_round(Round.DIAGNOSE, True, verify_skeleton(), self._on_round_closed)
+        win.begin_round(Round.DIAGNOSE, True, probe_skeleton(), self._on_round_closed)
         self._run(configured, token, mode, win)
 
     def _run(self, configured: str, token: str, mode: str, win: QWidget) -> None:

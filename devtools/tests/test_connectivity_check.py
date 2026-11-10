@@ -1031,23 +1031,24 @@ class TestFollowAbove(unittest.TestCase):
         """关系挂上、钩子挂上、当场浮一次"""
         from unittest.mock import MagicMock
 
-        from ui._dialogs._follow import follow_above
+        from ui._primitives._stack import follow_above
 
         top = MagicMock()
         owner = self._owner()
-        follow_above(top, owner)
+        with patch("ui._primitives._stack.bring_front") as lifted:
+            follow_above(top, owner)
 
         top.windowHandle().setTransientParent.assert_called_once_with(
             owner.windowHandle()
         )
         owner.installEventFilter.assert_called_once()
-        top.bring_front.assert_called_once_with(False, owner)
+        lifted.assert_called_once_with(top, False, owner)
 
     def test_repeat_call_installs_one_lift(self) -> None:
         """同一只被跟窗不叠第二层钩子"""
         from unittest.mock import MagicMock
 
-        from ui._dialogs._follow import follow_above
+        from ui._primitives._stack import follow_above
 
         owner = self._owner()
         follow_above(MagicMock(), owner)
@@ -1061,21 +1062,23 @@ class TestFollowAbove(unittest.TestCase):
 
         from PySide6.QtCore import QEvent, QObject
 
-        from ui._dialogs._follow import _LiftOnActivate
+        from ui._primitives._stack import _LiftOnActivate
 
         top = MagicMock()
         lift = _LiftOnActivate(top)
         watched = QObject()
+        lifted = patch("ui._primitives._stack.bring_front").start()
+        self.addCleanup(patch.stopall)
 
         def send(kind: QEvent.Type) -> bool:
             """给钩子喂一只真事件，返回它是否吞下"""
             return lift.eventFilter(watched, QEvent(kind))
 
         self.assertFalse(send(QEvent.Type.Paint))
-        top.bring_front.assert_not_called()
+        lifted.assert_not_called()
 
         self.assertFalse(send(QEvent.Type.WindowActivate))
-        top.bring_front.assert_called_once_with(False, watched)
+        lifted.assert_called_once_with(top, False, watched)
 
 
 class TestLiftYieldsToOtherModal(unittest.TestCase):
@@ -1089,17 +1092,14 @@ class TestLiftYieldsToOtherModal(unittest.TestCase):
         """按「当前模态窗」与「被跟窗」各喂一次上浮，返回被提的窗"""
         from unittest.mock import MagicMock
 
-        from ui._dialogs._check import CheckDialog
+        from ui._primitives._stack import bring_front
 
-        top = MagicMock(spec=CheckDialog)
+        top = MagicMock()
         top.isVisible.return_value = True
-        win = CheckDialog.bring_front.__get__(top, CheckDialog)
-        with patch.object(
-            sys.modules["ui._dialogs._check"].QApplication,
-            "activeModalWidget",
-            return_value=modal,
+        with patch(
+            "ui._primitives._stack.QApplication.activeModalWidget", return_value=modal
         ):
-            win(False, owner)
+            bring_front(top, False, owner)
         return top
 
     def test_owner_modal_still_lifts(self) -> None:
