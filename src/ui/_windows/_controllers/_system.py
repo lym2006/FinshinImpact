@@ -29,7 +29,3 @@ class LogsController(BaseController):
         except OSError as e:
             # 路径空格、权限不足、explorer 崩溃等系统级错误统一兜底
             self.logger.send_error(MiscMessage.OPEN_LOGS_FAIL, e)
-
-        except Exception as e:
-            # 防止任何未知异常导致 GUI 闪退
-            self.logger.send_error(MiscMessage.UNKNOWN_ERROR, e)

@@ -28,9 +28,12 @@ def gui_guard(func: Callable[P, T]) -> Callable[P, T]:
     """GUI 按钮事件安全装饰器
 
     - 拦截业务异常并记日志
+    - 日志点名是哪只控制器，按钮派发都叫同名，只写方法名分不开
     """
     return guard(
-        MiscMessage.GUARD_EXEC_ERROR.format(name=func.__name__),
+        lambda self, *_args: MiscMessage.GUARD_EXEC_ERROR.format(
+            name=f"{type(self).__name__}.{func.__name__}"
+        ),
         _report,
         catch_all=True,
     )(func)
