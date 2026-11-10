@@ -46,8 +46,11 @@ class _ConfigManager:
         self._config = deepcopy(config_data)
 
     def get_all(self) -> AppConfigData:
-        """获取全部配置"""
-        return self._config
+        """获取全部配置
+
+        - 交出副本，调用方就地改写不回渗到内存里那份
+        """
+        return deepcopy(self._config)
 
     def get(self, path: ConfigPath, expected_type: type[T]) -> T:
         """点路径读取并校验

@@ -206,17 +206,19 @@ def verify_plan(
     sys_dedup: bool = False,
     single: tuple[str, str, str] | None = None,
 ) -> list[dict]:
-    """生成校验首帧整表
+    """生成连通整表首帧
 
     - 待探测通道标进行中，缺席与免测的行按原因直接给出终态
     - 同端点去重时系统代理行标去重而非缺席
-    - 单路模式只留选定通道行，加本地与结论行
-    - 带本地校验结果时本地行随首帧先行显示
+    - 单路模式只留选定通道行，尾行按 local_frame 与结论行决定
+    - 没给本地校验结果就不出本地行，诊断那一轮走的就是这一档
     """
     kinds = {ch.kind for ch in channels}
     budgets = {ch.kind: probe_budget(ch.url) for ch in channels}
     rows: list[dict] = []
     for rid, title, absent_status, absent_detail in _VERIFY_ROWS:
+        if rid == RowId.LOCAL and local_frame is None:
+            continue
         if single is not None and rid not in (single[0], RowId.LOCAL, RowId.ADVICE):
             continue
         if rid in kinds:

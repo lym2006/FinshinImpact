@@ -22,9 +22,9 @@ from utils.network import (
 )
 from utils.network.probe import (
     plan_channels,
-    probe_budget,
     single_row_of,
     sys_deduped,
+    verify_plan,
 )
 
 from .probe import attempt_channel, preload_engine
@@ -32,63 +32,15 @@ from .probe import attempt_channel, preload_engine
 # 诊断跑在后台线程的私有 loop，计时句走此器落 debug
 _logger = get_logger("Mgr.Diagnose")
 
-# 固定骨架：id 与标题（界面与生成器共用，顺序即阶梯优先级），本地配置行只属校验轮
-_ROWS = (
-    (RowId.CFG, CheckMessage.ROW_CFG),
-    (RowId.SYS, CheckMessage.ROW_SYS),
-    (RowId.DIRECT, CheckMessage.ROW_DIRECT),
-    (RowId.ADVICE, CheckMessage.ROW_ADVICE),
-)
-
 
 def _never_stop() -> bool:
     """默认停止回调"""
-    # 永不中断
     return False
 
 
 def _never_emit(_frame_data: dict) -> None:
     """无回调占位"""
-    # 独立调用时静默消费帧
     return None
-
-
-def _diagnose_plan(
-    channels: Sequence[Channel],
-    sys_dedup: bool = False,
-    single: tuple[str, str, str] | None = None,
-) -> list[dict]:
-    """生成诊断首帧整表
-
-    - 待探测通道标进行中，缺席行直接给结论
-    - 同端点去重时系统代理行标去重而非缺席
-    - 单路模式只留选定通道行加结论行
-    """
-    present = {ch.kind for ch in channels}
-    budgets = {ch.kind: probe_budget(ch.url) for ch in channels}
-    absent = {
-        RowId.CFG: (RowStatus.FAIL, CheckMessage.CFG_EMPTY),
-        RowId.SYS: (RowStatus.FAIL, CheckMessage.SYS_UNAVAILABLE),
-    }
-    rows: list[dict] = []
-    for rid, title in _ROWS:
-        if single is not None and rid not in (single[0], RowId.ADVICE):
-            continue
-        if rid in present:
-            status, detail = RowStatus.CHECKING, ""
-        elif single is not None and rid == single[0]:
-            status, detail = RowStatus.FAIL, single[2]
-        elif rid == RowId.SYS and sys_dedup:
-            status, detail = RowStatus.SKIP, CheckMessage.SYS_DEDUP
-        elif rid in absent:
-            status, detail = absent[rid]
-        else:
-            status, detail = RowStatus.PENDING, ""
-        row = {"id": rid, "title": title, "status": status, "detail": detail}
-        if rid in budgets:
-            row["budget"] = str(int(budgets[rid]))
-        rows.append(row)
-    return rows
 
 
 def _opening(
@@ -103,8 +55,8 @@ def _opening(
     - 带头部文案时一并给出弹窗提示
     """
     frame: dict = {
-        FrameKey.ROWS: _diagnose_plan(
-            channels, sys_deduped(configured, detected), single
+        FrameKey.ROWS: verify_plan(
+            channels, sys_dedup=sys_deduped(configured, detected), single=single
         )
     }
     if head:

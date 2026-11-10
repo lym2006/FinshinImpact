@@ -207,6 +207,18 @@ class TestConfigManagerFallback(unittest.TestCase):
         first.append("mutated")
         self.assertEqual(manager._schema_default("ai.tags"), ["a"])
 
+    def test_get_all_isolated(self) -> None:
+        """整表读出与内存配置隔离
+
+        - 就地改写交出去的那份不回渗内存
+        """
+
+        manager = self._manager()
+        manager.load({"ai": {"temperature": 0.5}})
+        snapshot = manager.get_all()
+        snapshot["ai"]["temperature"] = 9.9
+        self.assertEqual(manager.get("ai.temperature", float), 0.5)
+
 
 class TestLocalRow(unittest.TestCase):
     """回归点
