@@ -77,7 +77,7 @@ class ResetRegistry:
         btn = make_button(SETTINGS_DIALOG.reset_icon, ButtonStyle.RESET)
         btn.setToolTip(SETTINGS_DIALOG.reset_text)
 
-        # 恢复只回填控件：落盘仍走正常保存链路，diff 窗就是唯一确认点
+        # 恢复只回填控件：落盘仍走正常保存链路，确认环节由 diff 窗把
         btn.clicked.connect(lambda: self.reset(field_key, restore_target))
         h_layout.addWidget(btn)
         return row, btn

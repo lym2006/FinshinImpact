@@ -44,7 +44,7 @@ def create_gui(
     botgui.set_logger_handler()
     LinkWatcher(botgui).start()
 
-    # 将实例列表转换为以 BTN_KEY 为键的字典，方便 Main 查找
+    # 将实例列表转换为以 BTN_KEY 为键的字典，方便装配上层查找
     instance_map = {inst.BTN_KEY: inst for inst in instances}
 
     return botgui, instance_map

@@ -22,7 +22,7 @@ _MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
 
 
 class WaitDialog(BaseDialog):
-    """转圈等待后展示结果并确认"""
+    """等待与结果确认弹窗"""
 
     def __init__(
         self, text: str, parent: QWidget | None = None, cancelable: bool = False

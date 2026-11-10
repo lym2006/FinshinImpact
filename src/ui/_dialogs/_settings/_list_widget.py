@@ -40,17 +40,15 @@ class _ConfigListWidget(QWidget):
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(*[SETTINGS_DIALOG.margin] * _MARGIN_EDGES)
         main_layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
-        self.list_widget = ThemedList()  # 列表区域
+        self.list_widget = ThemedList()
         self.list_widget.setObjectName(ObjectName.LIST_WIDGET)
 
         # 框高定死在约八行，超出走滚动条，条数少也不塌成一条缝
         self.list_widget.setFixedHeight(LIST_DIALOG.height)
         self._populate_items()
 
-        # 连接双击编辑信号
         self.list_widget.doubleClicked.connect(self._on_double_clicked)
 
-        # 底部工具栏 (按钮)
         main_layout.addWidget(self.list_widget)
         main_layout.addWidget(self._build_bottom_bar())
 
@@ -71,7 +69,6 @@ class _ConfigListWidget(QWidget):
         btn_add = make_button(ConfigMessage.LIST_ADD_TEXT, ButtonStyle.LIST_ADD)
         btn_del = make_button(ConfigMessage.LIST_DEL_TEXT, ButtonStyle.LIST_DEL)
 
-        # 绑定逻辑
         btn_add.clicked.connect(self.add_item)
         btn_del.clicked.connect(self.remove_selected)
         layout.addWidget(btn_add)

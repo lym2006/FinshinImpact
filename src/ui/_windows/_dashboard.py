@@ -30,7 +30,6 @@ class TextHandler(logging.Handler):
         super().__init__()
         self._widget = widget
 
-        # 创建信号桥接器并连接到 UI 更新方法
         self._signal = _LogSignal()
         self._signal.log_received.connect(self._append_text)
 
@@ -66,10 +65,9 @@ class DashboardWidget(QTextEdit):
     def __init__(self, fonts: FontTheme, parent: QWidget | None = None) -> None:
         super().__init__(parent)
 
-        self.setReadOnly(True)  # 基础属性设置
+        self.setReadOnly(True)
         self.setObjectName(ObjectName.DASHBOARD)
 
-        # 加载字体
         font = load_font(fonts.font_path, fonts.font_size)
         _ = self.setFont(font)
 

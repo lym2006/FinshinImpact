@@ -1,7 +1,7 @@
 # src/ui/_windows/_controllers/_dashboard.py
 """仪表盘控制器
 
-- 日志清空与退出按钮逻辑
+- 清空仪表盘内容
 """
 
 from ._base import BaseController

@@ -48,7 +48,7 @@ class ConfigMode(IntEnum):
 class SettingsDialog(BaseDialog):
     """配置面板弹窗
 
-    - 表单渲染与骨架装配委托 FieldBuilder 和 ChromeBuilder
+    - 表单渲染与骨架装配各委托一只构建器
     """
 
     # SETUP 模式请求保存：由控制器校验并决定是否关窗，窗口自身不 accept

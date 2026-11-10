@@ -109,7 +109,7 @@ class PersonaResolveDialog(BaseDialog):
 
         - 右栏是改动的那份，吃主按钮档并拿默认焦点
         - 左栏走次要档，与右栏并列但不抢默认档
-        - 正文由 _repaint 填，折叠与展开两态共用一条路径
+        - 正文按折叠态重画填入，折叠与展开两态共用一条路径
         """
         columns = QHBoxLayout()
         columns.setSpacing(SETTINGS_DIALOG.tab_spacing)

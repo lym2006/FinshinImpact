@@ -1,8 +1,8 @@
 # src/ui/_primitives/_factory.py
 """控件构造工厂
 
-- make_button 按样式名建按钮
-- make_combo 按取值与文本灌下拉
+- 按样式名建按钮
+- 按取值与文本灌下拉
 """
 
 from collections.abc import Iterable

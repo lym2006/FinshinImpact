@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 class VerifyCoordinator:
     """校验轮协调器
 
-    - 与 SettingsController 一对一绑定，读取其面板与就绪缓存
+    - 与配置控制器一对一绑定，读取其面板与就绪缓存
     - 面板重建后重新设置从属浮窗关系
     """
 
