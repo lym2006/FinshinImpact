@@ -2,7 +2,7 @@
 """引导期基础设施
 
 - 实例身份码的环境变量名与净化规则
-- 定位项目根目录，作引导窗口与 utils 的路径单一来源
+- 定位项目根目录
 """
 
 import json
@@ -47,7 +47,7 @@ def _find_root() -> Path:
     return current.parent
 
 
-# 路径单源，引导层与 utils 共用
+# 路径单源，引导层与各消费层共用
 ROOT_DIR = _find_root()
 INSTANCES_DIR = ROOT_DIR / "instances"
 ASSETS_DIR = ROOT_DIR / "assets"

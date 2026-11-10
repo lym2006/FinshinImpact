@@ -2,7 +2,6 @@
 """引导期视觉令牌
 
 - 选窗、表单窗、插件面板、进度窗共用一套尺寸与间距
-- 颜色取自调色板，本层只定义尺寸
 """
 
 from dataclasses import dataclass

@@ -14,13 +14,14 @@ from pathlib import Path
 def write_text_atomic(target: Path, text: str) -> None:
     """原子写入文本
 
-    - 临时件与目标同目录，改名不跨卷
-    - 落盘先 fsync 再改名，断电不留半截
+    - 临时件与目标同目录
+    - 落盘先 fsync 再改名
     - 写不进抛 OSError，由调用方决定提示或降级
     """
     directory = target.parent
     directory.mkdir(parents=True, exist_ok=True)
 
+    # 改名不跨卷才叫原子，临时件必须与目标同目录
     fd, temp_name = tempfile.mkstemp(
         dir=directory, prefix=f".{target.name}.", suffix=".tmp"
     )
@@ -28,6 +29,8 @@ def write_text_atomic(target: Path, text: str) -> None:
         with os.fdopen(fd, "w", encoding="utf-8") as handle:
             handle.write(text)
             handle.flush()
+
+            # 先落到盘再改名，断电也不留半截
             os.fsync(handle.fileno())
         os.replace(temp_name, target)
     except OSError:
@@ -43,6 +46,7 @@ def write_bytes_atomic(target: Path, data: bytes) -> None:
     directory = target.parent
     directory.mkdir(parents=True, exist_ok=True)
 
+    # 改名不跨卷才叫原子，临时件必须与目标同目录
     fd, temp_name = tempfile.mkstemp(
         dir=directory, prefix=f".{target.name}.", suffix=".tmp"
     )
@@ -50,6 +54,8 @@ def write_bytes_atomic(target: Path, data: bytes) -> None:
         with os.fdopen(fd, "wb") as handle:
             handle.write(data)
             handle.flush()
+
+            # 先落到盘再改名，断电也不留半截
             os.fsync(handle.fileno())
         os.replace(temp_name, target)
     except OSError:

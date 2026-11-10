@@ -1,7 +1,7 @@
 # src/skin/qss/_base.py
 """QSS 基础件
 
-- 定义 Qss 串类型与各弹窗共用的通用片段
+- Qss 串类型与各弹窗共用的通用片段
 - 装配公共弹窗三件并追加各面专属尾巴
 """
 
@@ -19,7 +19,7 @@ from ..theme import (
     ObjectName,
 )
 
-# 装配完成的 QSS 串，各 build_*_qss 的出口类型
+# 装配完成的 QSS 串，各弹窗成品串的出口类型
 Qss = NewType("Qss", str)
 
 # 弹窗基本样式
