@@ -26,7 +26,7 @@ class ChatScope(StrEnum):
     UNKNOWN = "unknown"
 
 
-# 身份码分隔符，平台前缀与账号 id 的唯一分界，与键段同用点号
+# 身份码分隔符，平台前缀与账号 id 的分界，与键段同用点号
 _PROFILE_CODE_SEP = "."
 
 
@@ -41,9 +41,9 @@ def make_profile_code(platform: Platform, account_id: str) -> str:
 def platform_of_profile(code: str) -> Platform | None:
     """从身份码解析平台
 
-    - partition 恒返三段，无分隔符时首段即整串，不越界
     - 前缀不是已知平台返回 None，回落策略由调用方决定
     """
+    # partition 恒返三段，无分隔符时首段即整串，不越界
     prefix = code.partition(_PROFILE_CODE_SEP)[0]
     try:
         return Platform(prefix)

@@ -1,8 +1,8 @@
 # src/finshin_sdk/domain/_command.py
 """命令值对象
 
-- 定义跨平台归一的命令 flag 词表
-- 定义分步输入的保留串词表
+- 跨平台归一的命令 flag 词表
+- 分步输入的保留串词表
 - 按清单声明的带值开关把命令片段绑成开关与参数
 """
 
@@ -37,8 +37,8 @@ class StepInput(StrEnum):
 class BoundCommand:
     """绑定后的命令输入
 
-    - flags 每项是「开关 值」，不带值的开关值为空串
-    - args 是没被开关认领的片段，顺序原样保留
+    - 开关项每项是「开关 值」，不带值的开关值为空串
+    - 参数项是没被开关认领的片段，顺序原样保留
     """
 
     flags: tuple[tuple[str, str], ...] = ()
@@ -58,7 +58,7 @@ def bind_command(pieces: tuple[str, ...], value_flags: frozenset[str]) -> BoundC
 
     - 名单内的开关吃掉紧跟其后的一段作为值
     - 开关后面紧跟开关即判缺值，值为空串
-    - 名单外的开关算不带值，其余片段按原顺序落 args
+    - 名单外的开关算不带值，其余片段按原顺序落参数项
     """
     flags: list[tuple[str, str]] = []
     args: list[str] = []

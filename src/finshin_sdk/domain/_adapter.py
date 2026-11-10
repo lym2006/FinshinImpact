@@ -7,7 +7,7 @@
 from dataclasses import dataclass
 from enum import StrEnum
 
-# 适配器树顶层包名，find_spec 与动态导入路径共用同值
+# 适配器树顶层包名，包存在性扫描与动态导入路径共用同值
 ADAPTERS_PKG = "adapters"
 
 # 清单文件名，位于各适配器目录

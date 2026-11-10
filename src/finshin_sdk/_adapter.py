@@ -32,8 +32,8 @@ class InteractionPort(ABC):
     ) -> MsgReferenceDTO | None:
         """发送消息
 
-        - reply_ref 非空时引用该消息
-        - mention 为真时提及目标主体
+        - 引用锚非空时引用该消息
+        - 提及位为真时提及目标主体
         """
 
     @abstractmethod
@@ -72,7 +72,7 @@ class BaseAdapter(ABC):
     @property
     @abstractmethod
     def router_builder(self) -> RouterBuilder:
-        """把路由清单编译成本平台路由的那只手"""
+        """把路由清单编译成本平台路由"""
 
     @abstractmethod
     def attach_middleware(self, middleware: Any) -> None:

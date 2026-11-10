@@ -1,11 +1,11 @@
 # src/finshin_sdk/domain/_plugin.py
 """插件对象
 
-- 定义插件加载优先级、相关文件、清单键名与对象记号的词表
-- 定义插件清单标量字段的类型、必填与默认
-- 定义路由清单、常驻协程、任务处理与时机订阅的签名
-- 定义平台侧的路由挂载口
-- 定义插件之间抢命令名的判定
+- 插件加载优先级、相关文件、清单键名与对象记号的词表
+- 插件清单标量字段的类型、必填与默认
+- 路由清单、常驻协程、任务处理与时机订阅的签名
+- 平台侧的路由挂载口
+- 插件之间抢命令名的判定
 """
 
 from collections.abc import Awaitable, Callable, Coroutine, Sequence
@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from enum import IntEnum, StrEnum, auto
 from typing import Any, Protocol
 
-PLUGINS_PKG = "bundled"  # 插件树顶层包名，find_spec 与动态导入路径共用同值
+PLUGINS_PKG = "bundled"  # 插件树顶层包名，包存在性扫描与动态导入路径共用同值
 INSTALLED_PLUGINS_NAME = "plugins_installed"  # 项目根下的外部插件目录，目录名即顶层包名
 
 # 插件声明的无参常驻协程，随 Bot 服务起停
@@ -77,7 +77,7 @@ class MessageRoute:
 class MomentSubscription:
     """一条时机订阅
 
-    - moment 决定什么时候轮到，run 收平台交代的那一份能力
+    - 时机决定什么时候轮到，处理函数收平台交代的那一份能力
     - 同一时机交多条即按交出的顺序跑
     """
 
@@ -139,7 +139,7 @@ def is_enabled(name: str, enabled: frozenset[str] | None) -> bool:
     """判定插件本次在场
 
     - 随包表里的插件恒在场
-    - enabled 为 None 表示实例从未保存过选择，表外插件一律不在场
+    - 启用集为 None 表示实例从未保存过选择，表外插件一律不在场
     """
     return name in BUNDLED_PLUGIN_PRIORITY or (enabled is not None and name in enabled)
 
@@ -148,7 +148,7 @@ def is_enabled(name: str, enabled: frozenset[str] | None) -> bool:
 class PluginClaim:
     """命令名抢占判定的一条插件记录
 
-    - commands 是本插件清单声明的命令名，没声明即空
+    - 命令名项是本插件清单声明的，没声明即空
     """
 
     name: str
@@ -170,7 +170,7 @@ def resolve_claims(
     """解开插件之间的命令名抢占
 
     - 回 (放行的插件名, 按插件名交出被抢走的命令名)，装载与面板共用这一份
-    - 只有在场的插件拿走命令名，在场与否由 is_enabled 定
+    - 只有在场的插件拿走命令名，在场即随包表内或落在启用集
     - 一个命令名只有一只在场时它拿走，多只在场时随包件拿走
     - 同一命令名多只表外插件同时在场即整组作废，本次一起禁用且不记冲突
     - 不在场但命令名被拿走的照记冲突，面板据此禁掉勾选

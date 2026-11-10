@@ -80,8 +80,8 @@ class ProxyMode(StrEnum):
 class FieldSpec:
     """单个配置项的结构定义
 
-    - options 非空即枚举字段，取值为合法值元组
-    - bounds 为闭区间，仅 float 字段生效
+    - 选项元组非空即枚举字段，取值为合法值元组
+    - 上下界为闭区间，仅 float 字段生效
     """
 
     section: ConfigSection
@@ -102,8 +102,8 @@ class FieldSpec:
 class SectionSpec:
     """一个配置段的结构定义
 
-    - fields 顺序即面板该页字段顺序
-    - group 即面板左侧大标签
+    - 字段元组顺序即面板该页字段顺序
+    - 所属大类即面板左侧大标签
     """
 
     section: ConfigSection

@@ -11,8 +11,8 @@ from .ids import ChatId, ContainerKey, UserId
 def make_container(scope: ChatScope, chat_id: ChatId, user_id: UserId) -> ContainerKey:
     """归一容器段
 
-    - 群聊 g 前缀加 chat_id 绝对值
-    - 私聊 u 前缀加 user_id
+    - 群聊 g 前缀加聊天号绝对值
+    - 私聊 u 前缀加用户号
     """
     match scope:
         case ChatScope.GROUP:
