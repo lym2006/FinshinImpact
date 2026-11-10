@@ -70,7 +70,7 @@ def _build_menu_data() -> list[_MenuRow]:
     """聚合帮助菜单数据源
 
     - 插件段按启用序列拼接，与路由注册同序
-    - 空 section 或 note 省略对应行
+    - 段名或说明为空时省略对应行
     - 命令行带上清单原条目
     - 每个有内容的插件块之前插一行空行
     """
@@ -190,7 +190,7 @@ def _usage_lines(spec: HelpCommandDTO) -> str:
 
     - -h 全命令默认支持，清单 flag 追加其后
     - 开关说明只进帮助图，这两行只列名字与值名
-    - 清单没登记 args 就不出参数行
+    - 清单没登记位置参数就不出参数行
     """
     switches = [CommandFlag.HELP, *(_flag_label(flag) for flag in spec.flags)]
     lines = [BotMessage.CMD_USAGE_FLAGS.format(flags="、".join(switches))]
@@ -218,14 +218,12 @@ def prewarm() -> None:
 
 
 def generate_image() -> Path:
-    """获取帮助菜单图片
-
-    - 双重检查加锁，保证只绘制一次
-    """
+    """获取帮助菜单图片"""
     digest = _menu_digest()
     if _cache_hit(digest):
         return _SAVE_PATH
     with _RENDER_LOCK:
+        # 锁内再判一次，防两个线程都从没命中挤进来重复画图
         if _cache_hit(digest):
             return _SAVE_PATH
         return _render_menu(digest)
@@ -234,7 +232,7 @@ def generate_image() -> Path:
 def _render_menu(digest: str) -> Path:
     """按菜单行序出图并写指纹文件
 
-    - 仅缓存未命中时调用，画图那段在 `_render.py`
+    - 仅缓存未命中时调用
     - 图与指纹成对落盘，缺一即判缓存未命中
     """
     draw_menu(_menu_cells(), _HELP, _FONT_PATH, _SAVE_PATH)

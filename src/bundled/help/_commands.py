@@ -60,7 +60,7 @@ def _is_stray(command: CommandDTO) -> bool:
     - 不带 -h 时只认一个开关，带 -h 时可再带一个
     - 清单没登记的开关名与重复的开关都算多余
     - 清单写了值名的开关没绑到值算多余
-    - 位置参数最多一个，且只认清单登记过 args 的命令
+    - 位置参数最多一个，且只认清单登记过位置参数的命令
     """
     entry = command_specs.get(command.head)
     declared = entry.flags if entry is not None else ()
@@ -86,7 +86,7 @@ async def _is_illegal_command(ctx: HandlerContext) -> bool:
 
     - 私聊里形态非法、菜单外命令名与清单没认的输入都回执
     - 群聊与频道只接菜单内命令的多余输入，命令侧拿不到
-    - 回执发给谁、发什么归 _reject_command
+    - 回执发给谁与发什么由拒绝那条路由决定
     """
     command = ctx.event.command
     listed = command.matched and command.head in help_list
@@ -101,7 +101,7 @@ async def _is_single_help(ctx: HandlerContext) -> bool:
     """判定单命令帮助请求
 
     - 命中菜单内命令名且片段里有 -h
-    - 清单没认的输入不接管，群聊里连同回执一并静默
+    - 清单没认的输入不接管
     """
     command = ctx.event.command
     listed = command.matched and command.head in help_list
@@ -149,7 +149,7 @@ async def _show_single_help(platform_raw: object, ctx: HandlerContext) -> None:
 async def _show_menu(platform_raw: object, ctx: HandlerContext) -> None:
     """以图片形式发送帮助菜单
 
-    - 取图与上传分开计时，慢在哪一段一眼看得见
+    - 取图与上传分开计时
     """
     started = time.perf_counter()
 

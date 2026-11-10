@@ -2,7 +2,6 @@
 """帮助图绘制
 
 - 只负责画图与落盘，菜单数据与缓存判定留在服务层
-- 落盘转索引色，白底黑字的图体积砍到三分之一，观感不变
 """
 
 from pathlib import Path
@@ -14,14 +13,14 @@ class HelpRenderConfig:
     """帮助菜单图片渲染配置"""
 
     font_size: int = 30
-    line_spacing: int = 18  # 行间距
-    padding: int = 15  # 画布边距
+    line_spacing: int = 18
+    padding: int = 15
     column_gap: int = 60  # 左列与说明列的像素间距
     flag_indent: int = 4  # 开关行缩进字符数
-    color_mode: str = "RGB"  # 画布色彩模式
+    color_mode: str = "RGB"
     palette_colors: int = 64  # 落盘转索引色后的调色板色数
-    bg_color: str = "#FFFFFF"  # 背景色
-    text_color: str = "#000000"  # 文字颜色
+    bg_color: str = "#FFFFFF"
+    text_color: str = "#000000"
 
 
 def draw_menu(

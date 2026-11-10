@@ -2,7 +2,7 @@
 """配置控制器
 
 - 向导调度、二次确认与热重载
-- 面板全程非模态：EDIT/SETUP 同实例原地切换
+- 面板与业务弹窗同为窗口模态：EDIT/SETUP 同实例原地切换
 - 重启等待窗原地换成结果，一路只出这一只窗
 - 保存与落盘交 SaveCoordinator，校验轮交 VerifyCoordinator 协调
 """
@@ -181,7 +181,7 @@ class SettingsController(BaseController):
 
     def _show_dialog(self) -> None:
         """打开配置弹窗"""
-        # EDIT/SETUP 统一非模态 show，可拖动看日志
+        # 用 show 打开，不靠 exec 挡调用方，模态范围仍照基类那一份
         if self._is_dialog_open:
             # 面板已在前台时再点按钮应聚焦它而不是无响应
             if self._panel is not None:

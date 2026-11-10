@@ -75,19 +75,19 @@ class _DynamicAIConfig:
 
     @property
     def lost_lines(self) -> tuple[str, ...]:
-        """停机交代话术，空行滤掉"""
+        """停机交代话术"""
         lines = self._read(ConfigKey.LOST_LINES.path(ConfigSection.CHORE), list)
         return tuple(line for line in lines if line.strip())
 
     @property
     def keep_seconds(self) -> float:
-        """记录保留时长，配置按天填"""
+        """记录保留时长"""
         days = self._read(ConfigKey.RECORD_KEEP.path(ConfigSection.DATA), float)
         return days * _DAY_SECONDS
 
     @property
     def waiting_time(self) -> float:
-        """清理轮间隔，配置按小时填"""
+        """清理轮间隔"""
         hours = self._read(ConfigKey.WAITING.path(ConfigSection.DATA), float)
         return hours * _HOUR_SECONDS
 

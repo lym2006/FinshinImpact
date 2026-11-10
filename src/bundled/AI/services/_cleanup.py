@@ -29,14 +29,17 @@ _wakeup = asyncio.Event()
 
 
 async def _sleep_or_wake(seconds: float) -> None:
-    """睡到点，或被配置生效提前叫醒"""
+    """睡等清理间隔
+
+    - 配置生效那一叫即提前醒
+    """
     _wakeup.clear()
     with contextlib.suppress(TimeoutError):
         await asyncio.wait_for(_wakeup.wait(), timeout=seconds)
 
 
 async def wake_cleanup(*_args: object) -> None:
-    """叫醒清理循环，配置生效时机被召唤"""
+    """叫醒清理循环"""
     _wakeup.set()
 
 

@@ -73,7 +73,6 @@ async def _handle_ai_message(
 
     try:
         async for delta in AIClient.stream_chat(msg, usage):
-            # 处理正文内容
             if (content := delta.get("content")) is not None:
                 if content.startswith("\n\n"):
                     content = content[2:]

@@ -83,11 +83,11 @@ class TelegramInteractionPort(InteractionPort):
     async def probe_existence(self, target: MsgReferenceDTO) -> bool:
         """探测消息是否仍存在
 
-        - 靠 dummy edit 的错误串区分已删除与无权编辑
-        - 目标是用户消息，bot 无权编辑他人消息，不会真改动内容
+        - 靠改写文本报出的错误串区分已删除与无权编辑
         - 禁止用于探测 bot 自己发的消息，文本会被真改成占位串
         """
         try:
+            # 被探测的是用户消息，bot 无权编辑他人消息，改不动也不会真改动
             await self._bot.edit_message_text(
                 chat_id=_chat_id_of(target.container),
                 message_id=int(target.message_id),
@@ -112,7 +112,10 @@ class TelegramInteractionPort(InteractionPort):
         mention: bool,
         reply_ref: MsgReferenceDTO | None,
     ) -> MsgReferenceDTO | None:
-        """发送文字，超长分段"""
+        """发送文字
+
+        - 超长按分段阈值切片
+        """
         body = f"{self.mention_fragment(principal)} {text}" if mention else text
         chunks = _split_chunks(body)
         sent: Message | None = None
@@ -137,8 +140,9 @@ class TelegramInteractionPort(InteractionPort):
         *,
         reply_ref: MsgReferenceDTO | None,
     ) -> MsgReferenceDTO | None:
-        """发送媒体，形态被拒即回退文件
+        """发送媒体
 
+        - 形态被拒即改按文件发
         - file_name 缺省取路径末段
         - 引用原消息已删属目标失效，不换形态重发
         """
@@ -221,7 +225,7 @@ class TelegramInteractionPort(InteractionPort):
     async def _invoke(
         self, awaitable: Awaitable[Message], reply_ref: MsgReferenceDTO | None
     ) -> Message:
-        """执行发送并翻译已删除错误
+        """执行一次发送
 
         - 无引用目标时原样上抛，平台错误串与删除无关
         """
