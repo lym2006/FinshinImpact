@@ -23,6 +23,9 @@ from system.profile_env import get_profile, set_profile
 # 主程序 GUI 装配链，分步导入时逐模块各泵一轮
 _GUI_MODULES = ("ui._windows", "ui._bridge")
 
+# 预热段的失败没 logger 可落（logger 挂在主程序之后），先攒着交出去
+_WARM_FAULTS: list[str] = []
+
 # utils 后台导入落位后放行主线程续导 GUI 链
 _UTILS_READY = threading.Event()
 
@@ -149,8 +152,8 @@ def _preload_engine_worker() -> None:
     """
     try:
         importlib.import_module("utils")
-    except Exception:  # noqa: BLE001  预热失败交主线程兜底重导
-        pass
+    except Exception as e:  # noqa: BLE001  预热失败交主线程兜底重导
+        _WARM_FAULTS.append(f"工具层预热未成：{describe(e)}")
     finally:
         _UTILS_READY.set()
     try:
@@ -160,10 +163,12 @@ def _preload_engine_worker() -> None:
             try:
                 entry = importlib.import_module(manifest.entry)
                 entry.parts().engine_preload()
-            except Exception:  # noqa: BLE001  单份缺件交主线程兜底重导
-                pass
-    except Exception:  # noqa: BLE001  预热失败交主线程兜底重导
-        pass
+            except Exception as e:  # noqa: BLE001  单份缺件交主线程兜底重导
+                _WARM_FAULTS.append(
+                    f"平台 {manifest.platform} 的适配器预热未成：{describe(e)}"
+                )
+    except Exception as e:  # noqa: BLE001  预热失败交主线程兜底重导
+        _WARM_FAULTS.append(f"适配器清单读取未成：{describe(e)}")
 
 
 def _wait_preload(thread: threading.Thread) -> None:
@@ -247,11 +252,17 @@ def _guide() -> int:
         dismiss_wait()
         start_warmup()
 
-    preload = _pump_imports()
-    _wait_preload(preload)
-    from bot import Main
-
     try:
-        return Main(on_ready=on_ready, close_wait=dismiss_wait, t0=t0).main()
+        # 导入段也落在收口之内：这里炸了卡片得先收掉再报人
+        preload = _pump_imports()
+        _wait_preload(preload)
+        from bot import Main
+
+        return Main(
+            on_ready=on_ready,
+            close_wait=dismiss_wait,
+            t0=t0,
+            warm_faults=tuple(_WARM_FAULTS),
+        ).main()
     finally:
         wait.close()
