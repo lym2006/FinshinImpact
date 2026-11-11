@@ -91,7 +91,7 @@
 - 🚀 **发布工作流与打包**：[`docs/release-workflow.md`](docs/release-workflow.md)、[`docs/packaging.md`](docs/packaging.md)，commit 模板 [`.gitmessage`](.gitmessage)
 - 📚 **工程经验**（实测踩坑与验证方法）：[`docs/lessons/README.md`](docs/lessons/README.md)
 - 🧩 **插件清单模板**：[`assets/plugin.example.toml`](assets/plugin.example.toml)，配置字段表单源在 [`src/finshin_sdk/domain/config/`](src/finshin_sdk/domain/config/)
-- 📦 **接口包**：本体与插件、适配器共用的形状都在 [`src/finshin_sdk/`](src/finshin_sdk/)，只写插件或适配器不必 clone 主仓源码，先打这只包再装：`uv build src/finshin_sdk --wheel`
+- 📦 **接口包**：本体与插件、适配器共用的形状都在 [`src/finshin_sdk/`](src/finshin_sdk/)，包零第三方依赖、能单独打出 wheel（`uv build src/finshin_sdk --wheel`），目前仍随主仓构建，独立发布渠道等适配器拆仓之后
 
 [⤴️ 返回目录](#menu)
 
@@ -100,13 +100,9 @@
 ## ⬆️ 旧版迁移<a id="previous"></a>
 
 - **v1.0.0-alpha.7.dev4**：
-  - 外部插件写法：入口改成 `__init__.py` 里的一只 `BasePlugin` 子类，一只模块只准有一只。挂在模块里的 `spec` 那套不再读取，`plugin.toml` 不用改。
-  - 外部插件只准引 `finshin_sdk`：引到本体各层（`utils`、`core`、`services` 一类）的整只拒装，面板写明哪份文件哪一行。
-  - 交出的东西换了名字：`PluginRoute` 叫 `MessageRoute`、`PluginBackground` 叫 `BackgroundLoop`、`TaskHandler` 叫 `QueuedAction`。
-  - 时机订阅那几样归到 moment 词根：`PlatformTiming` 叫 `PlatformMoment`、`PluginTiming` 叫 `MomentSubscription`、`PluginTimingRun` 叫 `MomentRun`。
-  - 只写插件或适配器不必 clone 主仓源码：先打接口包再装，`uv build src/finshin_sdk --wheel`。
-  - 启动失败当场弹窗：平台适配器没装、要的接口版本比本机新、引导段炸掉，都会弹一句人话，不再只是启动卡消失。
-  - 库与记录：结构没动，不用搬。
+  - 自己写过插件或适配器的人才要动：入口改成 `__init__.py` 里的一只 `BasePlugin` 子类，要引的东西一律从 `finshin_sdk` 取，动作名写成「插件名.动作」。逐项改法见 `docs/development.md` 的「从 dev3 及更早的写法改过来」。
+  - 只用发布包的：什么都不用改，`plugin.toml` 与库、记录结构都没动。
+  - 启动失败现在当场弹一句人话（平台没装、要的接口版本比本机新、引导段炸掉），不再只留一张走表的启动卡。
 - **v1.0.0-alpha.7.dev2**：
   - 依赖清理：启动时不再弹"同步重建环境"，多余包留在盘上，要清就去选窗"依赖管理"手动同步。
   - 外部插件：插件目录放进项目根的 `plugins_installed\` 即被认出来，与内置重名的那份不放行。
