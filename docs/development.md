@@ -91,6 +91,17 @@
    - 一只插件交出的是整套路由，摘不掉单独一条命令，所以一被抢走即整只不装载。
 4. 勾选与取消当场重算，撞车的另一只立刻换成按钮，不用重启也不用再保存。
 
+## 从 dev3 及更早的写法改过来
+
+1. 入口写法：模块属性 `spec` 那套不再读取，改在 `__init__.py` 里写一只 `BasePlugin` 子类，一只模块只准有一只。`plugin.toml` 不用改。
+2. 导入行：领域词表、归一数据快照与处理上下文从 `core` 整只搬进 `finshin_sdk`。原来写 `from core.domain import ...`、`from core.dto import ...` 的行改从 `finshin_sdk` 取，`CapabilityCall` 同住接口包。
+3. 交出的东西改名：`PluginRoute` → `MessageRoute`、`PluginPredicate` → `RouteMatcher`、`PluginBackground` → `BackgroundLoop`、`TaskHandler` → `QueuedAction`、`timings` → `platform_moments`。
+   - 时机三样一并归到 moment 词根：`PlatformTiming` → `PlatformMoment`、`PluginTiming` → `MomentSubscription`、`PluginTimingRun` → `MomentRun`。
+   - `PluginSpec` 那只袋子删了。
+4. 动作名带归属：`queued_actions` 交的动作名写成「插件名.动作」，前段不等于自己的插件名整只拒装。内置对话的动作名由 `chat` 改成 `AI.chat`。
+5. 接口包撤掉四处没人用的形状：`ContentDTO` 的 `file_token` 与 `origin_ref`、`AdapterFieldSpec.default`、`BoundCommand.value_of`、`PrincipalRepository.find_by_key`。用到哪一处改哪一处，没用到不必动。
+6. 清单可声明接口版本：`adapter.toml` 新增 `requires_sdk` 一行，没写即不设限。要的比本机新会拒在装载之前，弹窗与日志各落一句。
+
 ## 新增平台适配器
 
 1. 建目录 `src/adapters/<平台>/`，目录内交一份 `adapter.toml`，写平台标识，用到第三方库再写 `deps`。
@@ -101,7 +112,7 @@
 2. 要实现的两份抽象接口在 `finshin_sdk`，那一只包不含任何第三方库。
    - 本体不直接引适配器，适配器经这一包取要实现的两份接口，除适配层外全仓不许 import aiogram。
    - 这一包能单独装：打包配置在 `src/finshin_sdk/pyproject.toml`，构建 wheel 跑 `uv build src/finshin_sdk --wheel`，版本号的单源是它 `__init__.py` 里的 `SDK_VERSION`。
-   - 只写插件的人也装这一只，装完不必 clone 主仓源码。
+   - 只写插件或适配器的人要的那几样都在这只包里，它零第三方依赖、能单独打 wheel。包目前仍随主仓构建，独立发布渠道等适配器拆仓之后再补。
 3. 入口模块交出运行时装配、探测、引擎预热与诊断四件，运行时实例交出交互端口、插件路由挂载口与路由清单编译器。
    - 挂日志中间件与按启用序列注册插件由装载侧完成，适配器不参与那两步。
 
