@@ -55,7 +55,7 @@ class AdapterImportError(AdapterError):
 
 
 ADAPTER_MAP = {
-    AdapterMissingError: "这个平台的适配器还没装：{platform}",
+    AdapterMissingError: "这个平台的适配器还没装：{platform}\n装完请重新打开本程序",
     AdapterOutOfDateError: "这个平台的适配器要接口包 {requires} 以上，本机是 {sdk}",
     AdapterImportError: "这个平台的适配器不许引本体内部：{platform}（{target}，{where}）",
 }

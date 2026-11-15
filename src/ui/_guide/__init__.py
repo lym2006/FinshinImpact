@@ -1,11 +1,12 @@
 """引导期窗体门面
 
-- 代发选实例、启动提示卡、提示弹窗、插件面板与启动结算各入口
+- 代发选实例、启动提示卡、提示弹窗、插件面板、平台组件面板与启动结算各入口
 """
 
 from ._launch import show_launch_wait
 from ._panel import MODE_AUTO, open_panel
 from ._picker import pick_profile
+from ._platform import open_platform_dialog
 from ._popup import show_popup
 from ._startup import settle_runtime
 
@@ -18,4 +19,6 @@ __all__ = [
     "open_panel",
     "MODE_AUTO",
     "settle_runtime",
+    # 平台组件面板
+    "open_platform_dialog",
 ]

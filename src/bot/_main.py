@@ -12,7 +12,7 @@ from concurrent.futures import Future
 from functools import partial
 from typing import cast
 
-from exceptions import AdapterError, describe_error
+from exceptions import AdapterError, AdapterMissingError, describe_error
 from skin.messages import CheckMessage, MiscMessage
 from skin.theme import WINDOW
 from system.native_dialog import describe
@@ -25,6 +25,7 @@ from ui import (
     create_gui,
     ensure_app,
     gui_bridge,
+    open_platform_dialog,
     show_popup,
 )
 from utils import get_logger
@@ -111,17 +112,26 @@ class Main:
             return app.exec()
 
         except AdapterError as e:
-            # 取件排在 GUI 之前，这句只能自己弹窗，主窗的兜底还没挂上
-            detail = describe_error(e)
-            self.logger.send_error(f"程序启动异常：{detail}", e)
-            self._pop_failure(detail)
-            return 1
+            return self._report_adapter_failure(e)
         except Exception as e:
             self.logger.send_error("程序启动异常", e)
             self._pop_failure(MiscMessage.STARTUP_FAIL_HINT.format(detail=describe(e)))
             return 1
         finally:
             self._cleanup()
+
+    def _report_adapter_failure(self, exc: AdapterError) -> int:
+        """取件被拒那句上屏，缺件那条再开面板"""
+        detail = describe_error(exc)
+        self.logger.send_error(f"程序启动异常：{detail}", exc)
+
+        # 取件排在 GUI 之前，这句只能自己弹窗，主窗的兜底还没挂上
+        self._pop_failure(detail)
+
+        # 缺件的出路在面板里，版本不合与被拒装还得人工换件
+        if isinstance(exc, AdapterMissingError):
+            open_platform_dialog()
+        return 1
 
     def _pop_failure(self, body: str) -> None:
         """报错上屏

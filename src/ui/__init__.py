@@ -25,6 +25,7 @@ _SYMBOL_MODULES = {
     "show_launch_wait": "._guide",
     "show_popup": "._guide",
     "open_panel": "._guide",
+    "open_platform_dialog": "._guide",
     "MODE_AUTO": "._guide",
     "settle_runtime": "._guide",
     "ensure_app": "._lifecycle",
@@ -77,6 +78,7 @@ __all__ = [
     "show_launch_wait",
     "show_popup",
     "open_panel",
+    "open_platform_dialog",
     "MODE_AUTO",
     "settle_runtime",
     # 主窗装配入口
@@ -111,6 +113,7 @@ if TYPE_CHECKING:
     from ._guide import (
         MODE_AUTO,
         open_panel,
+        open_platform_dialog,
         pick_profile,
         settle_runtime,
         show_launch_wait,

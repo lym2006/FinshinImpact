@@ -408,6 +408,7 @@ class TestAdapterHost(unittest.TestCase):
 
         - 取件排在主窗之前，主窗的兜底还没挂上
         - 先收提示卡，再弹报错窗
+        - 版本不合只弹窗，不开面板
         """
         popped: list[str] = []
         events: list[str] = []
@@ -422,6 +423,11 @@ class TestAdapterHost(unittest.TestCase):
                 "show_popup",
                 lambda _t, body: (popped.append(body), events.append("popup")),
             ),
+            patch.object(
+                main_mod,
+                "open_platform_dialog",
+                lambda _parent=None: events.append("panel"),
+            ),
             patch.object(main_mod, "parts_for", refuse),
         ):
             main = main_mod.Main(
@@ -431,6 +437,41 @@ class TestAdapterHost(unittest.TestCase):
 
         self.assertEqual(popped, ["这个平台的适配器要接口包 9.9.9 以上，本机是 0.1.0"])
         self.assertEqual(events, ["dismiss", "popup"])
+
+    def test_missing_adapter_opens_the_panel(self) -> None:
+        """缺件那条报错窗关掉即开面板
+
+        - 面板是那句之外的唯一下一步
+        - 顺序是先说原因再开面板
+        """
+        popped: list[str] = []
+        events: list[str] = []
+
+        def refuse(_platform: object) -> None:
+            raise AdapterMissingError("tg")
+
+        with (
+            patch.object(main_mod, "ensure_app", lambda: object()),
+            patch.object(
+                main_mod,
+                "show_popup",
+                lambda _t, body: (popped.append(body), events.append("popup")),
+            ),
+            patch.object(
+                main_mod,
+                "open_platform_dialog",
+                lambda _parent=None: events.append("panel"),
+            ),
+            patch.object(main_mod, "parts_for", refuse),
+        ):
+            main = main_mod.Main(
+                on_ready=None, close_wait=lambda: events.append("dismiss")
+            )
+            self.assertEqual(main.main(), 1)
+
+        self.assertIn("这个平台的适配器还没装：tg", popped[0])
+        self.assertIn("装完请重新打开本程序", popped[0])
+        self.assertEqual(events, ["dismiss", "popup", "panel"])
 
     def test_unknown_startup_error_pops_with_one_line_detail(self) -> None:
         """未知启动异常把类名与消息那一行写上屏
