@@ -10,11 +10,8 @@ from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 from skin.qss import build_notice_dialog_qss
 from skin.theme import NOTICE_DIALOG, ButtonStyle
 
-from .._primitives import make_button
+from .._primitives import make_button, set_margins
 from ._base import BaseDialog
-
-# Qt 布局四边
-_MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
 
 
 class NoticeDialog(BaseDialog):
@@ -44,7 +41,7 @@ class NoticeDialog(BaseDialog):
         self.setStyleSheet(build_notice_dialog_qss())
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(*[NOTICE_DIALOG.pad] * _MARGIN_EDGES)
+        set_margins(layout, NOTICE_DIALOG.pad)
         layout.setSpacing(NOTICE_DIALOG.spacing)
         if critical:
             head = QLabel(NOTICE_DIALOG.fatal_head)

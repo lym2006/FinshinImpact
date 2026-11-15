@@ -17,12 +17,10 @@ from skin.qss import build_settings_dialog_qss
 from skin.theme import SETTINGS_DIALOG, ButtonStyle, ObjectName
 from utils.persona import applied_persona_text, read_template_text
 
-from ..._primitives import make_button
+from ..._primitives import make_button, set_margins
 from .._base import BaseDialog
 from .._notice import NoticeDialog
 from ._resolve import PersonaResolveDialog
-
-_MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
 
 
 class PersonaEditorDialog(BaseDialog):
@@ -37,7 +35,7 @@ class PersonaEditorDialog(BaseDialog):
         self.setStyleSheet(build_settings_dialog_qss())
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(*[SETTINGS_DIALOG.input_padding_h] * _MARGIN_EDGES)
+        set_margins(layout, SETTINGS_DIALOG.input_padding_h)
         layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
 
         body = QTextEdit()

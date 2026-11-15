@@ -12,11 +12,8 @@ from skin.qss import build_release_notes_dialog_qss
 from skin.theme import RELEASE_NOTES_DIALOG, ButtonStyle, ObjectName
 from utils.check import ReleaseNote
 
-from .._primitives import ThemedList, make_button
+from .._primitives import ThemedList, make_button, set_margins
 from ._base import BaseDialog
-
-# Qt 布局四边
-_MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
 
 # 无选中行时的行号
 _NO_ROW = -1
@@ -36,7 +33,7 @@ class ReleaseNotesDialog(BaseDialog):
         self._bodies = tuple(note.body for note in notes)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(*[RELEASE_NOTES_DIALOG.pad] * _MARGIN_EDGES)
+        set_margins(layout, RELEASE_NOTES_DIALOG.pad)
         layout.setSpacing(RELEASE_NOTES_DIALOG.spacing)
 
         # QTextEdit 没有链接信号，只读视图要用 QTextBrowser

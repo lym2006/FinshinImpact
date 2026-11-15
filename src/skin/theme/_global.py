@@ -31,6 +31,7 @@ class GlobalTheme:
     """
 
     radius: int = PALETTE.radius  # 全局默认圆角
+    tick_ms: int = 1000  # 正计时一跳的步进（毫秒）
     check_size: int = 18  # 勾选框指示器边长
     already_running: str = MiscMessage.ALREADY_RUNNING
 
@@ -42,6 +43,7 @@ class FontTheme:
     font_path: Path = ASSETS_DIR / ASSET_FONT_NAME  # 主字体路径
     emoji_path: Path = ASSETS_DIR / ASSET_EMOJI_FONT_NAME  # emoji 字体路径
     font_size: int = 11  # 全局字体大小
+    mono_family: str = "Consolas"  # 等宽输出用的字体族
 
 
 @dataclass(frozen=True)

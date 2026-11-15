@@ -15,7 +15,6 @@ from PySide6.QtWidgets import (
     QListWidget,
     QListWidgetItem,
     QPushButton,
-    QScrollArea,
     QStackedWidget,
     QTabWidget,
     QVBoxLayout,
@@ -28,21 +27,9 @@ from utils.config import AppSchema
 from utils.config.models import TabSchema
 from utils.network import uses_configured_proxy
 
-from ..._primitives import make_button
+from ..._primitives import clear_layout, make_button, make_scroller
 from .._persona import PersonaPreviewRow
 from ._field import FieldBuilder
-
-
-def _clear_layout(layout: QHBoxLayout) -> None:
-    """清空按钮条
-
-    - 逐项移除控件交给垃圾回收
-    """
-    # 容器自身由调用方 removeItem
-    while layout.count():
-        item = layout.takeAt(0)
-        if item and (widget := item.widget()):
-            widget.deleteLater()
 
 
 class ChromeBuilder:
@@ -120,7 +107,7 @@ class ChromeBuilder:
         self.tip_labels.clear()
         if self.bottom_layout is not None:
             self.root_layout.removeItem(self.bottom_layout)
-            _clear_layout(self.bottom_layout)
+            clear_layout(self.bottom_layout)
         if is_setup:
             self.tip_labels = self._make_tips()
             self.root_layout.insertWidget(0, self.tip_labels[0])
@@ -198,10 +185,6 @@ class ChromeBuilder:
 
     def _create_tab(self, tab_schema: TabSchema) -> QWidget:
         """创建一个 Tab"""
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setAutoFillBackground(False)
         container = QWidget()
         container.setObjectName(ObjectName.TAB_CONTAINER)
         main_layout = QVBoxLayout(container)
@@ -217,7 +200,9 @@ class ChromeBuilder:
         self._mount_persona_row(tab_schema.section, main_layout, label_width)
         self._mount_proxy_mode_lock(tab_schema.section, rows)
         main_layout.addStretch()
-        scroll.setWidget(container)
+        scroll = make_scroller(container)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setAutoFillBackground(False)
         return scroll
 
     def _mount_proxy_mode_lock(self, section: str, rows: dict[str, QWidget]) -> None:

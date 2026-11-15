@@ -13,11 +13,8 @@ from skin.qss import build_link_dialog_qss
 from skin.theme import LINK_DIALOG, ButtonStyle, ObjectName
 from utils.network import LinkStatus
 
-from .._primitives import make_button
+from .._primitives import make_button, set_margins
 from ._base import BaseDialog
-
-# Qt 布局四边
-_MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
 
 
 class LinkDialog(BaseDialog):
@@ -39,7 +36,7 @@ class LinkDialog(BaseDialog):
         self._on_close = on_close
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(*([LINK_DIALOG.pad] * _MARGIN_EDGES))
+        set_margins(layout, LINK_DIALOG.pad)
         layout.setSpacing(LINK_DIALOG.spacing)
 
         layout.addWidget(

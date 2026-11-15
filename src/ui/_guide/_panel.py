@@ -40,7 +40,7 @@ from services.env_setup.deps_manifest import (
 )
 from services.env_setup.subprocess_ops import is_pin_installed
 from services.env_setup.toolchain import dev_mode
-from skin.messages import PluginMessage
+from skin.messages import DialogMessage, PluginMessage
 from skin.qss import build_bootstrap_qss
 from skin.theme import GLOBAL, PANEL, ButtonStyle, ObjectName
 
@@ -105,7 +105,7 @@ class _PluginPanelDialog(QDialog):
         save_btn = make_button(
             PluginMessage.BTN_SAVE_START
             if self._mode == MODE_AUTO
-            else PluginMessage.BTN_SAVE,
+            else DialogMessage.BTN_SAVE,
             ButtonStyle.PRIMARY,
         )
         save_btn.setDefault(True)

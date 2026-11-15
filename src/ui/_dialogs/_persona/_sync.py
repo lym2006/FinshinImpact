@@ -10,12 +10,9 @@ from skin.qss import build_notice_dialog_qss
 from skin.theme import NOTICE_DIALOG, ButtonStyle
 from utils.init_files import apply_persona_template, mark_persona_prompted
 
-from ..._primitives import make_button
+from ..._primitives import make_button, set_margins
 from .._base import BaseDialog
 from .._notice import NoticeDialog
-
-# Qt 布局四边
-_MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
 
 
 class PersonaSyncDialog(BaseDialog):
@@ -31,7 +28,7 @@ class PersonaSyncDialog(BaseDialog):
         self.setStyleSheet(build_notice_dialog_qss())
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(*[NOTICE_DIALOG.pad] * _MARGIN_EDGES)
+        set_margins(layout, NOTICE_DIALOG.pad)
         layout.setSpacing(NOTICE_DIALOG.spacing)
         tip = QLabel(NOTICE_DIALOG.persona_text)
         tip.setWordWrap(True)

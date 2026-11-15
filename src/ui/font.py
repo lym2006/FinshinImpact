@@ -15,6 +15,7 @@ from exceptions import (
     FontMissingError,
     FontRegisterError,
 )
+from skin.theme import FONT
 
 # 成功族名按路径缓存，全进程只注册一次
 _FAMILY_CACHE: dict[str, str] = {}
@@ -22,7 +23,7 @@ _FAMILY_CACHE: dict[str, str] = {}
 
 def _fallback_font(size: int) -> QFont:
     """系统等宽兜底字体"""
-    font = QFont("Consolas", size)
+    font = QFont(FONT.mono_family, size)
     font.setStyleHint(QFont.StyleHint.Monospace)
     return font
 

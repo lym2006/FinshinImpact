@@ -10,11 +10,8 @@ from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 from skin.qss import build_shutdown_dialog_qss
 from skin.theme import SHUTDOWN_DIALOG, ButtonStyle
 
-from .._primitives import make_button
+from .._primitives import make_button, set_margins
 from ._base import BaseDialog
-
-# Qt 布局四边
-_MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
 
 
 class ShutdownDialog(BaseDialog):
@@ -32,7 +29,7 @@ class ShutdownDialog(BaseDialog):
         self.setStyleSheet(build_shutdown_dialog_qss())
 
         layout = QVBoxLayout(self)  # 布局与间距
-        layout.setContentsMargins(*([SHUTDOWN_DIALOG.padding] * _MARGIN_EDGES))
+        set_margins(layout, SHUTDOWN_DIALOG.padding)
         layout.setSpacing(SHUTDOWN_DIALOG.spacing)
 
         # 提示文字

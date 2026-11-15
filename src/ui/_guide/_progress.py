@@ -21,12 +21,11 @@ from PySide6.QtWidgets import (
 from services.env_setup.subprocess_ops import log_ops
 from skin.messages import PluginMessage
 from skin.qss import build_bootstrap_qss
-from skin.theme import ObjectName
+from skin.theme import FONT, ObjectName
 
 from .._lifecycle import ensure_app
 
-# 日志字体族与字号
-_LOG_FONT_FAMILY = "Consolas"
+# 日志字号
 _LOG_FONT_SIZE = 9
 
 # 进度窗宽与日志区高（像素）
@@ -92,7 +91,7 @@ class _ProgressDialog(QDialog):
         self._log = QPlainTextEdit()
         self._log.setReadOnly(True)
         self._log.setObjectName(ObjectName.PROGRESS_LOG)
-        self._log.setFont(QFont(_LOG_FONT_FAMILY, _LOG_FONT_SIZE))
+        self._log.setFont(QFont(FONT.mono_family, _LOG_FONT_SIZE))
         layout.addWidget(self._log)
 
         self._button = QPushButton(PluginMessage.BTN_RUNNING)

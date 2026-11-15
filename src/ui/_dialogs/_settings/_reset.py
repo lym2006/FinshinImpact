@@ -20,14 +20,11 @@ from PySide6.QtWidgets import (
 from skin.theme import SETTINGS_DIALOG, ButtonStyle
 from utils.config.models import ConfigValue, FieldSchema
 
-from ..._primitives import make_button
+from ..._primitives import make_button, set_margins
 from ._list_widget import ConfigListRow
 
 _InputWidget: TypeAlias = ConfigListRow | QLineEdit | QTextEdit | QComboBox
 Inputs: TypeAlias = dict[str, _InputWidget]
-
-# Qt 布局四边
-_MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
 
 
 def _value_signal(widget: _InputWidget) -> SignalInstance | None:
@@ -70,7 +67,7 @@ class ResetRegistry:
         # 图标态，悬停出提示
         row = QWidget()
         h_layout = QHBoxLayout(row)
-        h_layout.setContentsMargins(*[SETTINGS_DIALOG.margin] * _MARGIN_EDGES)
+        set_margins(h_layout, SETTINGS_DIALOG.margin)
         h_layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
         h_layout.addWidget(widget, stretch=1)
         btn = make_button(SETTINGS_DIALOG.reset_icon, ButtonStyle.RESET)

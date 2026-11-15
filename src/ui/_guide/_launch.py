@@ -19,12 +19,9 @@ from PySide6.QtWidgets import (
 from services.profile_store import remark_of
 from skin.messages import PickerMessage
 from skin.qss import build_bootstrap_qss
-from skin.theme import LAUNCH, ObjectName
+from skin.theme import GLOBAL, LAUNCH, ObjectName
 
 from .._lifecycle import Ticker, ensure_app
-
-# 正计时刷新间隔，1 秒一格
-_TICK_MS = 1000
 
 
 class _LaunchWaitDialog(QDialog):
@@ -70,7 +67,7 @@ class _LaunchWaitDialog(QDialog):
         column.addWidget(self._note)
         row.addLayout(column, 1)
 
-        self._timer = Ticker(self, _TICK_MS, self._tick)
+        self._timer = Ticker(self, GLOBAL.tick_ms, self._tick)
         self._timer.start()
 
         self._center_on_screen()

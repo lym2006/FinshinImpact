@@ -56,7 +56,6 @@ class PluginMessage:
     STARTUP_FAIL = "以下插件依赖安装失败，已自动禁用\n{plugins}\n失败项\n{items}\n下次启动会自动重试"
 
     # 用：ui._guide._panel 底栏按钮行
-    BTN_SAVE = "保存"
     BTN_SAVE_START = "保存并启动"
 
     # 用：services.env_setup.subprocess_ops 换源重试行

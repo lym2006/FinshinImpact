@@ -20,13 +20,10 @@ from skin.qss import build_change_dialog_qss
 from skin.theme import CHANGE_DIALOG, SETTINGS_DIALOG, ButtonStyle
 
 from ..._bridge import gui_bridge
-from ..._primitives import make_button
+from ..._primitives import make_button, set_margins
 from .._base import BaseDialog
 from .._diff import diff_html, make_long_diff_cell, split_diff_aligned, to_lines
 from .._notice import NoticeDialog
-
-# Qt 布局四边
-_MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
 
 
 class PersonaResolveDialog(BaseDialog):
@@ -67,7 +64,7 @@ class PersonaResolveDialog(BaseDialog):
         self._syncing = False  # 两栏互抄滚动值的回环门
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(*[SETTINGS_DIALOG.input_padding_h] * _MARGIN_EDGES)
+        set_margins(layout, SETTINGS_DIALOG.input_padding_h)
         layout.setSpacing(SETTINGS_DIALOG.tab_spacing)
         layout.addLayout(self._make_tip_row())
         layout.addLayout(self._make_columns(old_label, new_label), 1)

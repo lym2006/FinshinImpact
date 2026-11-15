@@ -13,11 +13,8 @@ from skin.qss import build_wait_dialog_qss
 from skin.theme import GLOBAL, WAIT_DIALOG, ButtonStyle, ObjectName
 
 from .._lifecycle import Ticker
-from .._primitives import make_button
+from .._primitives import make_button, set_margins
 from ._base import BaseDialog
-
-# Qt 布局四边
-_MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
 
 
 class WaitDialog(BaseDialog):
@@ -34,7 +31,7 @@ class WaitDialog(BaseDialog):
         self.setStyleSheet(build_wait_dialog_qss())
         self.setFixedSize(WAIT_DIALOG.width, WAIT_DIALOG.height)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(*[WAIT_DIALOG.pad] * _MARGIN_EDGES)
+        set_margins(layout, WAIT_DIALOG.pad)
         layout.addStretch()
         row = QHBoxLayout()
         row.setSpacing(GLOBAL.radius)

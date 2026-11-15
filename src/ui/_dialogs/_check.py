@@ -21,12 +21,9 @@ from skin.theme import CHECK_DIALOG, ButtonStyle, ObjectName
 from utils.network import FrameKey, RowId, RowStatus
 
 from .._lifecycle import Ticker
-from .._primitives import bring_front, make_button
+from .._primitives import bring_front, make_button, set_margins
 from ._base import BaseDialog
 from ._table import RowTable
-
-# Qt 布局四边
-_MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
 
 
 class Round:
@@ -89,7 +86,7 @@ class CheckDialog(BaseDialog):
         # 宽度定死、高度交给布局最小值：表格随行数收紧，默认尺寸即最小尺寸
         self.setFixedWidth(CHECK_DIALOG.width)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(*[CHECK_DIALOG.pad] * _MARGIN_EDGES)
+        set_margins(layout, CHECK_DIALOG.pad)
 
         row = QHBoxLayout()
         row.setSpacing(CHECK_DIALOG.pad)

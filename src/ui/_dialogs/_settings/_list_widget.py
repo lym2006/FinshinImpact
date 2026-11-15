@@ -18,11 +18,8 @@ from skin.messages import ConfigMessage
 from skin.qss import build_settings_dialog_qss, build_settings_list_qss
 from skin.theme import LIST_DIALOG, SETTINGS_DIALOG, ButtonStyle, ObjectName
 
-from ..._primitives import ThemedList, make_button
+from ..._primitives import ThemedList, make_button, set_margins
 from .._base import BaseDialog
-
-# Qt 布局四边
-_MARGIN_EDGES = 4  # setContentsMargins 收上下左右四个值
 
 
 class _ConfigListWidget(QWidget):
@@ -37,7 +34,7 @@ class _ConfigListWidget(QWidget):
     def _setup_ui(self) -> None:
         """构建界面"""
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(*[SETTINGS_DIALOG.margin] * _MARGIN_EDGES)
+        set_margins(main_layout, SETTINGS_DIALOG.margin)
         main_layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
         self.list_widget = ThemedList()
         self.list_widget.setObjectName(ObjectName.LIST_WIDGET)
@@ -62,7 +59,7 @@ class _ConfigListWidget(QWidget):
         """构建底部操作栏"""
         bar = QWidget()
         layout = QHBoxLayout(bar)
-        layout.setContentsMargins(*[SETTINGS_DIALOG.margin] * _MARGIN_EDGES)
+        set_margins(layout, SETTINGS_DIALOG.margin)
         layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
 
         btn_add = make_button(ConfigMessage.LIST_ADD_TEXT, ButtonStyle.LIST_ADD)
@@ -119,7 +116,7 @@ class _ConfigListDialog(BaseDialog):
         self.setStyleSheet(build_settings_dialog_qss())
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(*[SETTINGS_DIALOG.input_padding_h] * _MARGIN_EDGES)
+        set_margins(layout, SETTINGS_DIALOG.input_padding_h)
         layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
 
         self._list = _ConfigListWidget(list(items))
@@ -172,7 +169,7 @@ class ConfigListRow(QWidget):
         self._items = list(items)
 
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(*[SETTINGS_DIALOG.margin] * _MARGIN_EDGES)
+        set_margins(layout, SETTINGS_DIALOG.margin)
         layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
         self._button = make_button(self._button_text(), ButtonStyle.SECONDARY)
         self._button.clicked.connect(self._on_edit)
