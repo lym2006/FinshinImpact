@@ -10,6 +10,8 @@
 
 - **跨平台**：QQ 平台实装。
 
+## [1.0.0-alpha.7.dev5] - 2026-11-15
+
 ### ⚠️ Breaking Changes
 
 - **适配器声明改写在 `pyproject.toml`**：
