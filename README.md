@@ -18,7 +18,7 @@
 ## 🚀 快速开始<a id="quickstart"></a>
 
 1. **代理**：下载走国内镜像可免代理，运行期连 `Telegram` 和检查更新需开代理。
-2. **下载**：取最新的 `FinshinImpact-vX.Y.Z.zip`，别下 `Source code`（不含启动器）。[国内镜像](https://gh-proxy.com/#https://github.com/lym2006/FinshinImpact/releases) ｜ [Releases](https://github.com/lym2006/FinshinImpact/releases)。
+2. **下载**：取最新的 `FinshinImpact-vX.Y.Z.zip`，别下 `Source code`（不含启动器）。[国内镜像](https://gh-proxy.com/#https://github.com/FinshinLabs/FinshinImpact/releases) ｜ [Releases](https://github.com/FinshinLabs/FinshinImpact/releases)。
 3. **解压**：任意可写目录，如 `D:\FinshinImpact`。
 4. **首启**：双击 `FinshinImpact\FinshinImpact.exe`，自动装好运行环境，期间保持联网。启用插件的依赖与浏览器内核在每次启动前的结算里一并装上。
 5. **建实例**：「选择机器人」点「新建」。平台下拉只列本机装过的平台，没装过的先装再建。填 Bot Token，再经配置向导填 API Key 与主人 ID 即开始收发。同机可并存多个实例。
@@ -44,7 +44,8 @@
 
 - **免安装分发**：解压双击即用，运行环境与依赖自动装好，内置版本检测更新与配置校验。
 - **桌面管理面板**：日志按内容语义标记、异常自动归集，配置、代理模式、插件启用与网络诊断都在窗口里改。
-- **平台组件**：新建机器人那一步的平台下拉下方有「管理平台组件」，逐只看本机版本与在线版本，给安装与卸载。在线装那只要走 GitHub，过程保持联网；卸载前要先删掉那个平台的实例。
+- **平台组件**：新建机器人那一步的平台下拉下方有「管理平台组件」，逐只看本机版本与在线版本，给安装与卸载。在线装那只要走 GitHub，过程保持联网。
+- **平台组件的卸载约束**：先删掉那个平台的实例才能卸适配器。
 - **多实例隔离**：每个机器人独占一个实例目录，配置、人设、库、记录、日志互不干扰。同 token 双开提示"机器人已在运行"并退出。
 - **权限三档**：主人、管理员、成员，对对话和命令全局生效。`/grant` 与 `/ungrant` 只有主人能使，授予跨群同一份。
 - **插件化**：对话与帮助由 `src/bundled` 下的插件提供，面板勾选启用，未启用即不响应。
@@ -89,7 +90,7 @@
 - 📚 **工程经验**（实测踩坑与验证方法）：[`docs/lessons/README.md`](docs/lessons/README.md)
 - 🧩 **插件清单模板**：[`assets/plugin.example.toml`](assets/plugin.example.toml)，配置字段表单源在接口包的 `domain/config/`
 - 🔌 **平台适配器**：每只平台一只独立仓，开发时 clone 进 `finshin/adapter/` 下的一个目录并同步环境即被认出来。新增平台照 [`docs/development.md`](docs/development.md) 的「新增平台适配器」一节做，本体代码不用改。
-- 📦 **接口包**：本体与插件、适配器共用的形状在独立仓 [`FinshinSDK`](https://github.com/lym2006/FinshinSDK)，开发时 clone 进 `finshin/sdk`，手顺见 [`docs/development.md`](docs/development.md) 的「挂载子仓」一节
+- 📦 **接口包**：本体与插件、适配器共用的形状在独立仓 [`FinshinSDK`](https://github.com/FinshinLabs/FinshinSDK)，开发时 clone 进 `finshin/sdk`，手顺见 [`docs/development.md`](docs/development.md) 的「挂载子仓」一节
 
 [⤴️ 返回目录](#menu)
 
@@ -97,6 +98,8 @@
 
 ## ⬆️ 旧版迁移<a id="previous"></a>
 
+- **v1.0.0-alpha.7.dev6**：
+  - 仓库搬到组织 `FinshinLabs`，旧包里的版本页地址已取不到（实测旧 Pages 返回 404）：手动下新包覆盖解压即可，配置、记录、库与日志都在 `instances\`，不受影响。
 - **v1.0.0-alpha.7.dev5**：
   - 只用发布包的：解压件不再自带平台适配器，首次建实例要先在平台下拉下方「管理平台组件」里在线装一只，装的过程保持联网。已有实例的配置、记录与库都不动。
   - 自己写过插件的人才要动：`plugin.toml` 里 `deps` 那一行搬到同目录 `pyproject.toml` 的 `[project].dependencies`，缺这份文件那份插件整份不认。逐项改法见 `docs/development.md` 的「从 dev4 及更早的写法改过来」。

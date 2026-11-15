@@ -198,7 +198,7 @@ git push origin main vX.Y.Z
 
 发布在 GitHub 网页端操作，按序：
 
-- 进仓库 [Releases](https://github.com/lym2006/FinshinImpact/releases)。
+- 进仓库 [Releases](https://github.com/FinshinLabs/FinshinImpact/releases)。
 - Draft a new release。
 - 选推送上来的 tag `vX.Y.Z`。
 - 填正文，正文形状见下面两小节。
@@ -208,7 +208,7 @@ git push origin main vX.Y.Z
 Generate release notes 生成正文末尾比较链接：
 
 ```
-**Full Changelog**: https://github.com/lym2006/FinshinImpact/compare/v<上一版>...v<X.Y.Z>
+**Full Changelog**: https://github.com/FinshinLabs/FinshinImpact/compare/v<上一版>...v<X.Y.Z>
 ```
 
 - 正式号那条取上一个**正式号**，覆盖整条预发布线。
@@ -220,8 +220,8 @@ Generate release notes 生成正文末尾比较链接：
 ```
 🐳 FinshinImpact-vX.Y.Z
 
-- 国内加速：https://gh-proxy.com/https://github.com/lym2006/FinshinImpact/releases/download/vX.Y.Z/FinshinImpact-vX.Y.Z.zip
-- 官方直连：https://github.com/lym2006/FinshinImpact/releases/download/vX.Y.Z/FinshinImpact-vX.Y.Z.zip
+- 国内加速：https://gh-proxy.com/https://github.com/FinshinLabs/FinshinImpact/releases/download/vX.Y.Z/FinshinImpact-vX.Y.Z.zip
+- 官方直连：https://github.com/FinshinLabs/FinshinImpact/releases/download/vX.Y.Z/FinshinImpact-vX.Y.Z.zip
 
 变化
 - 条目一（用户视角，2~5 条，从 CHANGELOG 该版本段提炼）
@@ -260,7 +260,7 @@ Release 只承担新用户首次下载与老用户回看某版变化，不承担
 注意
 - 条目一
 
-**Full Changelog**: https://github.com/lym2006/FinshinImpact/compare/v<上一版>...vX.Y.Z
+**Full Changelog**: https://github.com/FinshinLabs/FinshinImpact/compare/v<上一版>...vX.Y.Z
 ```
 
 ⚠️**删发布包不可逆**。

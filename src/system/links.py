@@ -4,7 +4,7 @@
 - 协议头串只在这一处定义
 """
 
-_ACCOUNT = "lym2006"
+_ACCOUNT = "FinshinLabs"
 _MAIN_REPO = "FinshinImpact"
 
 PAGES_BASE_URL = f"https://{_ACCOUNT}.github.io"

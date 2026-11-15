@@ -18,10 +18,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "packagin
 
 import gen_catalog  # noqa: E402
 
-_SDK_REPO = "lym2006/FinshinSDK"
-_TG_REPO = "lym2006/FinshinAdapterTG"
-_OTHER_REPO = "lym2006/hello-world"
-_XX_REPO = "lym2006/FinshinAdapterXX"
+_SDK_REPO = "FinshinLabs/FinshinSDK"
+_TG_REPO = "FinshinLabs/FinshinAdapterTG"
+_OTHER_REPO = "FinshinLabs/hello-world"
+_XX_REPO = "FinshinLabs/FinshinAdapterXX"
 _SHA = "1" * 64
 _SDK_URL = f"https://example.invalid/{_SDK_REPO}/releases/download/v9.9.9/finshin_sdk-9.9.9-py3-none-any.whl"
 _TG_URL = f"https://example.invalid/{_TG_REPO}/releases/download/v9.9.9/finshin_adapter_tg-9.9.9-py3-none-any.whl"
@@ -73,7 +73,7 @@ class CatalogStub:
         for needle, answer in self.table.items():
             if needle in url:
                 return answer
-        if "users/lym2006/repos" in url:
+        if "users/FinshinLabs/repos" in url:
             return self.repos
         return None
 
@@ -89,7 +89,7 @@ class TestGenCatalog(unittest.TestCase):
     def setUp(self) -> None:
         """把账号名固定成测试用值"""
         self._owner = os.environ.get("GITHUB_REPOSITORY")
-        os.environ["GITHUB_REPOSITORY"] = "lym2006/FinshinImpact"
+        os.environ["GITHUB_REPOSITORY"] = "FinshinLabs/FinshinImpact"
         self.addCleanup(self._restore)
 
     def _restore(self) -> None:

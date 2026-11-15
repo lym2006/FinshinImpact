@@ -31,7 +31,7 @@ HDR_USER_AGENT = "User-Agent"  # 请求头名，取件与目录生成两侧共�
 HDR_AUTHORIZATION = "Authorization"  # 令牌请求头名
 
 # 在线地址的家，启动器与构建脚本只在这一处写
-_ACCOUNT = "lym2006"
+_ACCOUNT = "FinshinLabs"
 _MAIN_REPO = "FinshinImpact"
 _PAGES_HOST = f"https://{_ACCOUNT}.github.io"
 API_HOST = "https://api.github.com"
