@@ -1,4 +1,3 @@
-# devtools/_style_checks/_waivers.py
 """待核豁免清单
 
 - 读取清单文件，按分节、路径与消息子串罩住已审过的待核条目

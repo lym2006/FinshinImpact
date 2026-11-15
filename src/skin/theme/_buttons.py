@@ -1,4 +1,3 @@
-# src/skin/theme/_buttons.py
 """按钮样式名枚举"""
 
 from enum import StrEnum
@@ -12,6 +11,7 @@ class ButtonStyle(StrEnum):
 
     PRIMARY = "btn_primary"
     SECONDARY = "btn_secondary"
+    LINK = "btn_link"
     DANGER = "btn_danger"
     START = "btn_start"
     RESET = "btn_reset"

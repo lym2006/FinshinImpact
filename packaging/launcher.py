@@ -1,4 +1,3 @@
-# packaging/launcher.py
 """发布包启动器
 
 - 首次启动自动安装嵌入式 Python 与核心依赖，使用随包 uv
@@ -15,7 +14,7 @@ from pathlib import Path
 
 from launch import console, dialogs, proxy, runtime, shell, update
 from launch.instancelock import bootstrap_taken
-from pack_spec import AUMID_ANCHOR_VAR, PROXY_ENV_VARS
+from pack_spec import AUMID_ANCHOR_VAR, PROXY_ENV_VARS, PackLayout
 
 
 def _already_running() -> bool:
@@ -50,7 +49,10 @@ def _launch(root: Path) -> None:
     env = {k: v for k, v in os.environ.items() if k not in PROXY_ENV_VARS}
     env[AUMID_ANCHOR_VAR] = str(Path(sys.executable))  # 任务栏图标解析指向壳自身
     subprocess.Popen(
-        [str(root / "runtime" / "pythonw.exe"), str(root / "main.py")],
+        [
+            str(root / PackLayout.RUNTIME_DIR / PackLayout.PYTHONW_EXE),
+            str(root / PackLayout.MAIN_SCRIPT),
+        ],
         cwd=str(root),
         env=env,
     )

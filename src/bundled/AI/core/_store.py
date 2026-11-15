@@ -1,4 +1,3 @@
-# src/bundled/AI/core/_store.py
 """会话落库
 
 - 按会话键读写消息与摘要
@@ -10,7 +9,7 @@ import asyncio
 from collections import defaultdict
 from pathlib import Path
 
-from core.contracts import SessionRepository
+from core import SessionRepository
 from data import build_repositories, get_connection
 from finshin_sdk import CapabilityCall
 from finshin_sdk.domain.ids import SessionKey

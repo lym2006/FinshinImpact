@@ -1,4 +1,3 @@
-# src/bot/_managers/_signal.py
 """信号处理
 
 - asyncio 线程执行 GUI 信号回调

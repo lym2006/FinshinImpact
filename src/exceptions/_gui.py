@@ -1,4 +1,3 @@
-# src/exceptions/_gui.py
 """GUI 异常族
 
 - 定义界面操作相关异常
@@ -6,7 +5,7 @@
 
 from pathlib import Path
 
-from ._base import BotError
+from finshin_sdk.exceptions import BotError
 
 
 class GUIError(BotError):

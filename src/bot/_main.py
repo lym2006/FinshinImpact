@@ -1,4 +1,3 @@
-# src/bot/_main.py
 """主程序装配
 
 - 建 GUI 与控制器，接通信号总线
@@ -29,6 +28,7 @@ from ui import (
     show_popup,
 )
 from utils import get_logger
+from utils.check import bind_diagnose
 from utils.lifecycle import shutdown_all
 from utils.paths import PLATFORM
 
@@ -72,7 +72,8 @@ class Main:
             # 引擎重依赖已由引导层后台线程预热，此处命中模块缓存
             platform_parts.engine_preload()
 
-            window, instances = create_gui(platform_parts.diagnose)
+            # 诊断编排归本体，凭证探测与预热句在这件适配器实例里取
+            window, instances = create_gui(bind_diagnose(platform_parts))
 
             # 多实例任务栏区分：标题带身份码，无身份码维持原标题
             profile = get_profile()

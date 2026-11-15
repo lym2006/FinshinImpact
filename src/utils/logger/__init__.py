@@ -1,4 +1,3 @@
-# src/utils/logger/__init__.py
 """日志门面
 
 - 日志器与格式器出口
@@ -7,6 +6,8 @@
 import logging
 import threading
 from typing import cast
+
+from finshin_sdk import LogLevel, bind_logger
 
 from ..paths import BOT_LOG, DEBUG_LOG
 from ._enhancer import BotLogger
@@ -31,6 +32,29 @@ __all__ = [
 ]
 
 logging.setLoggerClass(BotLogger)
+
+# 档位转标准库日志级别
+_LEVELS: dict[LogLevel, int] = {
+    LogLevel.DEBUG: logging.DEBUG,
+    LogLevel.INFO: logging.INFO,
+    LogLevel.ERROR: logging.ERROR,
+}
+
+
+def _public_sink(
+    source: str, level: LogLevel, msg: str, exc: BaseException | None
+) -> None:
+    """接口包日志公开件的实现
+
+    - 带异常即补一行调试档，调用链由异常本体交出
+    """
+    logger = get_logger(source)
+    logger.log(_LEVELS[level], msg)
+    if exc is not None:
+        logger.debug(exc, exc_info=exc)
+
+
+bind_logger(_public_sink)
 
 
 def get_logger(name: str = "") -> BotLogger:
@@ -61,6 +85,11 @@ def get_logger(name: str = "") -> BotLogger:
         # 文件 Handler（简化版与详细版）
         bot_logger.addHandler(create_file_handler(_FORMATTER, BOT_LOG))
         bot_logger.addHandler(create_file_handler(_FORMATTER, DEBUG_LOG, logging.DEBUG))
+
+        # 事件库把处理函数的崩错只记在自己那只日志器上，根日志器静音就一起吞了
+        logging.getLogger("aiogram").addHandler(
+            create_file_handler(_FORMATTER, DEBUG_LOG, logging.ERROR)
+        )
         _initialized = True  # 此后走无锁快速路径
 
     return logger

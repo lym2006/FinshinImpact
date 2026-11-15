@@ -1,5 +1,3 @@
-# ruff.toml
-
 target-version = "py311"
 line-length = 88
 src = ["src"]
@@ -38,6 +36,7 @@ fixable = ["ALL"]
 
 [lint.per-file-ignores]
 "devtools/tests/**" = ["D"]  # 测试函数名即文档，不强制 docstring 与其格式规则
+"finshin/adapter/*/tests/**" = ["D"]  # 子仓带的用例同待遇
 
 [lint.pydocstyle]
 convention = "google"  # Google 风格
@@ -49,8 +48,9 @@ extend-ignore-names = [
 ]
 
 [lint.isort]
-known-first-party = ["adapters", "bootstrap", "bot", "bundled", "core", "data",
-                   "exceptions", "finshin_sdk", "services", "skin", "system", "ui", "utils"]
+# 接口包、适配器包与外装插件包同带 finshin_ 前缀，按前缀收
+known-first-party = ["finshin_*", "bootstrap", "bot", "bundled", "core", "data",
+                   "exceptions", "services", "skin", "system", "ui", "utils"]
 
 [format]
 quote-style = "double"  # 普通字符串强制使用双引号 ""

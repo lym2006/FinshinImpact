@@ -1,4 +1,3 @@
-# devtools/_style_checks/_s5d_access.py
 """跨包私有访问检查
 
 - 导入路径含 `_` 前缀模块段且消费方在宿主包树外即违规

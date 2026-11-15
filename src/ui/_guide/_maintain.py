@@ -1,4 +1,3 @@
-# src/ui/_guide/_maintain.py
 """环境维护入口
 
 - 依赖管理弹下拉菜单，同步重建与清理缓存两条操作并列
@@ -10,40 +9,28 @@ from PySide6.QtCore import QPoint
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QMenu,
-    QMessageBox,
     QPushButton,
     QWidget,
 )
 
 from services.env_setup.deps_install import sync_env
-from services.env_setup.deps_manifest import keep_union
+from services.env_setup.deps_keep import keep_conflicts, keep_union
 from services.env_setup.subprocess_ops import ProgressCallback, clean_cache
 from skin.messages import PluginMessage
 
-from .._lifecycle import ensure_app
+from ._popup import confirm_popup
 from ._progress import run_with_progress
-
-
-def _confirm(parent: QWidget | None, warning: str) -> bool:
-    """大警告二次确认，默认停在否"""
-    ensure_app()
-    confirmed = QMessageBox.question(
-        parent,
-        PluginMessage.SETTLE_TITLE,
-        warning,
-        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-        QMessageBox.StandardButton.No,
-    )
-    return confirmed == QMessageBox.StandardButton.Yes
 
 
 def _sync_flow(parent: QWidget | None) -> list[str]:
     """二次确认后按保留清单重建环境"""
-    if not _confirm(parent, PluginMessage.SYNC_WARNING):
+    if not confirm_popup(
+        PluginMessage.SETTLE_TITLE, PluginMessage.SYNC_WARNING, parent
+    ):
         return []
     return run_with_progress(
         PluginMessage.PROGRESS_SYNC,
-        lambda on_line: sync_env(keep_union(), on_line),
+        lambda on_line: sync_env(keep_union(), on_line, keep_conflicts()),
     )
 
 
@@ -55,7 +42,9 @@ def _cache_task(on_line: ProgressCallback | None = None) -> list[str]:
 
 def _cache_flow(parent: QWidget | None) -> list[str]:
     """二次确认后清空 uv 下载缓存"""
-    if not _confirm(parent, PluginMessage.CACHE_WARNING):
+    if not confirm_popup(
+        PluginMessage.SETTLE_TITLE, PluginMessage.CACHE_WARNING, parent
+    ):
         return []
     return run_with_progress(PluginMessage.PROGRESS_CACHE, _cache_task)
 

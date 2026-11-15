@@ -1,4 +1,3 @@
-# src/data/_sqlite/_task.py
 """任务仓储实装
 
 - 状态推进按迁移表判定合法性
@@ -9,7 +8,7 @@ import json
 import aiosqlite
 from typing import cast
 
-from core.contracts import TaskRepository
+from core import TaskRepository
 from finshin_sdk.domain import (
     ChatRole,
     Platform,

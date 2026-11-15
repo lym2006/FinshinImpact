@@ -6,6 +6,10 @@ on:
   push:
     branches: ["main"]
 
+  # Sub-repo releases land without a push here, so rebuild the catalog daily too
+  schedule:
+    - cron: "17 3 * * *"
+
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
@@ -34,9 +38,12 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Build site content
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           mkdir site
           cp pyproject.toml site/pyproject.toml
+          python3 packaging/gen_catalog.py site/adapters.toml
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

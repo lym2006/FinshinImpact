@@ -1,4 +1,3 @@
-# src/bundled/AI/config.py
 """AI 配置
 
 - 固定取值落在类属性上

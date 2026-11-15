@@ -1,4 +1,3 @@
-# src/utils/config/__init__.py
 """配置工具门面
 
 - 检查、读写与校验出口

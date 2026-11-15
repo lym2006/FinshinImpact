@@ -1,4 +1,3 @@
-# src/system/app_identity.py
 """进程应用身份
 
 - 任务栏身份锚定启动器 exe，导入即声明，晚设不影响已建窗口

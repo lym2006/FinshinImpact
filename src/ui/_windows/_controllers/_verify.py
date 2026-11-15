@@ -1,4 +1,3 @@
-# src/ui/_windows/_controllers/_verify.py
 """校验轮协调
 
 - 驱动进程级唯一校验进度窗，校验轮之间互斥

@@ -1,4 +1,3 @@
-# devtools/tests/test_grant_access.py
 """命令权限测试
 
 - 主人与被授权用户能用 /history 与 /clear

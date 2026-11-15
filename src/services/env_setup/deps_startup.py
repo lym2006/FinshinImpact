@@ -1,4 +1,3 @@
-# src/services/env_setup/deps_startup.py
 """启动期插件规则
 
 - 定本实例应结算哪几只插件，把装失败的插件移出启用集

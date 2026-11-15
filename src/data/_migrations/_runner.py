@@ -1,4 +1,3 @@
-# src/data/_migrations/_runner.py
 """迁移运行器
 
 - 按版本号顺序补做未应用的脚本，库里已经有表才先备份整库
@@ -6,13 +5,13 @@
 - 把未跑完的任务判死
 """
 
-import hashlib
 import inspect
 import shutil
 import time
 from datetime import datetime
 from pathlib import Path
 from types import ModuleType
+from system.digest import text_digest
 
 import aiosqlite
 
@@ -131,4 +130,4 @@ async def _backup(db_path: Path, backup_dir: Path, conn: aiosqlite.Connection) -
 
 def _checksum(module: ModuleType) -> str:
     """取迁移脚本源码哈希"""
-    return hashlib.sha256(inspect.getsource(module).encode("utf-8")).hexdigest()
+    return text_digest(inspect.getsource(module))

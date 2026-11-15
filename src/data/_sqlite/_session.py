@@ -1,4 +1,3 @@
-# src/data/_sqlite/_session.py
 """会话仓储实装
 
 - 按会话键读写 session 与 session_message 两表
@@ -8,7 +7,7 @@
 import aiosqlite
 from typing import cast
 
-from core.contracts import SessionRepository
+from core import SessionRepository
 from finshin_sdk.domain import ChatRole, Platform
 from finshin_sdk.domain.ids import KEY_SEP, ContainerKey, SessionKey, UserId
 from finshin_sdk.dto import MessageDTO, SessionDTO, SessionPatchDTO

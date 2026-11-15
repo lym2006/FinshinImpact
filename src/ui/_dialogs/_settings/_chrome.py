@@ -1,4 +1,3 @@
-# src/ui/_dialogs/_settings/_chrome.py
 """骨架装配
 
 - 构建根布局、左侧大类列表、上排页签与底部按钮条

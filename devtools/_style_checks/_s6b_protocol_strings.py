@@ -1,4 +1,3 @@
-# devtools/_style_checks/_s6b_protocol_strings.py
 """协议串分节细则
 
 - 跨文件重复短字面量提示单源收进命名空间类

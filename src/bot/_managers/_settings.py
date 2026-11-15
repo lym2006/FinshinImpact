@@ -1,4 +1,3 @@
-# src/bot/_managers/_settings.py
 """配置管理器
 
 - 配置加载与连通性双重校验
@@ -9,6 +8,7 @@ import time
 from collections.abc import Awaitable, Callable
 from typing import cast
 
+from exceptions import describe_error
 from finshin_sdk import ChannelProbe
 from finshin_sdk.domain import ConfigKey, ConfigSection, FieldKey, ProxyMode
 from skin.messages import CheckMessage
@@ -201,14 +201,14 @@ class SettingsManager(BaseManager):
 
     def _make_probe(
         self, token: str
-    ) -> Callable[[Channel], Awaitable[tuple[str | None, dict[str, str], str]]]:
+    ) -> Callable[[Channel], Awaitable[tuple[str | None, dict[str, Exception], str]]]:
         """构造单通道探针
 
         - token 错误时不换代理重试
         """
         channel_probe = _channel_probe()
 
-        async def probe(ch: Channel) -> tuple[str | None, dict[str, str], str]:
+        async def probe(ch: Channel) -> tuple[str | None, dict[str, Exception], str]:
             start = time.monotonic()
             resolved, errors = await channel_probe(token, ch.url)
             self.logger.debug(
@@ -227,19 +227,18 @@ class SettingsManager(BaseManager):
     ) -> dict[str, str]:
         """聚合代理错误
 
+        - 探测交出的是异常，这里取成给人看的那句
         - 多候选聚合为一句引导，单候选保留原始错误
         - 尾句指引用户自查代理软件
         - 红点行由档位单源判据给出
         """
-        errors = dict(outcome.errors)
-        if outcome.resolved is None and FieldKey.PROXY in errors:
-            base = (
-                CheckMessage.ALL_FAIL if len(channels) > 1 else errors[FieldKey.PROXY]
-            )
-            errors = {
-                fault_row_of(mode): f"{base}\n{CheckMessage.PROXY_GUIDE}",
-            }
-        return errors
+        errors = {key: describe_error(value) for key, value in outcome.errors.items()}
+        if outcome.resolved is not None or FieldKey.PROXY not in errors:
+            return errors
+        base = CheckMessage.ALL_FAIL if len(channels) > 1 else errors[FieldKey.PROXY]
+        return {
+            fault_row_of(mode): f"{base}\n{CheckMessage.PROXY_GUIDE}",
+        }
 
     def _settle(self, resolved: str | None, configured: str, warn_stale: bool) -> None:
         """记录生效通道

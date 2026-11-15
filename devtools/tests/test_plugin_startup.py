@@ -1,4 +1,3 @@
-# devtools/tests/test_plugin_startup.py
 """启动结算编排的单元测试
 
 - 判定纯实测：pip 包与资源逐项查盘，出补装计划

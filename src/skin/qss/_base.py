@@ -1,4 +1,3 @@
-# src/skin/qss/_base.py
 """QSS 基础件
 
 - Qss 串类型与各弹窗共用的通用片段

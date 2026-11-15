@@ -1,4 +1,3 @@
-# devtools/_style_checks/_s4_comment.py
 """注释分节检查
 
 - 函数与类定义前的前置注释一律判违规，归属不清

@@ -1,4 +1,3 @@
-# src/exceptions/_describe.py
 """异常文案查询
 
 - 各族文案表摊成一张，按继承链找最近的一句

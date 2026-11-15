@@ -1,4 +1,3 @@
-# src/bundled/AI/services/_summary.py
 """上文压缩服务
 
 - 后台协程把交来的问答压成摘要并写回会话

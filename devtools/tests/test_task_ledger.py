@@ -1,4 +1,3 @@
-# devtools/tests/test_task_ledger.py
 """任务状态账测试
 
 - 真库往返，一条串一行、状态只朝一个方向走

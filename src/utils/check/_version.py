@@ -1,4 +1,3 @@
-# src/utils/check/_version.py
 """版本检查
 
 - 本地与远程版本比对
@@ -6,38 +5,27 @@
 - 从 GitHub release 正文取版本变化内容
 """
 
-import asyncio
 import re
 import tomllib
 from dataclasses import dataclass
 from typing import Any, Literal, NoReturn, cast
 
-from packaging.version import Version
-
 from exceptions import (
-    ConnectionFailedError,
     HTTPStatusError,
     LocalVersionError,
     NetworkError,
     NewVersionError,
     RemoteVersionError,
-    RequestTimeoutError,
     describe_error,
 )
 from skin.messages import VersionMessage
-from system.profile_env import ROOT_DIR
+from system.links import RELEASES_PAGE_PATH, VERSION_PAGE_PATH
+from system.tool_settings import declaration
+from system.versions import is_upgrade
 
-from ..network import BaseClient
+from ..network import GitClient
 
-_PAGES_BASE_URL = "https://lym2006.github.io"
-_PYPROJECT_PATH = "/FinshinImpact/pyproject.toml"
-_RELEASE_BASE_URL = "https://api.github.com"
-_RELEASE_PATH = "/repos/lym2006/FinshinImpact/releases?per_page={size}&page={page}"
-_HEADER = {"User-Agent": "Python-Script"}
-
-# 建连失败与超时重发一次即止，不拖满等待
 _TIMEOUT = 3.0  # 版本页读取超时 3 秒
-_CONNECT_TIMEOUT = 2.0  # 建连超时 2 秒
 _TIMEOUT_RELEASE = 10.0  # release 正文读取超时 10 秒
 
 # 未认证 API 单页最多 100 条，多出的量换页取
@@ -55,78 +43,29 @@ _BARE_URL = re.compile(r"(?<![(<])(https?://\S+)")
 def _get_local_version() -> str | NoReturn:
     """读取本地版本号"""
     try:
-        pyproject_path = ROOT_DIR / "pyproject.toml"
-        if not pyproject_path.exists():
+        data = declaration()
+        if not data:
             raise LocalVersionError(VersionMessage.LOCAL_MISS) from None
-        with open(pyproject_path, "rb") as f:
-            content = tomllib.load(f)
-        local_version = content["project"]["version"]
+        project = data.get("project")
+        local_version = project.get("version") if isinstance(project, dict) else None
+        if not isinstance(local_version, str) or not local_version:
+            raise LocalVersionError(VersionMessage.LOCAL_BROKEN) from None
         return local_version
     except Exception as e:
         raise LocalVersionError(VersionMessage.LOCAL_BROKEN) from e
-
-
-class _VersionClient(BaseClient):
-    """版本页与 release 接口的取件客户端
-
-    - 建连失败或超时等一秒重发一次，两次都坏才上抛
-    """
-
-    _RETRY_DELAY = 1.0  # 重发前的等待秒数
-
-    @classmethod
-    async def _once(
-        cls,
-        method: Literal["json", "text"],
-        base_url: str,
-        request_path: str,
-        headers: dict[str, Any] | None,
-        timeout: float,
-    ) -> dict[str, Any] | str | None:
-        """取一份内容，异常原样上抛"""
-        return await cls.get_content(
-            method=method,
-            base_url=base_url,
-            request_path=request_path,
-            headers=headers,
-            timeout=timeout,
-            connect_timeout=_CONNECT_TIMEOUT,
-        )
-
-    @classmethod
-    async def fetch(
-        cls,
-        method: Literal["json", "text"],
-        base_url: str,
-        request_path: str,
-        headers: dict[str, Any] | None,
-        timeout: float,
-    ) -> dict[str, Any] | str | None:
-        """取一份内容，建连失败或超时重发一次"""
-        try:
-            return await cls._once(method, base_url, request_path, headers, timeout)
-        except (ConnectionFailedError, RequestTimeoutError):
-            await asyncio.sleep(cls._RETRY_DELAY)
-            return await cls._once(method, base_url, request_path, headers, timeout)
 
 
 async def _fetch(
     path: str,
     timeout: float,
     *,
-    base_url: str = _PAGES_BASE_URL,
-    method: Literal["json", "text"] = "text",
+    kind: Literal["json", "text"] = "text",
 ) -> dict[str, Any] | str | NoReturn:
     """读取远程内容指定路径"""
     try:
-        content = await _VersionClient.fetch(
-            method=method,
-            base_url=base_url,
-            request_path=path,
-            headers=_HEADER,
-            timeout=timeout,
-        )
-        return cast(dict[str, Any], content)
+        if kind == "json":
+            return await GitClient.get_api(path, timeout)
+        return await GitClient.get_pages(path, timeout)
     except HTTPStatusError as e:
         raise RemoteVersionError(describe_error(e)) from e
     except NetworkError as e:
@@ -149,7 +88,7 @@ def _autolink_bare_urls(body: str) -> str:
 
 async def _get_remote_version() -> str | NoReturn:
     """读取远程版本号"""
-    text = cast(str, await _fetch(_PYPROJECT_PATH, _TIMEOUT))
+    text = cast(str, await _fetch(VERSION_PAGE_PATH, _TIMEOUT))
     try:
         data = tomllib.loads(text)
         return data["project"]["version"]
@@ -162,7 +101,10 @@ async def check_updates() -> str | NoReturn:
     local_version = _get_local_version()
     remote_version = await _get_remote_version()
 
-    if Version(local_version) < Version(remote_version):
+    newer = is_upgrade(local_version, remote_version)
+    if newer is None:
+        raise RemoteVersionError(VersionMessage.REMOTE_BROKEN)
+    if newer:
         raise NewVersionError(local_version, remote_version)
 
     return local_version
@@ -197,10 +139,9 @@ async def release_history() -> tuple[ReleaseNote, ...] | NoReturn:
         rows = cast(
             Any,
             await _fetch(
-                _RELEASE_PATH.format(size=_RELEASE_PAGE_SIZE, page=page),
+                RELEASES_PAGE_PATH.format(size=_RELEASE_PAGE_SIZE, page=page),
                 _TIMEOUT_RELEASE,
-                base_url=_RELEASE_BASE_URL,
-                method="json",
+                kind="json",
             ),
         )
         if not isinstance(rows, list):

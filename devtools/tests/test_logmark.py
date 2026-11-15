@@ -1,4 +1,3 @@
-# devtools/tests/test_logmark.py
 """日志语义标记单元测试
 
 - 级别仅 INFO/ERROR/DEBUG，标记由内容词表决定

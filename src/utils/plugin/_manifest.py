@@ -1,4 +1,3 @@
-# src/utils/plugin/_manifest.py
 """插件清单读取器
 
 - 扫描插件目录聚合各插件自描述清单
@@ -10,13 +9,13 @@
 
 import importlib.machinery
 import importlib.util
-import sys
 from pathlib import Path
 from typing import Any
 
 from finshin_sdk.domain import (
     BUNDLED_PLUGIN_PRIORITY,
     INSTALLED_PLUGINS_NAME,
+    INSTALLED_PLUGINS_PKG,
     MANIFEST_FIELDS,
     PLUGINS_PKG,
     CommandPriority,
@@ -28,8 +27,10 @@ from finshin_sdk.domain import (
     resolve_claims,
 )
 from finshin_sdk.dto import PluginManifestDTO
-from system.profile_env import ROOT_DIR
+from system.module_mount import mount_module, mount_package
+from system.profile_env import DECLARATION_FILE_NAME, ROOT_DIR
 from system.toml_read import read_toml
+from system.tool_settings import declared_dependencies
 
 from ._manifest_help import read_help_sections
 
@@ -41,6 +42,9 @@ _REQUIRED_KEYS = tuple(spec.key for spec in MANIFEST_FIELDS if spec.required)
 
 # 插件根：目录与这棵树的顶层包名
 _PluginRoot = tuple[Path, str]
+
+# 外部插件代码所在的目录名
+_CODE_STEM = "src"
 
 
 def _bundled_dir() -> Path | None:
@@ -56,22 +60,8 @@ def _bundled_dir() -> Path | None:
 
 
 def _installed_dir() -> Path:
-    """定位项目根下的外部插件目录"""
+    """定位外部插件挂载点"""
     return ROOT_DIR / INSTALLED_PLUGINS_NAME
-
-
-def _mount(dir_path: Path) -> str:
-    """把外部插件目录挂成顶层包并回它的包名
-
-    - 目录不在搜索路径上，按路径造一份只带搜索位置的包模块
-    - 插件目录内部的相对引用因此走得通，跨出目录引不到随包私有件
-    """
-    pkg = dir_path.name
-    if pkg not in sys.modules:
-        spec = importlib.machinery.ModuleSpec(pkg, loader=None, is_package=True)
-        spec.submodule_search_locations = [str(dir_path)]
-        sys.modules[pkg] = importlib.util.module_from_spec(spec)
-    return pkg
 
 
 def _plugins_roots() -> list[_PluginRoot]:
@@ -87,12 +77,24 @@ def _plugins_roots() -> list[_PluginRoot]:
 
     installed = _installed_dir()
     if installed.is_dir():
-        roots.append((installed, _mount(installed)))
+        mount_package(INSTALLED_PLUGINS_PKG, installed)
+        roots.append((installed, INSTALLED_PLUGINS_PKG))
 
     return roots
 
 
-def _load_manifests(plugins_path: Path, pkg: str) -> dict[str, PluginManifestDTO]:
+def _code_dir(plugin_dir: Path) -> Path:
+    """插件代码所在那一层
+
+    - 有 src 就认它，没有就认插件目录本身
+    """
+    code = plugin_dir / _CODE_STEM
+    return code if code.is_dir() else plugin_dir
+
+
+def _load_manifests(
+    plugins_path: Path, pkg: str, mount_code: bool
+) -> dict[str, PluginManifestDTO]:
     """扫描插件目录聚合清单
 
     - 只认含清单文件的直接子目录
@@ -105,22 +107,27 @@ def _load_manifests(plugins_path: Path, pkg: str) -> dict[str, PluginManifestDTO
         return manifests
 
     for path in sorted(plugins_path.iterdir()):
-        manifest = _read_manifest(path / PluginFileName.MANIFEST, path.name, pkg)
+        manifest = _read_manifest(path, path.name, pkg)
         if manifest is not None:
+            if mount_code:
+                code = _code_dir(path)
+                if code != path:
+                    mount_module(manifest.module, code)
             manifests[manifest.name] = manifest
 
     return manifests
 
 
-def _read_manifest(path: Path, dir_name: str, pkg: str) -> PluginManifestDTO | None:
-    """读取单份插件清单文件
+def _read_manifest(dir_path: Path, dir_name: str, pkg: str) -> PluginManifestDTO | None:
+    """读取单份插件清单并接上自家依赖表
 
-    - 文件缺失或解析失败返回 None
+    - 清单缺失或解析失败返回 None
     - 必填三项缺失、name 与目录名不符或类型错误则整份拒收
+    - 外部那份的依赖表读不出即整份拒收，随包那份的库在根声明里
     - 未知键忽略，可选字段缺省用 DTO 默认值
     - 导入路径按所在根的顶层包名拼，清单不写这一行
     """
-    data = read_toml(path)
+    data = read_toml(dir_path / PluginFileName.MANIFEST)
     if data is None:
         return None
 
@@ -143,10 +150,25 @@ def _read_manifest(path: Path, dir_name: str, pkg: str) -> PluginManifestDTO | N
     if kwargs[ManifestKey.NAME] != dir_name:
         return None
 
+    deps = _deps_of(dir_path, pkg)
+    if deps is None:
+        return None
+
     if raw_sections := data.get(ManifestKey.HELP):
         kwargs["help_section"] = read_help_sections(raw_sections, dir_name)
 
-    return PluginManifestDTO(**kwargs, module=f"{pkg}.{dir_name}")
+    return PluginManifestDTO(deps=deps, module=f"{pkg}.{dir_name}", **kwargs)
+
+
+def _deps_of(plugin_dir: Path, pkg: str) -> tuple[str, ...] | None:
+    """一只插件的库，随包那份按根声明算即空表
+
+    - 外部那份交出 None 即自家声明的依赖表读不出，整份不认
+    """
+    if pkg == PLUGINS_PKG:
+        return ()
+
+    return declared_dependencies(plugin_dir / DECLARATION_FILE_NAME)
 
 
 def _load_instance_enabled(state_path: Path) -> frozenset[str] | None:
@@ -215,7 +237,9 @@ def enabled_manifests(state_path: Path) -> list[PluginManifestDTO]:
     """
     manifests: dict[str, PluginManifestDTO] = {}
     for dir_path, pkg in _plugins_roots():
-        for name, manifest in _load_manifests(dir_path, pkg).items():
+        for name, manifest in _load_manifests(
+            dir_path, pkg, pkg != PLUGINS_PKG
+        ).items():
             if pkg != PLUGINS_PKG and name in BUNDLED_PLUGIN_PRIORITY:
                 continue
             manifests.setdefault(name, manifest)

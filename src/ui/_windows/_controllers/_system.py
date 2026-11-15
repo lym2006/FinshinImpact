@@ -1,4 +1,3 @@
-# src/ui/_windows/_controllers/_system.py
 """日志控制器
 
 - 打开日志目录入口

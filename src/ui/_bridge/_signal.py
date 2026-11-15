@@ -1,4 +1,3 @@
-# src/ui/_bridge/_signal.py
 """安全信号
 
 - 按 tag 防重连的信号包装

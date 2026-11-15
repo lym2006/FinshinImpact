@@ -1,4 +1,3 @@
-# src/ui/_dialogs/_settings/__init__.py
 """配置向导
 
 - 左侧大类与上排页签的两级表单、错误标红

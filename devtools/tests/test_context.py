@@ -1,4 +1,3 @@
-# devtools/tests/test_context.py
 """处理上下文样例测试
 
 - 文字入参自动包成外发负载

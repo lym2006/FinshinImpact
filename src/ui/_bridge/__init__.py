@@ -1,4 +1,3 @@
-# src/ui/_bridge/__init__.py
 """信号桥子包门面
 
 - 代发 bot↔GUI 共用的单例桥梁

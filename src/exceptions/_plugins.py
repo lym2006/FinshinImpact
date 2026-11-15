@@ -1,11 +1,10 @@
-# src/exceptions/_plugins.py
 """插件异常族
 
 - 定义插件注册与生命周期异常
 - 注册失败的定性文案按异常类收进同文件文案表，异常本体走调试日志
 """
 
-from ._base import BotError
+from finshin_sdk.exceptions import BotError
 
 
 class PluginsError(BotError):
@@ -73,12 +72,26 @@ class PluginRoleError(PluginsError):
         super().__init__()
 
 
+class PluginManifestError(PluginsError):
+    """插件清单的开关声明写错
+
+    - 哪只插件、哪只开关与收到的类型随异常携带
+    """
+
+    def __init__(self, plugin: str, flag: str, got: str) -> None:
+        self.plugin = plugin
+        self.flag = flag
+        self.got = got
+        super().__init__()
+
+
 PLUGINS_MAP = {
     PluginEntryError: "插件入口不对：{detail}",
     PluginMissingError: "未找到（检查目录结构）",
     PluginDependencyError: "内部依赖缺失",
     PluginLoadError: "加载失败：{kind}",
     PluginRoleError: "命令权限说明与实际拦截对不上",
+    PluginManifestError: "插件 {plugin} 的开关 {flag} 默认值只能写 int/float/str（收到 {got}）",
     PluginImportError: "外部插件 {plugin} 不许引本体内部：{target}（{where}）",
     PluginsMissingError: "一只插件都没装上，程序无法运行",
 }

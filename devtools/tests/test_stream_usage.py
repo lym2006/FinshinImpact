@@ -1,4 +1,3 @@
-# devtools/tests/test_stream_usage.py
 """流式用量回读测试
 
 - 末帧带的输入 token 读数写进读数容器

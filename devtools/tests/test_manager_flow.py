@@ -1,4 +1,3 @@
-# devtools/tests/test_manager_flow.py
 """BotManager 配置应用与关闭流程单元测试
 
 - stdlib unittest，打桩网络层与子管理器，不触网
@@ -23,6 +22,7 @@ from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from system.profile_env import set_profile  # noqa: E402
 
@@ -31,7 +31,6 @@ set_profile("tg.000000")
 from aiogram.exceptions import TelegramNetworkError  # noqa: E402
 from aiogram.methods import GetMe  # noqa: E402
 
-from adapters.telegram.session import is_link_failure  # noqa: E402
 from bot._managers import BotManager, _apply  # noqa: E402
 from bot._service import AdapterRuntime  # noqa: E402
 from finshin_sdk import CapabilityCall  # noqa: E402
@@ -804,8 +803,8 @@ class _FlakyAdapter:
             raise self._errors.pop(0)
 
     def is_link_failure(self, exc: BaseException) -> bool:
-        """链路判定走真判据，不退避的异常才算非链路"""
-        return is_link_failure(exc)
+        """假适配器自报链路判定：连不上才算，配置错不算"""
+        return isinstance(exc, (OSError, TelegramNetworkError))
 
 
 class TestHandshakeRetry(unittest.IsolatedAsyncioTestCase):

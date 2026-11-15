@@ -1,4 +1,3 @@
-# src/bot/_managers/_base.py
 """管理器基类
 
 - 业务执行入口的统一格式

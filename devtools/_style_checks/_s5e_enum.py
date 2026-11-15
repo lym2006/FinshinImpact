@@ -1,4 +1,3 @@
-# devtools/_style_checks/_s5e_enum.py
 """枚举分节检查
 
 - 枚举基类须为值型 StrEnum/IntEnum

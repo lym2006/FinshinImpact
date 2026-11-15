@@ -1,4 +1,4 @@
-# 插件清单模板 — 复制到 src/bundled/<目录名>/plugin.toml 后按需改值
+# 插件清单模板 — 随包插件复制到 src/bundled/<目录名>/，外部插件复制到 finshin/plugin/<目录名>/
 
 # 与插件目录名一致
 name = "name"
@@ -9,8 +9,8 @@ title = "title"
 # 面板一行说明
 summary = "summary"
 
-# 本插件独有的库，随包插件的库与公共库走 pyproject
-deps = ["markdown==3.10.2"]
+# 本插件独有的库写在同目录 pyproject.toml 的 [project].dependencies，外部插件两份文件缺任一整份不认
+# 随包插件的库在项目根的 pyproject.toml 里，目录内只放这一份清单
 
 # 非 pip 资源，两段式「模块名 资源名」，启动前结算时装上，不随取消勾选清除，无则留空
 assets = ["playwright chromium-headless-shell"]
@@ -24,6 +24,6 @@ note = "note"  # 只写清单字段表达不了的规矩，无则省略
 [[help.commands]]
 cmd = "cmd"
 desc = "desc"
-flags = []  # 额外开关，每项写成 ["-i", "说明"]，要带值再补一段值名 ["-t", "说明", "秒数"]，-h 不写，全命令默认可用
-args = ""  # 命令后面要带的内容，写成一句说明，不填即不认
+flags = []  # 额外开关，每项 ["-i", "说明"] 不收值，["-t", "说明", 0.0] 收值并按默认值的类型判（整数、小数、文本三种），-h 不写，全命令默认可用
+args = ""  # 命令后面要带的内容，写成一句说明，不填一段都不收，写了即收开关之前的全部片段
 role = "member"  # 权限档三选一：owner / admin / member，与代码里的守卫档位一致

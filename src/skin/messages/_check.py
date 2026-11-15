@@ -1,4 +1,3 @@
-# src/skin/messages/_check.py
 """检查进度窗文案"""
 
 
@@ -9,7 +8,7 @@ class CheckMessage:
     - 轮专属文案按 VERIFY_ / ADVICE_ 前缀分组
     """
 
-    # 用：utils/network/_probe.py 与 adapters/telegram/diagnose.py 两轮的表行名（界面与生成器共用）
+    # 用：utils/network/_probe.py 与 utils/check/_diagnose.py 两轮的表行名（界面与生成器共用）
     ROW_CFG = "配置代理通道"
     ROW_SYS = "系统代理通道"
     ROW_DIRECT = "直连通道"
@@ -74,17 +73,11 @@ class CheckMessage:
     # 用：代理不通时字段标红的尾句，指向用户自查代理软件
     PROXY_GUIDE = "请到代理软件里确认监听端口与地址后重试"
 
-    # 用：代理协议头为空时的占位描述
-    SCHEME_EMPTY = "（空，缺少 :// 协议头）"
-
     # 用：配置值坏但被后续通道救活的提醒句
     STALE = "配置代理 {raw!r} 不可用，本次改用{via}，请自行修正"
 
     # 用：Token 结构本地校验失败句
     TOKEN_BAD_FORMAT = "Token 格式错误（应为 数字:密钥）"
-
-    # 用：代理不通时 Token 的待复查标注
-    TOKEN_PENDING = "{mark}：代理修复后复查"
 
     # 用：bot/_managers token 探测失败的致命弹窗，确认后退出重开选窗编辑
     TOKEN_FATAL = (
@@ -105,7 +98,7 @@ class CheckMessage:
     REASON_SAVE = "保存"
     REASON_RECHECK = "复验"
 
-    # 用：bot/_managers/_settings.py 与 adapters/telegram/diagnose.py 首轮全不通后的重测提示
+    # 用：bot/_managers/_settings.py 与 utils/check/_diagnose.py 首轮全不通后的重测提示
     RETRY_HEAD = "首轮全部不通，正在自动重测一轮"
 
     # 用：单通道探测用时（debug 级，面板不展示）

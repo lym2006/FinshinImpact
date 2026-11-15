@@ -1,4 +1,3 @@
-# src/bundled/AI/handlers/__init__.py
 """AI 路由门面
 
 - 交出全部业务路由的有序清单

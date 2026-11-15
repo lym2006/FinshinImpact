@@ -1,15 +1,14 @@
-# src/utils/init_files.py
 """文件初始化
 
 - 必要文件检查与模板落盘
 - 实例人设与内置模板按内容指纹对账
 """
 
-import hashlib
 from enum import StrEnum
 from pathlib import Path
 
-from system.atomic_write import write_bytes_atomic
+from system.atomic_write import write_bytes_atomic, write_text_atomic
+from system.digest import text_digest
 
 from .paths import (
     DB_BACKUP_DIR,
@@ -53,7 +52,7 @@ def _digest(path: Path) -> str:
 
     - 按读文本再编码算，行尾转换不计入改动
     """
-    return hashlib.sha256(path.read_text(encoding="utf-8").encode("utf-8")).hexdigest()
+    return text_digest(path.read_text(encoding="utf-8"))
 
 
 def _read_persona_stamp() -> str:
@@ -73,7 +72,7 @@ def _write_persona_stamp(digest: str) -> None:
     - 写不进不阻断启动，下次启动重走判定
     """
     try:
-        PERSONA_STAMP.write_text(digest, encoding="utf-8")
+        write_text_atomic(PERSONA_STAMP, digest)
     except OSError:
         pass
 

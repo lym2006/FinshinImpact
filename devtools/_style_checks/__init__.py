@@ -1,4 +1,3 @@
-# devtools/_style_checks/__init__.py
 """编码规范静态检查包
 
 - 非空门面代发入口脚本所需符号

@@ -1,4 +1,3 @@
-# devtools/tests/test_bot_logger.py
 """调试日志调用链取法测试
 
 - 调试记录默认单行，链由调用处点名要

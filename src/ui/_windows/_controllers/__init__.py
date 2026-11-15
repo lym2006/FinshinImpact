@@ -1,4 +1,3 @@
-# src/ui/_windows/_controllers/__init__.py
 """控制器门面
 
 - 自动实例化与契约打包

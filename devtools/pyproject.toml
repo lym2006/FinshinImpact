@@ -1,0 +1,19 @@
+[project]
+name = "finshin-dev"
+version = "0"
+description = "开发工具清单"
+requires-python = ">=3.11,<4.0"
+dependencies = [
+    "finshin-adapter-tg",
+    "finshin-sdk",
+    "import-linter==2.15",
+    "pyinstaller==6.22.3",
+    "pyright==1.1.414",
+    "pytest==9.1.1",
+    "ruff==0.16.3",
+    "uv==0.12.23",
+]
+
+[tool.uv.sources]
+finshin-adapter-tg = { path = "../finshin/adapter/tg" }
+finshin-sdk = { path = "../finshin/sdk" }

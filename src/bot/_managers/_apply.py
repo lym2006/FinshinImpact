@@ -1,4 +1,3 @@
-# src/bot/_managers/_apply.py
 """配置应用
 
 - 校验当前配置并决定是否重启引擎

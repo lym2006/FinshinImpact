@@ -1,13 +1,9 @@
-# src/ui/_guide/_form.py
 """实例表单窗
 
 - 收 token 与备注名，新建与编辑共用同一表单
 - 校验与落盘策略由各自子类实现
 """
 
-from typing import cast
-
-from PySide6.QtGui import QStandardItemModel
 from PySide6.QtWidgets import (
     QDialog,
     QHBoxLayout,
@@ -18,22 +14,23 @@ from PySide6.QtWidgets import (
 )
 
 from finshin_sdk.domain import Platform, platform_of_profile
+from services.env_setup.platform_state import present_platforms
 from services.profile_store import code_for_token, create_profile, update_profile
 from skin.messages import PickerMessage
 from skin.qss import build_bootstrap_qss
 from skin.theme import FORM, ButtonStyle
 from system.profile_env import read_token
 
-from .._primitives import make_button, make_combo
+from .._primitives import fill_combo, make_button, make_combo
+from ._platform import open_platform_dialog
 
-# 平台下拉项，显示文案在文案层单源维护
-_PLATFORM_ITEMS = (
-    (Platform.TELEGRAM, PickerMessage.NEW_PLATFORM_TELEGRAM),
-    (Platform.QQ, PickerMessage.NEW_PLATFORM_QQ),
-)
 
-# 已接线的平台，未列入者在下拉里置灰仅作预告
-_SUPPORTED_PLATFORMS = frozenset({Platform.TELEGRAM})
+def _platform_items() -> list[tuple[Platform, str]]:
+    """下拉项＝本机装着适配器包的那些平台，按平台码升序"""
+    return [
+        (Platform(code), PickerMessage.PLATFORM_NAMES.get(code, code))
+        for code in sorted(present_platforms())
+    ]
 
 
 class _ProfileFormDialog(QDialog):
@@ -105,25 +102,33 @@ class NewProfileDialog(_ProfileFormDialog):
         super().__init__(PickerMessage.NEW_TITLE)
 
     def _build_head(self, form: QVBoxLayout) -> None:
-        """平台下拉
+        """平台下拉与平台组件入口
 
-        - 未接线平台置灰不可选
+        - 下拉只列本机装着适配器包的平台
         """
         form.addWidget(QLabel(PickerMessage.NEW_PLATFORM_LABEL))
-        self._platform = make_combo(_PLATFORM_ITEMS)
-        model = cast(QStandardItemModel, self._platform.model())
-        for platform, _label in _PLATFORM_ITEMS:
-            if platform not in _SUPPORTED_PLATFORMS:
-                # 存根把 model() 标成基类，实为 combo 自持的项模型，置灰只在子类有
-                model.item(self._platform.findData(platform)).setEnabled(False)
+        self._platform = make_combo(_platform_items())
         form.addWidget(self._platform)
+
+        manage = make_button(PickerMessage.BTN_MANAGE_PLATFORM, ButtonStyle.LINK)
+        manage.clicked.connect(self._open_platform)
+        form.addWidget(manage)
+
+    def _open_platform(self) -> None:
+        """开平台组件面板，关回来按装机结果重灌下拉"""
+        open_platform_dialog(parent=self)
+        fill_combo(self._platform, _platform_items())
 
     def _on_ok(self) -> None:
         """校验 token 并新建实例"""
-        token = self._token.text().strip()
-
         # Qt userData 取出会退化成字符串，此处包回枚举
-        platform = Platform(self._platform.currentData())
+        data = self._platform.currentData()
+        if data is None:
+            self._warn(PickerMessage.NEW_NEED_ADAPTER)
+            return
+        platform = Platform(data)
+
+        token = self._token.text().strip()
         code = code_for_token(platform, token)
         if not code:
             self._warn(PickerMessage.FORM_TOKEN_INVALID)

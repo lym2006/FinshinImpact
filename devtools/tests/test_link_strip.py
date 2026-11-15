@@ -1,4 +1,3 @@
-# devtools/tests/test_link_strip.py
 """交模型前剥网址测试
 
 - 发出去那轮的网址换成占位标记，落盘记录与入库正文留着原文
@@ -10,6 +9,7 @@
 
 import sys
 import unittest
+from dataclasses import replace
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "src"))
@@ -23,11 +23,12 @@ from bundled.AI.utils import (  # noqa: E402
     compose_user_text,
     estimate_window,
 )
-from finshin_sdk.domain import ChatRole, ChatScope, Platform  # noqa: E402
+from finshin_sdk.domain import ChatRole, ChatScope, ContentKind, Platform  # noqa: E402
 from finshin_sdk.domain.ids import ContainerKey, MessageId, UserId  # noqa: E402
 from finshin_sdk.dto import (  # noqa: E402
     ContentDTO,
     InboundEventDTO,
+    MediaEntryDTO,
     MessageDTO,
     MsgReferenceDTO,
     PrincipalDTO,
@@ -50,6 +51,62 @@ def _event(text: str) -> InboundEventDTO:
         scope=ChatScope.GROUP,
         display_name="张三",
     )
+
+
+def _media_event(text: str, kind: ContentKind) -> InboundEventDTO:
+    """构造一条带媒体与附文的入站事件"""
+    container = ContainerKey("g100123")
+    principal = PrincipalDTO(
+        platform=Platform.TELEGRAM, container=container, user=UserId("111")
+    )
+    ref = MsgReferenceDTO(
+        platform=Platform.TELEGRAM, container=container, message_id=MessageId("7")
+    )
+    media = MediaEntryDTO(
+        kind=kind,
+        local_path="",
+        slot="",
+        message_id=MessageId("7"),
+        caption=text,
+    )
+    return InboundEventDTO(
+        ref=ref,
+        principal=principal,
+        content=ContentDTO(text=text, media=(media,)),
+        scope=ChatScope.GROUP,
+        display_name="张三",
+    )
+
+
+class TestKindMarks(unittest.TestCase):
+    """种类占位由插件拼，交出去的那行字照旧"""
+
+    def test_caption_media_keeps_mark(self) -> None:
+        self.assertEqual(
+            compose_user_text(_media_event("附言", ContentKind.PHOTO)),
+            "[张三|111][图片]附言",
+        )
+
+    def test_quoted_media_keeps_kind_before_caption(self) -> None:
+        """被引的图带附文时，种类顶在附文之前交出"""
+        event = _media_event("这图呢", ContentKind.PHOTO)
+        event = replace(
+            event,
+            reply_ref=event.ref,
+            reply_text="这张图片咋样",
+            reply_sender_id=UserId("222"),
+            reply_sender_name="李四",
+            reply_kind=ContentKind.PHOTO,
+        )
+        self.assertEqual(
+            compose_user_text(event),
+            "[张三|111]（引用 [李四|222]：[图片]这张图片咋样）[图片]这图呢",
+        )
+
+    def test_pure_media_has_no_text(self) -> None:
+        """没附文的纯图仍算没正文，占位也不交出"""
+        event = _media_event("", ContentKind.PHOTO)
+        self.assertEqual(compose_user_text(event), "[张三|111]")
 
 
 class TestLinkStrip(unittest.TestCase):

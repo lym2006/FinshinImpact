@@ -1,4 +1,3 @@
-# src/ui/_dialogs/_persona/_edit.py
 """人设正文编辑窗
 
 - 正文按原文展示，主人 id 留占位符

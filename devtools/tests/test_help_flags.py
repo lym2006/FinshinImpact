@@ -1,4 +1,3 @@
-# devtools/tests/test_help_flags.py
 """插件清单命令输入的单元测试
 
 - 覆盖 help.commands 的开关与参数解析
@@ -24,6 +23,7 @@ set_profile("tg.000000")
 
 from bundled._shared.messages import BotMessage  # noqa: E402
 from bundled.help import _services  # noqa: E402
+from exceptions import PluginManifestError  # noqa: E402
 from finshin_sdk.domain import HelpKey  # noqa: E402
 from finshin_sdk.dto import HelpCommandDTO, HelpFlagDTO, HelpSectionDTO  # noqa: E402
 from utils.plugin import _manifest_help  # noqa: E402
@@ -76,19 +76,46 @@ class TestHelpCommandParse(unittest.TestCase):
             {
                 HelpKey.CMD: "md",
                 HelpKey.DESC: "图片输出",
-                HelpKey.FLAGS: [["-i", "图片输入"], ["-t", "输出速度", "秒数"]],
+                HelpKey.FLAGS: [["-i", "图片输入"], ["-t", "输出速度", 1.0]],
             }
         )
         self.assertEqual(
             spec.flags,
-            (HelpFlagDTO("-i", "图片输入"), HelpFlagDTO("-t", "输出速度", "秒数")),
+            (HelpFlagDTO("-i", "图片输入"), HelpFlagDTO("-t", "输出速度", 1.0)),
         )
 
-    def test_flag_without_value_name_keeps_value_empty(self) -> None:
+    def test_flag_without_default_is_pure_switch(self) -> None:
         spec = self._parse(
             {HelpKey.CMD: "md", HelpKey.DESC: "图片输出", HelpKey.FLAGS: [["-i", "图"]]}
         )
-        self.assertEqual(spec.flags[0].value, "")
+        self.assertIsNone(spec.flags[0].default)
+
+    def test_integer_default_parses_as_int(self) -> None:
+        spec = self._parse(
+            {
+                HelpKey.CMD: "md",
+                HelpKey.DESC: "图片输出",
+                HelpKey.FLAGS: [["-n", "次数", 3]],
+            }
+        )
+        self.assertEqual(spec.flags[0].default, 3)
+
+    def test_default_out_of_allowed_types_raises(self) -> None:
+        for raw_flag in (
+            ["-i", "图", True],
+            ["-i", "图", ""],
+            ["-i", "图", []],
+        ):
+            with self.subTest(raw_flag=raw_flag):
+                sections = _section(
+                    {
+                        HelpKey.CMD: "md",
+                        HelpKey.DESC: "图片输出",
+                        HelpKey.FLAGS: [raw_flag],
+                    }
+                )
+                with self.assertRaises(PluginManifestError):
+                    _read(sections)
 
     def test_flag_name_without_dash_skips_command(self) -> None:
         sections = _section(
@@ -200,14 +227,14 @@ class TestMenuEntries(unittest.TestCase):
 
     def test_flags_follow_command_one_entry_each(self) -> None:
         entries = self._entries(
-            (HelpFlagDTO("-i", "图片输入"), HelpFlagDTO("-t", "输出速度", "秒数"))
+            (HelpFlagDTO("-i", "图片输入"), HelpFlagDTO("-t", "输出速度", 1.0))
         )
         self.assertEqual(
             entries[-5:],
             [
                 ("command", "md", "图片输出"),
                 ("flag", "-i", "图片输入"),
-                ("flag", "-t 秒数", "输出速度"),
+                ("flag", "-t 1.0", "输出速度"),
                 ("gap", "", ""),
                 ("section", "未完待续", ""),
             ],
@@ -264,7 +291,7 @@ class TestMenuEntries(unittest.TestCase):
         with patch.object(
             _services,
             "_display_order",
-            self._entries((HelpFlagDTO("-t", "甲", "秒数"),)),
+            self._entries((HelpFlagDTO("-t", "甲", 1.0),)),
         ):
             second = _services._menu_digest()
         self.assertNotEqual(first, second)
@@ -304,7 +331,7 @@ class _SpecStubMixin(unittest.TestCase):
             "convert": HelpCommandDTO(
                 cmd="convert",
                 desc="格式转换",
-                flags=(HelpFlagDTO("-t", "输出速度", "秒数"),),
+                flags=(HelpFlagDTO("-t", "输出速度", 1.0),),
             ),
         }
         for name, value in (
@@ -324,19 +351,21 @@ class TestUsageLine(_SpecStubMixin):
         self.assertIn("-h", text)
         self.assertLess(text.index("-h"), text.index("-i"))
 
-    def test_flag_note_stays_out_of_usage_line(self) -> None:
-        self.assertNotIn("图片输入", _services.resolve_single_help("md"))
+    def test_flag_note_shows_on_its_own_line(self) -> None:
+        text = _services.resolve_single_help("md")
+        self.assertIn("-h 看用法", text)
+        self.assertIn("-i 图片输入", text)
 
     def test_declared_args_get_own_line(self) -> None:
         self.assertEqual(
             _services.resolve_single_help("push"),
-            "推送消息\n可用开关：-h\n可用参数：文件路径",
+            "推送消息\n可用参数：文件路径\n可用开关：\n-h 看用法",
         )
 
-    def test_value_flag_shows_value_name(self) -> None:
+    def test_value_flag_shows_default(self) -> None:
         self.assertEqual(
             _services.resolve_single_help("convert"),
-            "格式转换\n可用开关：-h、-t 秒数",
+            "格式转换\n可用开关：\n-h 看用法\n-t 1.0 输出速度",
         )
 
     def test_undeclared_args_leave_no_line(self) -> None:
@@ -361,13 +390,13 @@ class TestUsageHint(_SpecStubMixin):
     def test_hint_leads_with_command_name(self) -> None:
         self.assertEqual(
             _services.resolve_usage_hint("convert"),
-            "/convert 用法错误\n可用开关：-h、-t 秒数",
+            "/convert 用法错误\n可用开关：\n-h 看用法\n-t 1.0 输出速度",
         )
 
     def test_hint_shows_declared_args(self) -> None:
         self.assertEqual(
             _services.resolve_usage_hint("push"),
-            "/push 用法错误\n可用开关：-h\n可用参数：文件路径",
+            "/push 用法错误\n可用参数：文件路径\n可用开关：\n-h 看用法",
         )
 
     def test_hint_without_spec_is_format_error(self) -> None:

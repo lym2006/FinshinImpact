@@ -1,7 +1,6 @@
-# src/skin/qss/_dialog.py
 """通用弹窗 QSS 装配
 
-- 用基础件拼出通知、版本变化与等待三类成品串
+- 用基础件拼出通知、版本变化、等待与平台组件四类成品串
 - 退出确认与断连计时两窗配色自成一套
 """
 
@@ -10,6 +9,7 @@ from ..theme import (
     BTN,
     GLOBAL,
     LINK_DIALOG,
+    PLATFORM_DIALOG,
     SETTINGS_DIALOG,
     SHUTDOWN_DIALOG,
     TOOLBAR,
@@ -88,6 +88,25 @@ QTextEdit#{ObjectName.RELEASE_NOTES_VIEW} {{
 }}"""
 
 
+# 平台组件窗的段名与组件块，块内留白由布局边距给
+_PLATFORM_BLOCK_QSS = f"""\
+QLabel#{ObjectName.PLATFORM_SECTION} {{
+    font-size: {PLATFORM_DIALOG.name_font_size}px;
+    font-weight: bold;
+}}
+
+QFrame#{ObjectName.PLATFORM_BLOCK} {{
+    background-color: {TOOLBAR.bg};
+    border: {SETTINGS_DIALOG.border_width}px solid {SETTINGS_DIALOG.border_color};
+    border-radius: {GLOBAL.radius}px;
+}}
+
+QLabel#{ObjectName.PLATFORM_NAME} {{
+    font-size: {PLATFORM_DIALOG.name_font_size}px;
+    font-weight: bold;
+}}"""
+
+
 def build_notice_dialog_qss() -> Qss:
     """构建通知弹窗 QSS"""
     return with_dialog_base()
@@ -111,3 +130,8 @@ def build_shutdown_dialog_qss() -> Qss:
 def build_link_dialog_qss() -> Qss:
     """构建断连计时弹窗 QSS"""
     return Qss("\n\n".join([_LINK_WINDOW_QSS, _LINK_BUTTON_QSS]))
+
+
+def build_platform_dialog_qss() -> Qss:
+    """构建平台组件面板 QSS"""
+    return with_dialog_base(_PLATFORM_BLOCK_QSS)

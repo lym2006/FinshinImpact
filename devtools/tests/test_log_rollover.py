@@ -1,4 +1,3 @@
-# devtools/tests/test_log_rollover.py
 """日志文件轮转兜底测试
 
 - 改名被占用挡住即本轮不轮转，行照写进原文件

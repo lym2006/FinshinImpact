@@ -1,4 +1,3 @@
-# src/bot/_adapter_host/_assemble.py
 """平台装配
 
 - 取件、造运行时、挂日志中间件、按启用序列注册插件

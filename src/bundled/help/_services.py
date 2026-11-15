@@ -1,17 +1,16 @@
-# src/bundled/help/_services.py
 """帮助服务
 
 - 按插件清单与实例启用集聚合菜单数据源
 - 单命令解析与图片渲染
 """
 
-import hashlib
 import threading
 from pathlib import Path
 from typing import TypeAlias
 
 from finshin_sdk.domain import CommandFlag, CommandRole, PluginFileName
 from finshin_sdk.dto import HelpCommandDTO, HelpFlagDTO
+from system.digest import lines_digest
 from system.profile_env import ASSET_FONT_NAME, ASSETS_DIR
 from utils import get_logger
 from utils.paths import HELP_IMAGE, PROFILE_DIR
@@ -61,9 +60,10 @@ _ROLE_NOTE: dict[CommandRole, str] = {
 def _flag_label(flag: HelpFlagDTO) -> str:
     """拼开关在帮助图与回执上的左列文本
 
-    - 带值的开关在名后跟上值名，值名只作说明不参与解析
+    - 带默认值的开关在名后跟默认值，缺省一眼看得见
+    - 纯开关只列名
     """
-    return f"{flag.name} {flag.value}" if flag.value else flag.name
+    return flag.name if flag.default is None else f"{flag.name} {flag.default}"
 
 
 def _build_menu_data() -> list[_MenuRow]:
@@ -129,7 +129,7 @@ def _menu_digest() -> str:
     """
     lines = [f"{item_type}|{label}|{note}" for item_type, label, note in _display_order]
     lines.insert(0, _layout_stamp())
-    return hashlib.sha256("\n".join(lines).encode("utf-8")).hexdigest()
+    return lines_digest(lines)
 
 
 def _layout_stamp() -> str:
@@ -186,16 +186,21 @@ def resolve_usage_hint(name: str) -> str:
 
 
 def _usage_lines(spec: HelpCommandDTO) -> str:
-    """拼单命令的可用开关与可用参数
+    """拼单命令的可用参数与可用开关
 
+    - 参数行在前，开关行在后
     - -h 全命令默认支持，清单 flag 追加其后
-    - 开关说明只进帮助图，这两行只列名字与值名
+    - 开关各占一行，名与默认值后跟清单里的说明
     - 清单没登记位置参数就不出参数行
     """
-    switches = [CommandFlag.HELP, *(_flag_label(flag) for flag in spec.flags)]
-    lines = [BotMessage.CMD_USAGE_FLAGS.format(flags="、".join(switches))]
+    switches = [
+        f"{CommandFlag.HELP} {BotMessage.CMD_FLAG_HELP_DESC}",
+        *(f"{_flag_label(flag)} {flag.desc}" for flag in spec.flags),
+    ]
+    lines: list[str] = []
     if spec.args:
         lines.append(BotMessage.CMD_USAGE_ARGS.format(args=spec.args))
+    lines.append(BotMessage.CMD_USAGE_FLAGS.format(flags="\n".join(switches)))
     return "\n".join(lines)
 
 

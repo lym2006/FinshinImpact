@@ -1,4 +1,3 @@
-# src/services/tasks/_ledger.py
 """任务状态账
 
 - 同一主体的一串问答共记库里一行，入队、开答、落定三处推进
@@ -37,7 +36,7 @@ class TaskLedger:
         """记入队
 
         - 该主体这一串的头一条才落库，后续只加在途计数
-        - 主体行随任务行一起写，外键才有落点
+        - 主体行随任务行一起写
         """
         key = item.principal_key
         if self._inflight.get(key, 0) > 0:
@@ -103,7 +102,10 @@ class TaskLedger:
         return self._repos
 
     async def _patch(self, item: TaskItem, patch: TaskPatchDTO) -> None:
-        """推进状态，报错与查无此行一并上报"""
+        """推进任务状态
+
+        - 报错与查无此行一并上报
+        """
         task_id = TaskId(f"{item.principal_key}{KEY_SEP}{item.kind}")
         try:
             repos = await self._book()

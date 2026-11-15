@@ -1,4 +1,3 @@
-# src/ui/_primitives/_stack.py
 """自家窗之间的层序
 
 - 提顶要看的三个条件收在这一处

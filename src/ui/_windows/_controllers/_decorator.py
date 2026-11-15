@@ -1,4 +1,3 @@
-# src/ui/_windows/_controllers/_decorator.py
 """控制器异常装饰器
 
 - 业务异常拦截，保障 GUI 线程存活

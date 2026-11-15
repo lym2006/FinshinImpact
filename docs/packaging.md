@@ -5,7 +5,10 @@
 
 ## 原理
 
-发布物是绿色便携目录：
+发布物指构建出来的绿色便携目录。
+发布包指分发它的那只 zip 文件。
+
+发布物形状：
 
 ```
 FinshinImpact\
@@ -37,8 +40,9 @@ FinshinImpact\
 
 依赖清单：
 
-- 要装的库出自 `pyproject.toml` 的核心依赖与各 `src\adapters\*\adapter.toml` 的 `deps`。
+- 要装的库出自 `pyproject.toml` 的核心依赖。
 - `runtime\.installed` 记依赖清单摘要，清单没变下次跳过安装。
+- 构建只在临时副本里跑，或在仓内跑完即清 `build\`、`*.egg-info`、`dist\`。
 - 启动器装依赖只追加，残留包只由引导层 `uv pip sync` 删除，无独立的移除清单。
 
 下载缓存：
@@ -49,7 +53,7 @@ FinshinImpact\
 ## 第一步：装构建工具
 
 ```powershell
-pip install -e ".[dev]"
+uv sync --all-packages
 python -m PyInstaller --version
 ```
 
@@ -64,22 +68,24 @@ python -m PyInstaller --version
 python packaging\build.py
 ```
 
-构建做四步：
+构建做这几步：
 
 - 编译启动器。
 - 白名单组装，排除 `*.egg-info` 等开发残留。
+- 包内 `pyproject.toml` 与仓里那份一字一样。
 - 下载嵌入式 `Python` 与 `uv`，镜像优先、官方兜底，zip 逐条目校验，`uv` 另比对官方 sha256，不过会中止。
+- GitHub 加速镜像名单只在项目声明的 `github-mirrors` 键里维护。
 - 用随包嵌入式解释器预编暂存区 `src` 与 `main.py` 的字节码，取认内容不认时间的 checked-hash 模式，用户解压即热，首启不必现场编译。
 
 成功标志：末行打印 `完成：dist\FinshinImpact-vX.Y.Z.zip`。
-第三步测试与第四步上传用的都是这个包，不要再重跑构建。
+第三步测试与第四步上传用的都是第二步产出的那个包。
 
 参数：
 
 - `--no-launcher`：跳过编译环节。
 - `--force`：版本号带 `-dev` 后缀时放行构建，日常发布不加。
-- `--check`：自检七行，本地版本号、远端 tag、本地 zip（大小与 sha256 前缀）、在线版本页、发布物官方直连、发布物 gh-proxy 与 ghproxy.net 两条镜像。
-  - 后三行探测远端资产，大小与本地包一致才算上传闭环。
+- `--check`：逐行打印本地版本号、远端 tag、本地 zip（大小与 sha256 前缀）、在线版本页、发布包官方直连、发布包 gh-proxy 与 ghproxy.net 的镜像。
+  - 探测远端资产的那几行，大小与本地包一致才算上传闭环。
   - 推 tag 前报"tag 缺失"、发布前报"不可达"属正常。
 
 ## 构建缓存
@@ -98,9 +104,9 @@ python packaging\build.py
 2. 双击 `FinshinImpact.exe`，看进度窗口 `[1/3]`～`[3/3]`，uv 按腾讯→阿里→清华→官方四源回退约一两分钟，别关窗口。
 3. 验证首装：
    - 向导填 token 能收发消息。
-   - 首启装完环境不弹同步窗，要清多余包才去选窗"依赖管理"手动同步。
+   - 首启装完环境直接进主窗，要清多余包才去选窗"依赖管理"手动同步。
    - 再开一次应几秒直达，不再出现进度窗口。
-   - 测试目录只多出 `instances\` 与 `runtime\`，`payload\` 首启取完 uv 即删，不应残留。
+   - 测试目录只多出 `instances\` 与 `runtime\`，`payload\` 的自动删除见上面「按名字找的文件」那一节。
    - 实例文件夹该有的内容见 [development.md](development.md) 的环境搭建。
 4. 升级件另测一条：老目录 `instances\tg-<数字>` 与新格式对不上，选窗不再显示，手工改名成 `instances\tg.<数字>` 后资产原样回来。
 5. 任一环节失败都不许发布，测完删掉测试目录。

@@ -1,17 +1,11 @@
-# devtools/tests/test_connectivity_check.py
-"""连接性检查重构的单元测试
+"""连接性检查的单元测试
 
-- _map_construct_error 把构造期 ValueError 与 UnicodeError 映射为精确异常
-- scheme 为空时不得丢失提示
-- _check_config 聚合 proxy 与 token 双探测，两坏同时报
-- token 纯格式校验，坏 token 不联网即标记
 - verify_connectivity 覆盖三步通道解析与错误聚合
 - 网络轮只在参数变化、上轮连通未过或引擎断线时起，其余只跑本地
 - 系统代理地址只计进用得到它的那两档
 - 首轮全挂每种模式都预热后重检一轮，单路模式同样重检本路
 """
 
-import asyncio
 import sys
 import unittest
 from contextlib import contextmanager
@@ -20,141 +14,21 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
-from adapters.telegram import probe as probe_mod  # noqa: E402
-from exceptions import ProxyAddressError, ProxySchemeError, TokenError  # noqa: E402
 from finshin_sdk.domain import FieldKey  # noqa: E402
+from finshin_sdk.exceptions import (  # noqa: E402
+    DirectTimeoutError,
+    ProbeTimeoutError,
+    ProxyConnectionRefusedError,
+    ProxySchemeError,
+    TokenError,
+)
 from utils.check import _verify as verify_mod  # noqa: E402
-
-_check_config = probe_mod._check_config
-_map_construct_error = probe_mod._map_construct_error
-
-
-class TestRealProbeNoHang(unittest.TestCase):
-    """回归点
-
-    - 真实 _probe_proxy 遇非法端口必须映射为业务异常，不上抛不挂死
-    """
-
-    def test_bad_port_maps_not_escapes(self) -> None:
-        """非法端口的真实探测返回 proxy 键错误而非穿透"""
-        from adapters.telegram.probe import _check_config
-
-        async def ok_get_me(token: str, proxy: str) -> None:
-            return None
-
-        errors = asyncio.run(
-            _check_config("123:abc", "http://127.0.0.1:99999", get_me=ok_get_me)
-        )
-        self.assertIn("proxy", errors, "非法端口应产出 proxy 错误文案")
-
-
-class TestMapConstructError(unittest.TestCase):
-    """回归点
-
-    - 异常消息携带有误（scheme 提取为空）
-    """
-
-    def test_empty_scheme_keeps_hint(self) -> None:
-        """空 scheme 必须回退占位文案"""
-        # proxy="aaa" 时 yarl 消息为 'Invalid scheme component: '（冒号后为空）
-        e = ValueError("Invalid scheme component: ")
-        mapped = _map_construct_error(e, "aaa")
-        self.assertIsInstance(mapped, ProxySchemeError)
-        self.assertTrue(
-            mapped.scheme.strip(),
-            "scheme 为空时必须回退为占位提示，不得输出空白（当前代码此处失败）",
-        )
-
-    def test_named_scheme_extracted(self) -> None:
-        """具名非法协议被提取到异常属性"""
-        e = ValueError("Invalid scheme component: ftp")
-        mapped = _map_construct_error(e, "ftp://127.0.0.1:7890")
-        self.assertIsInstance(mapped, ProxySchemeError)
-        self.assertEqual(mapped.scheme, "ftp")
-
-    def test_port_error_maps_to_address(self) -> None:
-        """端口非法映射为地址错误"""
-        mapped = _map_construct_error(
-            ValueError("Invalid port component"), "http://127.0.0.1:99999"
-        )
-        self.assertIsInstance(mapped, ProxyAddressError)
-
-
-class TestCheckConfig(unittest.IsolatedAsyncioTestCase):
-    """回归点
-
-    - 双探测聚合，token 与 proxy 问题同时上报
-    """
-
-    async def _ok_probe(self, proxy: str) -> None:
-        return None
-
-    async def _ok_get_me(self, token: str, proxy: str) -> None:
-        return None
-
-    async def test_all_good_returns_empty(self) -> None:
-        """全通过返回空 dict"""
-        errors = await _check_config(
-            "123:abc",
-            "http://127.0.0.1:7897",
-            probe=self._ok_probe,
-            get_me=self._ok_get_me,
-        )
-        self.assertEqual(errors, {})
-
-    async def test_bad_token_marked(self) -> None:
-        """远端拒绝时标记 token 字段"""
-
-        async def bad_me(token: str, proxy: str) -> None:
-            raise TokenError()
-
-        errors = await _check_config(
-            "123:abc",
-            "http://127.0.0.1:7897",
-            probe=self._ok_probe,
-            get_me=bad_me,
-        )
-        self.assertIn(FieldKey.TOKEN, errors)
-
-    async def test_bad_proxy_marks_both_with_skip_note(self) -> None:
-        """代理坏时同时标记两字段且跳过 getMe"""
-
-        async def dead_probe(proxy: str) -> None:
-            raise ProxySchemeError(scheme="空", proxy=proxy)
-
-        get_me_called = {"n": 0}
-
-        async def counting_me(token: str, proxy: str) -> None:
-            get_me_called["n"] += 1
-
-        errors = await _check_config(
-            "123:abc", "aaa", probe=dead_probe, get_me=counting_me
-        )
-        self.assertIn(FieldKey.PROXY, errors)
-        self.assertIn(FieldKey.TOKEN, errors, "proxy 坏时 token 必须被标记为跳过")
-        self.assertEqual(get_me_called["n"], 0, "proxy 已坏不得再浪费一次 getMe")
-
-    async def test_format_invalid_token_no_network(self) -> None:
-        """格式非法 token 本地判定不联网"""
-        # token 格式非法（无冒号）：probe 正常也不得调用 get_me，直接本地标记
-        get_me_called = {"n": 0}
-
-        async def counting_me(token: str, proxy: str) -> None:
-            get_me_called["n"] += 1
-
-        errors = await _check_config(
-            "aaa",
-            "http://127.0.0.1:7897",
-            probe=self._ok_probe,
-            get_me=counting_me,
-        )
-        self.assertIn(FieldKey.TOKEN, errors)
-        self.assertEqual(get_me_called["n"], 0, "格式非法的 token 应本地判定，不联网")
 
 
 class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
@@ -177,7 +51,7 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
 
         async def fake_probe(
             token: str, proxy: str
-        ) -> tuple[str | None, dict[str, str]]:
+        ) -> tuple[str | None, dict[str, Exception]]:
             errors = await fake_check(token, proxy)
             return (proxy, {}) if not errors else (None, errors)
 
@@ -207,10 +81,7 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
         mgr = SettingsManager(lambda: ("tok", "http://127.0.0.1:9999"))
 
         async def dead(token: str, proxy: str) -> dict:
-            return {
-                "proxy": "无法连接到代理服务器",
-                "telegram_token": "暂未检测：代理修复后复查",
-            }
+            return {"proxy": ProxyConnectionRefusedError(proxy="http://127.0.0.1:9999")}
 
         mod = sys.modules["bot._managers._settings"]
         with self._patches(mod, dead):
@@ -233,7 +104,13 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
         mgr = SettingsManager(lambda: ("tok", "http://127.0.0.1:9999"))
 
         async def only_direct(token: str, proxy: str) -> dict:
-            return {} if not proxy else {"proxy": "无法连接到代理服务器"}
+            return (
+                {}
+                if not proxy
+                else {
+                    "proxy": ProxyConnectionRefusedError(proxy="http://127.0.0.1:9999")
+                }
+            )
 
         mod = sys.modules["bot._managers._settings"]
         with self._patches(mod, only_direct):
@@ -254,7 +131,7 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
         mgr = SettingsManager(lambda: ("tok", "prox"))
 
         async def token_bad(token: str, proxy: str) -> dict:
-            return {"telegram_token": "Token 无效"}
+            return {"telegram_token": TokenError()}
 
         mod = sys.modules["bot._managers._settings"]
         with self._patches(mod, token_bad):
@@ -276,7 +153,7 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
         mgr = SettingsManager(lambda: ("tok", ""))
 
         async def dead_direct(token: str, proxy: str) -> dict:
-            return {"proxy": "直连超时，请开启系统代理或在代理项填写地址"}
+            return {"proxy": DirectTimeoutError()}
 
         mod = sys.modules["bot._managers._settings"]
         with self._patches(mod, dead_direct):
@@ -298,7 +175,7 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
         mgr = SettingsManager(lambda: ("tok", "prox"))
 
         async def net_fail(token: str, proxy: str) -> dict:
-            return {"proxy": "代理协议不支持: https"}
+            return {"proxy": ProxySchemeError(scheme="https")}
 
         mod = sys.modules["bot._managers._settings"]
         with self._patches(
@@ -414,7 +291,13 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
 
         async def dead_then_alive(token: str, proxy: str) -> dict:
             probes.append(proxy)
-            return {} if reach["ok"] else {"proxy": "无法连接到代理服务器"}
+            return (
+                {}
+                if reach["ok"]
+                else {
+                    "proxy": ProxyConnectionRefusedError(proxy="http://127.0.0.1:9999")
+                }
+            )
 
         mod = sys.modules["bot._managers._settings"]
         with self._patches(mod, dead_then_alive):
@@ -499,7 +382,7 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
 
         async def fake_probe(
             token: str, proxy: str
-        ) -> tuple[str | None, dict[str, str]]:
+        ) -> tuple[str | None, dict[str, Exception]]:
             errors = await fake_check(token, proxy)
             return (proxy, {}) if not errors else (None, errors)
 
@@ -551,7 +434,7 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
 
         async def dead(token: str, proxy: str) -> dict:
             calls["n"] += 1
-            return {"proxy": "无法连接到代理服务器"}
+            return {"proxy": ProxyConnectionRefusedError(proxy="http://127.0.0.1:9999")}
 
         mod = sys.modules["bot._managers._settings"]
         with self._mode_patches(mod, dead, "cfg"):
@@ -575,7 +458,11 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
                 mgr = SettingsManager(lambda: ("tok", "http://127.0.0.1:9999"))
 
                 async def dead(token: str, proxy: str) -> dict:
-                    return {"proxy": "连不上"}
+                    return {
+                        "proxy": ProxyConnectionRefusedError(
+                            proxy="http://127.0.0.1:9999"
+                        )
+                    }
 
                 mod = sys.modules["bot._managers._settings"]
                 with self._mode_patches(mod, dead, mode, sys_proxy):
@@ -585,7 +472,7 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(
                     list(mgr.last_errors), ["proxy_mode"], "红点要落在看得见的行上"
                 )
-                self.assertIn("连不上", mgr.last_errors["proxy_mode"])
+                self.assertIn("无法连接到代理服务器", mgr.last_errors["proxy_mode"])
 
     async def test_single_direct_fail_retries(self) -> None:
         """仅直连模式首轮失败同样重检
@@ -601,7 +488,7 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
         async def cold_start(token: str, proxy: str) -> dict:
             calls["n"] += 1
             if calls["n"] == 1:
-                return {"proxy": "直连超时，请开启系统代理或在代理项填写地址"}
+                return {"proxy": DirectTimeoutError()}
             return {}
 
         mod = sys.modules["bot._managers._settings"]
@@ -710,9 +597,9 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
 
         async def flaky(token: str, proxy: str) -> dict:
             if not proxy:
-                return {"proxy": "直连超时"}
+                return {"proxy": DirectTimeoutError()}
             cfg_calls["n"] += 1
-            return {"proxy": "验证超时"} if cfg_calls["n"] <= 1 else {}
+            return {"proxy": ProbeTimeoutError()} if cfg_calls["n"] <= 1 else {}
 
         mod = sys.modules["bot._managers._settings"]
         with self._mode_patches(mod, flaky, "auto"):
@@ -731,7 +618,7 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
 
         async def dead(token: str, proxy: str) -> dict:
             calls["n"] += 1
-            return {"proxy": "无法连接到代理服务器"}
+            return {"proxy": ProxyConnectionRefusedError(proxy="http://127.0.0.1:9999")}
 
         mod = sys.modules["bot._managers._settings"]
         with self._mode_patches(mod, dead, "auto"):
@@ -754,9 +641,9 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
 
         async def flaky(token: str, proxy: str) -> dict:
             if not proxy:
-                return {"proxy": "直连超时"}
+                return {"proxy": DirectTimeoutError()}
             cfg_calls["n"] += 1
-            return {"proxy": "验证超时"} if cfg_calls["n"] <= 1 else {}
+            return {"proxy": ProbeTimeoutError()} if cfg_calls["n"] <= 1 else {}
 
         frames: list[dict] = []
         bridge = MagicMock()
@@ -826,7 +713,7 @@ class TestFaultRowPlacement(unittest.TestCase):
 
     def test_visible_proxy_row_gets_the_mark(self) -> None:
         """代理项看得见的两档红在代理项"""
-        from finshin_sdk.domain import FieldKey, ProxyMode
+        from finshin_sdk.domain import ProxyMode
         from utils.network import fault_row_of
 
         self.assertEqual(fault_row_of(ProxyMode.AUTO), FieldKey.PROXY)

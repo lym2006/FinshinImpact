@@ -1,4 +1,3 @@
-# devtools/tests/test_style_checker_meta.py
 """扫描器自检的单元测试
 
 - 十二个分节各备一份故意违规的样本，防判据空转与包路径搬家后静默失效
@@ -8,15 +7,19 @@
 - 模块级别名按消费者定私有性，类型构造与被他模块取用的别名不判
 - 豁免清单只罩待核，条目须可解析且每条都在命中，失效即红
 - devtools 树可直连私有模块：不报越界，其引用不把 src 公共名算成对外
+- 扫描目标路径写错即报错退出
 """
 
+import io
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stderr
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+import check_coding_style  # noqa: E402
 from _style_checks import (  # noqa: E402
     SECTIONS,
     Finding,
@@ -27,10 +30,15 @@ from _style_checks import (  # noqa: E402
     load_waivers,
     run_checks,
 )
-from check_coding_style import _full_scan, _run  # noqa: E402
+from check_coding_style import _SCAN_ROOTS, _full_scan, _run  # noqa: E402
 
 _HERE = Path(__file__).resolve().parent
 _ROOT = _HERE.parent.parent
+
+
+def _present_roots() -> list[Path]:
+    """按盘上在场的扫描根算覆盖面"""
+    return [root for root in _SCAN_ROOTS if root.is_dir()]
 
 
 def _skeleton(rel: str) -> str:
@@ -104,6 +112,11 @@ _SAMPLES: dict[str, tuple[tuple[str, str], ...]] = {
             "src/ui/_probe_magic.py",
             _skeleton("src/ui/_probe_magic.py")
             + f"def _go() -> int:\n{_FUNC_DOC}    return 42\n",
+        ),
+        (
+            "src/ui/_probe_link.py",
+            _skeleton("src/ui/_probe_link.py")
+            + '_URL = "https://example.invalid/page"\n',
         ),
     ),
     "枚举": (
@@ -206,6 +219,18 @@ class TestSectionLive(unittest.TestCase):
                     bucket.get(section),
                     f"分节「{section}」的样本没有命中，判据可能已脱节",
                 )
+
+    def test_link_home_rule_fires(self) -> None:
+        """链接归家细则单独也能出条目，判据脱节即红"""
+        samples = [
+            item for item in _SAMPLES["魔法数字与字符串"] if "_probe_link" in item[0]
+        ]
+        bucket = _scan(samples)
+        messages = [msg for items in bucket.values() for msg in items]
+        self.assertTrue(
+            [msg for msg in messages if "在线地址裸写在家外" in msg],
+            f"链接归家细则没命中：{messages}",
+        )
 
     def test_section_names_are_known(self) -> None:
         """条目分节名必须在名单内，防字面量改写错位"""
@@ -455,12 +480,11 @@ class TestWaiverFile(unittest.TestCase):
                 self.assertTrue(waiver.reason.strip(), "豁免理由为空")
 
     def test_no_dead_waiver(self) -> None:
-        """全仓扫描后清单里不许留失效条目"""
-        files = load_files(_ROOT, [_ROOT / "src"])
+        """全量扫到后，清单里不许留失效条目"""
+        files = load_files(_ROOT, _present_roots())
         findings = run_checks(files, ImportGraph(files))
-        _, dead = apply_waivers(
-            findings, load_waivers(_HERE.parent / "style_waivers.toml")
-        )
+        waivers = load_waivers(_HERE.parent / "style_waivers.toml")
+        _, dead = apply_waivers(findings, waivers)
         self.assertEqual(
             [(w.section, w.path) for w in dead],
             [],
@@ -469,7 +493,7 @@ class TestWaiverFile(unittest.TestCase):
 
     def test_hard_only_keeps_live_waivers(self) -> None:
         """只输出硬性时不许把在用的豁免判成失效"""
-        ordered, _ = _run([_ROOT / "src"], list(SECTIONS), True)
+        ordered, _ = _run(_present_roots(), list(SECTIONS), True)
         self.assertEqual(
             [f.message for f in ordered if "失效豁免" in f.message],
             [],
@@ -524,6 +548,24 @@ class TestDevtoolsWhiteBox(unittest.TestCase):
         """只被工具引用的公共名照样提示加下划线"""
         messages = _scan(self._SAMPLE, self._TARGETS).get("命名与门面导出", [])
         self.assertTrue([m for m in messages if "Public" in m], messages)
+
+
+class TestMissingTarget(unittest.TestCase):
+    """扫描目标不在场时的取径"""
+
+    def _run_main(self, target: Path) -> tuple[int, str]:
+        sink = io.StringIO()
+        with redirect_stderr(sink):
+            code = check_coding_style.main([str(target)])
+        return code, sink.getvalue()
+
+    def test_wrong_path_still_errors(self) -> None:
+        """路径写错即报错退出"""
+        holder = tempfile.TemporaryDirectory()
+        self.addCleanup(holder.cleanup)
+        absent = Path(holder.name) / "typo_dir"
+        code, text = self._run_main(absent)
+        self.assertEqual(code, 2, text)
 
 
 if __name__ == "__main__":

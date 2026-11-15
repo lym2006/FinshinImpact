@@ -1,4 +1,3 @@
-# src/utils/middleware.py
 """日志中间件
 
 - 访问与异常统一记录管道
@@ -13,7 +12,14 @@ from finshin_sdk.domain import ChatScope, ContentKind
 from finshin_sdk.dto import InboundEventDTO
 
 from .logger import get_logger
-from .speaker import KIND_LABELS, bot_quote_block, clean_name, quote_block, speaker_mark
+from .speaker import (
+    KIND_LABELS,
+    bot_quote_block,
+    clean_name,
+    media_mark,
+    quote_block,
+    speaker_mark,
+)
 
 # 会话作用域与内容种类的中文标签，词表外按未知计
 _SCOPE_LABELS = {
@@ -38,31 +44,31 @@ _CAPTION_LABEL = "附文"
 _COMMAND_LABEL = "命令"
 _UNKNOWN = "未知"
 
-# 适配层按种类给的媒体占位标记，形如 [图片]
-_KIND_PLACEHOLDER = re.compile(r"\[[^[\]]{1,8}\]")
-
 # 正文里的连续空白折成单空格，一条日志只占一行
 _SPACE_RUN = re.compile(r"\s+")
 
 
-def _quoted_token(text: str) -> str:
+def _quoted_token(text: str, kind: ContentKind) -> str:
     """被引消息的内容槽
 
-    - 适配层按种类给的占位标记原样带过，其余只报字数
+    - 有文字只报字数，手打的方括号照样算文字
+    - 没文字又是媒体时按种类给占位标记
     """
-    if _KIND_PLACEHOLDER.fullmatch(text):
-        return text
-    return f"[{_TEXT_LABEL} {len(text)}{_TEXT_UNIT}]"
+    if text:
+        return f"[{_TEXT_LABEL} {len(text)}{_TEXT_UNIT}]"
+    return "" if kind == ContentKind.TEXT else media_mark(kind)
 
 
 def _reply_segment(inbound: InboundEventDTO) -> str:
     """被引用消息的标注帧与内容槽
 
-    - 无引用文字即整块省略
+    - 内容槽为空的引用整块省略
     """
-    if inbound.reply_ref is None or not inbound.reply_text:
+    if inbound.reply_ref is None:
         return ""
-    token = _quoted_token(inbound.reply_text)
+    token = _quoted_token(inbound.reply_text, inbound.reply_kind)
+    if not token:
+        return ""
     if inbound.reply_to_bot:
         return bot_quote_block(token)
     return quote_block(inbound.reply_sender_id, inbound.reply_sender_name, token)

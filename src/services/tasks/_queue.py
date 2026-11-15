@@ -1,4 +1,3 @@
-# src/services/tasks/_queue.py
 """按容器分串的热队列"""
 
 import asyncio
@@ -35,7 +34,7 @@ class HotQueue:
         self._lock = asyncio.Lock()
 
     async def push(self, item: TaskItem) -> TaskItem:
-        """按容器到达序入队，交回补齐序号的那条
+        """按容器到达序入队
 
         - 序号从 0 起，同一容器单调递增
         """
@@ -47,7 +46,7 @@ class HotQueue:
             return queued
 
     async def pop_next(self, container_key: SessionKey) -> TaskItem | None:
-        """取出该容器最靠前的一条，空串交回 None"""
+        """取出容器队首任务"""
         async with self._lock:
             rows = self._by_container.get(container_key)
             if not rows:
@@ -63,7 +62,7 @@ class HotQueue:
         return len(self._by_container.get(container_key, ()))
 
     async def discard_all(self) -> int:
-        """丢掉全部容器的排队项，交回被丢的条数"""
+        """丢弃全部容器的排队项"""
         async with self._lock:
             count = sum(len(rows) for rows in self._by_container.values())
             for container_key in list(self._by_container):

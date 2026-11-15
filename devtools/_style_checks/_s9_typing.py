@@ -1,4 +1,3 @@
-# devtools/_style_checks/_s9_typing.py
 """类型注解分节检查
 
 - 所有 def（含方法/异步）形参与返回值必须写注解

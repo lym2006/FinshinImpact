@@ -1,4 +1,3 @@
-# src/ui/_windows/_controllers/_release_notes.py
 """版本变化控制器
 
 - 拉取远程 release 正文并展示版本变化内容

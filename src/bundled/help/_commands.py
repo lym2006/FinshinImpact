@@ -1,4 +1,3 @@
-# src/bundled/help/_commands.py
 """帮助命令
 
 - /help：查询帮助（图片渲染）
@@ -13,6 +12,7 @@ import time
 
 from finshin_sdk import HandlerContext, MessageRoute
 from finshin_sdk.domain import (
+    BindFailure,
     BoundCommand,
     ChatScope,
     CommandFlag,
@@ -33,51 +33,34 @@ from ._services import (
 
 # 内部常量配置
 _HELP_MENU = "help"  # 帮助菜单命令名
-_MAX_FLAGS = 1
-_MAX_FLAGS_WITH_HELP = 2  # -h 之外还可带一个
-_MAX_ARGS = 1  # 清单登记过 args 的命令只收一个位置参数
 
 
 _logger = get_logger("Plg.Help")
 
 
-def _bind(command: CommandDTO) -> BoundCommand:
-    """按清单声明把命令片段绑成开关与参数
+def _bind(command: CommandDTO) -> BoundCommand | BindFailure:
+    """按清单声明绑定命令片段
 
-    - 带值开关的名单取自这条命令的清单声明
-    - 清单没登记的命令按全不带值处理
+    - 开关名与默认值都取自这条命令的清单声明
+    - 菜单外的命令名没有声明表，一律算绑不进
     """
     entry = command_specs.get(command.head)
-    declared = entry.flags if entry is not None else ()
-    value_flags = frozenset(flag.name for flag in declared if flag.value)
-    return bind_command(command.pieces, value_flags)
+    if entry is None:
+        return BindFailure(got=command.head)
+    return bind_command(
+        command.pieces,
+        [(flag.name, flag.default) for flag in entry.flags],
+        bool(entry.args),
+    )
 
 
 def _is_stray(command: CommandDTO) -> bool:
-    """判定命令带了清单没认的输入
+    """判定命令带了清单绑不进的输入
 
-    - 不带 -h 时只认一个开关，带 -h 时可再带一个
-    - 清单没登记的开关名与重复的开关都算多余
-    - 清单写了值名的开关没绑到值算多余
-    - 位置参数最多一个，且只认清单登记过位置参数的命令
+    - 开关没登记、同一开关重复、带值开关没吃到值、值类型不对都算绑不进
+    - 位置参数出现在开关之后、或命令没登记参数还带了内容都算绑不进
     """
-    entry = command_specs.get(command.head)
-    declared = entry.flags if entry is not None else ()
-    takes_args = bool(entry and entry.args)
-    value_names = frozenset(flag.name for flag in declared if flag.value)
-    allowed = {CommandFlag.HELP, *(flag.name for flag in declared)}
-    bound = _bind(command)
-    names = [name for name, _ in bound.flags]
-    if any(name not in allowed for name in names):
-        return True
-    if len(set(names)) != len(names):
-        return True
-    limit = _MAX_FLAGS_WITH_HELP if CommandFlag.HELP in names else _MAX_FLAGS
-    if len(names) > limit:
-        return True
-    if any(name in value_names and not value for name, value in bound.flags):
-        return True
-    return len(bound.args) > (_MAX_ARGS if takes_args else 0)
+    return isinstance(_bind(command), BindFailure)
 
 
 async def _is_illegal_command(ctx: HandlerContext) -> bool:
@@ -134,10 +117,18 @@ async def _reject_command(platform_raw: object, ctx: HandlerContext) -> None:
     """回绝写法不对的命令
 
     - 频道静默无视
+    - 菜单内命令的绑不进现场落调试日志，屏上只给用法
     """
+    command = ctx.event.command
+    if command.head in help_list:
+        failure = _bind(command)
+        if isinstance(failure, BindFailure):
+            _logger.debug(
+                f"{command.head} 绑不进：开关 {failure.flag} 收到 {failure.got}"
+            )
     if ctx.event.scope == ChatScope.UNKNOWN:
         return
-    await ctx.respond(_reject_text(ctx.event.command))
+    await ctx.respond(_reject_text(command))
 
 
 async def _show_single_help(platform_raw: object, ctx: HandlerContext) -> None:

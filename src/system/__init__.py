@@ -1,4 +1,3 @@
-# src/system/__init__.py
 """运行环境底座包
 
 - 实例身份与路径单源见 profile_env

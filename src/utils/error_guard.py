@@ -1,4 +1,3 @@
-# src/utils/error_guard.py
 """异常兜底
 
 - 定义包住一次调用的装饰器，同步与协程两种都接
@@ -10,7 +9,7 @@ import inspect
 from collections.abc import Callable
 from typing import Any, ParamSpec, TypeVar, cast
 
-from exceptions import BotError
+from finshin_sdk.exceptions import BotError
 
 P = ParamSpec("P")
 T = TypeVar("T")

@@ -1,4 +1,3 @@
-# src/ui/_dialogs/_settings/_reset.py
 """恢复默认登记
 
 - 按控件当前值重估恢复按钮显隐

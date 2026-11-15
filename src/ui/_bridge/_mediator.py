@@ -1,4 +1,3 @@
-# src/ui/_bridge/_mediator.py
 """GUI 中介者
 
 - GUI 与 Bot 的通信协议

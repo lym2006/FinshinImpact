@@ -1,4 +1,3 @@
-# src/skin/theme/_names.py
 """控件对象名词表
 
 - 收创建端 setObjectName 与 QSS 选择器两端共用的对象名
@@ -30,3 +29,6 @@ class ObjectName(StrEnum):
     LAUNCH_NOTE = "launch_note"
     ROW_BUNDLED_MARK = "row_bundled_mark"
     PROGRESS_LOG = "progress_log"
+    PLATFORM_SECTION = "platform_section"
+    PLATFORM_BLOCK = "platform_block"
+    PLATFORM_NAME = "platform_name"

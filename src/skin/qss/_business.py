@@ -1,4 +1,3 @@
-# src/skin/qss/_business.py
 """业务弹窗 QSS 拼装
 
 - 收纳变更确认与检查进度两类表格片段
@@ -19,7 +18,6 @@ from ._base import WAIT_QSS, Qss, with_dialog_base
 
 # 字段校验态文字
 _ERROR_LABEL_QSS = f"color: {SETTINGS_DIALOG.error_color};"
-_PENDING_LABEL_QSS = f"color: {SETTINGS_DIALOG.pending_color};"
 
 # 变更确认表格
 _CHANGE_TABLE_QSS = f"""\
@@ -81,8 +79,3 @@ def build_check_dialog_qss() -> Qss:
 def build_error_label_qss() -> Qss:
     """构建字段标红串"""
     return Qss(_ERROR_LABEL_QSS)
-
-
-def build_pending_label_qss() -> Qss:
-    """构建字段待检串"""
-    return Qss(_PENDING_LABEL_QSS)

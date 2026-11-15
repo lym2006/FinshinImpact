@@ -1,4 +1,3 @@
-# src/data/_sqlite/_grant.py
 """命令授权仓储实装
 
 - 按用户在本平台的 id 读写 grant 表
@@ -9,7 +8,7 @@ import time
 
 import aiosqlite
 
-from core.contracts import GrantRepository
+from core import GrantRepository
 from finshin_sdk.domain.ids import PrincipalKey, UserId
 
 

@@ -1,6 +1,6 @@
 # 规范扫描器
 
-本体在 `devtools/check_coding_style.py`，按 [`coding-style.md`](coding-style.md) 的分节静态检查代码。
+扫描器在 `devtools/check_coding_style.py`，按 [`coding-style.md`](coding-style.md) 的分节静态检查代码。
 只报不改，输出供人工核实。
 
 ## 跑法
@@ -12,7 +12,7 @@ python devtools\check_coding_style.py
 # 只扫指定目录或文件
 python devtools\check_coding_style.py src\bot
 
-# 交付闸门跑的是全量三根，漏掉后两根就是漏扫
+# 交付闸门跑的是下面这几根，少一根就是漏扫
 python devtools\check_coding_style.py src packaging devtools
 
 # 只看规则明确可判的硬性违规
@@ -30,20 +30,22 @@ python devtools\check_coding_style.py --section 注释
 - 待核条数与上一轮比对，只许减不许增。
   - 基线取登记完豁免清单后的读数。
   - 预留待接的项照样报，不算新增。
-- 闸门固定扫三棵树 `src packaging devtools`，都要 0 硬性，命令见 [release-workflow.md](release-workflow.md)。
+- 闸门固定扫 `src packaging devtools` 这几棵，都要 0 硬性，命令见 [release-workflow.md](release-workflow.md)。
+  - 子仓那棵不进规范扫描，子仓只跑格式、类型、测试，口径见 [release-workflow.md](release-workflow.md) 的子仓供件一节。
+  - 目录名 `tests` 下的文件不查，机制见本文末「测试目录豁免」那一节；本体用例树另在 ruff 一侧豁免。
 - 措辞类（背景解释、变更叙述、自评句）静态查不出，禁词清单与 grep 兜底见 [coding-style.md](coding-style.md)。
 
 ## 待核豁免清单
 
 审过并决定不改的待核登记在 `devtools/style_waivers.toml`，随仓库走，扫到同一条即静音，末尾补一行「已豁免 N 条」。
 
-一条三项：`section`、`path`、`reason`，可选 `match` 收口到消息里的关键字。
+一条由 `section`、`path`、`reason` 组成，可选 `match` 收口到消息里的关键字。
 匹配只看分节、文件与消息子串，不写行号（随插删代码漂移）。
 
 罩什么：
 
 - 只罩待核，硬性违规一律不罩。
-- 单文件行数超限不罩，只拆分或改 `_s2_split.py` 的扫描阈值（罩住等于给那个文件永久关掉阈值）。
+- 单文件行数超限不罩，只拆分或改 `_s2_split.py` 的扫描阈值。
 
 登记什么：
 
@@ -67,7 +69,7 @@ python devtools\check_coding_style.py --section 注释
 - Docstring：`_s3_docstring.py`
 - 注释：`_s4_comment.py`
 - 命名与门面导出：`_s5_naming.py`、`_s5b_naming_style.py`、`_s5c_constants.py`、`_s5d_access.py`
-- 魔法数字与字符串：`_s6_magic.py`、`_s6b_protocol_strings.py`
+- 魔法数字与字符串：`_s6_magic.py`、`_s6b_protocol_strings.py`、`_s6c_link_home.py`
 - 枚举：`_s5e_enum.py`
 - 日志与文案：`_s7_text.py`
 - 文案类：`_s8_messages.py`
@@ -93,13 +95,13 @@ devtools 整棵树允许直连 src 的内部实现，这条减免只管 devtools
 
 「对外」判据只在 [`coding-style.md`](coding-style.md)「命名与门面导出」写一处，本节只说扫描器捞哪些名字：
 
-- 模块级的函数、类与别名赋值三类名字都进检查。
+- 模块级的函数、类与别名赋值都进检查。
 - 别名赋值按名字样式分档认领，全大写与小写蛇形两档归 `_s5c_constants`，大写开头的驼峰别名归 `_s5_naming`，一个名字只由一档判，不重复报。
 - 右侧是 `TypeVar`／`NewType`／`ParamSpec`／`TypeAliasType` 调用的不判。
-- 标识类型集中定义处按设计公开，逐个查消费者只会产出要豁免的噪音。
+- 标识类型集中定义处按设计公开。
 - 模块级小写蛇形赋值走 `_s5c_constants` 的另一条判据（加 `_` 前缀或收进命名空间类），不看消费者。
 
-## 回调形参查五样
+## 回调形参查什么
 
 硬性：
 
@@ -113,7 +115,7 @@ devtools 整棵树允许直连 src 的内部实现，这条减免只管 devtools
 - 必填参数后紧跟同型可选参数，提示加 `*` 隔开防实参错位，类型文本一致才算同型。
 
 本节只查框架回调。判据是协程的形参里有没有带事件类型注解（`Message` 这类）或叫 `platform_raw`：一个都没有就当它是普通业务协程，整段跳过。
-业务协程把上下文对象当普通数据传进来属正常写法，不跳就会假报。
+业务协程把上下文对象当普通数据传进来属正常写法。
 
 ## 加一节的做法
 
@@ -130,11 +132,10 @@ devtools 整棵树允许直连 src 的内部实现，这条减免只管 devtools
    - 不补这组，新分节空转没人看得见。
 5. 跑 `python devtools\check_coding_style.py devtools` 自查，再跑一遍 `python -m pytest devtools/tests/test_style_checker_meta.py`。
 
-分节名在各检查模块里写死字面量，不按 `SECTIONS` 的位置取。新分节插进中间会让后面每一项的位置挪一位，位置取来的名字就对不上，违规记到隔壁分节名下。
+分节名在各检查模块里写死字面量，不按 `SECTIONS` 的位置取。
 模块写了 `SECTIONS` 里没有的名字，排序时当场报错。
 
 ## 测试目录豁免
 
 名为 `tests` 的目录整体跳过（`_common.py` 的 `_EXCLUDE_DIRS`），点名扫它也 0 条。
-测试站在包外观察私有成员，桩函数不写类型注解属正常写法，套生产口径只会产出假违规。
 用例侧的其余口径见 [testing.md](testing.md)。

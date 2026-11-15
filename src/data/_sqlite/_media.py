@@ -1,4 +1,3 @@
-# src/data/_sqlite/_media.py
 """媒体索引仓储实装
 
 - 按消息定位三元组读写 media_asset 表
@@ -8,7 +7,7 @@ import time
 
 import aiosqlite
 
-from core.contracts import MediaRepository
+from core import MediaRepository
 from finshin_sdk.domain import ContentKind, Platform
 from finshin_sdk.domain.ids import KEY_SEP, ContainerKey, PrincipalKey
 from finshin_sdk.dto import MediaEntryDTO, MsgReferenceDTO

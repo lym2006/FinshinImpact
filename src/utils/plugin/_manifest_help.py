@@ -1,12 +1,10 @@
-# src/utils/plugin/_manifest_help.py
 """插件清单帮助贡献解析
 
 - 解析清单里的帮助段与段内单条命令
 """
 
-from typing import TypeGuard
-
-from finshin_sdk.domain import CommandRole, HelpKey, is_flag_name
+from exceptions import PluginManifestError
+from finshin_sdk.domain import ArgsValue, CommandRole, HelpKey, is_flag_name
 from finshin_sdk.dto import HelpCommandDTO, HelpFlagDTO, HelpSectionDTO
 
 from ..logger import get_logger
@@ -87,7 +85,8 @@ def _parse_help_command(
 
     - 缺必填或必填类型不符时返回 None
     - flags 可缺省，缺省为空元组
-    - 每项须是「开关 说明」两段非空文本，带值的开关再补一段值名
+    - 开关项的段数与前两段形状不合即整条拒收
+    - 默认值写成三种类型以外即当场报错，不在这里静默吞
     - args 可缺省，缺省即命令后面不带内容
     - role 可缺省，缺省即用户档，词表外的值整条拒收
     - 多写的键忽略并记调试日志
@@ -110,12 +109,10 @@ def _parse_help_command(
         return None
     flags: list[HelpFlagDTO] = []
     for raw_flag in raw_flags:
-        if not _is_flag_item(raw_flag):
+        parts = _flag_parts(raw_flag, plugin_name)
+        if parts is None:
             return None
-        value = (
-            raw_flag[_FLAG_ITEM_MIN_LEN] if len(raw_flag) > _FLAG_ITEM_MIN_LEN else ""
-        )
-        flags.append(HelpFlagDTO(name=raw_flag[0], desc=raw_flag[1], value=value))
+        flags.append(HelpFlagDTO(name=parts[0], desc=parts[1], default=parts[2]))
 
     raw_role = raw.get(HelpKey.ROLE, "")
     if not isinstance(raw_role, str) or (raw_role and raw_role not in _ROLE_WORDS):
@@ -134,15 +131,44 @@ def _parse_help_command(
     )
 
 
-def _is_flag_item(raw_flag: object) -> TypeGuard[list[str]]:
-    """判定开关项段数与形状合法
+def _checked_default(raw_default: object, plugin_name: str, name: str) -> ArgsValue:
+    """核清单写的默认值是哪一种
 
-    - 段数、类型或空串任一不符即判否
-    - 首段按开关名形状校验，与命令解析共用一条规则
+    - 只认整数、小数、文本三种，其余类型当场报错，报的是类型本名
+    - 空文本按没写值处理，同样当场报错
     """
-    return (
-        isinstance(raw_flag, list)
-        and _FLAG_ITEM_MIN_LEN <= len(raw_flag) <= _FLAG_ITEM_MAX_LEN
-        and all(isinstance(part, str) and part for part in raw_flag)
-        and is_flag_name(raw_flag[0])
-    )
+    if isinstance(raw_default, bool):
+        raise PluginManifestError(plugin_name, name, "bool")
+    if isinstance(raw_default, (int, float)):
+        return raw_default
+    if isinstance(raw_default, str):
+        if not raw_default:
+            raise PluginManifestError(plugin_name, name, "空 str")
+        return raw_default
+    raise PluginManifestError(plugin_name, name, type(raw_default).__name__)
+
+
+def _flag_parts(
+    raw_flag: object, plugin_name: str
+) -> tuple[str, str, ArgsValue | None] | None:
+    """拆开关项的三段
+
+    - 前两段是「开关 说明」，都须是非空文本
+    - 首段按开关名形状校验，与命令解析共用一条规则
+    - 第三段是默认值，缺它即纯开关
+    - 默认值只认整数、小数、文本三种，写成别的类型即当场报错
+    - 段数与前两段形状不合返回 None
+    """
+    if not isinstance(raw_flag, list):
+        return None
+    if not _FLAG_ITEM_MIN_LEN <= len(raw_flag) <= _FLAG_ITEM_MAX_LEN:
+        return None
+    name, desc = raw_flag[0], raw_flag[1]
+    if not isinstance(name, str) or not is_flag_name(name):
+        return None
+    if not isinstance(desc, str) or not desc:
+        return None
+    if len(raw_flag) == _FLAG_ITEM_MIN_LEN:
+        return name, desc, None
+
+    return name, desc, _checked_default(raw_flag[_FLAG_ITEM_MIN_LEN], plugin_name, name)

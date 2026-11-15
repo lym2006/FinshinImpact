@@ -1,4 +1,3 @@
-# src/utils/logger/_enhancer.py
 """双轨日志器
 
 - 面向用户与开发者双轨输出

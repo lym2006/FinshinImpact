@@ -1,4 +1,3 @@
-# devtools/tests/test_error_guard.py
 """error_guard 装饰器单元测试
 
 - fatal 异常走 request_notice(critical=True) 且不上抛
@@ -23,16 +22,15 @@ set_profile("tg.000000")
 
 from bot.error_guard import error_guard  # noqa: E402
 from exceptions import (  # noqa: E402
-    BotError,
     ConfigError,
     ConfigInputError,
     ConfigMissingError,
     FontMissingError,
+    HTTPStatusError,
     PluginsMissingError,
-    ProxyAddressError,
-    TokenError,
     describe_error,
 )
+from finshin_sdk.exceptions import BotError, ProxyAddressError, TokenError  # noqa: E402
 from ui import gui_bridge  # noqa: E402
 
 
@@ -224,6 +222,16 @@ class TestDescribeError(unittest.TestCase):
     def test_unmapped_error_reports_class_name(self) -> None:
         """表外异常报类名，细节归调试日志"""
         self.assertEqual(describe_error(ValueError("内部消息")), "ValueError")
+
+    def test_http_status_body_stays_out_of_notice(self) -> None:
+        """状态码异常上屏那句只带码，响应正文不进界面
+
+        - 这条红了说明映射表又把整页响应塞回界面
+        """
+        self.assertEqual(
+            describe_error(HTTPStatusError(404, "<html>页面不存在</html>")),
+            "HTTP 状态码：404",
+        )
 
     def test_newly_mapped_families_have_text(self) -> None:
         """插件全灭与字体族那几条给出中文文案

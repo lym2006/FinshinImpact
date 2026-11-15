@@ -1,4 +1,3 @@
-# src/bot/_managers/_service.py
 """服务管理器
 
 - 引擎运行时的生命周期管理

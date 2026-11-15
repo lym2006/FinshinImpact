@@ -1,4 +1,3 @@
-# devtools/check_coding_style.py
 r"""编码规范扫描器
 
 - 按 docs/coding-style.md 十二个分节静态检查代码
@@ -49,7 +48,8 @@ def _run(
     findings = [f for f in findings if f.section in sections]
 
     # 豁免只罩待核，须拿全量算命中，先滤硬性会把在用的条目全判失效
-    kept, dead = apply_waivers(findings, load_waivers(_WAIVER_FILE))
+    waivers = load_waivers(_WAIVER_FILE)
+    kept, dead = apply_waivers(findings, waivers)
     waived = len(findings) - len(kept)
     if hard_only:
         kept = [f for f in kept if f.hard]
@@ -72,14 +72,19 @@ def _dead_finding(waiver: Waiver) -> Finding:
     )
 
 
+_SCAN_ROOTS = (_ROOT / "src",)
+
+
 def _full_scan(sections: list[str], targets: list[Path]) -> bool:
     """清单覆盖面扫到才判失效豁免
 
-    - 条目全在 src 下，目标含 src 根或仓库根即算扫全，再带别的树不影响
-    - 单扫某棵树或子目录时清单本来就可能不命中，不误报失效
+    - 目标含仓库根或全部扫描根才算扫全
+    - 单扫一棵时清单本来就可能不命中，不误报失效
     """
-    covered = {_ROOT, _ROOT / "src"}
-    return len(sections) == len(SECTIONS) and any(path in covered for path in targets)
+    if len(sections) != len(SECTIONS):
+        return False
+    hit = {path for path in targets if path in {_ROOT, *_SCAN_ROOTS}}
+    return _ROOT in hit or set(_SCAN_ROOTS) <= hit
 
 
 def _render(findings: list[Finding], sections: list[str]) -> str:

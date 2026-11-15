@@ -1,4 +1,3 @@
-# src/skin/qss/_guide.py
 """引导窗 QSS 拼装
 
 - 拼出引导各窗共用的 QSS
@@ -131,6 +130,19 @@ QPushButton#{ButtonStyle.SECONDARY}:hover {{
 
 QPushButton#{ButtonStyle.SECONDARY}:disabled {{
     border: 1px solid {SURFACE.border_color};
+}}
+
+QPushButton#{ButtonStyle.LINK} {{
+    background-color: transparent;
+    border: none;
+    color: {SURFACE.link_color};
+    text-decoration: underline;
+    padding: 0;
+}}
+
+QPushButton#{ButtonStyle.LINK}:hover {{
+    background-color: transparent;
+    color: {SURFACE.link_hover_color};
 }}
 
 QPushButton#{ButtonStyle.START} {{

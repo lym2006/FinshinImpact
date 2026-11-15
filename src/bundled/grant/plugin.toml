@@ -1,7 +1,6 @@
 name = "grant"
 title = "权限授权"
 summary = "管理命令的授权名单"
-deps = []
 assets = []
 
 [[help]]

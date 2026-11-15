@@ -1,4 +1,3 @@
-# src/ui/_windows/_link_watcher.py
 """链路断连计时观察
 
 - 逐秒轮询链路快照，弹收断连计时弹窗

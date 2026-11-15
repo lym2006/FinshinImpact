@@ -1,4 +1,3 @@
-# src/data/_sqlite/_factory.py
 """仓储装配
 
 - 在同一连接上组装五个仓储
@@ -8,7 +7,7 @@ from dataclasses import dataclass
 
 import aiosqlite
 
-from core.contracts import (
+from core import (
     GrantRepository,
     MediaRepository,
     PrincipalRepository,

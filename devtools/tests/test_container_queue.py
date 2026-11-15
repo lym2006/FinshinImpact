@@ -1,4 +1,3 @@
-# devtools/tests/test_container_queue.py
 """容器级排队接线测试
 
 - 同群两名成员共用一串会话键

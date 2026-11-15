@@ -1,4 +1,3 @@
-# src/skin/messages/_picker.py
 """选 bot 窗口文案"""
 
 
@@ -45,8 +44,13 @@ class PickerMessage:
     # 用：ui._guide._form 新建窗
     NEW_TITLE = "新建机器人"
     NEW_PLATFORM_LABEL = "平台"
-    NEW_PLATFORM_TELEGRAM = "Telegram"
-    NEW_PLATFORM_QQ = "QQ（暂未支持）"
+
+    # 用：ui._guide._form 平台下拉项的显示名，按平台码取，没登记的显平台码
+    PLATFORM_NAMES = {"tg": "Telegram", "qq": "QQ"}
+    BTN_MANAGE_PLATFORM = "管理平台组件"
+    NEW_NEED_ADAPTER = (
+        "本机还没有可用的平台\n先打开平台组件装一个适配器，再回来填 Token"
+    )
 
     # 用：ui._guide._form 编辑窗
     EDIT_TITLE = "编辑机器人"

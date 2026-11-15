@@ -1,4 +1,3 @@
-# devtools/_style_checks/_s10_import_direction.py
 """导入方向分节检查
 
 - 同顶层包内一律相对，绝对导入首段等于本模块顶层包即违规

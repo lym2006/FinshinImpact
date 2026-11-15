@@ -1,4 +1,3 @@
-# src/system/instance_lock.py
 """单实例守卫
 
 - 命名互斥体锁定同账号唯一实例，避免双开争抢配置与 Telegram 长轮询

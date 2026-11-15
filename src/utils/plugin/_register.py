@@ -1,4 +1,3 @@
-# src/utils/plugin/_register.py
 """插件注册表
 
 - 按清单与实例启用集决定加载序列
@@ -32,6 +31,7 @@ from finshin_sdk import (
 )
 from finshin_sdk.domain import (
     BUNDLED_PLUGIN_PRIORITY,
+    PLUGINS_PKG,
     CommandRole,
     MomentRun,
     PluginFileName,
@@ -42,10 +42,10 @@ from finshin_sdk.domain import (
 from finshin_sdk.dto import PluginManifestDTO
 
 from ..error_guard import guard
+from ..external_scope import check_external_imports
 from ..logger import get_logger
 from ..paths import PROFILE_DIR
 from ._manifest import enabled_manifests
-from ._scope import check_external_scope
 
 _logger = get_logger("Plugin")
 
@@ -81,8 +81,9 @@ def register_plugins(
     for manifest in _resolve_plugins():
         bundled = manifest.name in BUNDLED_PLUGIN_PRIORITY
         try:
-            # 外部件先查引用范围，随包树里的由那只手自己放行
-            check_external_scope(manifest)
+            check_external_imports(
+                manifest.name, manifest.module, PluginImportError, PLUGINS_PKG
+            )
 
             # 动态导入插件模块，再认模块里那一只入口类
             entry = _entry_class(manifest, importlib.import_module(manifest.module))

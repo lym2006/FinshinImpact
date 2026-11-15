@@ -1,4 +1,3 @@
-# src/ui/_windows/_controllers/_worker.py
 """控制器跑线程的公共收尾"""
 
 from typing import Any

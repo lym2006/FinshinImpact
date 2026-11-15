@@ -1,4 +1,3 @@
-# packaging/launch/console.py
 """控制台进度窗口
 
 - 分配、回收、驻留三种动作

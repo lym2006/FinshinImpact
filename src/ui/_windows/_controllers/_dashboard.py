@@ -1,4 +1,3 @@
-# src/ui/_windows/_controllers/_dashboard.py
 """仪表盘控制器
 
 - 清空仪表盘内容

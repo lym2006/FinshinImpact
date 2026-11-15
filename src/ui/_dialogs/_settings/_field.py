@@ -1,4 +1,3 @@
-# src/ui/_dialogs/_settings/_field.py
 """字段渲染
 
 - 按 schema 渲染表单控件与标签
@@ -19,8 +18,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from skin.messages import ConfigMessage
-from skin.qss import build_error_label_qss, build_pending_label_qss
+from skin.qss import build_error_label_qss
 from skin.theme import GLOBAL, SETTINGS_DIALOG
 from utils.config import AppConfigData, AppSchema
 from utils.config.models import ConfigValue, FieldSchema, TabData, is_blank
@@ -43,12 +41,9 @@ _BLANK_BY_TYPE: dict[type, ConfigValue] = {
 def refresh_label(label: QLabel, title: str, err: str | None) -> None:
     """按校验结果刷新一个字段标签
 
-    - 本项错误标红，前置项未检测到转黄，无错即清样式
+    - 本项有错即标红，无错即清样式
     """
-    if err and err.startswith(ConfigMessage.PENDING_MARK):
-        label.setText(f"❔ {title}")
-        label.setStyleSheet(build_pending_label_qss())
-    elif err:
+    if err:
         label.setText(title)
         label.setStyleSheet(build_error_label_qss())
     else:

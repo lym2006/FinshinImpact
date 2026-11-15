@@ -1,4 +1,3 @@
-# src/services/tasks/_service.py
 """任务排队与调度
 
 - 同容器排一串逐条派发，跨容器共用一把并发闸
@@ -48,7 +47,10 @@ class TaskService:
         self._book_lock = asyncio.Lock()
 
     async def enqueue(self, item: TaskItem) -> None:
-        """排入一条任务，该容器无人消费即起消费协程"""
+        """排入任务
+
+        - 该容器无人消费即起消费协程
+        """
         async with self._book_lock:
             queued = await self._queue.push(item)
             await self._ledger.enqueue(queued)
@@ -77,8 +79,9 @@ class TaskService:
         self._ledger.reset()
 
     async def _drain(self, container_key: SessionKey) -> None:
-        """逐条消费该容器，队空即退
+        """逐条消费容器任务
 
+        - 队空即退
         - 取消与崩溃都放掉该容器的活跃标记
         """
         try:

@@ -1,4 +1,3 @@
-# devtools/_style_checks/_s5b_naming_style.py
 """命名风格分节检查
 
 - 连续裸常量赋值无分组注释疑似堆积

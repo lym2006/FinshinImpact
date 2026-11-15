@@ -1,4 +1,3 @@
-# src/bundled/AI/services/_receipt.py
 """停机交代服务
 
 - 重启时对欠答问答逐主体补说

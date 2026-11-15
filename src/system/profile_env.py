@@ -1,4 +1,3 @@
-# src/system/profile_env.py
 """引导期基础设施
 
 - 实例身份码的环境变量名与净化规则
@@ -19,8 +18,10 @@ _PROFILE_ENV = "FINSHINIMPACT_PROFILE"
 # 身份码校验，首尾只许字母数字连字符，拦截相对路径段，防穿越出数据目录
 _CODE_PATTERN = re.compile(r"[A-Za-z0-9-](?:[A-Za-z0-9.-]*[A-Za-z0-9-])?")
 
+DECLARATION_FILE_NAME = "pyproject.toml"  # 项目声明文件名，本体与启动器读同一份
+
 # 项目根特征文件，按优先级排序
-_ROOT_MARKERS = (".git", "pyproject.toml")
+_ROOT_MARKERS = (".git", DECLARATION_FILE_NAME)
 
 # 实例与资源标识符，各方必须取同一个值
 INSTANCE_PROFILE_NAME = "profile.json"  # 自描述文件，token 与备注名的唯一载体

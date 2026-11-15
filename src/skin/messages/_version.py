@@ -1,4 +1,3 @@
-# src/skin/messages/_version.py
 """版本检测文案"""
 
 from ._misc import MiscMessage

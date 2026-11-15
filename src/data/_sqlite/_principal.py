@@ -1,4 +1,3 @@
-# src/data/_sqlite/_principal.py
 """主体仓储实装
 
 - 按主体键读写 principal 表
@@ -8,7 +7,7 @@ import time
 
 import aiosqlite
 
-from core.contracts import PrincipalRepository
+from core import PrincipalRepository
 from finshin_sdk.domain import Platform
 from finshin_sdk.domain.ids import ContainerKey, PrincipalKey, UserId
 from finshin_sdk.dto import PrincipalDTO

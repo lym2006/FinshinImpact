@@ -1,73 +1,54 @@
-# src/services/env_setup/toolchain.py
 """装库环境定位
 
 - 定位嵌入式解释器与 uv 可执行文件
-- 读 pyproject 工具表作换源序列与缓存目录的单源
+- 读取换源序列与缓存目录配置
 """
 
 import shutil
 import sys
-import tomllib
 from pathlib import Path
-from typing import Any
 
 from system.profile_env import ROOT_DIR
+from system.tool_settings import tool_setting
 
-PYPROJECT = ROOT_DIR / "pyproject.toml"
+# 包内运行目录与可执行文件名，与启动器 PackLayout 同值，两处改名必须同步
+_RUNTIME_DIR_NAME = "runtime"
+_PYTHON_EXE_NAME = "python.exe"
+_UV_TOOL_NAME = "uv"
+_UV_EXE_NAME = "uv.exe"
 
-RUNTIME_DIR = ROOT_DIR / "runtime"
-_PY_EXE = RUNTIME_DIR / "python.exe"
+RUNTIME_DIR = ROOT_DIR / _RUNTIME_DIR_NAME
+_PY_EXE = RUNTIME_DIR / _PYTHON_EXE_NAME
 
 # 开发模式虚拟环境内的 uv 候选位置
 _VENV_DIRS = (".venv", "venv", "env")
 
 # 各 bin 目录布局对应的可执行文件名
-_UV_NAMES = {"bin": "uv", "Scripts": "uv.exe"}
-
-
-def _tool_settings() -> dict:
-    """读 pyproject 的 [tool.finshin-impact] 表
-
-    - 换源序列与缓存目录的单源，launcher 读同一张表
-    """
-    try:
-        with open(PYPROJECT, "rb") as handle:
-            data = tomllib.load(handle)
-    except (OSError, tomllib.TOMLDecodeError):
-        return {}
-    return data.get("tool", {}).get("finshin-impact", {})
-
-
-_SETTINGS = _tool_settings()
-
-
-def _require(key: str) -> Any:
-    """取配置表键值，缺键即报错
-
-    - 缺键直接抛错，把配置问题暴露出来
-    """
-    if key not in _SETTINGS:
-        # 代码兜底默认值会造出第二份不一致副本
-        raise RuntimeError(f"pyproject 缺 [tool.finshin-impact].{key}")
-    return _SETTINGS[key]
+_UV_NAMES = {"bin": _UV_TOOL_NAME, "Scripts": _UV_EXE_NAME}
 
 
 # uv 索引按序重试：国内多源轮询，最后官方源兜底
-UV_INDEX_URLS = tuple(_require("uv-index-urls"))
+UV_INDEX_URLS = tuple(tool_setting("uv-index-urls"))
 
 # 内核下载走配置镜像，失败清变量回退官方源
-PLAYWRIGHT_CDN = str(_require("playwright-cdn"))
+PLAYWRIGHT_CDN = str(tool_setting("playwright-cdn"))
 
-UV_CACHE_DIR = RUNTIME_DIR / str(_require("uv-cache-dir"))
+# GitHub 发行件下载按序轮询配置镜像，官方地址兜底
+GITHUB_MIRRORS = tuple(tool_setting("github-mirrors"))
+
+UV_CACHE_DIR = RUNTIME_DIR / str(tool_setting("uv-cache-dir"))
+
+# wheel 存放目录，随包 runtime 下，装完的引擎库落进 site-packages
+WHEELS_DIR = RUNTIME_DIR / "wheels"
 
 
 def find_uv() -> Path | None:
     """定位可用 uv 可执行文件
 
-    - 依次查找 runtime 目录、venv 同目录、PATH
+    - 依次查找嵌入式运行目录、虚拟环境目录与系统搜索路径
     - 全部找不到返回 None，装库降级为打印手动命令
     """
-    exe = RUNTIME_DIR / "uv.exe"
+    exe = RUNTIME_DIR / _UV_EXE_NAME
     if exe.is_file():
         return exe
     for name in _VENV_DIRS:

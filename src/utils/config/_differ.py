@@ -1,4 +1,3 @@
-# src/utils/config/_differ.py
 """配置比对
 
 - 新旧配置的逐项差异

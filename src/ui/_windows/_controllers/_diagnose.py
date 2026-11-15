@@ -1,4 +1,3 @@
-# src/ui/_windows/_controllers/_diagnose.py
 """网络诊断控制器
 
 - 连通性自助排查入口

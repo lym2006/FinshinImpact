@@ -1,7 +1,6 @@
-# devtools/_style_checks/_s1_skeleton.py
 """文件骨架分节检查
 
-- 首行相对路径注释与文件名一致
+- 首行必须是模块 docstring，不写路径注释
 - 模块 docstring 存在且首行为定位
 - 禁止区块标题注释与装饰横线
 - __all__ 只属于非空包门面，且多项成员须按含义分组
@@ -62,17 +61,14 @@ def check(files: list[FileData]) -> list[Finding]:
 
 
 def _check_first_line(file: FileData) -> list[Finding]:
-    """首行路径注释检查"""
+    """首行注释禁令检查"""
     first = file.lines[0].strip() if file.lines else ""
-    if not first.startswith("#"):
-        return [_f(file, 1, "首行缺少相对路径注释", hard=False)]
-    claimed = first.lstrip("#").strip()
-    if claimed != file.rel:
+    if first.startswith("#"):
         return [
             _f(
                 file,
                 1,
-                f"首行路径注释 `{claimed}` 与实际 `{file.rel}` 不一致",
+                f"首行是注释 `{first}`，文件首行必须是模块 docstring",
                 hard=True,
             )
         ]

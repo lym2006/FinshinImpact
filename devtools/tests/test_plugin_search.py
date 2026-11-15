@@ -1,4 +1,3 @@
-# devtools/tests/test_plugin_search.py
 """面板搜索件与命令明细的单元测试
 
 - 名字一列比的是面板上看得见的显示名，没填标题即目录名

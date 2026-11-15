@@ -1,4 +1,3 @@
-# src/skin/messages/__init__.py
 """文案中心
 
 - 用户可见文案按域拆小文件，每条标注使用位置
@@ -6,12 +5,14 @@
 - 异常模板留在 exceptions 映射表，theme 令牌代理引用
 """
 
+from ._catalog import CatalogMessage
 from ._check import CheckMessage
 from ._config import ConfigMessage
 from ._dialog import DialogMessage
 from ._engine import EngineMessage
 from ._misc import MiscMessage
 from ._picker import PickerMessage
+from ._platform import PlatformMessage
 from ._plugin import PluginMessage
 from ._version import VersionMessage
 
@@ -23,9 +24,11 @@ __all__ = [
     "MiscMessage",
     "DialogMessage",
     "ConfigMessage",
+    "PlatformMessage",
     # 网络检查与更新
     "CheckMessage",
     "VersionMessage",
+    "CatalogMessage",
     # 引擎与链路
     "EngineMessage",
 ]

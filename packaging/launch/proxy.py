@@ -1,4 +1,3 @@
-# packaging/launch/proxy.py
 """安装期系统代理
 
 - 读注册表代理值成 URL
@@ -7,11 +6,11 @@
 
 import os
 
+from pack_spec import PROXY_SCHEME
+
 # 注册表代理值名，与本体注册表读件同值（exe 不导入 src）
 _PROXY_ENABLE_VALUE = "ProxyEnable"
 _PROXY_SERVER_VALUE = "ProxyServer"
-
-_PROXY_SCHEME = "http://"  # 注册表只记地址与端口时按 HTTP 代理补齐协议头
 
 
 def system_proxy_url() -> str | None:
@@ -43,7 +42,7 @@ def system_proxy_url() -> str | None:
     if not proxy:
         return None
     if "://" not in proxy:
-        proxy = f"{_PROXY_SCHEME}{proxy}"
+        proxy = f"{PROXY_SCHEME}{proxy}"
     return proxy
 
 

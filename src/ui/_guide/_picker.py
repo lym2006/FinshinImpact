@@ -1,4 +1,3 @@
-# src/ui/_guide/_picker.py
 """选 bot 窗口
 
 - 引导期选择、编辑或新建实例

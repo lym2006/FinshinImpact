@@ -1,4 +1,3 @@
-# src/exceptions/_config.py
 """配置异常族
 
 - 定义致命与可恢复两级配置异常
@@ -6,7 +5,7 @@
 
 from typing import Any
 
-from ._base import BotError
+from finshin_sdk.exceptions import BotError
 
 
 class ConfigError(BotError):

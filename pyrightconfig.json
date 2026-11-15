@@ -1,0 +1,11 @@
+{
+  "exclude": ["devtools/tests"],
+  "executionEnvironments": [
+    {
+      "root": "devtools/tests",
+      "extraPaths": ["src", "devtools"],
+      "reportArgumentType": "none",
+      "reportAttributeAccessIssue": "none"
+    }
+  ]
+}

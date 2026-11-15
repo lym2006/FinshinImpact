@@ -1,7 +1,6 @@
 name = "help"
 title = "帮助"
 summary = "帮助菜单与命令查询"
-deps = []
 assets = []
 
 [[help]]

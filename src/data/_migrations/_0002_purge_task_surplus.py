@@ -1,4 +1,3 @@
-# src/data/_migrations/_0002_purge_task_surplus.py
 """抹掉任务与主体表上没人读的列
 
 - 建在这些列上的索引先撤，任务索引随后按剩下的列重建

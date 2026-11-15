@@ -1,10 +1,9 @@
-# src/exceptions/_network.py
 """网络异常族
 
 - 定义 HTTP 请求细分异常与映射表
 """
 
-from ._base import BotError
+from finshin_sdk.exceptions import BotError
 
 
 class NetworkError(BotError):
@@ -24,6 +23,8 @@ class HTTPStatusError(NetworkError):
 
     def __init__(self, status_code: int, msg: str) -> None:
         self.status_code = status_code
+
+        # 响应正文留在属性上，给人看的那句只到状态码为止
         self.msg = msg
         super().__init__()
 
@@ -31,5 +32,5 @@ class HTTPStatusError(NetworkError):
 NETWORK_MAP = {
     RequestTimeoutError: "请求超时",
     ConnectionFailedError: "连接失败",
-    HTTPStatusError: "HTTP 状态码：{status_code}\n错误信息：{msg}",
+    HTTPStatusError: "HTTP 状态码：{status_code}",
 }

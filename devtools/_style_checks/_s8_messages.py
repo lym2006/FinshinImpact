@@ -1,4 +1,3 @@
-# devtools/_style_checks/_s8_messages.py
 """messages 包文案类分节检查
 
 - 每域一个类 XxxMessage

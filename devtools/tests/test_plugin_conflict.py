@@ -1,4 +1,3 @@
-# devtools/tests/test_plugin_conflict.py
 """插件抢命令名判定的单元测试
 
 - 在场即随包表恒在场或已勾选，只有在场的插件拿走命令名
@@ -167,7 +166,7 @@ class TestTwoReadersAgree(unittest.TestCase):
         """分别取两份读侧认到的命令名"""
         rows = {
             row[ManifestKey.NAME]: tuple(cmd for cmd, _ in row[HelpKey.COMMANDS])
-            for row in deps_manifest.load_manifests([root])
+            for row in deps_manifest.load_manifests([(root, PLUGINS_PKG)])
         }
         manifests = {
             name: tuple(
@@ -175,7 +174,9 @@ class TestTwoReadersAgree(unittest.TestCase):
                 for section in manifest.help_section
                 for command in section.commands
             )
-            for name, manifest in _manifest._load_manifests(root, PLUGINS_PKG).items()
+            for name, manifest in _manifest._load_manifests(
+                root, PLUGINS_PKG, False
+            ).items()
         }
         return rows, manifests
 

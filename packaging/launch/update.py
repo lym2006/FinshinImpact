@@ -1,4 +1,3 @@
-# packaging/launch/update.py
 """发布物整包升级
 
 - 比对在线版本页，确认后下载新版并覆盖源码，用户资产保留
@@ -14,27 +13,29 @@ import time
 import zipfile
 from pathlib import Path
 
-import netio
+import net_channel
 from pack_spec import (
     APP_NAME,
+    BYTES_PER_MB,
     HDR_CONTENT_LENGTH,
     PRESERVE_NAMES,
-    RELEASE_MIRRORS,
     RELEASE_ZIP_URL,
     SHELL_EXE,
     SHELL_PENDING,
+    PackLayout,
     local_version,
+    release_mirrors,
     remote_release_notes,
     remote_version,
 )
 from packaging.version import Version
+from unpack import is_zip, unpack_all
 
 from . import console, dialogs, proxy, runtime, shell
 
 # 分块粒度 64 KB（刷进度）
 _DOWNLOAD_CHUNK = 64 * 1024
 _DOWNLOAD_TIMEOUT = 20.0  # 建连与单块读取超时 20 秒
-_BYTES_PER_MB = 1024 * 1024  # 1 MB
 _BYTES_PER_KB = 1024  # 1 KB
 _SPEED_EPS = 1e-6  # 1 微秒下限，起步防除零
 
@@ -109,14 +110,13 @@ def _apply_update(root: Path, version: str) -> bool:
     stage = root / "_update"
     try:
         # 下载：镜像源优先、官方源兜底，zip 校验通过才继续
-        print(f"下载 v{version} 发布物…")
+        print(f"下载 v{version} 发布包…")
         shutil.rmtree(stage, ignore_errors=True)
         stage.mkdir(parents=True)
         zip_url = RELEASE_ZIP_URL.format(ver=version)
-        urls = [*(m + zip_url for m in RELEASE_MIRRORS), zip_url]
-        _fetch_zip(urls, stage / "package.zip")
-        with zipfile.ZipFile(stage / "package.zip") as zf:
-            zf.extractall(stage)
+        urls = [*(m + zip_url for m in release_mirrors()), zip_url]
+        _fetch_zip(urls, stage / PackLayout.STAGE_ZIP)
+        unpack_all(stage / PackLayout.STAGE_ZIP, stage)
 
         # 解压：暂存目录展开，校验顶层结构
         new_root = stage / APP_NAME
@@ -161,22 +161,22 @@ def _report_progress(done: int, total: int, start: float) -> None:
     """
     elapsed = max(time.monotonic() - start, _SPEED_EPS)
     bps = done / elapsed
-    if bps < _BYTES_PER_MB:
+    if bps < BYTES_PER_MB:
         speed = f"{bps / _BYTES_PER_KB:.0f} KB/s"
     else:
-        speed = f"{bps / _BYTES_PER_MB:.1f} MB/s"
+        speed = f"{bps / BYTES_PER_MB:.1f} MB/s"
     if total:
         line = (
             f"\r  {done / total * 100:5.1f}%"
-            f"  {done / _BYTES_PER_MB:.1f}/{total / _BYTES_PER_MB:.1f} MB"
+            f"  {done / BYTES_PER_MB:.1f}/{total / BYTES_PER_MB:.1f} MB"
             f"  {speed}        "
         )
     else:
-        line = f"\r  已下载 {done / _BYTES_PER_MB:.1f} MB  {speed}        "
+        line = f"\r  已下载 {done / BYTES_PER_MB:.1f} MB  {speed}        "
     print(line, end="", flush=True)
 
 
-def _download_one(url: str, target: Path, opener: netio.Opener) -> None:
+def _download_one(url: str, target: Path, opener: net_channel.Opener) -> None:
     """单源下载并实时打印进度"""
     with opener.open(url, timeout=_DOWNLOAD_TIMEOUT) as resp:
         total = int(resp.headers.get(HDR_CONTENT_LENGTH) or 0)
@@ -191,7 +191,7 @@ def _download_one(url: str, target: Path, opener: netio.Opener) -> None:
 
 
 def _download_pass(
-    urls: list[str], target: Path, opener: netio.Opener
+    urls: list[str], target: Path, opener: net_channel.Opener
 ) -> Exception | None:
     """一轮多源下载，全成返回 None，否则返回末次失败原因"""
     last_error: Exception | None = None
@@ -199,7 +199,7 @@ def _download_pass(
         try:
             print(f"下载 {url}")
             _download_one(url, target, opener)
-            if zipfile.is_zipfile(target):
+            if is_zip(target):
                 return None
             raise zipfile.BadZipFile("下载内容不是有效 zip")
         except Exception as e:
@@ -214,10 +214,10 @@ def _fetch_zip(urls: list[str], target: Path) -> None:
     - 每源完成后校验 zip，坏包自动换源
     - 干净直连全源失败后，带注册表系统代理再走一轮
     """
-    openers = [netio.clean_opener()]
+    openers = [net_channel.clean_opener()]
     proxy_url = proxy.system_proxy_url()
     if proxy_url:
-        openers.append(netio.proxied_opener(proxy_url))
+        openers.append(net_channel.proxied_opener(proxy_url))
     last_error: Exception | None = None
     for opener in openers:
         last_error = _download_pass(urls, target, opener)

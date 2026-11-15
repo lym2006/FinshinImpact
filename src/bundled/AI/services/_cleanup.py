@@ -1,4 +1,3 @@
-# src/bundled/AI/services/_cleanup.py
 """会话清理服务
 
 - 过期记录与闲置会话按保留期后台清理

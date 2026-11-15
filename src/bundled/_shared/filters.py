@@ -1,4 +1,3 @@
-# src/bundled/_shared/filters.py
 """命令谓词
 
 - 按归一事件的命令头匹配路由

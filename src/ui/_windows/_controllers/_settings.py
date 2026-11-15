@@ -1,4 +1,3 @@
-# src/ui/_windows/_controllers/_settings.py
 """配置控制器
 
 - 向导调度、二次确认与热重载

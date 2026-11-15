@@ -1,10 +1,10 @@
-# src/utils/network/_proxy.py
 """系统代理探测
 
 - 把注册表系统代理原始值格式化为会话可用 URL
 - 配置留空时可回退系统代理
 """
 
+from system.links import HTTP_SCHEME
 from system.registry import read_proxy_registry
 
 
@@ -41,7 +41,7 @@ def _to_url(address: str) -> str | None:
         return None
     if "://" in address:
         return address
-    return f"http://{address}"
+    return f"{HTTP_SCHEME}{address}"
 
 
 def _registry_proxy() -> dict:

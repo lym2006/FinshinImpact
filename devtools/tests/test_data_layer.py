@@ -1,4 +1,3 @@
-# devtools/tests/test_data_layer.py
 """data 层真库测试
 
 - 建表、版本行与 WAL 外键一次验完

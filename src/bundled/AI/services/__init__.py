@@ -1,4 +1,3 @@
-# src/bundled/AI/services/__init__.py
 """AI 服务门面
 
 - 对话分发、任务处理、清理循环与停机交代出口

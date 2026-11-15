@@ -1,4 +1,3 @@
-# src/bot/error_guard.py
 """Bot 线程异常守卫
 
 - 致命与可恢复两级路由规则
@@ -8,11 +7,8 @@
 from collections.abc import Callable
 from typing import ParamSpec, TypeVar
 
-from exceptions import (
-    BotError,
-    ConfigPathMissingError,
-    describe_error,
-)
+from exceptions import ConfigPathMissingError, describe_error
+from finshin_sdk.exceptions import BotError
 from skin.messages import ConfigMessage, MiscMessage
 from ui import gui_bridge
 from utils import get_logger

@@ -1,4 +1,3 @@
-# devtools/_style_checks/_s5c_constants.py
 """模块级常量命名检查
 
 - 无人导入且未进 __all__ 的大写常量应加 `_` 前缀

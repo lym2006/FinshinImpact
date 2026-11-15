@@ -1,4 +1,3 @@
-# src/system/toml_read.py
 """TOML 文件读取
 
 - 读不出即返回空值，缺与坏由调用方各自判

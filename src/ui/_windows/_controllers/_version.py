@@ -1,4 +1,3 @@
-# src/ui/_windows/_controllers/_version.py
 """版本控制器
 
 - 版本检查入口与结果透出

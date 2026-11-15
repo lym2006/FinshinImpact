@@ -1,8 +1,8 @@
-# src/utils/network/_client.py
 """HTTP 基类客户端
 
 - 会话生命周期与 GET/POST 封装
 - SSE 解析与代理注入
+- 代理只由参数注入，环境里的代理表不参与
 """
 
 from collections.abc import AsyncGenerator
@@ -40,7 +40,12 @@ class BaseClient:
         )
 
         client = httpx.AsyncClient(
-            base_url=base_url, headers=headers, timeout=timeout_config, proxy=proxy
+            base_url=base_url,
+            headers=headers,
+            timeout=timeout_config,
+            proxy=proxy,
+            # 代理只由参数注入，环境里的代理表与 NO_PROXY 不参与建客户端
+            trust_env=False,
         )
         try:
             yield client
@@ -85,14 +90,14 @@ class BaseClient:
     @classmethod
     async def get_content(
         cls,
-        method: Literal["json", "text"],
+        method: Literal["json", "text", "bytes"],
         base_url: str = "",
         request_path: str = "",
         headers: dict[str, Any] | None = None,
         proxy: str | None = None,
         timeout: float = _DEFAULT_TIMEOUT,
         connect_timeout: float = _CONNECT_TIMEOUT,
-    ) -> dict[str, Any] | str | None:
+    ) -> dict[str, Any] | str | bytes | None:
         """发起一次 GET 请求，网络与状态码异常原样上抛"""
         async with cls._create_client(
             base_url=base_url,
@@ -103,4 +108,8 @@ class BaseClient:
         ) as client:
             response = await client.get(request_path)
             cls._deal_with_exception(response, "GET")
-            return response.json() if method == "json" else response.text
+            if method == "json":
+                return response.json()
+            if method == "bytes":
+                return response.content
+            return response.text

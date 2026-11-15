@@ -1,4 +1,3 @@
-# src/bundled/AI/handlers/_ai_chat.py
 """对话处理
 
 - 拦下无权私聊的成员，其余场景自动应答

@@ -1,4 +1,3 @@
-# src/bundled/AI/services/_ai_chat.py
 """对话分发服务
 
 - 问答入队与单条消费
@@ -6,8 +5,8 @@
 
 from asyncio import CancelledError
 
-from exceptions import MessageVanishedError
 from finshin_sdk import HandlerContext, QueuedAction
+from finshin_sdk.exceptions import MessageVanishedError
 from services.tasks import TaskItem, get_task_service
 from utils import get_logger
 

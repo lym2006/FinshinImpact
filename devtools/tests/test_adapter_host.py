@@ -1,9 +1,9 @@
-# devtools/tests/test_adapter_host.py
 """适配器装载单元测试
 
-- 齐两项的清单读出导入路径，缺项或平台认不出的整份拒收
+- 目录声明齐必填项的读出导入路径，缺项或认不出的整份拒收
+- 已装包交出的入口点读出清单，同名平台认目录里那份
 - 声明的依赖读出依赖表，没写即空表，写法不对的整份拒收
-- 有清单的平台取到四件，没清单的平台抛缺件异常
+- 有清单的平台取到三件，没清单的平台抛缺件异常
 - 清单要的接口版本比本机新即拒载，读不懂的版本串同样拒载
 - 缺件那句取映射文案，带平台标识
 - 启动取件被拒与未知异常都弹窗，正文不带异常原文
@@ -16,6 +16,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 SRC_DIR = Path(__file__).resolve().parents[2] / "src"
@@ -31,14 +32,62 @@ from bot._adapter_host import _assemble as assemble_mod  # noqa: E402
 from bot._adapter_host import _parts as parts_mod  # noqa: E402
 from bot._managers import _settings as settings_mod  # noqa: E402
 from bot.error_guard import error_guard  # noqa: E402
-from exceptions import AdapterMissingError, AdapterOutOfDateError  # noqa: E402
+from exceptions import (  # noqa: E402
+    AdapterImportError,
+    AdapterMissingError,
+    AdapterOutOfDateError,
+)
 from finshin_sdk import AdapterParts, BaseAdapter, PlatformAssembly  # noqa: E402
-from finshin_sdk.domain import Platform  # noqa: E402
+from finshin_sdk.domain import ADAPTER_DECLARATION_FILE, Platform  # noqa: E402
 from finshin_sdk.dto import AdapterManifestDTO, PluginManifestDTO  # noqa: E402
 from services import adapter_manifest as manifest_mod  # noqa: E402
 from ui import gui_bridge  # noqa: E402
 
-_PARTS_KEYS = ("assemble", "channel_probe", "engine_preload", "diagnose")
+_PARTS_KEYS = ("assemble", "channel_probe", "engine_preload")
+
+# 交出三件的假入口件源码，形状照接口包那份 AdapterParts
+_THREE_PARTS = """from finshin_sdk import AdapterParts
+
+
+def parts():
+    return AdapterParts(
+        assemble=lambda token, proxy: None,
+        channel_probe=lambda token, proxy: None,
+        engine_preload=lambda token, proxy: None,
+    )
+"""
+
+# 只交一只 parts 函数的假入口件，够来源日志那条用例取一次件
+_ONE_PART_CALLER = "def parts(): return None"
+
+# 入口点段默认那一条，键即平台标识
+_DEFAULT_POINTS = 'tg = "fake_adapter.entry:parts"\n'
+
+
+def _manifest(project: str = "", tool: str = "", points: str = _DEFAULT_POINTS) -> str:
+    """拼一份适配器声明文件正文，三段各按用例要验的写法给
+
+    - 平台标识住 [tool.finshin-adapter]，依赖与接口包下限住 [project].dependencies
+    - 入口点段按平台标识点名入口模块，模块与属性之间用冒号
+    """
+    return (
+        f'[project]\nname = "fake-adapter"\n{project}'
+        f"[tool.finshin-adapter]\n{tool}"
+        f'[project.entry-points."finshin.adapters"]\n{points}'
+    )
+
+
+def _fake_point(
+    name: str = "tg",
+    module: str = "fake_adapter.entry",
+    attr: str = "parts",
+    requires: tuple[str, ...] = (),
+) -> SimpleNamespace:
+    """一只已装包交出的入口点替件，只带读取器用到的那几项"""
+    dist = SimpleNamespace(
+        name="finshin-adapter-tg", version="0.1.0", requires=list(requires)
+    )
+    return SimpleNamespace(name=name, module=module, attr=attr, dist=dist)
 
 
 class _FakeMiddleware:
@@ -46,7 +95,7 @@ class _FakeMiddleware:
 
 
 class _FakeAdapter(BaseAdapter):
-    """记下装载侧交来的两件，其余成员按基类要求补齐"""
+    """记下装载侧交来的中间件，其余成员按基类要求补齐"""
 
     def __init__(self) -> None:
         self.sink = object()
@@ -108,60 +157,135 @@ class TestAdapterHost(unittest.TestCase):
         gui_bridge.request_notice.disconnect(tag="test-adapter-notice")
 
     def _scan(self, body: str) -> dict[Platform, AdapterManifestDTO]:
-        """在临时目录摆一份清单再扫一遍"""
+        """在临时目录摆一份声明文件再扫一遍"""
         with tempfile.TemporaryDirectory() as tmp:
             adapters_dir = Path(tmp)
             (adapters_dir / "telegram").mkdir()
-            (adapters_dir / "telegram" / "adapter.toml").write_text(
+            (adapters_dir / "telegram" / ADAPTER_DECLARATION_FILE).write_text(
                 body, encoding="utf-8"
             )
-            with patch.object(manifest_mod, "_adapters_dir", lambda: adapters_dir):
+            # 环境里那只已装适配器不参与，否则拒收用例会被它顶绿
+            with (
+                patch.object(manifest_mod, "_adapters_dir", lambda: adapters_dir),
+                patch.object(manifest_mod, "_installed_points", lambda: ()),
+            ):
                 return manifest_mod.load_adapter_manifests()
 
-    def test_full_manifest_is_read(self) -> None:
-        """齐必填项的清单读出导入路径
+    def _install(self, source: str) -> Path:
+        """在临时目录装一只假适配器件，回它所在的根目录"""
+        holder = tempfile.TemporaryDirectory()
+        self.addCleanup(holder.cleanup)
+        root = Path(holder.name)
+        (root / "fake_tg").mkdir()
+        (root / "fake_tg" / "__init__.py").write_text("", encoding="utf-8")
+        (root / "fake_tg" / "entry.py").write_text(source, encoding="utf-8")
+        sys.path.insert(0, str(root))
+        self.addCleanup(sys.path.remove, str(root))
+        self.addCleanup(sys.modules.pop, "fake_tg", None)
+        self.addCleanup(sys.modules.pop, "fake_tg.entry", None)
+        return root
 
-        - 清单多写一行入口模块名按未知键忽略
+    def _take(self, source: str) -> Path:
+        """装着假件取一次件，回它所在的根目录"""
+        root = self._install(source)
+        card = AdapterManifestDTO(
+            platform=Platform.TELEGRAM, deps=(), requires_sdk="", entry="fake_tg.entry"
+        )
+        patcher = patch.object(
+            parts_mod, "load_adapter_manifests", lambda: {Platform.TELEGRAM: card}
+        )
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        return root
+
+    def test_full_manifest_is_read(self) -> None:
+        """齐必填项的声明读出入口模块名
+
+        - 模块名取自声明的入口点段
         """
-        manifests = self._scan('platform = "tg"\nentry = "other"\n')
-        self.assertEqual(manifests[Platform.TELEGRAM].entry, "adapters.telegram.entry")
+        manifests = self._scan(_manifest(tool='platform = "tg"\n'))
+        self.assertEqual(manifests[Platform.TELEGRAM].entry, "fake_adapter.entry")
 
     def test_incomplete_manifest_is_dropped(self) -> None:
-        """缺必填项的清单不进表
+        """缺必填项的声明不进表
 
         - 空文件与只写依赖的都不进表
         """
         self.assertEqual(self._scan(""), {})
-        self.assertEqual(self._scan('deps = ["httpx"]\n'), {})
+        self.assertEqual(
+            self._scan(_manifest(project='dependencies = ["httpx"]\n')), {}
+        )
 
     def test_unknown_platform_is_dropped(self) -> None:
-        """平台标识认不出的清单不进表"""
-        manifests = self._scan('platform = "nope"\n')
-        self.assertEqual(manifests, {})
+        """平台标识认不出的声明不进表"""
+        self.assertEqual(self._scan(_manifest(tool='platform = "nope"\n')), {})
+
+    def test_platform_not_in_entry_points_is_dropped(self) -> None:
+        """入口点段没点名本平台的声明不进表
+
+        - 只写了别的平台那条的算它自己没交代入口
+        """
+        self.assertEqual(
+            self._scan(
+                _manifest(
+                    tool='platform = "tg"\n',
+                    points='qq = "fake_adapter.entry:parts"\n',
+                )
+            ),
+            {},
+        )
+
+    def test_wrong_entry_attribute_is_dropped(self) -> None:
+        """入口点冒号后不指 parts 的声明不进表"""
+        self.assertEqual(
+            self._scan(
+                _manifest(
+                    tool='platform = "tg"\n',
+                    points='tg = "fake_adapter.entry:run"\n',
+                )
+            ),
+            {},
+        )
 
     def test_declared_deps_are_read(self) -> None:
         """声明依赖的清单按顺序读出依赖表"""
-        manifests = self._scan('platform = "tg"\ndeps = ["aiogram==3.29.1", "httpx"]\n')
+        manifests = self._scan(
+            _manifest(
+                project='dependencies = ["aiogram==3.29.1", "httpx"]\n',
+                tool='platform = "tg"\n',
+            )
+        )
         self.assertEqual(
             manifests[Platform.TELEGRAM].deps, ("aiogram==3.29.1", "httpx")
         )
 
     def test_absent_deps_reads_empty(self) -> None:
-        """没写依赖的清单读出空表照样进表"""
-        manifests = self._scan('platform = "tg"\n')
+        """没写依赖的声明读出空表照样进表"""
+        manifests = self._scan(_manifest(tool='platform = "tg"\n'))
         self.assertEqual(manifests[Platform.TELEGRAM].deps, ())
 
     def test_bad_deps_drops_manifest(self) -> None:
-        """依赖写法不对的清单不进表
+        """依赖写法不对的声明不进表
 
         - 整项不是数组
         - 数组里有空串或非字符串
         """
-        self.assertEqual(self._scan('platform = "tg"\ndeps = "httpx"\n'), {})
-        self.assertEqual(self._scan('platform = "tg"\ndeps = ["", 3]\n'), {})
+        self.assertEqual(
+            self._scan(
+                _manifest(project='dependencies = "httpx"\n', tool='platform = "tg"\n')
+            ),
+            {},
+        )
+        self.assertEqual(
+            self._scan(
+                _manifest(project='dependencies = ["", 3]\n', tool='platform = "tg"\n')
+            ),
+            {},
+        )
 
     def test_listed_platform_returns_parts(self) -> None:
-        """有清单的平台取到四件，四件都能调"""
+        """有清单的平台取到三件，三件都能调"""
+        self._take(_THREE_PARTS)
         parts = parts_mod.parts_for(Platform.TELEGRAM)
         self.assertIsInstance(parts, AdapterParts)
         for key in _PARTS_KEYS:
@@ -190,20 +314,25 @@ class TestAdapterHost(unittest.TestCase):
         self.assertIn("这个平台的适配器还没装：qq", msg)
         self.assertNotIn("AdapterMissingError", msg)
 
-    def test_requires_sdk_is_read(self) -> None:
-        """清单里的接口版本要求读进表，没写即空串"""
-        card = self._scan('platform = "tg"\nrequires_sdk = "0.2.0"\n')
+    def test_sdk_floor_read_from_deps(self) -> None:
+        """接口包下限从依赖声明里读，没写即空串"""
+        card = self._scan(
+            _manifest(
+                project='dependencies = ["aiogram", "finshin-sdk>=0.2.0"]\n',
+                tool='platform = "tg"\n',
+            )
+        )
         self.assertEqual(card[Platform.TELEGRAM].requires_sdk, "0.2.0")
-        bare = self._scan('platform = "tg"\n')
+        bare = self._scan(_manifest(tool='platform = "tg"\n'))
         self.assertEqual(bare[Platform.TELEGRAM].requires_sdk, "")
 
     def test_newer_requirement_refuses_before_import(self) -> None:
-        """清单要的接口版本比本机新即拒载，且不碰入口模块"""
+        """清单要的接口版本比本机新即拒载，入口模块的导入没发生"""
         too_new = AdapterManifestDTO(
             platform=Platform.TELEGRAM,
             deps=(),
             requires_sdk="99.0.0",
-            entry="adapters.telegram.entry",
+            entry="standalone_tg.entry",
         )
         with patch.object(
             parts_mod, "load_adapter_manifests", lambda: {Platform.TELEGRAM: too_new}
@@ -214,13 +343,49 @@ class TestAdapterHost(unittest.TestCase):
         self.assertEqual(ctx.exception.requires, "99.0.0")
         imported.assert_not_called()
 
+    def test_external_adapter_importing_body_is_refused(self) -> None:
+        """外部适配器引了本体内部即拒载，入口模块的导入没发生"""
+        offender = AdapterManifestDTO(
+            platform=Platform.TELEGRAM,
+            deps=(),
+            requires_sdk="",
+            entry="late_bundled_tg.entry",
+        )
+        holder = tempfile.TemporaryDirectory()
+        self.addCleanup(holder.cleanup)
+        root = Path(holder.name)
+        (root / "late_bundled_tg").mkdir()
+        (root / "late_bundled_tg" / "__init__.py").write_text("", encoding="utf-8")
+        (root / "late_bundled_tg" / "entry.py").write_text(
+            "from utils import get_logger", encoding="utf-8"
+        )
+        sys.path.insert(0, str(root))
+        self.addCleanup(sys.path.remove, str(root))
+        sys.modules.pop("late_bundled_tg", None)
+        self.addCleanup(sys.modules.pop, "late_bundled_tg", None)
+        self.addCleanup(sys.modules.pop, "late_bundled_tg.entry", None)
+
+        with (
+            patch.object(
+                parts_mod,
+                "load_adapter_manifests",
+                lambda: {Platform.TELEGRAM: offender},
+            ),
+            patch.object(parts_mod, "import_module") as imported,
+        ):
+            with self.assertRaises(AdapterImportError) as ctx:
+                parts_mod.parts_for(Platform.TELEGRAM)
+        self.assertEqual(ctx.exception.target, "utils")
+        self.assertEqual(ctx.exception.where, "entry.py:1")
+        imported.assert_not_called()
+
     def test_unreadable_requirement_refuses(self) -> None:
         """版本串读不懂即拒载，原串交给那句人话"""
         broken = AdapterManifestDTO(
             platform=Platform.TELEGRAM,
             deps=(),
             requires_sdk="最新",
-            entry="adapters.telegram.entry",
+            entry="standalone_tg.entry",
         )
         with patch.object(
             parts_mod, "load_adapter_manifests", lambda: {Platform.TELEGRAM: broken}
@@ -287,19 +452,18 @@ class TestAdapterHost(unittest.TestCase):
         self.assertIn("RuntimeError: 缺了某个模块", popped[0])
         self.assertNotIn("Traceback", popped[0])
 
-    def test_assemble_hands_over_runtime_only(self) -> None:
-        """入口模块的装配只交运行时
+    def test_taken_adapter_logs_its_source(self) -> None:
+        """取到的适配器把来源路径落到调试日志
 
-        - 交出的运行时带路由挂载口、清单编译器与中间件挂载点
-        - 插件报告那几栏由装载侧拼齐
+        - 拆仓之后同一条日志是用户自查装件对不对的唯一线索
         """
-        runtime = parts_mod.parts_for(Platform.TELEGRAM).assemble(
-            "123456:AA-test-token", None
-        )
-        self.assertIsInstance(runtime, BaseAdapter)
-        self.assertTrue(callable(runtime.router_builder))
-        self.assertTrue(callable(runtime.attach_middleware))
-        self.assertTrue(hasattr(runtime, "route_sink"))
+        root = self._take(_ONE_PART_CALLER)
+
+        with self.assertLogs("Bot.Mgr.Adapter", level="DEBUG") as captured:
+            parts_mod.parts_for(Platform.TELEGRAM)
+        message = captured.records[0].getMessage()
+        self.assertIn(str(root), message)
+        self.assertIn("entry.py", message)
 
     def test_host_wires_middleware_and_plugins(self) -> None:
         """挂日志与注册插件这两步归装载侧
@@ -312,7 +476,6 @@ class TestAdapterHost(unittest.TestCase):
             assemble=lambda token, proxy: adapter,
             channel_probe=None,  # type: ignore[arg-type]
             engine_preload=None,  # type: ignore[arg-type]
-            diagnose=None,  # type: ignore[arg-type]
         )
         seen: dict[str, object] = {}
         row = PluginManifestDTO(
@@ -337,3 +500,68 @@ class TestAdapterHost(unittest.TestCase):
         self.assertEqual(seen["sink"], adapter.sink)
         self.assertEqual(seen["builder"], adapter.builder)
         self.assertEqual(assembly.report, [(row, None)])
+
+
+class TestInstalledSource(unittest.TestCase):
+    """已装包那一路的发现"""
+
+    def test_installed_manifest_is_read(self) -> None:
+        """目录不在场时，已装包交出的入口点读成清单
+
+        - 平台标识取入口点的名，入口模块取值的冒号前段
+        - 依赖取包元数据声明的顶层依赖
+        - 接口包下限也从这串依赖里读
+        """
+        with (
+            patch.object(manifest_mod, "_adapters_dir", lambda: None),
+            patch.object(
+                manifest_mod,
+                "_installed_points",
+                lambda: (
+                    _fake_point(requires=("aiogram==3.29.1", "finshin-sdk>=0.2.0")),
+                ),
+            ),
+        ):
+            manifests = manifest_mod.load_adapter_manifests()
+
+        self.assertEqual(manifests[Platform.TELEGRAM].entry, "fake_adapter.entry")
+        self.assertEqual(
+            manifests[Platform.TELEGRAM].deps, ("aiogram==3.29.1", "finshin-sdk>=0.2.0")
+        )
+        self.assertEqual(manifests[Platform.TELEGRAM].requires_sdk, "0.2.0")
+
+    def test_directory_wins_over_installed(self) -> None:
+        """两路同时报出这一平台时认目录里那份
+
+        - 开发机上 pip 装过同名适配器，改的源码该当场生效
+        """
+        body = _manifest(
+            tool='platform = "tg"\n', points='tg = "dir_adapter.entry:parts"\n'
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            adapters_dir = Path(tmp)
+            (adapters_dir / "telegram").mkdir()
+            (adapters_dir / "telegram" / ADAPTER_DECLARATION_FILE).write_text(
+                body, encoding="utf-8"
+            )
+            with (
+                patch.object(manifest_mod, "_adapters_dir", lambda: adapters_dir),
+                patch.object(
+                    manifest_mod, "_installed_points", lambda: (_fake_point(),)
+                ),
+            ):
+                manifests = manifest_mod.load_adapter_manifests()
+
+        self.assertEqual(manifests[Platform.TELEGRAM].entry, "dir_adapter.entry")
+
+    def test_wrong_attribute_on_installed_is_dropped(self) -> None:
+        """已装包的入口点不指 parts 即不进表"""
+        with (
+            patch.object(manifest_mod, "_adapters_dir", lambda: None),
+            patch.object(
+                manifest_mod,
+                "_installed_points",
+                lambda: (_fake_point(attr="run"),),
+            ),
+        ):
+            self.assertEqual(manifest_mod.load_adapter_manifests(), {})

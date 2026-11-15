@@ -1,4 +1,3 @@
-# src/skin/messages/_plugin.py
 """插件设置面板文案"""
 
 
@@ -90,6 +89,11 @@ class PluginMessage:
     # 用：ui._guide._maintain 全局同步大警告
     SYNC_WARNING = (
         "同步将重建环境为与清单一致\n已装的开发工具会保留，其余残留包会被移除，耗时较长"
+    )
+
+    # 用：services.env_setup.deps_manifest 保留清单里同一只库被钉了两个版本
+    KEEP_CONFLICT = (
+        "同一只库有两处钉了不同版本，按先读到的保留：{name}（留 {kept}，让 {skipped}）"
     )
 
     # 用：ui._guide._maintain 同步进度窗标题

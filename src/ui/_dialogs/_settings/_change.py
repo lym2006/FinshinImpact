@@ -1,4 +1,3 @@
-# src/ui/_dialogs/_settings/_change.py
 """变更确认弹窗
 
 - 配置变更表格差异的二次确认

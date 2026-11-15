@@ -1,4 +1,3 @@
-# packaging/launch/instancelock.py
 """引导锁静默探测
 
 - 命名互斥体只探测不持有，占用判定交启动器决策

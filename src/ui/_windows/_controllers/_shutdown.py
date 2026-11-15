@@ -1,4 +1,3 @@
-# src/ui/_windows/_controllers/_shutdown.py
 """关闭控制器
 
 - 退出流程调度

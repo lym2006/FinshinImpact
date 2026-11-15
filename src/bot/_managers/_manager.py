@@ -1,4 +1,3 @@
-# src/bot/_managers/_manager.py
 """Bot 总控管理器
 
 - 总控入口与 GUI 信号接入点

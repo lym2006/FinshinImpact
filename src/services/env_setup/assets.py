@@ -1,7 +1,6 @@
-# src/services/env_setup/assets.py
 """非 pip 资源安装
 
-- playwright 内核等资源通过模块子命令安装，声明按模块名与资源名两段拼 argv
+- 资源通过模块子命令安装，声明按模块名与资源名两段拼命令参数
 - 镜像下载失败时清除环境变量回退官方源
 - 落盘探活走 dry-run 取权威安装目录逐个复核
 """
@@ -25,11 +24,9 @@ _LOCATION_MARK = "Install location:"
 
 
 def _install_dirs(module: str, res: str) -> list[str]:
-    """经 dry-run 取资源的权威安装目录清单
-
-    - playwright 会把 ffmpeg/winldd 等随附件一并列出，全查宁严勿漏
-    - 子进程开销近一秒，只在确有资源要判时付
-    """
+    """经 dry-run 取资源的权威安装目录清单"""
+    # 这趟子进程要一秒上下，只在确有资源要判时才付
+    # 内核会把随附件一并列出，全查不收窄
     argv = [str(python_target()), "-m", module, "install", "--dry-run", res]
     locs: list[str] = []
     for line in capture_output(argv).splitlines():
@@ -58,8 +55,8 @@ def install_assets(
 ) -> list[str]:
     """下载非 pip 资源并返回失败清单
 
-    - asset 值 = 模块名与资源名两段，拼 [-m, 模块, install, 资源]
-    - ⚠️ 必须晚于同批 deps 安装：-m playwright 要求 playwright 已存在
+    - 资源声明由模块名与资源名两段组成
+    - 必须晚于同批依赖安装
     """
     failed: list[str] = []
     for asset in assets:
@@ -84,7 +81,7 @@ def install_assets(
 
 
 def _install_argv(asset: str) -> list[str] | None:
-    """拆两段式 asset 值为安装 argv
+    """拆两段式资源声明为安装参数
 
     - 空格分词必须恰为 模块名+资源名 两段，否则返回 None
     """

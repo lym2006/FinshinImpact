@@ -1,4 +1,3 @@
-# src/ui/_lifecycle/_app.py
 """应用实例与事件泵
 
 - 全进程 QApplication 的出生口，建实例即挂图标

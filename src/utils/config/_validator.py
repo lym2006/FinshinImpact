@@ -1,4 +1,3 @@
-# src/utils/config/_validator.py
 """配置校验
 
 - 按字段值类型与数值区间校验

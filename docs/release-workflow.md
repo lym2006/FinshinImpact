@@ -20,23 +20,21 @@
 .venv\Scripts\ruff.exe format --check .
 .venv\Scripts\ruff.exe check .
 $env:ELECTRON_RUN_AS_NODE = 1
-node .venv\Lib\site-packages\pyright\dist\index.js --pythonpath .venv\Scripts\python.exe --project pyproject.toml src packaging devtools
+node .venv\Lib\site-packages\pyright\dist\index.js --pythonpath .venv\Scripts\python.exe --project pyrightconfig.json src packaging devtools finshin/adapter finshin/sdk
 $env:PYTHONUTF8 = 1; $env:PYTHONPATH = "src"
 .venv\Scripts\lint-imports.exe
 .venv\Scripts\python.exe devtools\check_coding_style.py src packaging devtools
-.venv\Scripts\pytest.exe devtools\tests -q
+.venv\Scripts\pytest.exe devtools\tests finshin/adapter -q
 ```
 
-- 闸门要五条一次跑齐，日常包成本地脚本执行即可，本节列出的就是脚本里真正跑的命令。
+- 闸门要一次跑齐，日常包成本地脚本执行即可，本节列出的就是脚本里真正跑的命令。
 - 绿的标准：
-  - ruff 两项通过。
+  - ruff format 与 check 都通过。
   - pyright 0 errors。
   - 契约 0 broken。
   - 扫描器 0 硬性。
   - pytest 全过。
-- pyright 本体是 JS 写的，随 pip 包只发来 JS 文件。
-  - `.venv\Scripts\pyright.exe` 要联网装一个 nodeenv 环境，断网即失败。
-  - 闸门改用本机已有的 node 直接跑那些 JS，`node` 可换成任意 node 等价可执行文件。
+- 闸门用本机已有的 node 直接跑 pyright 的 JS 入口，`node` 可换成任意 node 等价可执行文件。
 - 各步判据不在这里重复：
   - 扫描器的分节、待核基线与豁免见 [style-checker.md](style-checker.md)。
   - 用例口径见 [testing.md](testing.md)。
@@ -53,6 +51,22 @@ $env:PYTHONUTF8 = 1; $env:PYTHONPATH = "src"
 - 整完必验 `git diff 整备前位置 HEAD` 为空，内容零变化才算整对。
 - 已 push 的笔不改写。
 - push、tag 只在发布日动。
+
+## 子仓供件
+
+- 子仓的挂载、日常改动、更新与摘掉见 [development.md](development.md) 的「挂载子仓」一节。
+- 五项闸门在子仓只跑三项：格式、类型、测试。分层契约与发布物打包归本体。
+- 发版只在子仓，本体的发布链不含适配器版本：
+  - 构建：`uv build <装载根>/<平台码> --wheel`，产物名形如 `finshin_adapter_tg-0.1.0-py3-none-any.whl`，版本号取自子仓声明里的版本号单源。
+  - tag 打在子仓那一笔上，名字就是版本号（`v0.1.0`）。
+  - release 附件只放 wheel，不放源码快照，不在用户机器上构建。
+  - 下载直链与指纹取 GitHub 记在 wheel 附件上的值。
+  - 正文标题行写 `🐳 仓名-v版本号`。
+  - 正文不写下载直链，wheel 只以附件在场。
+  - release 建完即定稿，旧版附件不撤。
+  - 在线目录由本体的 Pages 工作流按账号下各仓的声明聚合，与版本页同一份产物一起部署。
+  - 子仓单独发版后，目录最长等到本体一次 push 或每日定时重建才反映那一版。
+- 「工作区干净」这条判据算本体与每只子仓，只看本体那棵不算数。
 
 ## CHANGELOG
 
@@ -93,9 +107,9 @@ $env:PYTHONUTF8 = 1; $env:PYTHONPATH = "src"
   - 主题行只写 `- **主题**：`，明细换行缩进两格逐条 `-` 起头。
   - 主题按用户可感知的功能域命名，如「多实例身份隔离」「选窗平台」「配置向导人设预览」。
   - 主题不按文件命名，也不按实现命名。
-  - 子项一行一个事实，主题行不重复子项内容。
+  - 子项一行一个事实。
+  - 主题行不重复子项内容。
 - 单条能说完的改动不硬凑主题，保持一行 `- **要点**：说明`。
-- 首段写 `- **加粗要点**：`，明细换行书写，每行一段，逐行 `-` 起头并缩进。
 
 ### 标点与空格
 
@@ -199,6 +213,7 @@ Generate release notes 生成正文末尾比较链接：
 
 - 正式号那条取上一个**正式号**，覆盖整条预发布线。
 - dev 那条取紧邻的上一个号，只覆盖这一次预发布的增量。
+- 首版没有上一版 tag，比较链接那行写本版 tag 的提交链接。
 
 ### 首发正文（发布日，带 zip）
 
@@ -228,7 +243,7 @@ Release 只承担新用户首次下载与老用户回看某版变化，不承担
 - 正式号发出时把该正式号下各 dev 的变化汇总进正式号那一条，再删掉 dev 的 release 条目。
 - 汇总按用户可感知的功能域写，不复述 dev 明细。
 - 纯内部重构、用户无感知的 dev 段不写入汇总。
-- ⚠️**删的是 release 条目，tag 一律保留**，dev 的 tag 是那次预发布定稿笔的锚点。
+- ⚠️**删的是 release 条目，tag 一律保留**。
 - 正式号之间按「旧版收敛」一节撤发布包、留条目，正文只去掉两条下载直链，其余行照留。
 
 ### 旧版收敛（不带 zip）
@@ -248,7 +263,7 @@ Release 只承担新用户首次下载与老用户回看某版变化，不承担
 **Full Changelog**: https://github.com/lym2006/FinshinImpact/compare/v<上一版>...vX.Y.Z
 ```
 
-⚠️**删发布包不可逆**：zip 随 release 删掉后只能重新构建，而重建产物与当时发出去的不是同一份。
+⚠️**删发布包不可逆**。
 
 ### prerelease 与 latest
 
@@ -264,4 +279,3 @@ Release 发布完成不等于升级链生效：在线版本页是启动器与 GU
 - 闭环判据：跑 `python packaging\build.py --check`，「在线版本页」那一行显示新版本号。
 - Pages 部署有延迟，读数未变稍后重跑。
 - 推 tag、传 zip 两步齐了，老客户端才会在下次启动时收到升级提示。
-- zip 漏传，用户点了升级却下载失败。

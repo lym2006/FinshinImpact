@@ -9,6 +9,7 @@ dist/
 .import_linter_cache/
 .grimp_cache/
 .pytest_cache/
+uv-cache/
 
 # --- 虚拟环境 ---
 .venv/
@@ -20,7 +21,7 @@ dist/
 # --- 运行时数据 ---
 instances/
 runtime/
-plugins_installed/
+finshin/
 
 # --- 项目特定忽略项 ---
 docs/design/
@@ -30,9 +31,9 @@ uv.lock
 # --- 操作系统文件 ---
 Thumbs.db
 
-# --- 工具脚本，默认忽略，逐项放行入库 ---
+# --- 工具脚本，只放行 .py 与 .toml ---
 devtools/*
+!devtools/*.py
+!devtools/*.toml
 !devtools/tests/
 !devtools/_style_checks/
-!devtools/check_coding_style.py
-!devtools/style_waivers.toml

@@ -1,4 +1,3 @@
-# src/skin/theme/_dialogs.py
 """弹窗令牌
 
 - 定义通知类弹窗的尺寸、文案与配色
@@ -8,7 +7,13 @@
 
 from dataclasses import dataclass
 
-from ..messages import CheckMessage, DialogMessage, MiscMessage, VersionMessage
+from ..messages import (
+    CheckMessage,
+    DialogMessage,
+    MiscMessage,
+    PlatformMessage,
+    VersionMessage,
+)
 
 # 五态渲染色：诊断窗与校验窗同款（一处一源）
 _PENDING_COLOR = "#808080"  # 等待检测
@@ -247,3 +252,22 @@ class ChangeDialogTheme:
     diff_del: str = _FAIL_COLOR  # 删除行红色（带删除线）
     diff_add: str = _OK_COLOR  # 新增行绿色加粗
     diff_skip: str = "#8C8C8C"  # 折叠提示行与对侧占位行文字色
+
+
+@dataclass(frozen=True)
+class PlatformDialogTheme:
+    """平台组件面板专属配置
+
+    - 三档各带段名，档内逐只组件一块
+    """
+
+    # 尺寸配置
+    width: int = 620
+    height: int = 480
+    pad: int = 24
+    spacing: int = 12
+    block_pad: int = 10  # 组件块内边距
+    name_font_size: int = 12  # 段名与组件块首行字号
+
+    # 文案配置
+    title: str = PlatformMessage.TITLE

@@ -1,4 +1,3 @@
-# src/ui/_dialogs/_shutdown.py
 """关闭确认弹窗
 
 - 退出进度反馈防强杀泄漏

@@ -1,4 +1,3 @@
-# src/utils/lifecycle.py
 """生命周期
 
 - 按对象注册的清理入口

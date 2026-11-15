@@ -1,4 +1,3 @@
-# devtools/_style_checks/_s2_split.py
 """拆分粒度分节检查
 
 - 单文件超 300 行触发拆分评审

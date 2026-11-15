@@ -1,4 +1,3 @@
-# devtools/tests/test_task_receipt.py
 """停机交代测试
 
 - 真库往返，替身外发端口只记收到哪一句

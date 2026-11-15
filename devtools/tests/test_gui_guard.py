@@ -1,4 +1,3 @@
-# devtools/tests/test_gui_guard.py
 """控制器装饰器兜底的单元测试
 
 - 正常返回原样透传

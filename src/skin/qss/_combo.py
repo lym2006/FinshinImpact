@@ -1,4 +1,3 @@
-# src/skin/qss/_combo.py
 """下拉选择框 QSS"""
 
 from ._base import Qss

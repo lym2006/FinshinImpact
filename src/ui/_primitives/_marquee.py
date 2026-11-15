@@ -1,4 +1,3 @@
-# src/ui/_primitives/_marquee.py
 """循环滚动的文字标签
 
 - 文字画在真正的 QLabel 上，配色与字号仍随样式表走

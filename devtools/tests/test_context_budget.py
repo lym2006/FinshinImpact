@@ -1,4 +1,3 @@
-# devtools/tests/test_context_budget.py
 """上下文预算测试
 
 - 字符折算按中文与其余两套系数

@@ -1,4 +1,3 @@
-# src/ui/_dialogs/_persona/_resolve.py
 """人设正文拍板窗
 
 - 左右两栏比对两份正文，两份一致即只提示一句

@@ -1,4 +1,3 @@
-# src/utils/config/_writer.py
 """配置初值生成
 
 - 按平台段表生成配置文件初值文本

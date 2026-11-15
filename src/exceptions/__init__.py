@@ -1,4 +1,3 @@
-# src/exceptions/__init__.py
 """异常聚合包
 
 - 代发全部自定义异常族
@@ -7,10 +6,10 @@
 
 from ._adapter import (
     AdapterError,
+    AdapterImportError,
     AdapterMissingError,
     AdapterOutOfDateError,
 )
-from ._base import BotError
 from ._config import (
     ConfigAttrError,
     ConfigError,
@@ -20,19 +19,7 @@ from ._config import (
     ConfigPathMissingError,
     ProfileMissingError,
 )
-from ._connectivity import (
-    ConnectivityError,
-    DirectTimeoutError,
-    ProxyAddressError,
-    ProxyConnectionRefusedError,
-    ProxyError,
-    ProxySchemeError,
-    ProxyTimeoutError,
-    TelegramServerError,
-    TokenError,
-)
 from ._describe import describe_error
-from ._domain import DomainError, MessageVanishedError
 from ._gui import (
     DashboardWriteError,
     FontError,
@@ -53,6 +40,7 @@ from ._plugins import (
     PluginEntryError,
     PluginImportError,
     PluginLoadError,
+    PluginManifestError,
     PluginMissingError,
     PluginRoleError,
     PluginsError,
@@ -68,8 +56,6 @@ from ._version import (
 __all__ = [
     # 异常文案
     "describe_error",
-    # 基类
-    "BotError",
     # 版本
     "VersionError",
     "NewVersionError",
@@ -88,19 +74,6 @@ __all__ = [
     "HTTPStatusError",
     "RequestTimeoutError",
     "ConnectionFailedError",
-    # 连接性
-    "ConnectivityError",
-    "DirectTimeoutError",
-    "TokenError",
-    "TelegramServerError",
-    "ProxyError",
-    "ProxyAddressError",
-    "ProxySchemeError",
-    "ProxyTimeoutError",
-    "ProxyConnectionRefusedError",
-    # 领域
-    "DomainError",
-    "MessageVanishedError",
     # GUI
     "GUIError",
     "DashboardWriteError",
@@ -117,9 +90,11 @@ __all__ = [
     "PluginDependencyError",
     "PluginImportError",
     "PluginLoadError",
+    "PluginManifestError",
     "PluginRoleError",
     # 适配器
     "AdapterError",
+    "AdapterImportError",
     "AdapterMissingError",
     "AdapterOutOfDateError",
 ]

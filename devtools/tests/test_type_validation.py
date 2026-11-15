@@ -1,4 +1,3 @@
-# devtools/tests/test_type_validation.py
 """配置类型校验与运行期兜底的单元测试
 
 - validate_types：按 schema default 类型检出字段错误

@@ -1,4 +1,3 @@
-# src/utils/_config_manager.py
 """配置管理器
 
 - 按点分路径读取配置

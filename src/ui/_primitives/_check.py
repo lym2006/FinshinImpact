@@ -1,4 +1,3 @@
-# src/ui/_primitives/_check.py
 """对勾勾选框
 
 - 无填充形态，勾选态在描边方框内绘制对勾

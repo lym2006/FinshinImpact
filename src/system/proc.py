@@ -1,4 +1,3 @@
-# src/system/proc.py
 """无窗口子进程执行
 
 - popen_hidden 起隐藏控制台的子进程，输出走文本流

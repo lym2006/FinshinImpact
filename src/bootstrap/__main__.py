@@ -1,4 +1,3 @@
-# src/bootstrap/__main__.py
 """引导入口脚本
 
 - 支撑 python -m bootstrap 直接运行

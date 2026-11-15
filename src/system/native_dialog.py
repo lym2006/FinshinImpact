@@ -1,4 +1,3 @@
-# src/system/native_dialog.py
 """Win32 原生消息框
 
 - 给启动最早那段兜底用，此刻界面库可能正是坏掉的那个

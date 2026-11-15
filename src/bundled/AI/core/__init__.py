@@ -1,4 +1,3 @@
-# src/bundled/AI/core/__init__.py
 """AI 核心门面
 
 - 网络客户端、在跑协程台账与落库出口

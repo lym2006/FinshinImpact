@@ -1,4 +1,3 @@
-# devtools/_style_checks/_s3_docstring.py
 """Docstring 分节检查
 
 - 标题行禁标点、禁括号冒号解释、禁分号

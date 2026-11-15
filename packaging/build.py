@@ -1,13 +1,11 @@
-# packaging/build.py
 """发布构建脚本
 
-- 编译启动器并组装 zip 发布物
+- 编译启动器并组装发布包
 - 暂存区源码用随包嵌入式解释器预编字节码，用户解压即热
 - 原料下载与发布自检各有独立脚本
 """
 
 import argparse
-import hashlib
 import shutil
 import subprocess
 import sys
@@ -17,25 +15,31 @@ from pathlib import Path
 
 import pack_fetch
 import pack_release
+import pack_seed
+import unpack
 from pack_spec import (
     APP_NAME,
     DIST,
-    EMBED_ZIP_NAME,
     EXE_NAME,
     ROOT,
     STAGE,
-    UV_PAYLOAD_DIR,
-    UV_ZIP_NAME,
+    PackLayout,
+    bytes_digest,
     local_version,
 )
 
-# 应用图标唯一来源：随 assets 白名单进发布包，exe 与 GUI 任务栏同源
-_ICON = ROOT / "assets" / "app.ico"
+_PACKAGING_DIR = "packaging"
+
+# 应用图标取自 assets/app.ico，exe 与 GUI 任务栏共用这只
+_ICON = ROOT / "assets" / PackLayout.ICON
 
 # 发布 zip 白名单：只装运行必需与用户文档，devtools（含测试）、docs、packaging 不在名单天然排除
 _COPY_DIRS = ("src", "assets")
+
+# 拷贝时一并跳过的名字：`.git` 进包等于把本机路径发出去
+_COPY_IGNORE = ("__pycache__", ".pytest_cache", "*.egg-info", ".git")
 _COPY_FILES = (
-    "pyproject.toml",
+    PackLayout.DECLARATION,
     "README.md",
     "CHANGELOG.md",
     "LICENSE",
@@ -69,7 +73,7 @@ def _require_icon() -> bytes:
 def _launcher_sources() -> list[Path]:
     """列出编译进启动器的全部源文件"""
     pkg = ROOT / "packaging"
-    paths = [pkg / "launcher.py", pkg / "pack_spec.py"]
+    paths = [pkg / PackLayout.LAUNCHER_SCRIPT, pkg / PackLayout.PACK_SPEC_SCRIPT]
     paths.extend(sorted((pkg / "launch").glob("*.py")))
     return paths
 
@@ -84,7 +88,7 @@ def _launcher_fingerprint() -> str:
     blob = b"".join(
         f"=={p.name}==\n".encode() + p.read_bytes() for p in _launcher_sources()
     )
-    return hashlib.sha256(blob + _require_icon()).hexdigest()
+    return bytes_digest(blob + _require_icon())
 
 
 def _build_launcher() -> Path:
@@ -120,7 +124,7 @@ def _build_launcher() -> Path:
             str(DIST / "build"),
             "--specpath",
             str(DIST),
-            str(ROOT / "packaging" / "launcher.py"),
+            str(ROOT / _PACKAGING_DIR / PackLayout.LAUNCHER_SCRIPT),
         ],
         check=True,
     )
@@ -134,7 +138,7 @@ def _write_runtime_seed(launcher_dir: Path) -> None:
 
     - 启动器 exe 与依赖目录 _internal 放包根，用户双击即见
     """
-    runtime = STAGE / "runtime"
+    runtime = STAGE / PackLayout.RUNTIME_DIR
     runtime.mkdir(parents=True, exist_ok=True)
     shutil.copy2(launcher_dir / EXE_NAME, STAGE / EXE_NAME)
     shutil.copytree(
@@ -143,10 +147,10 @@ def _write_runtime_seed(launcher_dir: Path) -> None:
         dirs_exist_ok=True,
     )
 
-    shutil.copy2(pack_fetch.fetch_embed(), runtime / EMBED_ZIP_NAME)
-    payload = STAGE / UV_PAYLOAD_DIR
+    shutil.copy2(pack_fetch.fetch_embed(), runtime / PackLayout.EMBED_ZIP)
+    payload = STAGE / PackLayout.PAYLOAD_DIR
     payload.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(pack_fetch.fetch_uv(), payload / UV_ZIP_NAME)
+    shutil.copy2(pack_fetch.fetch_uv(), payload / PackLayout.UV_ZIP)
 
 
 def _precompile_stage() -> None:
@@ -158,10 +162,9 @@ def _precompile_stage() -> None:
     # pyc 不认 mtime，checked-hash 才扛得住 zip 往返
     with tempfile.TemporaryDirectory(prefix="finshin-embed-") as tmp:
         embed = Path(tmp) / "embed"
-        with zipfile.ZipFile(pack_fetch.fetch_embed()) as zf:
-            zf.extractall(embed)
-        py = embed / "python.exe"
-        targets = [STAGE / "src", STAGE / "main.py"]
+        unpack.unpack_all(pack_fetch.fetch_embed(), embed)
+        py = embed / PackLayout.PYTHON_EXE
+        targets = [STAGE / "src", STAGE / PackLayout.MAIN_SCRIPT]
         subprocess.run(
             [
                 str(py),
@@ -174,6 +177,13 @@ def _precompile_stage() -> None:
             ],
             check=True,
         )
+
+
+def _refuse_leftovers(stage: Path) -> None:
+    """发布目录里有版本控制条目即停下，并报出每一条的位置"""
+    offenders = sorted(str(item.relative_to(stage)) for item in stage.rglob(".git"))
+    if offenders:
+        raise RuntimeError("发布物里有版本控制条目：" + "、".join(offenders))
 
 
 def _assemble(launcher_dir: Path) -> Path:
@@ -189,17 +199,17 @@ def _assemble(launcher_dir: Path) -> Path:
             shutil.copytree(
                 src,
                 STAGE / name,
-                ignore=shutil.ignore_patterns(
-                    "__pycache__", ".pytest_cache", "*.egg-info"
-                ),
+                ignore=shutil.ignore_patterns(*_COPY_IGNORE),
             )
     for name in _COPY_FILES:
         src = ROOT / name
         if src.exists():
             shutil.copy2(src, STAGE / name)
 
-    (STAGE / "main.py").write_text(_MAIN_PY, encoding="utf-8")
+    (STAGE / PackLayout.MAIN_SCRIPT).write_text(_MAIN_PY, encoding="utf-8")
+    _refuse_leftovers(STAGE)
     _write_runtime_seed(launcher_dir)
+    pack_seed.seed_sdk_wheel()
     _precompile_stage()
     zip_name = DIST / f"{APP_NAME}-v{version}.zip"
     if zip_name.exists():

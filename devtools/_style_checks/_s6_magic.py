@@ -1,9 +1,9 @@
-# devtools/_style_checks/_s6_magic.py
 """魔法数字与字符串分节检查
 
 - 函数体内裸数字字面量提示提取为常量
 - 豁免：-1/0/1 等哨兵值、下标、幂、时间单位组合、绝对值达 1000 的量级数
 - 协议串细则委托 _s6b_protocol_strings
+- 链接归家细则委托 _s6c_link_home
 - 函数体内裸定义的模块级名提示下沉
 """
 
@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 
 from ._common import Finding
 from ._s6b_protocol_strings import check_strings
+from ._s6c_link_home import check_links
 
 if TYPE_CHECKING:
     from ._common import FileData
@@ -32,6 +33,7 @@ def check(files: list[FileData]) -> list[Finding]:
             continue
         findings.extend(_check_numbers(file))
     findings.extend(check_strings(files))
+    findings.extend(check_links(files))
     return findings
 
 

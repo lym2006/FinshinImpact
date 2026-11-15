@@ -1,4 +1,3 @@
-# src/ui/_windows/_controllers/_base.py
 """控制器基类
 
 - 按钮绑定契约与执行入口

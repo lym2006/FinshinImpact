@@ -1,4 +1,3 @@
-# packaging/launch/shell.py
 """启动器换壳交接
 
 - 暂存的新壳换入规范路径，图标缓存刷新后拉起新进程
@@ -17,6 +16,7 @@ from pack_spec import (
     SHELL_BAK_SUFFIX,
     SHELL_EXE,
     SHELL_PENDING,
+    PackLayout,
 )
 
 from . import dialogs, instancelock
@@ -61,7 +61,7 @@ def apply_shell_update(root: Path, handoff: bool = False) -> None:
     # 换壳后 exe 路径与文件名未变，Shell 图标缓存认路径不认内容，不刷新则用户端沿用旧图标
     try:
         subprocess.run(
-            ["ie4uinit.exe", "-show"],
+            [PackLayout.ICON_REFRESH_TOOL, "-show"],
             creationflags=CREATE_NO_WINDOW,
             timeout=_ICON_REFRESH_TIMEOUT,
         )

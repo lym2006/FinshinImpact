@@ -1,4 +1,3 @@
-# devtools/tests/test_persona_sync.py
 """内置模板对账与生效正文的单元测试
 
 - 副本缺失即从模板建好并落戳，不打扰

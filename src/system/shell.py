@@ -1,4 +1,3 @@
-# src/system/shell.py
 """桌面打开与窗口激活
 
 - open_path 用系统默认程序打开文件或目录

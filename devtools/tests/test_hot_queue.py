@@ -1,4 +1,3 @@
-# devtools/tests/test_hot_queue.py
 """热队列测试
 
 - 入队按容器到达序补号

@@ -1,4 +1,3 @@
-# src/ui/_windows/_controllers/_save.py
 """保存与落盘
 
 - 面板的保存请求在这里算变更、起校验轮并暂存候选

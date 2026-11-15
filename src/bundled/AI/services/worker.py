@@ -1,4 +1,3 @@
-# src/bundled/AI/services/worker.py
 """对话工作循环
 
 - 流式接收、会话落库与记录持久化
@@ -10,10 +9,10 @@ import time
 from collections.abc import AsyncGenerator
 from typing import Any, Literal
 
-from exceptions import DomainError, MessageVanishedError
 from finshin_sdk import HandlerContext
 from finshin_sdk.domain.ids import SessionKey
 from finshin_sdk.dto import InboundEventDTO, MessageDTO
+from finshin_sdk.exceptions import DomainError, MessageVanishedError
 from utils import get_logger
 
 from ..._shared.messages import BotMessage

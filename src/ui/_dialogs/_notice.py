@@ -1,4 +1,3 @@
-# src/ui/_dialogs/_notice.py
 """通用提示弹窗
 
 - 单消息 + 确认按钮的家族化小窗

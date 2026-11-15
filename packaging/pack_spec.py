@@ -1,17 +1,17 @@
-# packaging/pack_spec.py
 """打包共享规格
 
 - 产物身份名、发布地址与 Windows 协议值的常量表
 - 版本页、发布说明与依赖清单的读取入口
 """
 
+import hashlib
 import json
 import tomllib
 import urllib.request
 from pathlib import Path
 from typing import Any
 
-import netio
+import net_channel
 
 # 仓库根与产物目录（_cache 存放重复构建可复用的原料）
 ROOT = Path(__file__).resolve().parent.parent
@@ -26,28 +26,64 @@ _TIMEOUT_RELEASE = 10.0  # release 正文请求超时 10 秒
 
 HDR_CONTENT_LENGTH = "Content-Length"  # 探测与下载共用的响应头名
 
+BYTES_PER_MB = 1024 * 1024  # 1 MB
+HDR_USER_AGENT = "User-Agent"  # 请求头名，取件与目录生成两侧共用
+HDR_AUTHORIZATION = "Authorization"  # 令牌请求头名
+
+# 在线地址的家，启动器与构建脚本只在这一处写
+_ACCOUNT = "lym2006"
+_MAIN_REPO = "FinshinImpact"
+_PAGES_HOST = f"https://{_ACCOUNT}.github.io"
+API_HOST = "https://api.github.com"
+DOWNLOAD_HOST = "https://github.com"
+PROXY_SCHEME = "http://"  # 注册表只记地址与端口时补齐的协议头
+
+
+class PackLayout:
+    """包内布局名与工具名
+
+    - 定义这份发布包里的目录名、脚本名、可执行名与临时件名
+    - 成员只写语义本体，类名已表达域义
+    """
+
+    RUNTIME_DIR = "runtime"
+    PAYLOAD_DIR = "payload"
+    SDK_WHEEL_DIR = "_sdk"
+    MAIN_SCRIPT = "main.py"
+    LAUNCHER_SCRIPT = "launcher.py"
+    PACK_SPEC_SCRIPT = "pack_spec.py"
+    DECLARATION = "pyproject.toml"
+    ICON = "app.ico"
+    EMBED_ZIP = "python-embed.zip"
+    UV_ZIP = "uv.zip"
+    UV_EXE = "uv.exe"
+    PYTHON_EXE = "python.exe"
+    PYTHONW_EXE = "pythonw.exe"
+    STAGE_ZIP = "package.zip"
+    INSTALL_STAMP = ".installed"
+    ICON_REFRESH_TOOL = "ie4uinit.exe"
+    PYTHON_PTH_GLOB = "python*._pth"
+
+
 # 版本信息网页
-_PAGES_PYPROJECT_URL = "https://lym2006.github.io/FinshinImpact/pyproject.toml"
-_RELEASE_API_URL = (
-    "https://api.github.com/repos/lym2006/FinshinImpact/releases/tags/v{ver}"
-)
+_PAGES_PYPROJECT_URL = f"{_PAGES_HOST}/{_MAIN_REPO}/{PackLayout.DECLARATION}"
+_RELEASE_API_URL = API_HOST + f"/repos/{_ACCOUNT}/{_MAIN_REPO}/releases/tags/v{{ver}}"
 _API_USER_AGENT = "Python-Script"  # GitHub API 认 UA，缺头即拒
 
 # 发布包直链所在行的标记
 _DOWNLOAD_MARK = "releases/download/"
 
-# 发布物下载地址，build 自检与启动器升级共用
-RELEASE_ZIP_URL = "https://github.com/lym2006/FinshinImpact/releases/download/v{ver}/FinshinImpact-v{ver}.zip"
+# 发布包下载地址，build 自检与启动器升级共用
+RELEASE_ZIP_URL = (
+    DOWNLOAD_HOST
+    + f"/{_ACCOUNT}/{_MAIN_REPO}/releases/download/v{{ver}}/{APP_NAME}-v{{ver}}.zip"
+)
 
-# 国内直连 GitHub 慢：公共加速镜像优先，官方源兜底
-RELEASE_MIRRORS = ("https://gh-proxy.com/", "https://ghproxy.net/")
-
-RUNTIME_DIR_NAME = "runtime"  # 包内运行目录名，安装解包与升级保留共用
 
 # 升级保留用户资产（_internal 只装二进制依赖，换壳无需动）
 PRESERVE_NAMES = (
     "instances",
-    RUNTIME_DIR_NAME,
+    PackLayout.RUNTIME_DIR,
     "_update",
     "_internal",
 )
@@ -64,18 +100,8 @@ AUMID_ANCHOR_VAR = "FINSHINIMPACT_EXE_PATH"
 DETACHED_PROCESS = 0x00000008  # 新壳不继承旧进度窗口，换壳无闪窗
 CREATE_NO_WINDOW = 0x08000000  # 后台命令不弹控制台窗口
 
-# 包内目录与原料文件名，build 落盘与启动器解包两侧必须同值
-EMBED_ZIP_NAME = "python-embed.zip"
-UV_PAYLOAD_DIR = "payload"
-UV_ZIP_NAME = "uv.zip"
-UV_EXE_NAME = "uv.exe"
-
 # 安装期注入的代理环境变量名，拉起主程序前剔除
 PROXY_ENV_VARS = ("HTTP_PROXY", "HTTPS_PROXY")
-
-# 包内适配器清单的相对路径与依赖键名，与 src 侧词表同值，两处改名必须同步
-_ADAPTER_MANIFEST_GLOB = "src/adapters/*/adapter.toml"
-_ADAPTER_DEPS_KEY = "deps"
 
 
 def _pyproject_data(root: Path) -> dict:
@@ -94,9 +120,9 @@ def remote_version(proxy_url: str | None = None) -> str | None:
 
     - 干净直连优先，给了代理地址再补试一轮
     """
-    openers = [netio.clean_opener()]
+    openers = [net_channel.clean_opener()]
     if proxy_url:
-        openers.append(netio.proxied_opener(proxy_url))
+        openers.append(net_channel.proxied_opener(proxy_url))
     for opener in openers:
         try:
             with opener.open(
@@ -122,11 +148,11 @@ def remote_release_notes(version: str, *, proxy_url: str | None = None) -> str:
     - 干净直连优先，给了代理地址再补试一轮
     """
     request = urllib.request.Request(
-        _RELEASE_API_URL.format(ver=version), headers={"User-Agent": _API_USER_AGENT}
+        _RELEASE_API_URL.format(ver=version), headers={HDR_USER_AGENT: _API_USER_AGENT}
     )
-    openers = [netio.clean_opener()]
+    openers = [net_channel.clean_opener()]
     if proxy_url:
-        openers.append(netio.proxied_opener(proxy_url))
+        openers.append(net_channel.proxied_opener(proxy_url))
     for opener in openers:
         try:
             with opener.open(request, timeout=_TIMEOUT_RELEASE) as resp:
@@ -140,24 +166,6 @@ def remote_release_notes(version: str, *, proxy_url: str | None = None) -> str:
 def dependencies(root: Path) -> list[str]:
     """获取运行依赖清单"""
     return list(_pyproject_data(root)["project"]["dependencies"])
-
-
-def adapter_dependencies(root: Path) -> list[str]:
-    """汇总包内各适配器清单声明的依赖
-
-    - 逐个适配器目录读清单，读不到或解析失败的整只跳过
-    - 只收字符串项，非数组与数组里的非字符串一概不要
-    """
-    pins: list[str] = []
-    for path in sorted(root.glob(_ADAPTER_MANIFEST_GLOB)):
-        try:
-            data = tomllib.loads(path.read_text(encoding="utf-8"))
-        except (OSError, tomllib.TOMLDecodeError):
-            continue
-        deps = data.get(_ADAPTER_DEPS_KEY)
-        if isinstance(deps, list):
-            pins.extend(item for item in deps if isinstance(item, str))
-    return pins
 
 
 def _tool_settings(root: Path) -> dict:
@@ -180,3 +188,36 @@ def require_setting(root: Path, key: str) -> Any:
     if key not in settings:
         raise RuntimeError(f"pyproject 缺 [tool.finshin-impact].{key}")
     return settings[key]
+
+
+_SETTING_MIRRORS = "github-mirrors"
+
+
+def release_mirrors(root: Path = ROOT) -> tuple[str, ...]:
+    """取 GitHub 加速镜像序列
+
+    - 名单只在配置表里维护，代码不写第二份
+    """
+    return tuple(require_setting(root, _SETTING_MIRRORS))
+
+
+# 本体侧那三件在 system/digest.py，打包边界两侧各留一份
+_LINES_JOIN = "\n"
+
+
+def file_digest(path: Path) -> str:
+    """算文件字节指纹，读不出交出空串"""
+    try:
+        return bytes_digest(path.read_bytes())
+    except OSError:
+        return ""
+
+
+def bytes_digest(payload: bytes) -> str:
+    """算一段字节的指纹"""
+    return hashlib.sha256(payload).hexdigest()
+
+
+def lines_digest(items: list[str]) -> str:
+    """算行清单的指纹，行序参与取值"""
+    return bytes_digest(_LINES_JOIN.join(items).encode("utf-8"))

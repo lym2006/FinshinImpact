@@ -1,4 +1,3 @@
-# devtools/tests/test_link_report.py
 """链路状态上报测试
 
 - 连续失败达阈值才报断连短句，单条失败只记明细、恢复零输出
@@ -13,21 +12,15 @@ from pathlib import Path
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
-from aiogram.exceptions import TelegramBadRequest, TelegramNetworkError  # noqa: E402
-from aiogram.methods import GetMe  # noqa: E402
-from aiohttp import ClientError  # noqa: E402
-from aiohttp_socks import (  # noqa: E402
-    ProxyConnectionError,
-    ProxyError,
-    ProxyTimeoutError,
-)
+from adapter_presence import adapter_present  # noqa: E402
 
-from adapters.telegram.session import is_link_failure  # noqa: E402
 from utils.network import _link as link_module  # noqa: E402
 from utils.network._link import (  # noqa: E402
     _DOWN_THRESHOLD,
@@ -77,34 +70,6 @@ class TestSpanOf(unittest.TestCase):
         for seconds, expect in self.CASES:
             with self.subTest(seconds):
                 self.assertEqual(_span_of(seconds), expect)
-
-
-class TestIsLinkFailure(unittest.TestCase):
-    """链路层判定"""
-
-    LINK = (
-        ProxyConnectionError("x"),
-        ProxyTimeoutError("x"),
-        ProxyError("x"),
-        ClientError("x"),
-        TelegramNetworkError(method=GetMe(), message="x"),
-        ConnectionRefusedError("x"),
-    )
-    SERVER_OR_BUG = (
-        TelegramBadRequest(method=GetMe(), message="x"),
-        TypeError("x"),
-        ValueError("x"),
-    )
-
-    def test_connection_errors_count_as_link_failure(self) -> None:
-        for exc in self.LINK:
-            with self.subTest(type(exc).__name__):
-                self.assertTrue(is_link_failure(exc))
-
-    def test_server_answers_and_bugs_do_not(self) -> None:
-        for exc in self.SERVER_OR_BUG:
-            with self.subTest(type(exc).__name__):
-                self.assertFalse(is_link_failure(exc))
 
 
 class _Clock:
@@ -285,22 +250,32 @@ class TestLinkStatusTexts(unittest.TestCase):
         self.assertEqual(status.span_text, "1 时 01 分")
 
 
+_ADAPTER_LOADED = adapter_present()
+
+
 async def _link_fail(self: object, bot: object, method: object, timeout: int) -> None:
     """替父类请求抛一条链路层异常"""
+    from aiogram.exceptions import TelegramNetworkError
+    from aiogram.methods import GetMe
+
     raise TelegramNetworkError(method=GetMe(), message="链路断了")
 
 
+@unittest.skipUnless(_ADAPTER_LOADED, "适配层未装载，会话上报用例跳过")
 class TestSessionLinkReporting(unittest.IsolatedAsyncioTestCase):
     """会话上报开关
 
-    - 探测会话不进断连状态机，引擎会话照旧上报
+    - 探测会话不进断连状态机，引擎会话把失败转达给上报件
+    - 装配的是适配层会话与本体的上报件，只在两仓都在场时测
     """
 
     async def _make_request(self, report_link: bool) -> None:
         from aiogram import Bot
         from aiogram.client.session.aiohttp import AiohttpSession
+        from aiogram.exceptions import TelegramNetworkError
+        from aiogram.methods import GetMe
 
-        from adapters.telegram.session import SSLUnverifiedSession
+        from finshin_adapter_tg._session import SSLUnverifiedSession
 
         session = SSLUnverifiedSession(proxy=None, report_link=report_link)
         bot = Bot(token="123:abc", session=session)

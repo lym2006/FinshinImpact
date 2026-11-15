@@ -1,4 +1,3 @@
-# devtools/tests/test_record_merge.py
 """落盘记录合并测试
 
 - 同群两名成员写进同一份文件

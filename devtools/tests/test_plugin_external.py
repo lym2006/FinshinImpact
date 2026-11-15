@@ -1,7 +1,6 @@
-# devtools/tests/test_plugin_external.py
 """外部插件目录装载的单元测试
 
-- 装载认两根：随包树在前，项目根的 plugins_installed 在后
+- 装载认两根：随包树在前，`finshin/plugin` 在后
 - 外部插件的导入路径带外部顶层包名，目录内部的相对引用走得通
 - 同名插件以先读到的根为准，随包压住外部
 - 外部目录不存在时只剩随包一根
@@ -32,6 +31,7 @@ from exceptions import (  # noqa: E402
 )
 from finshin_sdk.domain import (  # noqa: E402
     INSTALLED_PLUGINS_NAME,
+    INSTALLED_PLUGINS_PKG,
     PLUGINS_PKG,
     HelpKey,
     ManifestKey,
@@ -39,10 +39,9 @@ from finshin_sdk.domain import (  # noqa: E402
     PluginClaim,
     resolve_claims,
 )
-from finshin_sdk.dto import PluginManifestDTO  # noqa: E402
 from services.env_setup import deps_manifest  # noqa: E402
+from utils.external_scope import check_external_imports  # noqa: E402
 from utils.plugin import _manifest, _register  # noqa: E402
-from utils.plugin._scope import check_external_scope  # noqa: E402
 
 _MANIFEST = 'name = "{name}"\ntitle = "{title}"\nsummary = "外部目录装载用例"\n'
 # 清单里的命令声明，读侧按它做命令名抢占判定
@@ -91,7 +90,6 @@ _CONTRACT_MANIFEST = """
 name = "demo"
 title = "契约样例"
 summary = "外部插件交出的那一套件"
-deps = ["httpx==0.28.1"]
 assets = ["playwright chromium-headless-shell"]
 
 [[help]]
@@ -167,6 +165,14 @@ class MatePlugin(BasePlugin):
 """
 
 
+def _write_declaration(plugin_dir: Path, deps: tuple[str, ...] = ()) -> None:
+    """补一份只交代依赖的自家声明，外部那档缺它即整份不认"""
+    text = '[project]\nname = "x"\nversion = "0"\ndependencies = [{}]\n'.format(
+        ", ".join(f'"{pin}"' for pin in deps)
+    )
+    (plugin_dir / "pyproject.toml").write_text(text, encoding="utf-8")
+
+
 def _write_plugin(
     root: Path,
     name: str,
@@ -185,6 +191,7 @@ def _write_plugin(
     for cmd in commands:
         text += _COMMAND.format(cmd=cmd)
     (plugin_dir / "plugin.toml").write_text(text, encoding="utf-8")
+    _write_declaration(plugin_dir)
     for file_name, body in (sources or {}).items():
         (plugin_dir / file_name).write_text(body, encoding="utf-8")
 
@@ -209,7 +216,7 @@ class ExternalRootCase(unittest.TestCase):
         self.bundled = base / PLUGINS_PKG
         self.bundled.mkdir()
         self.installed = base / INSTALLED_PLUGINS_NAME
-        self.installed.mkdir()
+        self.installed.mkdir(parents=True)
         self.state = base / "plugins.toml"
         self.addCleanup(self._forget_modules)
 
@@ -223,7 +230,7 @@ class ExternalRootCase(unittest.TestCase):
 
     def _forget_modules(self) -> None:
         """摘掉这次装载挂进 sys.modules 的外部插件包"""
-        pkg = INSTALLED_PLUGINS_NAME
+        pkg = INSTALLED_PLUGINS_PKG
         for name in [k for k in sys.modules if k.split(".", 1)[0] == pkg]:
             del sys.modules[name]
 
@@ -235,7 +242,9 @@ class ExternalRootCase(unittest.TestCase):
             encoding="utf-8",
         )
 
-    def _register_installed(self, entries: dict[str, str], manifest: str) -> tuple:
+    def _register_installed(
+        self, entries: dict[str, str], manifest: str, deps: tuple[str, ...] = ()
+    ) -> tuple:
         """按给定入口跑一轮注册，回清单序列、注册结果与挂上来的路由
 
         - 同时陪跑一只必成功的插件，单只失败才轮不到整体上抛
@@ -243,6 +252,7 @@ class ExternalRootCase(unittest.TestCase):
         demo = self.installed / "demo"
         demo.mkdir()
         (demo / "plugin.toml").write_text(manifest, encoding="utf-8")
+        _write_declaration(demo, deps)
         for file_name, body in entries.items():
             (demo / file_name).write_text(body, encoding="utf-8")
 
@@ -251,6 +261,7 @@ class ExternalRootCase(unittest.TestCase):
         (mate / "plugin.toml").write_text(
             _MANIFEST.format(name="mate", title="陪跑"), encoding="utf-8"
         )
+        _write_declaration(mate)
         (mate / "__init__.py").write_text(_MATE_ENTRY, encoding="utf-8")
         self._enable_installed()
 
@@ -278,7 +289,7 @@ class TestExternalRootReads(ExternalRootCase):
 
         self.assertEqual(
             [(m.name, m.module) for m in picked],
-            [("outer", f"{INSTALLED_PLUGINS_NAME}.outer")],
+            [("outer", f"{INSTALLED_PLUGINS_PKG}.outer")],
         )
 
     def test_bundled_root_wins_same_name(self) -> None:
@@ -347,7 +358,9 @@ class TestExternalRootReads(ExternalRootCase):
             [(m.title, m.module) for m in picked], [("随包", f"{PLUGINS_PKG}.help")]
         )
 
-        rows = deps_manifest.load_manifests([self.bundled, self.installed])
+        rows = deps_manifest.load_manifests(
+            [(self.bundled, PLUGINS_PKG), (self.installed, INSTALLED_PLUGINS_PKG)]
+        )
         claims = [
             PluginClaim(
                 name=row[ManifestKey.NAME],
@@ -403,7 +416,7 @@ class TestExternalRootImports(ExternalRootCase):
         """
         _manifest._plugins_roots()
 
-        mounted = sys.modules[INSTALLED_PLUGINS_NAME].__path__
+        mounted = sys.modules[INSTALLED_PLUGINS_PKG].__path__
 
         self.assertEqual(list(mounted), [str(self.installed)])
 
@@ -420,11 +433,12 @@ class TestExternalContract(ExternalRootCase):
             self._register_installed(
                 {"__init__.py": _CONTRACT_ENTRY},
                 _CONTRACT_MANIFEST.format(role="member"),
+                deps=("httpx==0.28.1",),
             )
         )
         demo = manifests[0]
 
-        self.assertEqual(demo.module, f"{INSTALLED_PLUGINS_NAME}.demo")
+        self.assertEqual(demo.module, f"{INSTALLED_PLUGINS_PKG}.demo")
         self.assertEqual(demo.deps, ("httpx==0.28.1",))
         self.assertEqual(demo.assets, ("playwright chromium-headless-shell",))
         self.assertEqual(
@@ -527,11 +541,8 @@ class TestExternalScope(ExternalRootCase):
 
         - 这条红了说明放行按恒启用表挑人，新加的随包件会被误拦
         """
-        check_external_scope(
-            PluginManifestDTO(
-                name="inner", module=f"{PLUGINS_PKG}.inner", title="随包", summary=""
-            )
-        )
+        module = f"{PLUGINS_PKG}.inner"
+        check_external_imports("inner", module, PLUGINS_PKG, PluginImportError)
 
 
 if __name__ == "__main__":

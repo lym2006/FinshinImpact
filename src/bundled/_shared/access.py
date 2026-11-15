@@ -1,4 +1,3 @@
-# src/bundled/_shared/access.py
 """命令权限守卫
 
 - 主人档取配置中的主人，管理员档为主人与被授权用户

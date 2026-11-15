@@ -1,17 +1,16 @@
-# packaging/pack_fetch.py
 """构建原料下载
 
 - 嵌入式 Python 与 uv 安装包多源下载并落 dist 缓存
 - zip 条目校验，uv 包加 sha256 比对，坏包自动换源
 """
 
-import hashlib
 import shutil
 import urllib.request
 import zipfile
 from pathlib import Path
 
-from pack_spec import CACHE
+from pack_spec import CACHE, DOWNLOAD_HOST, file_digest, release_mirrors
+from unpack import zip_entries_ok
 
 # 构建原料下载源：镜像优先、官方兜底
 _EMBED_VERSION = "3.11.9"
@@ -29,10 +28,9 @@ _UV_VERSION = "0.12.23"
 _UV_URL_SUFFIX = (
     f"astral-sh/uv/releases/download/{_UV_VERSION}/uv-x86_64-pc-windows-msvc.zip"
 )
-_UV_URLS = (
-    f"https://gh-proxy.com/https://github.com/{_UV_URL_SUFFIX}",
-    f"https://ghproxy.net/https://github.com/{_UV_URL_SUFFIX}",
-    f"https://github.com/{_UV_URL_SUFFIX}",
+_UV_OFFICIAL_URL = f"{DOWNLOAD_HOST}/{_UV_URL_SUFFIX}"
+_UV_URLS = tuple(f"{mirror}{_UV_OFFICIAL_URL}" for mirror in release_mirrors()) + (
+    _UV_OFFICIAL_URL,
 )
 _UV_CACHE_NAME = f"uv-{_UV_VERSION}.zip"
 
@@ -81,11 +79,10 @@ def _download_verified(urls: list[str], target: Path, sha256: str = "") -> None:
     for url in urls:
         try:
             _download(url, target)
-            with zipfile.ZipFile(target) as zf:
-                if zf.testzip() is not None:
-                    raise zipfile.BadZipFile("zip 条目校验失败")
+            if not zip_entries_ok(target):
+                raise zipfile.BadZipFile("zip 条目校验失败")
             if sha256:
-                digest = hashlib.sha256(target.read_bytes()).hexdigest()
+                digest = file_digest(target)
                 if digest != sha256:
                     raise ValueError(f"sha256 不符：{digest}")
             return

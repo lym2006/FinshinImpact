@@ -1,4 +1,3 @@
-# src/ui/_windows/_main_window.py
 """主窗口
 
 - BotGUI 纯渲染与指令执行层

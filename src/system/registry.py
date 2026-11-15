@@ -1,4 +1,3 @@
-# src/system/registry.py
 """注册表系统代理读取
 
 - 读 ProxyEnable 与 ProxyServer/PriProxy 原始值成对回传

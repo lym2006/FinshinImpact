@@ -1,4 +1,3 @@
-# src/bundled/AI/utils.py
 """AI 工具
 
 - 消息构建与发言人标注拼装
@@ -9,12 +8,13 @@
 import re
 import time
 
-from finshin_sdk.domain import ChatRole
+from finshin_sdk.domain import ChatRole, ContentKind
 from finshin_sdk.domain.ids import KEY_SEP, SessionKey
 from finshin_sdk.dto import InboundEventDTO, MessageDTO, PrincipalDTO
 from utils.speaker import (
     bot_quote_block,
     link_mark,
+    media_mark,
     quote_block,
     speaker_mark,
     summary_mark,
@@ -254,18 +254,35 @@ def compose_user_text(event: InboundEventDTO) -> str:
 def _compose_body(event: InboundEventDTO) -> str:
     """拼入库正文
 
-    - 引用块加裸正文
+    - 引用块加占位帧加裸正文
     """
-    return f"{_quote_block(event)}{event.content.text}"
+    return f"{_quote_block(event)}{_body_text(event)}"
+
+
+def _body_text(event: InboundEventDTO) -> str:
+    """这条事件自己的正文
+
+    - 带附文的媒体把种类标记打在前头，没附文的纯图算没正文
+    """
+    if not event.content.text:
+        return ""
+    kinds = dict.fromkeys(entry.kind for entry in event.content.media)
+    marks = "".join(media_mark(kind) for kind in kinds)
+    return f"{marks}{event.content.text}"
 
 
 def _quote_block(event: InboundEventDTO) -> str:
     """拼引用块
 
     - 被引的是机器人自身即只写 assistant 位，不带 id
+    - 种类顶在引文之前，与正文那一侧同形
     """
-    if not event.reply_text:
+    kind_mark = (
+        "" if event.reply_kind == ContentKind.TEXT else media_mark(event.reply_kind)
+    )
+    quoted = f"{kind_mark}{event.reply_text}"
+    if not quoted:
         return ""
     if event.reply_to_bot:
-        return bot_quote_block(event.reply_text)
-    return quote_block(event.reply_sender_id, event.reply_sender_name, event.reply_text)
+        return bot_quote_block(quoted)
+    return quote_block(event.reply_sender_id, event.reply_sender_name, quoted)

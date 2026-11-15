@@ -1,4 +1,3 @@
-# src/skin/qss/_global.py
 """主窗口样式
 
 - 拼装主窗口与中央容器的全局 QSS

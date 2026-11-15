@@ -1,4 +1,3 @@
-# src/skin/theme/__init__.py
 """主题门面
 
 - 汇总调色板、核心、弹窗与引导令牌并实例化
@@ -12,6 +11,7 @@ from ._dialogs import (
     FiveStateDialogTheme,
     LinkDialogTheme,
     NoticeDialogTheme,
+    PlatformDialogTheme,
     ReleaseNotesDialogTheme,
     ShutdownDialogTheme,
     WaitDialogTheme,
@@ -61,6 +61,7 @@ __all__ = [
     "CheckDialogTheme",
     "WaitDialogTheme",
     "NoticeDialogTheme",
+    "PlatformDialogTheme",
     "ReleaseNotesDialogTheme",
     "FiveStateDialogTheme",
     "LinkDialogTheme",
@@ -87,6 +88,7 @@ __all__ = [
     "CHECK_DIALOG",
     "WAIT_DIALOG",
     "NOTICE_DIALOG",
+    "PLATFORM_DIALOG",
     "RELEASE_NOTES_DIALOG",
     "LINK_DIALOG",
     # 引导单例
@@ -115,6 +117,7 @@ CHANGE_DIALOG = ChangeDialogTheme()
 CHECK_DIALOG = CheckDialogTheme()
 WAIT_DIALOG = WaitDialogTheme()
 NOTICE_DIALOG = NoticeDialogTheme()
+PLATFORM_DIALOG = PlatformDialogTheme()
 RELEASE_NOTES_DIALOG = ReleaseNotesDialogTheme()
 LINK_DIALOG = LinkDialogTheme()
 

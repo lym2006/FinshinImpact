@@ -1,11 +1,10 @@
-# src/bundled/_shared/grants.py
 """命令授权落库
 
 - 按用户在本平台的 id 读写管理员名单
 - 仓储首次用时装配
 """
 
-from core.contracts import GrantRepository
+from core import GrantRepository
 from data import build_repositories, get_connection
 from finshin_sdk.domain.ids import PrincipalKey, UserId
 from utils.paths import DB_FILE

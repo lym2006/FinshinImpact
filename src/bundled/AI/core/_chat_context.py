@@ -1,4 +1,3 @@
-# src/bundled/AI/core/_chat_context.py
 """会话上下文
 
 - 收口在跑的摘要压缩协程，停服时统一取消

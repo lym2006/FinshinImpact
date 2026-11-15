@@ -1,10 +1,9 @@
-# src/exceptions/_version.py
 """版本检查异常族
 
 - 定义版本检查相关异常
 """
 
-from ._base import BotError
+from finshin_sdk.exceptions import BotError
 
 
 class VersionError(BotError):

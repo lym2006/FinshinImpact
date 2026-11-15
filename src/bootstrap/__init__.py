@@ -1,4 +1,3 @@
-# src/bootstrap/__init__.py
 """启动引导门面
 
 - 代发启动入口

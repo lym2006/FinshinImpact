@@ -1,8 +1,4 @@
-# src/bundled/grant/__init__.py
-"""授权插件门面
-
-- /grant 与 /ungrant：管理命令的授权名单
-"""
+"""授权插件的路由门面"""
 
 from finshin_sdk import BasePlugin, MessageRoute
 

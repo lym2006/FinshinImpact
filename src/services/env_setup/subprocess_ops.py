@@ -1,4 +1,3 @@
-# src/services/env_setup/subprocess_ops.py
 """装库执行支撑
 
 - 子进程执行管线：换源重试、噪音过滤、心跳补行、原始输出落运行日志
@@ -37,7 +36,7 @@ _HEARTBEAT_JOIN_TIMEOUT = 2
 
 
 def emit(on_line: ProgressCallback | None, text: str) -> None:
-    """向进度回调输出一行，无回调即静默丢弃"""
+    """向进度回调输出一行"""
     if on_line is not None:
         on_line(text)
 
@@ -62,13 +61,14 @@ def degraded(commands: list[str], on_line: ProgressCallback | None) -> None:
 def clean_cache(on_line: ProgressCallback | None = None) -> None:
     """清除 uv 包缓存
 
-    - 缓存放包内是为断点续装命中，装齐后留着只占磁盘
-    - cache 子命令不吃 --python，只挂缓存目录配置
     - 开发模式无 uv，降级为打印等效手动命令
     """
+    # 缓存放包内是为断点续装命中，装齐后留着只占磁盘
     if dev_mode():
         degraded([uv_cmd(f"cache clean --cache-dir {UV_CACHE_DIR}")], on_line)
         return
+
+    # cache 子命令不吃 --python，只挂缓存目录配置
     _run_uv(["cache", "clean", "--cache-dir", str(UV_CACHE_DIR)], None, on_line)
 
 
@@ -95,7 +95,7 @@ def _run_uv(
 ) -> int:
     """执行一次 uv 子进程并返回退出码
 
-    - index_url 传入即挂 --index-url，清缓存类命令走 None
+    - 传入索引地址时追加换源参数，清缓存类命令不传地址
     """
     argv = [str(find_uv()), *args]
     if index_url:
@@ -104,7 +104,7 @@ def _run_uv(
 
 
 def _is_noise(line: str) -> bool:
-    """判断单行是否为调试噪音，其余输出转发进度窗"""
+    """判断调试噪音"""
     return line.lstrip().startswith(_NOISE_PREFIXES)
 
 
@@ -123,7 +123,7 @@ class _Heartbeat(threading.Thread):
         self._seconds = 0
 
     def touch(self) -> None:
-        """宣告当前静默期结束，心跳归零"""
+        """结束当前静默期"""
         self._seconds = 0
         self._tick.set()
 
@@ -167,7 +167,7 @@ def run_process(
     *,
     env: dict[str, str] | None = None,
 ) -> int:
-    """执行子进程，原始输出写日志并转发进度窗
+    """执行子进程
 
     - 静默无窗执行，输出只进进度窗
     - stdout/stderr 合流，编码异常替换不中断

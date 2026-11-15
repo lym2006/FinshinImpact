@@ -1,15 +1,29 @@
-# src/ui/_guide/_popup.py
 """引导期提示弹窗
 
 - 资格判定失败就地弹窗，图标按严重度切换
+- 二次确认默认停在否
 """
 
-from PySide6.QtWidgets import QMessageBox
+from PySide6.QtWidgets import QMessageBox, QWidget
 
 from skin.qss import build_bootstrap_qss
 from skin.theme import NOTICE_DIALOG
 
 from .._lifecycle import ensure_app
+
+
+def confirm_popup(title_text: str, body: str, parent: QWidget | None = None) -> bool:
+    """模态二次确认，默认按钮停在否"""
+    ensure_app()
+    answer = QMessageBox.question(
+        parent,
+        title_text,
+        body,
+        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        QMessageBox.StandardButton.No,
+    )
+
+    return answer == QMessageBox.StandardButton.Yes
 
 
 def show_popup(title_text: str, body: str, *, icon_warning: bool = True) -> None:

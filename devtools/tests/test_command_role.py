@@ -1,4 +1,3 @@
-# devtools/tests/test_command_role.py
 """命令权限声明的单元测试
 
 - 覆盖 plugin.toml 里 role 的解析口径

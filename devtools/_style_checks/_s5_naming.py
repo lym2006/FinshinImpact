@@ -1,4 +1,3 @@
-# devtools/_style_checks/_s5_naming.py
 """命名与门面导出分节检查
 
 - 仅被自家包门面导入的子模块应带 `_` 前缀

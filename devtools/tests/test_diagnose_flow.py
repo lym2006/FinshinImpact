@@ -1,4 +1,3 @@
-# devtools/tests/test_diagnose_flow.py
 """网络诊断轮测试
 
 - 按代理模式只测选定路线，缺席通道在首帧整表给结论
@@ -11,6 +10,7 @@ import sys
 import unittest
 from collections.abc import Callable
 from contextlib import contextmanager
+from functools import partial
 from pathlib import Path
 from unittest.mock import patch
 
@@ -20,9 +20,10 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
-from adapters.telegram import diagnose as diagnose_mod  # noqa: E402
 from finshin_sdk.domain import FieldKey, ProxyMode  # noqa: E402
+from finshin_sdk.exceptions import ProxyConnectionRefusedError  # noqa: E402
 from skin.messages import CheckMessage  # noqa: E402
+from utils.check import _diagnose as diagnose_mod  # noqa: E402
 from utils.check import _verify as verify_mod  # noqa: E402
 from utils.network import FrameKey, RowId, RowStatus  # noqa: E402
 
@@ -41,6 +42,7 @@ def _stubbed_round(
 
     - passes 按代理地址裁决该通道是否可出网
     - max_probes 限死总探测次数，超出即断言失败
+    - 交出的 flow 已把假探针与假预热句注进诊断编排
     """
     frames: list[dict] = []
     seen: list[str] = []
@@ -51,15 +53,18 @@ def _stubbed_round(
             raise AssertionError("探测次数超出预期")
         if passes(proxy):
             return proxy, {}
-        return None, {FieldKey.PROXY: "无法连接到代理服务器"}
+        return None, {FieldKey.PROXY: ProxyConnectionRefusedError(proxy=proxy)}
 
+    flow = partial(
+        diagnose_mod.diagnose_flow,
+        channel_probe=fake,
+        engine_preload=lambda: None,
+    )
     with (
-        patch.object(diagnose_mod, "attempt_channel", fake),
-        patch.object(diagnose_mod, "preload_engine"),
         patch.object(diagnose_mod, "detect_system_proxy", lambda: sys_proxy),
         patch.object(verify_mod, "_RETRY_WARMUP", 0.0),
     ):
-        yield frames, seen
+        yield frames, seen, flow
 
 
 def _advice(frames: list[dict]) -> dict:
@@ -81,10 +86,8 @@ class TestDiagnoseFlow(unittest.IsolatedAsyncioTestCase):
 
         - 两轮都全挂才给结论，结论行报未找到可用通道并带断链标记
         """
-        with _stubbed_round(_CFG, lambda p: False) as (frames, seen):
-            await diagnose_mod.diagnose_flow(
-                _CFG, "123:abc", ProxyMode.AUTO, frames.append
-            )
+        with _stubbed_round(_CFG, lambda p: False) as (frames, seen, flow):
+            await flow(_CFG, "123:abc", ProxyMode.AUTO, frames.append)
 
         advice = _advice(frames)
         self.assertEqual(advice["status"], RowStatus.FAIL)
@@ -97,10 +100,8 @@ class TestDiagnoseFlow(unittest.IsolatedAsyncioTestCase):
 
         - 结论行转绿且不发断链标记
         """
-        with _stubbed_round(_CFG, lambda p: p == _CFG) as (frames, _seen):
-            await diagnose_mod.diagnose_flow(
-                _CFG, "123:abc", ProxyMode.AUTO, frames.append
-            )
+        with _stubbed_round(_CFG, lambda p: p == _CFG) as (frames, _seen, flow):
+            await flow(_CFG, "123:abc", ProxyMode.AUTO, frames.append)
 
         advice = _advice(frames)
         self.assertEqual(advice["status"], RowStatus.OK)
@@ -112,10 +113,8 @@ class TestDiagnoseFlow(unittest.IsolatedAsyncioTestCase):
         - 首帧把配置行标为未配置
         - 缺席行不发探测，直连两轮各探一次
         """
-        with _stubbed_round("", lambda p: False) as (frames, seen):
-            await diagnose_mod.diagnose_flow(
-                "", "123:abc", ProxyMode.AUTO, frames.append
-            )
+        with _stubbed_round("", lambda p: False) as (frames, seen, flow):
+            await flow("", "123:abc", ProxyMode.AUTO, frames.append)
 
         rows = _opening_rows(frames)
         self.assertEqual(rows[RowId.CFG]["status"], RowStatus.FAIL)
@@ -127,10 +126,8 @@ class TestDiagnoseFlow(unittest.IsolatedAsyncioTestCase):
 
         - 第二张整表带重测头部提示
         """
-        with _stubbed_round(_CFG, lambda p: False) as (frames, _seen):
-            await diagnose_mod.diagnose_flow(
-                _CFG, "123:abc", ProxyMode.AUTO, frames.append
-            )
+        with _stubbed_round(_CFG, lambda p: False) as (frames, _seen, flow):
+            await flow(_CFG, "123:abc", ProxyMode.AUTO, frames.append)
 
         tables = [f for f in frames if FrameKey.ROWS in f]
         self.assertEqual(len(tables), 2)
@@ -148,20 +145,21 @@ class TestDiagnoseHonoursMode(unittest.IsolatedAsyncioTestCase):
         with _stubbed_round(_CFG, lambda p: False, sys_proxy=_SYS, max_probes=4) as (
             frames,
             seen,
+            flow,
         ):
-            await diagnose_mod.diagnose_flow(
-                _CFG, "123:abc", ProxyMode.SYS, frames.append
-            )
+            await flow(_CFG, "123:abc", ProxyMode.SYS, frames.append)
 
         self.assertEqual(seen, [_SYS, _SYS], "只该反复探系统代理一路")
         self.assertEqual(set(_opening_rows(frames)), {RowId.SYS, RowId.ADVICE})
 
     async def test_direct_mode_ignores_configured_proxy(self) -> None:
         """仅直连档带着代理地址也只探直连"""
-        with _stubbed_round(_CFG, lambda p: not p, max_probes=2) as (frames, seen):
-            await diagnose_mod.diagnose_flow(
-                _CFG, "123:abc", ProxyMode.DIRECT, frames.append
-            )
+        with _stubbed_round(_CFG, lambda p: not p, max_probes=2) as (
+            frames,
+            seen,
+            flow,
+        ):
+            await flow(_CFG, "123:abc", ProxyMode.DIRECT, frames.append)
 
         self.assertEqual(seen, [""], "配置代理那一档不该被探")
         self.assertEqual(set(_opening_rows(frames)), {RowId.DIRECT, RowId.ADVICE})
@@ -172,10 +170,8 @@ class TestDiagnoseHonoursMode(unittest.IsolatedAsyncioTestCase):
 
         - 首帧给缺席结论，一个探测包都不发
         """
-        with _stubbed_round("", lambda p: True) as (frames, seen):
-            await diagnose_mod.diagnose_flow(
-                "", "123:abc", ProxyMode.CFG, frames.append
-            )
+        with _stubbed_round("", lambda p: True) as (frames, seen, flow):
+            await flow("", "123:abc", ProxyMode.CFG, frames.append)
 
         self.assertEqual(seen, [], "缺席的选路不该发探测")
         rows = _opening_rows(frames)
@@ -184,10 +180,8 @@ class TestDiagnoseHonoursMode(unittest.IsolatedAsyncioTestCase):
 
     async def test_sys_mode_absent_marks_system_row(self) -> None:
         """仅系统代理档没开系统代理时红在系统行"""
-        with _stubbed_round(_CFG, lambda p: True) as (frames, seen):
-            await diagnose_mod.diagnose_flow(
-                _CFG, "123:abc", ProxyMode.SYS, frames.append
-            )
+        with _stubbed_round(_CFG, lambda p: True) as (frames, seen, flow):
+            await flow(_CFG, "123:abc", ProxyMode.SYS, frames.append)
 
         self.assertEqual(seen, [])
         rows = _opening_rows(frames)

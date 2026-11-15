@@ -1,4 +1,3 @@
-# src/utils/network/_link.py
 """链路状态上报
 
 - 维护断连周期计时与重试计数
@@ -8,6 +7,7 @@
 import time
 from dataclasses import dataclass
 
+from finshin_sdk import bind_link_report
 from skin.messages import CheckMessage, EngineMessage
 
 from ..logger import get_logger
@@ -132,3 +132,5 @@ class _LinkReport:
 
 
 link_report = _LinkReport()  # 链路上报的进程级实例
+
+bind_link_report(link_report.failed, link_report.recovered)

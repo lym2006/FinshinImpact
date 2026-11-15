@@ -1,4 +1,3 @@
-# src/ui/_guide/_conflict.py
 """冲突明细窗
 
 - 定宽小窗逐条列冲突，一行一句

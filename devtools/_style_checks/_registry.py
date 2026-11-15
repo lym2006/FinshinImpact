@@ -1,4 +1,3 @@
-# devtools/_style_checks/_registry.py
 """检查登记表
 
 - 具名收集十二个分节的检查函数，赋予各自明确的消费者

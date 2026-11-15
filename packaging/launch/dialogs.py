@@ -1,4 +1,3 @@
-# packaging/launch/dialogs.py
 """Win32 弹窗
 
 - 信息、限时、两键询问、三键询问、报错五种消息框封装

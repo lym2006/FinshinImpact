@@ -1,4 +1,3 @@
-# src/ui/_windows/_assembly.py
 """主窗装配
 
 - 建主窗口并挂载日志面板与断连计时观察器

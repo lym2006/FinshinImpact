@@ -1,4 +1,3 @@
-# src/ui/_dialogs/_persona/_panel.py
 """人设正文入口
 
 - 面板给预览、编辑与从文件重新加载三个入口

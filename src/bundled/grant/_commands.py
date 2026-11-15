@@ -1,4 +1,3 @@
-# src/bundled/grant/_commands.py
 """授权命令
 
 - /grant：主人授权某个 id 使用管理命令

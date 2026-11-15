@@ -1,4 +1,3 @@
-# src/bot/_managers/_initialization.py
 """初始化管理器
 
 - 文件检查、人设对账与库结构迁移

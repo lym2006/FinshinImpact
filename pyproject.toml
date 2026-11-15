@@ -23,28 +23,8 @@ dependencies = [
     "pyside6-essentials==6.11.2",
 ]
 
-[project.optional-dependencies]
-dev = [
-    # 引擎库的正式版见各适配器 adapter.toml，此处同装供开发环境跑用例
-    "aiogram==3.29.1",
-    "aiohttp==3.14.1",
-    "aiohttp-socks==0.11.0",
-    "import-linter==2.15",
-    "pyinstaller==6.22.3",
-    "pyright==1.1.414",
-    "pytest==9.1.1",
-    "ruff==0.16.3",
-    "uv==0.12.23",
-]
-
-[tool.pyright]
-exclude = ["devtools/tests"]
-
-[[tool.pyright.executionEnvironments]]
-root = "devtools/tests"
-extraPaths = ["src", "devtools"]
-reportArgumentType = "none"
-reportAttributeAccessIssue = "none"
+[tool.uv.workspace]
+members = ["devtools"]
 
 [tool.finshin-impact]
 uv-index-urls = [
@@ -54,4 +34,8 @@ uv-index-urls = [
     "https://pypi.org/simple",
 ]
 uv-cache-dir = "uv-cache"
+github-mirrors = [
+    "https://gh-proxy.com/",
+    "https://ghproxy.net/",
+]
 playwright-cdn = "https://cdn.npmmirror.com/binaries/playwright"

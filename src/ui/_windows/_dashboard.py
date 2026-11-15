@@ -1,4 +1,3 @@
-# src/ui/_windows/_dashboard.py
 """仪表盘
 
 - 日志面板渲染组件

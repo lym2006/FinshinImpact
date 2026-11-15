@@ -1,4 +1,3 @@
-# src/data/_sqlite/_connection.py
 """SQLite 连接管理
 
 - 按事件循环与库文件缓存连接

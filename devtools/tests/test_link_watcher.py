@@ -1,4 +1,3 @@
-# devtools/tests/test_link_watcher.py
 """链路计时弹窗轮询测试
 
 - 断连即弹、逐拍回写、恢复即收

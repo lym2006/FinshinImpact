@@ -1,8 +1,7 @@
-# src/bundled/help/__init__.py
 """帮助插件门面
 
-- /help：帮助命令路由出口
-- 帮助图在引擎开跑前备好
+- 代发命令路由出口
+- 声明引擎开跑前的备图订阅
 """
 
 import asyncio

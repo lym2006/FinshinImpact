@@ -1,4 +1,3 @@
-# src/skin/messages/_config.py
 """配置面板文案"""
 
 
@@ -51,9 +50,6 @@ class ConfigMessage:
 
     # 用：utils/config/_validator.py 必填项缺键或留空文案
     REQUIRED_MARK = "必填项未填写"
-
-    # 用：adapters/telegram/probe.py 与设置面板前置项失败占位
-    PENDING_MARK = "暂未检测"
 
     # 用：ui/_dialogs/_settings/_list_widget.py 列表入口与增删按钮文本
     LIST_EDIT_TEXT = "编辑（{count} 条）"

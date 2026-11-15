@@ -1,4 +1,3 @@
-# devtools/_style_checks/_common.py
 """编码规范检查公共设施
 
 - 文件装载、点分模块名解析与解析失败记录

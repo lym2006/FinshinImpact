@@ -1,4 +1,3 @@
-# devtools/tests/test_expiry_sync.py
 """到期记录与上下文同步清除测试
 
 - 记录文件到期即交出同键会话键，未到期的不动

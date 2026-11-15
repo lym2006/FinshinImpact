@@ -1,12 +1,14 @@
-# devtools/tests/test_bootstrap_guard.py
 """引导层最后兜底的单元测试
 
 - 引导段炸掉时弹原生弹窗，退出码记 1
 - 弹窗正文带类名与消息那一行，调用链不上屏
 - 引导段正常返回时不碰弹窗
 - 入口脚本那层兜底：主程序导入之前就炸也弹一句再退出
+- 身份码未落定时引导段各窗导入不碰实例路径
 """
 
+import os
+import subprocess
 import sys
 import unittest
 from pathlib import Path
@@ -112,6 +114,37 @@ class EntryGuardCase(unittest.TestCase):
 
         self.assertEqual(marker, 1)
         self.assertEqual(popped, [])
+
+
+class GuideChainWithoutProfile(unittest.TestCase):
+    """引导段各窗在身份码落定之前的可导入性"""
+
+    def test_guide_windows_import_with_empty_profile(self) -> None:
+        """空身份码下导入选窗、表单、插件面板与平台组件面板
+
+        - 面板从新建实例的下拉里就能开，这一步还没有身份码
+        - 这条红了说明有模块在导入期就取实例路径
+        """
+        script = (
+            f"import sys; sys.path.insert(0, {str(SRC_DIR)!r}); "
+            "import ui._guide._form, ui._guide._panel, ui._guide._picker, "
+            "ui._guide._platform"
+        )
+        env = {
+            **os.environ,
+            "FINSHINIMPACT_PROFILE": "",
+            "QT_QPA_PLATFORM": "offscreen",
+        }
+
+        done = subprocess.run(
+            [sys.executable, "-c", script],
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        self.assertEqual(done.returncode, 0, done.stderr[-400:])
 
 
 if __name__ == "__main__":

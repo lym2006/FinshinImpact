@@ -1,4 +1,3 @@
-# devtools/tests/test_summary_compress.py
 """摘要压缩测试
 
 - 超线当轮裁窗并投递后台压缩

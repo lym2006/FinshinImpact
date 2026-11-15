@@ -1,7 +1,6 @@
 name = "AI"
 title = "AI 对话"
 summary = "基础对话与记忆命令"
-deps = []
 assets = []
 
 [[help]]

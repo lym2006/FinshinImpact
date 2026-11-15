@@ -1,4 +1,3 @@
-# src/bundled/AI/__init__.py
 """AI 插件门面
 
 - 对话与记忆命令入口

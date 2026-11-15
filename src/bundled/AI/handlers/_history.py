@@ -1,4 +1,3 @@
-# src/bundled/AI/handlers/_history.py
 """历史命令
 
 - /history：发送本容器的对话记录文档

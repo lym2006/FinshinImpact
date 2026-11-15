@@ -1,4 +1,3 @@
-# devtools/tests/test_plugin_background.py
 """插件契约与时机订阅的单元测试
 
 - stdlib unittest，打桩导入与注册序列，不触网

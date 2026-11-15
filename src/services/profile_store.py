@@ -1,8 +1,7 @@
-# src/services/profile_store.py
 """实例仓储
 
 - 扫描身份文件夹枚举已有实例
-- 从 token 推导身份码并落盘新实例
+- 从令牌推导身份码并落盘新实例
 """
 
 import re
@@ -44,8 +43,7 @@ _LAST_USED_KEY = "last_used"
 def code_for_token(platform: Platform, token: str) -> str:
     """按平台从凭证推导身份码
 
-    - Telegram 取 bot_id，结构非法返回空串
-    - QQ 端身份码待适配器落地，见 multi-instance-profile.md §八
+    - Telegram 取机器人数字标识，结构非法返回空串
     """
     match platform:
         case Platform.TELEGRAM:
@@ -59,7 +57,7 @@ def code_for_token(platform: Platform, token: str) -> str:
 def _code_for_telegram(token: str) -> str:
     """Telegram 身份码推导
 
-    - 重新生成 token 后 bot_id 不变，实例资产仍可定位
+    - 重新生成令牌后机器人数字标识不变，实例资产仍可定位
     """
     match = _TG_TOKEN_PATTERN.fullmatch(token.strip())
     return make_profile_code(Platform.TELEGRAM, match.group(1)) if match else ""
@@ -68,7 +66,7 @@ def _code_for_telegram(token: str) -> str:
 def list_profiles() -> list[tuple[str, str]]:
     """枚举已有实例
 
-    - 扫 instances 下一级身份文件夹，返回 (身份码, 备注名) 列表
+    - 扫实例根目录下一级身份文件夹，返回 (身份码, 备注名) 列表
     - 目录不存在时返回空列表
     - 身份码解析不出平台的目录跳过
     - 按最近使用时间降序，时间缺失或相同时按身份码降序
@@ -117,8 +115,8 @@ def remark_of(code: str) -> str:
 def create_profile(code: str, token: str, remark: str) -> None:
     """新建实例文件夹
 
-    - 只建目录、人设与自描述文件，config.toml 由首次启动的向导生成
-    - token 与备注名写进自描述文件
+    - 只建目录、人设与自描述文件，配置文件由首次启动的向导生成
+    - 令牌与备注名写进自描述文件
     - 创建即计入最近使用，新实例在选窗置顶
     """
     target = profile_dir(code)
@@ -142,9 +140,9 @@ def create_profile(code: str, token: str, remark: str) -> None:
 def update_profile(code: str, token: str, remark: str) -> None:
     """就地改写已有实例
 
-    - 只覆盖自描述文件的 token 与备注名，目录与配置原样保留
+    - 只覆盖自描述文件的令牌与备注名，目录与配置原样保留
     - 身份码须与既有目录一致，换机器人属新建而非编辑
-    - 合并改写，保留 last_used 等既有字段
+    - 合并改写，保留最近使用时间等既有字段
     """
     data = read_profile_data(code)
     data[TOKEN_KEY] = token.strip()

@@ -1,4 +1,3 @@
-# devtools/tests/test_markdown_clean.py
 """模型应答样式清洗的单元测试
 
 - 成对标记、单星号斜体、行内代码与标题井号只去符号，正文原样留

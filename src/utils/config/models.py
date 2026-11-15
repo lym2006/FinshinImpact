@@ -1,4 +1,3 @@
-# src/utils/config/models.py
 """配置数据模型
 
 - 定义运行期配置数据结构别名

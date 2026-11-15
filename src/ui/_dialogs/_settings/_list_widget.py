@@ -1,4 +1,3 @@
-# src/ui/_dialogs/_settings/_list_widget.py
 """配置列表组件
 
 - 字段位只挂入口行按钮，列表内容在弹窗里整体编辑

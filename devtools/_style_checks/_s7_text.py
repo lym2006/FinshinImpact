@@ -1,4 +1,3 @@
-# devtools/_style_checks/_s7_text.py
 """日志与文案分节检查
 
 - GUI 可见文案收敛进 skin/messages/，ui 下 f-string 裸写业务话术提示

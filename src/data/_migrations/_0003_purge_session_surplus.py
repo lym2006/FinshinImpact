@@ -1,4 +1,3 @@
-# src/data/_migrations/_0003_purge_session_surplus.py
 """抹掉会话表上没人写值的列
 
 - 逐列先核在不在，重跑迁移不报错

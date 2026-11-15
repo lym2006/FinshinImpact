@@ -1,4 +1,3 @@
-# devtools/_style_checks/_s8b_callback_param.py
 """回调形参分节检查
 
 - 协程里带 `Message` 注解的形参即框架按位置注入的原始事件，名字须为 `raw` 且占首位
