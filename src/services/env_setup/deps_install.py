@@ -19,6 +19,7 @@ from .subprocess_ops import (
     degraded,
     emit,
     is_pin_installed,
+    run_uv_once,
     with_index_retry,
 )
 from .toolchain import PIP_FLAGS, dev_mode, uv_cmd
@@ -43,13 +44,14 @@ def remove_distributions(
         degraded([uv_cmd(f"pip uninstall {' '.join(wanted)}")], on_line)
         return [PlatformMessage.REMOVE_FAILED.format(name=name) for name in wanted]
 
+    # uv pip uninstall 不吃 --index-url，带上即每趟退出非零
     base = ["pip", "uninstall", *PIP_FLAGS, "--no-progress"]
-    if with_index_retry([*base, *wanted], on_line) == 0:
+    if run_uv_once([*base, *wanted], on_line=on_line) == 0:
         return []
 
     failed: list[str] = []
     for name in wanted:
-        if with_index_retry([*base, name], on_line) != 0:
+        if run_uv_once([*base, name], on_line=on_line) != 0:
             failed.append(PlatformMessage.REMOVE_FAILED.format(name=name))
 
     return failed

@@ -69,7 +69,7 @@ def clean_cache(on_line: ProgressCallback | None = None) -> None:
         return
 
     # cache 子命令不吃 --python，只挂缓存目录配置
-    _run_uv(["cache", "clean", "--cache-dir", str(UV_CACHE_DIR)], None, on_line)
+    run_uv_once(["cache", "clean", "--cache-dir", str(UV_CACHE_DIR)], on_line=on_line)
 
 
 def with_index_retry(args: list[str], on_line: ProgressCallback | None) -> int:
@@ -82,20 +82,20 @@ def with_index_retry(args: list[str], on_line: ProgressCallback | None) -> int:
         if i:
             emit(on_line, PluginMessage.INDEX_RETRY.format(try_count=i, url=index))
             emit(on_line, PluginMessage.INDEX_RETRY_NOTE)
-        code = _run_uv(args, index, on_line)
+        code = run_uv_once(args, index, on_line)
         if code == 0:
             return 0
     return code
 
 
-def _run_uv(
+def run_uv_once(
     args: list[str],
     index_url: str | None = None,
     on_line: ProgressCallback | None = None,
 ) -> int:
     """执行一次 uv 子进程并返回退出码
 
-    - 传入索引地址时追加换源参数，清缓存类命令不传地址
+    - 传入索引地址时追加换源参数
     """
     argv = [str(find_uv()), *args]
     if index_url:
