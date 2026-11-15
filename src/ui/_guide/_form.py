@@ -108,11 +108,14 @@ class NewProfileDialog(_ProfileFormDialog):
         """
         form.addWidget(QLabel(PickerMessage.NEW_PLATFORM_LABEL))
         self._platform = make_combo(_platform_items())
-        form.addWidget(self._platform)
 
-        manage = make_button(PickerMessage.BTN_MANAGE_PLATFORM, ButtonStyle.LINK)
+        # 入口那颗与下拉同排，不占下拉的一项
+        head = QHBoxLayout()
+        head.addWidget(self._platform, 1)
+        manage = make_button(PickerMessage.BTN_MANAGE_PLATFORM, ButtonStyle.SECONDARY)
         manage.clicked.connect(self._open_platform)
-        form.addWidget(manage)
+        head.addWidget(manage)
+        form.addLayout(head)
 
     def _open_platform(self) -> None:
         """开平台组件面板，关回来按装机结果重灌下拉"""

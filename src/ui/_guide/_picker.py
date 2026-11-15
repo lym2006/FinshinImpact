@@ -42,9 +42,6 @@ def _run_sync(button: QPushButton, dialog: "_ProfilePickerDialog") -> None:
 
     - 同步对象是所有实例共享的 runtime 依赖层
     """
-    if not dialog._selected()[0]:
-        return
-
     open_maintain_menu(button, dialog)
 
 
@@ -83,13 +80,14 @@ class _ProfilePickerDialog(QDialog):
         delete_btn.clicked.connect(self._on_delete)
 
         # 面板操作必须针对具体实例，空选入口置灰
+        # 依赖管理管的是全局 runtime，不受此限
         plugin_btn = make_button(PickerMessage.BTN_PLUGINS, ButtonStyle.SECONDARY)
         plugin_btn.clicked.connect(self._on_plugins)
 
         sync_btn = make_button(PickerMessage.BTN_SYNC, ButtonStyle.SECONDARY)
         sync_btn.clicked.connect(lambda: _run_sync(sync_btn, self))
 
-        self._list.enable_on_selection((plugin_btn, sync_btn))
+        self._list.enable_on_selection((plugin_btn,))
 
         start_btn = make_button(PickerMessage.BTN_START, ButtonStyle.START)
         start_btn.clicked.connect(self._on_start)
