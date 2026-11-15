@@ -248,13 +248,15 @@ class _PlatformDialog(QDialog):
 
         - 本机已有又没得更动的颗都没有，一颗都没有即整行不出
         - 已装包的再多一颗卸载
-        - 接口包没到位时适配器那颗置灰，先装接口包
+        - 适配器那颗点不动时，旁边跟一句下一步
         """
         buttons: list[QPushButton] = []
+        note = ""
         release = row.release
         if release is not None and row.bucket != ComponentBucket.LOCAL:
             todo = make_button(_action_text(row), ButtonStyle.PRIMARY)
-            todo.setEnabled(not install_blocked(self._rows(), row))
+            note = install_blocked(self._rows(), row)
+            todo.setEnabled(not note)
             todo.clicked.connect(lambda: install_flow(self._render, [release]))
             buttons.append(todo)
         if bool(row.platform) and row.source == ComponentSource.INSTALLED:
@@ -271,6 +273,8 @@ class _PlatformDialog(QDialog):
         pair.setContentsMargins(0, 0, 0, 0)
         for button in buttons:
             pair.addWidget(button)
+        if note:
+            pair.addWidget(QLabel(note, parent=holder))
         pair.addStretch()
 
         return holder

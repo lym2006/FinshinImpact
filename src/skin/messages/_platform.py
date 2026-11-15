@@ -36,12 +36,16 @@ class PlatformMessage:
     LINE_VERSIONS_ABSENT = "本机未安装 ／ 在线 {available}"
     LINE_ABSENT = "本机未安装"
 
-    # 用：services.env_setup.platform_state 接口包要求行四态
+    # 用：services.env_setup.platform_state 接口包要求行五态
     FLOOR_NONE = "未声明接口包版本要求"
     FLOOR_NO_SDK = "要求 {floor}，本机没装接口包"
     FLOOR_MET = "要求 {floor}，本机 {actual} 已满足"
     FLOOR_GAP = "要求 {floor}，本机 {actual} 未满足"
     FLOOR_UNREADABLE = "要求 {floor}，版本串读不懂"
+
+    # 用：services.env_setup.platform_state 适配器那颗置灰时那句下一步
+    NEED_SDK_INSTALL = "先装接口包"
+    NEED_SDK_UPDATE = "先更新接口包"
 
     # 用：ui._guide._platform 动作栏两态
     BTN_INSTALL = "安装"

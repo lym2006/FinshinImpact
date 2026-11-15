@@ -161,29 +161,42 @@ class TestUpdateTargets(unittest.TestCase):
 
 
 class TestInstallBlocked(unittest.TestCase):
-    """接口包没到位时适配器那颗不给装"""
+    """接口包没到位时适配器那颗不给装，并交出那句下一步"""
 
     def test_absent_sdk_blocks_the_adapter(self) -> None:
-        """本机没装接口包即挡住适配器"""
+        """本机没装接口包即挡住，那句是先装接口包"""
         rows = _rows("", "")
-        self.assertTrue(mod.install_blocked(rows, _adapter_row(rows)))
+        self.assertEqual(
+            mod.install_blocked(rows, _adapter_row(rows)),
+            "先装接口包",
+        )
 
     def test_installed_sdk_frees_the_adapter(self) -> None:
         """接口包在场即放行"""
         rows = _rows("0.1.0", "")
-        self.assertFalse(mod.install_blocked(rows, _adapter_row(rows)))
+        self.assertEqual(mod.install_blocked(rows, _adapter_row(rows)), "")
 
     def test_sdk_row_is_never_blocked(self) -> None:
         """接口包那一行不受这条限制，它自己就是出路"""
         rows = _rows("", "")
-        self.assertFalse(mod.install_blocked(rows, _sdk_row(rows)))
+        self.assertEqual(mod.install_blocked(rows, _sdk_row(rows)), "")
 
     def test_sdk_below_floor_blocks(self) -> None:
-        """接口包在场但低于适配器声明的下限，仍挡住"""
+        """接口包在场但低于适配器声明的下限，那句换成先更新接口包"""
         floors = {Platform.TELEGRAM: "9.9.9"}
         with patch.object(mod, "_declared_floors", lambda: floors):
             rows = _rows("0.1.0", "0.1.0")
-        self.assertTrue(mod.install_blocked(rows, _adapter_row(rows)))
+        self.assertEqual(
+            mod.install_blocked(rows, _adapter_row(rows)),
+            "先更新接口包",
+        )
+
+    def test_sdk_meeting_the_floor_frees(self) -> None:
+        """接口包达到下限即放行"""
+        floors = {Platform.TELEGRAM: "0.1.0"}
+        with patch.object(mod, "_declared_floors", lambda: floors):
+            rows = _rows("0.1.0", "0.1.0")
+        self.assertEqual(mod.install_blocked(rows, _adapter_row(rows)), "")
 
 
 class TestPresentPlatforms(unittest.TestCase):
