@@ -27,6 +27,7 @@ from services.env_setup.platform_state import (
     ComponentSource,
     component_rows,
     deps_text,
+    install_blocked,
     update_targets,
 )
 from skin.messages import PlatformMessage
@@ -247,11 +248,13 @@ class _PlatformDialog(QDialog):
 
         - 本机已有又没得更动的颗都没有，一颗都没有即整行不出
         - 已装包的再多一颗卸载
+        - 接口包没到位时适配器那颗置灰，先装接口包
         """
         buttons: list[QPushButton] = []
         release = row.release
         if release is not None and row.bucket != ComponentBucket.LOCAL:
             todo = make_button(_action_text(row), ButtonStyle.PRIMARY)
+            todo.setEnabled(not install_blocked(self._rows(), row))
             todo.clicked.connect(lambda: install_flow(self._render, [release]))
             buttons.append(todo)
         if bool(row.platform) and row.source == ComponentSource.INSTALLED:

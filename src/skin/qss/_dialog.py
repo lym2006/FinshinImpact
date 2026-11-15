@@ -9,6 +9,7 @@ from ..theme import (
     BTN,
     GLOBAL,
     LINK_DIALOG,
+    PALETTE,
     PLATFORM_DIALOG,
     SETTINGS_DIALOG,
     SHUTDOWN_DIALOG,
@@ -104,6 +105,11 @@ QFrame#{ObjectName.PLATFORM_BLOCK} {{
 QLabel#{ObjectName.PLATFORM_NAME} {{
     font-size: {PLATFORM_DIALOG.name_font_size}px;
     font-weight: bold;
+}}
+
+QPushButton#{ButtonStyle.PRIMARY}:disabled {{
+    background-color: {TOOLBAR.bg};
+    color: {PALETTE.disabled_color};
 }}"""
 
 

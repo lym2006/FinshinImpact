@@ -3,6 +3,7 @@
 - 三档归属按本机来路、本机版本与在线版本比出来
 - 版本串读不懂、在线不比本机新、源码仓挂着且已装包都算本机已有
 - 该装的那批只收本机没有与在线更新的两档
+- 接口包没到位时适配器那颗不给装，接口包那行自己不受此限
 - 在场平台只看已装包，源码仓挂着没装的不算
 """
 
@@ -71,6 +72,30 @@ def _tg_row(installed: str, online: str, tree: bool = False) -> mod.ComponentRow
     return next(row for row in rows if row.platform == str(Platform.TELEGRAM))
 
 
+def _rows(sdk: str, adapter: str) -> tuple[mod.ComponentRow, ...]:
+    """接口包与 Telegram 各一行读数，本机在场版本按点名给"""
+    item = _adapter(adapter) if adapter else None
+    with (
+        patch.object(
+            mod, "installed_adapters", lambda: () if item is None else (item,)
+        ),
+        patch.object(mod, "tree_distributions", lambda: {}),
+        patch.object(mod, "load_adapter_manifests", lambda: {}),
+        patch.object(mod, "installed_version", lambda name: sdk),
+    ):
+        return mod.component_rows(_catalog("0.1.0"))
+
+
+def _adapter_row(rows: tuple[mod.ComponentRow, ...]) -> mod.ComponentRow:
+    """读数里 Telegram 那一行"""
+    return next(row for row in rows if row.platform == str(Platform.TELEGRAM))
+
+
+def _sdk_row(rows: tuple[mod.ComponentRow, ...]) -> mod.ComponentRow:
+    """读数里接口包那一行"""
+    return next(row for row in rows if not row.platform)
+
+
 class TestBucket(unittest.TestCase):
     """一行组件归到哪一档"""
 
@@ -133,6 +158,32 @@ class TestUpdateTargets(unittest.TestCase):
     def test_online_row_excluded(self) -> None:
         """本机没装过的不进一键，装哪个平台由逐行的按钮定"""
         self.assertEqual(mod.update_targets([_tg_row("", "0.1.0")]), [])
+
+
+class TestInstallBlocked(unittest.TestCase):
+    """接口包没到位时适配器那颗不给装"""
+
+    def test_absent_sdk_blocks_the_adapter(self) -> None:
+        """本机没装接口包即挡住适配器"""
+        rows = _rows("", "")
+        self.assertTrue(mod.install_blocked(rows, _adapter_row(rows)))
+
+    def test_installed_sdk_frees_the_adapter(self) -> None:
+        """接口包在场即放行"""
+        rows = _rows("0.1.0", "")
+        self.assertFalse(mod.install_blocked(rows, _adapter_row(rows)))
+
+    def test_sdk_row_is_never_blocked(self) -> None:
+        """接口包那一行不受这条限制，它自己就是出路"""
+        rows = _rows("", "")
+        self.assertFalse(mod.install_blocked(rows, _sdk_row(rows)))
+
+    def test_sdk_below_floor_blocks(self) -> None:
+        """接口包在场但低于适配器声明的下限，仍挡住"""
+        floors = {Platform.TELEGRAM: "9.9.9"}
+        with patch.object(mod, "_declared_floors", lambda: floors):
+            rows = _rows("0.1.0", "0.1.0")
+        self.assertTrue(mod.install_blocked(rows, _adapter_row(rows)))
 
 
 class TestPresentPlatforms(unittest.TestCase):

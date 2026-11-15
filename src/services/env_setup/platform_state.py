@@ -105,6 +105,22 @@ def update_targets(rows: Sequence[ComponentRow]) -> list[ReleaseRow]:
     ]
 
 
+def install_blocked(rows: Sequence[ComponentRow], row: ComponentRow) -> bool:
+    """这只组件现在不该给安装
+
+    - 适配器要接口包已在本机，还须达到它声明的下限
+    - 接口包自己不受这条限制
+    - 版本串读不懂即算没到位
+    """
+    if not row.platform:
+        return False
+    sdk = next((item for item in rows if not item.platform), None)
+    if sdk is None or not sdk.installed:
+        return True
+
+    return bool(row.floor) and floor_met(sdk.installed, row.floor) is not True
+
+
 def deps_text(row: ComponentRow) -> str:
     """接口包要求那一行的正文，按本机接口包版本定说法
 
