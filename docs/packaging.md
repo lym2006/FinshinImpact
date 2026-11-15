@@ -119,7 +119,6 @@ tag、release 与版本页收尾见 [release-workflow.md](release-workflow.md)�
 
 已按防误报构建：`--onedir`、无 UPX、不写注册表。
 
-- Defender 仍拦就"仍要运行"，再去微软页申诉。
 - zip 可传 virustotal 看检出数，只应有启发式、不该有具体家族名。
 
 ## 排查
