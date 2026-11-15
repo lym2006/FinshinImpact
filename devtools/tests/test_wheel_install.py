@@ -28,8 +28,14 @@ def _file(distribution: str, stem: str) -> mod.WheelFile:
     """拼一只落在 wheel 目录里的件"""
     return mod.WheelFile(
         distribution=distribution,
+        version="0.1.0",
         path=Path("wheels") / f"{stem}-0.1.0-py3-none-any.whl",
     )
+
+
+def _reads_back(name: str) -> str:
+    """装完本机读到的版本，按要装的版本满足"""
+    return "0.1.0"
 
 
 def _files() -> list[mod.WheelFile]:
@@ -58,6 +64,7 @@ class TestInstallReleases(unittest.TestCase):
         with (
             patch.object(mod, "dev_mode", lambda: False),
             patch.object(mod, "with_index_retry", self._retry(0)),
+            patch.object(mod, "installed_version", _reads_back),
         ):
             notes = mod.install_releases(_files(), None)
 
@@ -70,12 +77,15 @@ class TestInstallReleases(unittest.TestCase):
         self.assertIn("--find-links", argv)
         self.assertEqual(argv.count("--find-links"), 1)
         self.assertTrue(all(str(item.path) in argv for item in _files()))
+        self.assertIn(f"--reinstall-package={_SDK_NAME}", argv)
+        self.assertIn(f"--reinstall-package={_TG_NAME}", argv)
 
     def test_batch_failure_retries_each(self) -> None:
         """整批失败转逐只重试并逐只点名"""
         with (
             patch.object(mod, "dev_mode", lambda: False),
             patch.object(mod, "with_index_retry", self._retry(1)),
+            patch.object(mod, "installed_version", _reads_back),
         ):
             notes = mod.install_releases(_files(), None)
 
@@ -101,6 +111,20 @@ class TestInstallReleases(unittest.TestCase):
         self.assertEqual(self.calls, [])
         self.assertEqual(len(notes), 2)
         self.assertTrue(any("uv pip install" in line for line in lines))
+
+    def test_stale_version_after_install_is_named(self) -> None:
+        """命令退出 0 但本机仍读到旧版本，也要点名而不是报成功"""
+        with (
+            patch.object(mod, "dev_mode", lambda: False),
+            patch.object(mod, "with_index_retry", self._retry(0)),
+            patch.object(mod, "installed_version", lambda name: "0.0.9"),
+        ):
+            notes = mod.install_releases(_files(), None)
+
+        self.assertEqual(len(notes), 2)
+        self.assertIn("装完读到 0.0.9", notes[0])
+        self.assertIn(_SDK_NAME, notes[0])
+        self.assertIn(_TG_NAME, notes[1])
 
     def test_empty_files_do_nothing(self) -> None:
         """没有要装的件即不动"""

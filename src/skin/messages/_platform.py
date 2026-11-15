@@ -39,26 +39,25 @@ class PlatformMessage:
     # 用：services.env_setup.platform_state 接口包要求行四态
     FLOOR_NONE = "未声明接口包版本要求"
     FLOOR_NO_SDK = "要求 {floor}，本机没装接口包"
-    FLOOR_MET = "要求 {floor}，本机 {actual} 够用"
-    FLOOR_GAP = "要求 {floor}，本机 {actual} 不够"
+    FLOOR_MET = "要求 {floor}，本机 {actual} 已满足"
+    FLOOR_GAP = "要求 {floor}，本机 {actual} 未满足"
     FLOOR_UNREADABLE = "要求 {floor}，版本串读不懂"
 
-    # 用：services.env_setup.platform_state 每取一只发行件前的一行
-    LINE_FETCHING = "正在取 {name}"
-
-    # 用：ui._guide._platform 动作栏三态
+    # 用：ui._guide._platform 动作栏两态
     BTN_INSTALL = "安装"
     BTN_APPLY = "更新"
-    BTN_READY = "已到位"
 
     # 用：ui._guide._platform 底部一键与目录拒收段的行名
     BTN_UPDATE_ALL = "一键更新"
     REJECTS_HEAD = "目录里被拒的条目"
 
     # 用：ui._guide._platform 取数中的状态行与装卸的进度窗标题
-    WAIT_CATALOG = "正在读取在线目录…"
+    WAIT_CATALOG = "正在等在线目录…已过 {seconds} 秒"
     WAIT_INSTALL = "正在装 {name}…"
     WAIT_REMOVE = "正在卸 {name}…"
+
+    # 用：services.env_setup.wheel_install 装完复核版本对不上
+    APPLY_MISMATCH = "{name} 装完读到 {found}，不是要装的 {wanted}"
 
     # 用：ui._guide._platform 目录读不出时的那一行状态
     FETCH_FAILED = "在线目录读不到\n{reason}"

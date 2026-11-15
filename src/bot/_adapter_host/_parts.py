@@ -38,10 +38,10 @@ def parts_for(platform: Platform) -> AdapterParts:
 
 
 def _sdk_is_enough(requires: str) -> bool:
-    """判定本机接口包够不够清单要的版本
+    """判定本机接口包是否满足清单要的版本
 
     - 没写这一行即不设限
-    - 版本串读不懂当不够，拒载那句把原串递给用户
+    - 版本串读不懂按未满足处理，拒载那句把原串递给用户
     """
     if not requires:
         return True

@@ -8,7 +8,6 @@
 from collections.abc import Sequence
 
 from finshin_sdk.domain import platform_of_profile
-from skin.messages import PlatformMessage
 
 from ..adapter_catalog import ReleaseRow
 from ..adapter_manifest import installed_adapters
@@ -59,13 +58,11 @@ async def apply_updates(
     files: list[WheelFile] = []
     notes: list[str] = []
     for release in releases:
-        if on_line is not None:
-            on_line(PlatformMessage.LINE_FETCHING.format(name=release.distribution))
         outcome = await download_release(release, WHEELS_DIR, GITHUB_MIRRORS)
         if outcome.path is None:
             notes.append(outcome.note)
             continue
-        files.append(WheelFile(outcome.distribution, outcome.path))
+        files.append(WheelFile(outcome.distribution, release.version, outcome.path))
 
     if files:
         notes.extend(install_releases(files, on_line))

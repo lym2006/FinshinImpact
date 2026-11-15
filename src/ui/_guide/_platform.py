@@ -1,10 +1,12 @@
 """平台组件面板
 
-- 开窗即出本机读数，在线目录在后台取，取到即补上另两档
-- 逐只组件一块，块内按栏名逐行摆，动作栏按在场情况给装与卸
+- 开窗先出等待读数并按秒正计时，在线目录取到才按三档摆读数
+- 逐只组件一块，块内按栏名逐行摆，动作栏只摆做得到的动作
 - 面板只摆读数与发起动作，读数与装卸全在 services 那侧
 - 取数失败只在屏上留一行原因，装卸才走进度窗
 """
+
+import time
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QCloseEvent
@@ -13,7 +15,7 @@ from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
-    QScrollArea,
+    QPushButton,
     QVBoxLayout,
     QWidget,
 )
@@ -29,15 +31,12 @@ from services.env_setup.platform_state import (
 )
 from skin.messages import PlatformMessage
 from skin.qss import build_platform_dialog_qss
-from skin.theme import PLATFORM_DIALOG, ButtonStyle, ObjectName
+from skin.theme import GLOBAL, PLATFORM_DIALOG, ButtonStyle, ObjectName
 
-from .._lifecycle import ensure_app
-from .._primitives import make_button
+from .._lifecycle import Ticker, ensure_app
+from .._primitives import clear_layout, make_button, make_scroller, set_margins
 from ._catalog_task import CatalogTask
 from ._platform_flow import install_flow, uninstall_flow
-
-# Qt 布局四边
-_MARGIN_EDGES = 4
 
 # 三档的先后次序与段名
 _SECTIONS = (
@@ -81,18 +80,16 @@ def _version_text(row: ComponentRow) -> str:
 
 
 def _action_text(row: ComponentRow) -> str:
-    """动作栏的按钮文案"""
-    if row.bucket == ComponentBucket.LOCAL:
-        return PlatformMessage.BTN_READY
-    if not row.installed:
-        return PlatformMessage.BTN_INSTALL
-
-    return PlatformMessage.BTN_APPLY
+    """动作栏的按钮文案，本机没装过即安装"""
+    return (
+        PlatformMessage.BTN_INSTALL if not row.installed else PlatformMessage.BTN_APPLY
+    )
 
 
 class _PlatformDialog(QDialog):
     """平台组件面板
 
+    - 在线目录取回来之前只出等待读数，取到才按三档摆
     - 动作按钮就地起装卸，跑完按最新读数重灌
     - 在线目录缺位时只出本机已有那一档
     """
@@ -102,21 +99,20 @@ class _PlatformDialog(QDialog):
         self._catalog: Catalog | None = None
         self._note = ""
         self._reading = True
+        self._start = time.monotonic()
+        self._wait_label: QLabel | None = None
         self.setWindowTitle(PLATFORM_DIALOG.title)
         self.setStyleSheet(build_platform_dialog_qss())
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(*[PLATFORM_DIALOG.pad] * _MARGIN_EDGES)
+        set_margins(layout, PLATFORM_DIALOG.pad)
         layout.setSpacing(PLATFORM_DIALOG.spacing)
 
         # 组件块逐只往下堆，读不完的部分交给滚动条接住
         self._body = QVBoxLayout()
         host = QWidget(parent=self)
         host.setLayout(self._body)
-        scroller = QScrollArea(parent=self)
-        scroller.setWidget(host)
-        scroller.setWidgetResizable(True)
-        layout.addWidget(scroller, 1)
+        layout.addWidget(make_scroller(host), 1)
 
         self._all = make_button(PlatformMessage.BTN_UPDATE_ALL, ButtonStyle.PRIMARY)
         self._all.clicked.connect(
@@ -127,9 +123,20 @@ class _PlatformDialog(QDialog):
         self.setFixedSize(PLATFORM_DIALOG.width, PLATFORM_DIALOG.height)
         self._render()
 
+        self._ticker = Ticker(self, GLOBAL.tick_ms, self._advance)
+        self._ticker.start()
+
         self._task = CatalogTask()
         self._task.reported.connect(self._on_reported)
         self._task.start()
+
+    def _advance(self) -> None:
+        """等待读数跳秒，取数回来即停泵"""
+        if not self._reading:
+            self._ticker.stop()
+            return
+        if self._wait_label is not None:
+            self._wait_label.setText(self._waiting_text())
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
         """关窗时取数还没回来即把线程交给模块持有"""
@@ -140,23 +147,35 @@ class _PlatformDialog(QDialog):
         super().closeEvent(event)
 
     def _on_reported(self, catalog: object, note: str) -> None:
-        """取数回来即停状态行，目录与原因各摆各的，重灌读数"""
+        """取数回来即停正计时，目录与原因各摆各的，重灌读数"""
         self._catalog = catalog if isinstance(catalog, Catalog) else None
         self._note = note
         self._reading = False
+        self._ticker.stop()
         self._render()
 
     def _rows(self) -> tuple[ComponentRow, ...]:
         """当前读数，目录没在场即只有本机那一档"""
         return component_rows(self._catalog)
 
+    def _waiting_text(self) -> str:
+        """等待读数的正文，取数期间只出这一行"""
+        return PlatformMessage.WAIT_CATALOG.format(
+            seconds=int(time.monotonic() - self._start)
+        )
+
     def _render(self) -> None:
         """按三档重建组件块，段内没行即整段不出，没得更新即一键不出"""
-        rows = self._rows()
         self._clear_body()
+        self._all.setVisible(False)
         if self._reading:
-            self._body.addWidget(QLabel(PlatformMessage.WAIT_CATALOG, parent=self))
-        elif self._note:
+            self._wait_label = QLabel(self._waiting_text(), parent=self)
+            self._body.addWidget(self._wait_label)
+            self._body.addStretch()
+            return
+
+        rows = self._rows()
+        if self._note:
             self._body.addWidget(QLabel(self._note, parent=self))
 
         for bucket, text in _SECTIONS:
@@ -179,23 +198,16 @@ class _PlatformDialog(QDialog):
         self._body.addStretch()
 
     def _clear_body(self) -> None:
-        """拆掉上一轮摆的控件，防重绘留残块"""
-        while self._body.count():
-            item = self._body.takeAt(0)
-            if item is None:
-                break
-            widget = item.widget()
-            if widget is None:
-                continue
-            widget.setParent(None)
-            widget.deleteLater()
+        """丢掉等待读数的引用再拆控件"""
+        self._wait_label = None
+        clear_layout(self._body)
 
     def _block(self, row: ComponentRow) -> QFrame:
         """一只组件一块，行按栏名逐条摆"""
         block = QFrame(parent=self)
         block.setObjectName(ObjectName.PLATFORM_BLOCK)
         lines = QVBoxLayout(block)
-        lines.setContentsMargins(*[PLATFORM_DIALOG.block_pad] * _MARGIN_EDGES)
+        set_margins(lines, PLATFORM_DIALOG.block_pad)
 
         head = QLabel(_name_of(row), parent=block)
         head.setObjectName(ObjectName.PLATFORM_NAME)
@@ -231,29 +243,31 @@ class _PlatformDialog(QDialog):
         return fields
 
     def _actions_of(self, block: QFrame, row: ComponentRow) -> QWidget | None:
-        """动作栏的按钮，已装包的再多一颗卸载
+        """动作栏的按钮，只摆真做得到的动作
 
-        - 一颗都没有即整行不出
+        - 本机已有又没得更动的颗都没有，一颗都没有即整行不出
+        - 已装包的再多一颗卸载
         """
+        buttons: list[QPushButton] = []
         release = row.release
-        removable = bool(row.platform) and row.source == ComponentSource.INSTALLED
-        if release is None and not removable:
+        if release is not None and row.bucket != ComponentBucket.LOCAL:
+            todo = make_button(_action_text(row), ButtonStyle.PRIMARY)
+            todo.clicked.connect(lambda: install_flow(self._render, [release]))
+            buttons.append(todo)
+        if bool(row.platform) and row.source == ComponentSource.INSTALLED:
+            drop = make_button(PlatformMessage.BTN_UNINSTALL, ButtonStyle.DANGER)
+            drop.clicked.connect(
+                lambda: uninstall_flow(self, self._render, row.platform)
+            )
+            buttons.append(drop)
+        if not buttons:
             return None
 
         holder = QWidget(parent=block)
         pair = QHBoxLayout(holder)
         pair.setContentsMargins(0, 0, 0, 0)
-        if release is not None:
-            action = make_button(_action_text(row), ButtonStyle.PRIMARY)
-            action.setEnabled(row.bucket != ComponentBucket.LOCAL)
-            action.clicked.connect(lambda: install_flow(self._render, [release]))
-            pair.addWidget(action)
-        if removable:
-            drop = make_button(PlatformMessage.BTN_UNINSTALL, ButtonStyle.DANGER)
-            drop.clicked.connect(
-                lambda: uninstall_flow(self, self._render, row.platform)
-            )
-            pair.addWidget(drop)
+        for button in buttons:
+            pair.addWidget(button)
         pair.addStretch()
 
         return holder
