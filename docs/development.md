@@ -19,7 +19,7 @@
 4. 激活虚拟环境：`.venv\Scripts\activate`。
 5. 安装依赖与开发工具：`uv sync --all-packages`，镜像源可自行配置。
 6. 启动：`python -m bootstrap`，先弹出「选择机器人」窗口，选定或新建实例后管理面板出现。
-7. 首次运行在选择窗点「新建」，平台下拉只列本机装着适配器包的平台，装新的走下拉下方「管理平台组件」。填 Bot Token 即生成实例文件夹 `instances/<身份码>/` 并弹出配置向导，填完即完成初始化，无需手编文件。
+7. 首次运行在选择窗点「新建」，平台下拉只列本机装着适配器包的平台，装新的走下拉右侧「管理平台组件」。填 Bot Token 即生成实例文件夹 `instances/<身份码>/` 并弹出配置向导，填完即完成初始化，无需手编文件。
 8. 实例文件夹：
    - 内含 `config.toml`、`persona/`（内有 `persona.md`、`template.sha256`、`applied.cache`）、`profile.json`、`records/`、`db/`（内有 `bot.db` 与 `backups/`）、`logs/`，整体不进版本库。
    - Bot Token 存 `profile.json`，不进 `config.toml`，面板不渲染也不可改。
