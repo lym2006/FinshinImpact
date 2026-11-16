@@ -224,13 +224,29 @@ class TestDescribeError(unittest.TestCase):
         self.assertEqual(describe_error(ValueError("内部消息")), "ValueError")
 
     def test_http_status_body_stays_out_of_notice(self) -> None:
-        """状态码异常上屏那句只带码，响应正文不进界面
+        """状态码异常上屏那句带码与归类原因，整页响应不进界面
 
         - 这条红了说明映射表又把整页响应塞回界面
+        - 认不出原因的状态码仍只报码，别编一句出来
         """
         self.assertEqual(
             describe_error(HTTPStatusError(404, "<html>页面不存在</html>")),
-            "HTTP 状态码：404",
+            "HTTP 状态码：404（GitHub 上没找到那份内容）",
+        )
+        self.assertEqual(
+            describe_error(HTTPStatusError(451, "<html>法律原因屏蔽</html>")),
+            "HTTP 状态码：451",
+        )
+
+    def test_http_status_names_the_anonymous_quota(self) -> None:
+        """匿名额度用完那句要点名是次数用完，不许只报状态码
+
+        - 只报码会让人去查链接，实际拒的是这台机器的出口地址
+        """
+        body = '{"message":"API rate limit exceeded for 1.2.3.4"}'
+        self.assertEqual(
+            describe_error(HTTPStatusError(403, body)),
+            "HTTP 状态码：403（这台机器一小时内问 GitHub 的次数用完了，稍后再试）",
         )
 
     def test_newly_mapped_families_have_text(self) -> None:
