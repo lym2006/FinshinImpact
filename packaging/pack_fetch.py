@@ -4,11 +4,10 @@
 - zip 条目校验，uv 包加 sha256 比对，坏包自动换源
 """
 
-import shutil
-import urllib.request
 import zipfile
 from pathlib import Path
 
+import net_channel
 from pack_spec import CACHE, DOWNLOAD_HOST, file_digest, release_mirrors
 from unpack import zip_entries_ok
 
@@ -51,23 +50,12 @@ def fetch_uv() -> Path:
 
 
 def _download(url: str, target: Path) -> None:
-    """下载文件到指定路径
+    """从一个地址取到指定路径
 
-    - 先写 .part 临时名，成功后改名落盘
+    - 先写 .part 再改正式名，坏件不落正式名
     """
     print(f"下载 {url}")
-    part = target.with_name(target.name + ".part")
-    try:
-        with (
-            urllib.request.urlopen(url, timeout=_DOWNLOAD_TIMEOUT) as resp,
-            open(part, "wb") as f,
-        ):
-            shutil.copyfileobj(resp, f)
-        part.replace(target)
-    except Exception:
-        # 中断的半截文件不许以正式名存在，失败即清残留
-        part.unlink(missing_ok=True)
-        raise
+    net_channel.download_to(url, net_channel.openers(), target, _DOWNLOAD_TIMEOUT)
 
 
 def _download_verified(urls: list[str], target: Path, sha256: str = "") -> None:

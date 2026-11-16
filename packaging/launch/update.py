@@ -214,10 +214,7 @@ def _fetch_zip(urls: list[str], target: Path) -> None:
     - 每源完成后校验 zip，坏包自动换源
     - 干净直连全源失败后，带注册表系统代理再走一轮
     """
-    openers = [net_channel.clean_opener()]
-    proxy_url = proxy.system_proxy_url()
-    if proxy_url:
-        openers.append(net_channel.proxied_opener(proxy_url))
+    openers = net_channel.openers(proxy.system_proxy_url())
     last_error: Exception | None = None
     for opener in openers:
         last_error = _download_pass(urls, target, opener)

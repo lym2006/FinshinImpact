@@ -4,7 +4,6 @@
 """
 
 import subprocess
-import urllib.request
 
 import net_channel
 from pack_spec import (
@@ -66,12 +65,11 @@ def _asset_probe(url: str, local_size: int) -> str:
     """
     if not local_size:
         return "本地无包，跳过"
-    request = urllib.request.Request(url, method="HEAD")
-    try:
-        with net_channel.clean_opener().open(request, timeout=_PROBE_TIMEOUT) as resp:
-            remote = int(resp.headers.get(HDR_CONTENT_LENGTH) or 0)
-    except Exception as e:
-        return f"不可达（{type(e).__name__}），确认已上传 release"
-    if remote == local_size:
-        return f"可达，{remote / BYTES_PER_MB:.1f} MB 与本地包一致"
-    return f"可达但大小不符（远端 {remote / BYTES_PER_MB:.1f} MB）"
+    size, note = net_channel.probe_size(
+        url, net_channel.openers(), HDR_CONTENT_LENGTH, _PROBE_TIMEOUT
+    )
+    if note:
+        return f"不可达（{note}），确认已上传 release"
+    if size == local_size:
+        return f"可达，{size / BYTES_PER_MB:.1f} MB 与本地包一致"
+    return f"可达但大小不符（远端 {size / BYTES_PER_MB:.1f} MB）"

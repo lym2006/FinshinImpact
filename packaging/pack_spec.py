@@ -5,9 +5,7 @@
 """
 
 import hashlib
-import json
 import tomllib
-import urllib.request
 from pathlib import Path
 from typing import Any
 
@@ -116,23 +114,16 @@ def local_version(root: Path) -> str:
 
 
 def remote_version(proxy_url: str | None = None) -> str | None:
-    """读取版本页在线版本号，失败返回 None
-
-    - 干净直连优先，给了代理地址再补试一轮
-    """
-    openers = [net_channel.clean_opener()]
-    if proxy_url:
-        openers.append(net_channel.proxied_opener(proxy_url))
-    for opener in openers:
-        try:
-            with opener.open(
-                _PAGES_PYPROJECT_URL, timeout=_TIMEOUT_VERSION_PAGE
-            ) as resp:
-                data = tomllib.loads(resp.read().decode("utf-8"))
-            return str(data["project"]["version"])
-        except Exception:
-            continue
-    return None
+    """读取版本页在线版本号，失败返回 None"""
+    body = net_channel.fetch_bytes(
+        _PAGES_PYPROJECT_URL, net_channel.openers(proxy_url), {}, _TIMEOUT_VERSION_PAGE
+    )
+    if body is None:
+        return None
+    try:
+        return str(tomllib.loads(body.decode("utf-8"))["project"]["version"])
+    except (ValueError, KeyError, TypeError):
+        return None
 
 
 def _drop_download_lines(body: str) -> str:
@@ -143,24 +134,16 @@ def _drop_download_lines(body: str) -> str:
 
 
 def remote_release_notes(version: str, *, proxy_url: str | None = None) -> str:
-    """读取指定版本 release 正文，失败返回空串
-
-    - 干净直连优先，给了代理地址再补试一轮
-    """
-    request = urllib.request.Request(
-        _RELEASE_API_URL.format(ver=version), headers={HDR_USER_AGENT: _API_USER_AGENT}
+    """读取指定版本 release 正文，失败返回空串"""
+    data = net_channel.fetch_json(
+        _RELEASE_API_URL.format(ver=version),
+        net_channel.openers(proxy_url),
+        {HDR_USER_AGENT: _API_USER_AGENT},
+        _TIMEOUT_RELEASE,
     )
-    openers = [net_channel.clean_opener()]
-    if proxy_url:
-        openers.append(net_channel.proxied_opener(proxy_url))
-    for opener in openers:
-        try:
-            with opener.open(request, timeout=_TIMEOUT_RELEASE) as resp:
-                body = json.loads(resp.read().decode("utf-8")).get("body")
-        except Exception:
-            continue
-        return _drop_download_lines(str(body or ""))
-    return ""
+    body = data.get("body") if isinstance(data, dict) else None
+
+    return _drop_download_lines(str(body or ""))
 
 
 def dependencies(root: Path) -> list[str]:

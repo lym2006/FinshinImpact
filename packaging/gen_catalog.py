@@ -67,7 +67,7 @@ def _headers() -> dict[str, str]:
 
 def _get(url: str) -> Any:
     """按干净通道取一份 JSON，重发次数用完交出 None"""
-    return net_channel.fetch_json(url, net_channel.clean_opener(), _headers(), _TIMEOUT)
+    return net_channel.fetch_json(url, net_channel.openers(), _headers(), _TIMEOUT)
 
 
 def _repos(owner: str) -> list[dict[str, Any]]:
