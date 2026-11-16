@@ -4,6 +4,7 @@
 - 目录段名与键位对不上，生成的目录本体读不出
 - Pages 地址与镜像名单对不上，取件就取到别处去
 - 包内布局名与注册表值名对不上，升级保留与代理读取各说各话
+- 注释点名「两处同值」的串逐条比对，改了另一侧没改这侧即红
 """
 
 import sys
@@ -21,18 +22,24 @@ set_profile("tg.000000")
 
 import gen_catalog  # noqa: E402
 import gen_release  # noqa: E402
+import instancelock as launch_instancelock  # noqa: E402
+import pack_seed  # noqa: E402
 import pack_spec  # noqa: E402
 import proxy as launch_proxy  # noqa: E402
 
 from services import adapter_catalog as catalog_mod  # noqa: E402
-from services.env_setup import toolchain, wheel_fetch  # noqa: E402
+from services.env_setup import platform_rows, toolchain, wheel_fetch  # noqa: E402
 from system import (  # noqa: E402
     app_identity,
+    distributions,
+    instance_lock,
     links,
+    proc,
     profile_env,
     registry,
     tool_settings,
 )
+from utils import paths  # noqa: E402
 
 _WORKFLOW = ROOT / ".github" / "workflows" / "static.yml"
 
@@ -73,6 +80,41 @@ class TestCatalogShape(unittest.TestCase):
         self.assertEqual(len(deployed), 1, deployed)
         tail = links.CATALOG_PATH.rpartition("/")[2]
         self.assertIn(f"site/{tail}", deployed[0])
+
+
+class TestSameValuePairs(unittest.TestCase):
+    """注释点名同值的串逐条比对"""
+
+    def test_sdk_tree_dir_matches_build(self) -> None:
+        """接口包源码目录本体读的那份与构建侧打 wheel 的那份同处"""
+        self.assertEqual(
+            Path(platform_rows._SDK_TREE_DIR),
+            pack_seed._SDK_SOURCE.relative_to(pack_seed.ROOT),
+        )
+
+    def test_bootstrap_mutex_matches_launcher(self) -> None:
+        """引导锁名本体与启动器同串，不同名即两个进程各探各的锁"""
+        self.assertEqual(
+            instance_lock._BOOTSTRAP_MUTEX_NAME,
+            launch_instancelock._BOOTSTRAP_MUTEX_NAME,
+        )
+
+    def test_aumid_anchor_var_matches_packaging(self) -> None:
+        """任务栏身份锚定的环境变量名本体与启动器同串"""
+        self.assertEqual(app_identity._AUMID_ANCHOR_VAR, pack_spec.AUMID_ANCHOR_VAR)
+
+    def test_create_no_window_matches_packaging(self) -> None:
+        """后台命令不弹窗口那个标志两侧同一个数"""
+        self.assertEqual(proc._CREATE_NO_WINDOW, pack_spec.CREATE_NO_WINDOW)
+
+    def test_sdk_distribution_matches_generator(self) -> None:
+        """接口包分发名本体与目录生成侧同串"""
+        self.assertEqual(distributions.SDK_DISTRIBUTION, gen_release.SDK_DISTRIBUTION)
+
+    def test_persona_placeholder_is_in_the_template(self) -> None:
+        """人设模板里写的那个占位符与注入读的那份同串"""
+        text = paths.PERSONA_TEMPLATE.read_text(encoding="utf-8")
+        self.assertIn(profile_env.OWNER_PLACEHOLDER, text)
 
 
 class TestEndpoints(unittest.TestCase):
