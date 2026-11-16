@@ -1,6 +1,6 @@
 """平台组件读数的单元测试
 
-- 三档归属按本机来路、本机版本与在线版本比出来
+- 行的拼装、归属档与装挡判定同一条链路，两份模块一起过
 - 版本串读不懂、在线不比本机新、源码仓挂着且已装包都算本机已有
 - 该装的那批只收本机没有与在线更新的两档
 - 接口包没到位或高出上限时适配器那颗不给装，接口包那行自己不受此限
@@ -22,6 +22,7 @@ set_profile("tg.000000")
 from finshin_sdk.domain import Platform  # noqa: E402
 from services.adapter_catalog import Catalog, ReleaseRow  # noqa: E402
 from services.adapter_manifest import InstalledAdapter  # noqa: E402
+from services.env_setup import platform_rows as rows_mod  # noqa: E402
 from services.env_setup import platform_state as mod  # noqa: E402
 
 _ADAPTER = "finshin-adapter-tg"
@@ -55,43 +56,43 @@ def _catalog(version: str) -> Catalog:
     )
 
 
-def _tg_row(installed: str, online: str, tree: bool = False) -> mod.ComponentRow:
+def _tg_row(installed: str, online: str, tree: bool = False) -> rows_mod.ComponentRow:
     """按本机在场版本、在线版本与来路排出一行读数"""
     item = _adapter(installed) if installed else None
     tree_names = {Platform.TELEGRAM: _ADAPTER} if tree else {}
     with (
         patch.object(
-            mod, "installed_adapters", lambda: () if item is None else (item,)
+            rows_mod, "installed_adapters", lambda: () if item is None else (item,)
         ),
-        patch.object(mod, "tree_distributions", lambda: tree_names),
-        patch.object(mod, "load_adapter_manifests", lambda: {}),
-        patch.object(mod, "installed_version", lambda name: ""),
+        patch.object(rows_mod, "tree_distributions", lambda: tree_names),
+        patch.object(rows_mod, "load_adapter_manifests", lambda: {}),
+        patch.object(rows_mod, "installed_version", lambda name: ""),
     ):
-        rows = mod.component_rows(_catalog(online))
+        rows = rows_mod.component_rows(_catalog(online))
 
     return next(row for row in rows if row.platform == str(Platform.TELEGRAM))
 
 
-def _rows(sdk: str, adapter: str) -> tuple[mod.ComponentRow, ...]:
+def _rows(sdk: str, adapter: str) -> tuple[rows_mod.ComponentRow, ...]:
     """接口包与 Telegram 各一行读数，本机在场版本按点名给"""
     item = _adapter(adapter) if adapter else None
     with (
         patch.object(
-            mod, "installed_adapters", lambda: () if item is None else (item,)
+            rows_mod, "installed_adapters", lambda: () if item is None else (item,)
         ),
-        patch.object(mod, "tree_distributions", lambda: {}),
-        patch.object(mod, "load_adapter_manifests", lambda: {}),
-        patch.object(mod, "installed_version", lambda name: sdk),
+        patch.object(rows_mod, "tree_distributions", lambda: {}),
+        patch.object(rows_mod, "load_adapter_manifests", lambda: {}),
+        patch.object(rows_mod, "installed_version", lambda name: sdk),
     ):
-        return mod.component_rows(_catalog("0.1.0"))
+        return rows_mod.component_rows(_catalog("0.1.0"))
 
 
-def _adapter_row(rows: tuple[mod.ComponentRow, ...]) -> mod.ComponentRow:
+def _adapter_row(rows: tuple[rows_mod.ComponentRow, ...]) -> rows_mod.ComponentRow:
     """读数里 Telegram 那一行"""
     return next(row for row in rows if row.platform == str(Platform.TELEGRAM))
 
 
-def _sdk_row(rows: tuple[mod.ComponentRow, ...]) -> mod.ComponentRow:
+def _sdk_row(rows: tuple[rows_mod.ComponentRow, ...]) -> rows_mod.ComponentRow:
     """读数里接口包那一行"""
     return next(row for row in rows if not row.platform)
 
@@ -102,36 +103,42 @@ class TestBucket(unittest.TestCase):
     def test_newer_online_is_upgradable(self) -> None:
         """在线比本机新即进可更新"""
         self.assertEqual(
-            _tg_row("0.1.0", "0.1.1").bucket, mod.ComponentBucket.UPGRADABLE
+            _tg_row("0.1.0", "0.1.1").bucket, rows_mod.ComponentBucket.UPGRADABLE
         )
 
     def test_same_version_is_local(self) -> None:
         """版本相等即已到位"""
-        self.assertEqual(_tg_row("0.1.0", "0.1.0").bucket, mod.ComponentBucket.LOCAL)
+        self.assertEqual(
+            _tg_row("0.1.0", "0.1.0").bucket, rows_mod.ComponentBucket.LOCAL
+        )
 
     def test_older_online_is_local(self) -> None:
         """在线比本机旧即不动，不提示降级"""
-        self.assertEqual(_tg_row("0.2.0", "0.1.0").bucket, mod.ComponentBucket.LOCAL)
+        self.assertEqual(
+            _tg_row("0.2.0", "0.1.0").bucket, rows_mod.ComponentBucket.LOCAL
+        )
 
     def test_absent_package_is_online(self) -> None:
         """本机没在场即只在网络"""
-        self.assertEqual(_tg_row("", "0.1.0").bucket, mod.ComponentBucket.ONLINE)
+        self.assertEqual(_tg_row("", "0.1.0").bucket, rows_mod.ComponentBucket.ONLINE)
 
     def test_tree_source_is_local(self) -> None:
         """源码仓挂着且已装包即本机已有，在线再新也不给装"""
         self.assertEqual(
-            _tg_row("0.1.0", "0.1.1", tree=True).bucket, mod.ComponentBucket.LOCAL
+            _tg_row("0.1.0", "0.1.1", tree=True).bucket, rows_mod.ComponentBucket.LOCAL
         )
 
     def test_tree_source_without_package_is_online(self) -> None:
         """源码仓挂着但没装包即仍算只在网络，还要给装"""
         self.assertEqual(
-            _tg_row("", "0.1.0", tree=True).bucket, mod.ComponentBucket.ONLINE
+            _tg_row("", "0.1.0", tree=True).bucket, rows_mod.ComponentBucket.ONLINE
         )
 
     def test_unreadable_version_is_local(self) -> None:
         """版本串读不懂算本机已有，不拿猜的新版去装"""
-        self.assertEqual(_tg_row("最新", "0.1.0").bucket, mod.ComponentBucket.LOCAL)
+        self.assertEqual(
+            _tg_row("最新", "0.1.0").bucket, rows_mod.ComponentBucket.LOCAL
+        )
 
 
 class TestDistributionName(unittest.TestCase):
@@ -184,7 +191,7 @@ class TestInstallBlocked(unittest.TestCase):
     def test_sdk_below_range_blocks(self) -> None:
         """接口包在场但够不到适配器要求的下限，那句换成先更新接口包"""
         requires = {str(Platform.TELEGRAM): ">=9.9.9"}
-        with patch.object(mod, "_declared_requires", lambda: requires):
+        with patch.object(rows_mod, "_declared_requires", lambda: requires):
             rows = _rows("0.1.0", "0.1.0")
         self.assertEqual(
             mod.install_blocked(rows, _adapter_row(rows)),
@@ -194,7 +201,7 @@ class TestInstallBlocked(unittest.TestCase):
     def test_sdk_over_ceiling_blocks(self) -> None:
         """接口包高出适配器写的上限，那句换成接口包太新"""
         requires = {str(Platform.TELEGRAM): "<0.0.1"}
-        with patch.object(mod, "_declared_requires", lambda: requires):
+        with patch.object(rows_mod, "_declared_requires", lambda: requires):
             rows = _rows("0.1.0", "0.1.0")
         self.assertEqual(
             mod.install_blocked(rows, _adapter_row(rows)),
@@ -204,7 +211,7 @@ class TestInstallBlocked(unittest.TestCase):
     def test_sdk_in_range_frees(self) -> None:
         """接口包落在要求的区间之内即放行"""
         requires = {str(Platform.TELEGRAM): ">=0.1.0,<0.2.0"}
-        with patch.object(mod, "_declared_requires", lambda: requires):
+        with patch.object(rows_mod, "_declared_requires", lambda: requires):
             rows = _rows("0.1.5", "0.1.0")
         self.assertEqual(mod.install_blocked(rows, _adapter_row(rows)), "")
 
@@ -212,7 +219,7 @@ class TestInstallBlocked(unittest.TestCase):
         """要求那一行把上下限原样带出来"""
         requires = {str(Platform.TELEGRAM): ">=0.1.0,<0.2.0"}
         with (
-            patch.object(mod, "_declared_requires", lambda: requires),
+            patch.object(rows_mod, "_declared_requires", lambda: requires),
             patch.object(mod, "installed_version", lambda name: "0.2.0"),
         ):
             text = mod.deps_text(_adapter_row(_rows("0.2.0", "0.1.0")))
@@ -226,27 +233,31 @@ class TestPresentPlatforms(unittest.TestCase):
         """已装适配器的那一平台进表，接口包那行不进"""
         with ExitStack() as stack:
             for patcher in (
-                patch.object(mod, "installed_adapters", lambda: (_adapter("0.1.0"),)),
-                patch.object(mod, "tree_distributions", lambda: {}),
-                patch.object(mod, "load_adapter_manifests", lambda: {}),
-                patch.object(mod, "installed_version", lambda name: "0.1.0"),
+                patch.object(
+                    rows_mod, "installed_adapters", lambda: (_adapter("0.1.0"),)
+                ),
+                patch.object(rows_mod, "tree_distributions", lambda: {}),
+                patch.object(rows_mod, "load_adapter_manifests", lambda: {}),
+                patch.object(rows_mod, "installed_version", lambda name: "0.1.0"),
             ):
                 stack.enter_context(patcher)
-            self.assertEqual(mod.present_platforms(), frozenset({"tg"}))
+            self.assertEqual(rows_mod.present_platforms(), frozenset({"tg"}))
 
     def test_tree_without_package_is_absent(self) -> None:
         """源码仓挂着但没装包的平台不进表"""
         with ExitStack() as stack:
             for patcher in (
-                patch.object(mod, "installed_adapters", lambda: ()),
+                patch.object(rows_mod, "installed_adapters", lambda: ()),
                 patch.object(
-                    mod, "tree_distributions", lambda: {Platform.TELEGRAM: _ADAPTER}
+                    rows_mod,
+                    "tree_distributions",
+                    lambda: {Platform.TELEGRAM: _ADAPTER},
                 ),
-                patch.object(mod, "load_adapter_manifests", lambda: {}),
-                patch.object(mod, "installed_version", lambda name: ""),
+                patch.object(rows_mod, "load_adapter_manifests", lambda: {}),
+                patch.object(rows_mod, "installed_version", lambda name: ""),
             ):
                 stack.enter_context(patcher)
-            self.assertEqual(mod.present_platforms(), frozenset())
+            self.assertEqual(rows_mod.present_platforms(), frozenset())
 
 
 if __name__ == "__main__":

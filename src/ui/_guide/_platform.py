@@ -21,15 +21,13 @@ from PySide6.QtWidgets import (
 )
 
 from services.adapter_catalog import Catalog
-from services.env_setup.platform_state import (
+from services.env_setup.platform_rows import (
     ComponentBucket,
     ComponentRow,
     ComponentSource,
     component_rows,
-    deps_text,
-    install_blocked,
-    update_targets,
 )
+from services.env_setup.platform_state import deps_text, install_blocked, update_targets
 from skin.messages import PlatformMessage
 from skin.qss import build_platform_dialog_qss
 from skin.theme import GLOBAL, PLATFORM_DIALOG, ButtonStyle, ObjectName

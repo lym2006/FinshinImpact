@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
 )
 
 from finshin_sdk.domain import Platform, platform_of_profile
-from services.env_setup.platform_state import present_platforms
+from services.env_setup.platform_rows import present_platforms
 from services.profile_store import code_for_token, create_profile, update_profile
 from skin.messages import PickerMessage, PluginMessage
 from skin.qss import build_bootstrap_qss
