@@ -31,7 +31,7 @@ class PickerMessage:
     BTN_DELETE = "删除"
     BTN_START = "启动"
     BTN_PLUGINS = "插件设置"
-    BTN_SYNC = "依赖管理 ▾"
+    BTN_SYNC = "环境维护 ▾"
     BTN_OK = "确定"
 
     # 用：ui._guide._form 新建与编辑共用的表单

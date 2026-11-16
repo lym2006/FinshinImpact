@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
 from services.env_setup.deps_install import sync_env
 from services.env_setup.deps_keep import keep_conflicts, keep_union
 from services.env_setup.subprocess_ops import ProgressCallback, clean_cache
-from skin.messages import PlatformMessage, PluginMessage
+from skin.messages import PluginMessage
 
 from ._platform import open_platform_dialog
 from ._popup import confirm_popup
@@ -57,12 +57,11 @@ def open_maintain_menu(anchor: QPushButton, parent: QWidget) -> None:
     """
     menu = QMenu(parent)
 
-    component_action = QAction(PlatformMessage.TITLE, menu)
+    component_action = QAction(PluginMessage.MENU_PLATFORM, menu)
     component_action.triggered.connect(lambda: open_platform_dialog(parent))
     sync_action = QAction(PluginMessage.MENU_SYNC, menu)
     sync_action.triggered.connect(lambda: _sync_flow(parent))
     cache_action = QAction(PluginMessage.MENU_CACHE, menu)
-    cache_action.setProperty("danger", True)
     cache_action.triggered.connect(lambda: _cache_flow(parent))
 
     menu.addAction(component_action)

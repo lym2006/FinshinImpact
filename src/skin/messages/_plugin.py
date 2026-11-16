@@ -98,7 +98,8 @@ class PluginMessage:
     # 用：ui._guide._maintain 同步进度窗标题
     PROGRESS_SYNC = "同步重建环境"
 
-    # 用：ui._guide._maintain 依赖管理下拉两项
+    # 用：ui._guide._maintain 环境维护下拉三项
+    MENU_PLATFORM = "管理平台组件"
     MENU_SYNC = "同步重建环境"
     MENU_CACHE = "清理下载缓存"
 

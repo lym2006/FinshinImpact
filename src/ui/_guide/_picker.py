@@ -1,7 +1,7 @@
 """选 bot 窗口
 
 - 引导期选择、编辑或新建实例
-- 依赖管理菜单含平台组件，管本机不受选中门槛限制
+- 环境维护菜单含平台组件，管本机不受选中门槛限制
 """
 
 from PySide6.QtWidgets import (
@@ -39,7 +39,7 @@ def _label_of(code: str, remark: str) -> str:
 
 
 def _run_sync(button: QPushButton, dialog: "_ProfilePickerDialog") -> None:
-    """弹出全局依赖管理菜单
+    """弹出全局环境维护菜单
 
     - 同步对象是所有实例共享的 runtime 依赖层
     """
@@ -81,7 +81,7 @@ class _ProfilePickerDialog(QDialog):
         delete_btn.clicked.connect(self._on_delete)
 
         # 面板操作必须针对具体实例，空选入口置灰
-        # 依赖管理管的是本机共用的一层，不受此限
+        # 环境维护管的是本机共用的一层，不受此限
         plugin_btn = make_button(PickerMessage.BTN_PLUGINS, ButtonStyle.SECONDARY)
         plugin_btn.clicked.connect(self._on_plugins)
 

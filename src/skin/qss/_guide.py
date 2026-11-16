@@ -181,15 +181,6 @@ QMenu::item:selected {{
 
 QMenu::item:disabled {{
     color: {SURFACE.disabled_color};
-}}
-
-QMenu::item[danger="true"] {{
-    color: {SURFACE.danger_bg};
-}}
-
-QMenu::item[danger="true"]:selected {{
-    background-color: {SURFACE.danger_bg};
-    color: {SURFACE.sel_color};
 }}"""
 
 # 列表
