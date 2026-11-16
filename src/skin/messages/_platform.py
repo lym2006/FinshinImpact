@@ -79,9 +79,9 @@ class PlatformMessage:
     WHEEL_CACHED = "已下载"
 
     # 用：ui._guide._platform_block 盘上件的逐份读数
-    WHEEL_LISTED = "{name} 目录里有这一版，装它按目录给的指纹核"
-    WHEEL_RECORDED = "{name} 本机下载时记过指纹，可直接装盘上那份"
-    WHEEL_STRAY = "{name} 目录里没这一版本机也没记过，没有权威指纹可核，不给装"
+    WHEEL_LISTED = "{version} 目录里有这一版"
+    WHEEL_RECORDED = "{version} 本机记过指纹"
+    WHEEL_STRAY = "{version} 没核过指纹，不给装"
 
     # 用：ui._guide._platform 底部一键与目录拒收段的行名
     BTN_UPDATE_ALL = "一键更新"

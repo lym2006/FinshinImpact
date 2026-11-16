@@ -220,8 +220,8 @@ class TestLocalIndex(unittest.TestCase):
 
     def test_version_needs_five_parts(self) -> None:
         """文件名段数不够即读不出版本号"""
-        self.assertEqual(rel_mod._version_in_name(_WHEEL), "9.9.9")
-        self.assertEqual(rel_mod._version_in_name("two-parts.whl"), "")
+        self.assertEqual(rel_mod.version_in_name(_WHEEL), "9.9.9")
+        self.assertEqual(rel_mod.version_in_name("two-parts.whl"), "")
 
 
 if __name__ == "__main__":

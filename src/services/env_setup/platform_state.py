@@ -17,7 +17,13 @@ from system.versions import is_upgrade, over_ceiling, requires_met
 from ..adapter_catalog import ReleaseRow
 from .platform_rows import ComponentBucket, ComponentRow, ComponentSource
 from .toolchain import WHEELS_DIR
-from .wheel_fetch import disk_files, file_name_of, is_cached, local_release
+from .wheel_fetch import (
+    disk_files,
+    file_name_of,
+    is_cached,
+    local_release,
+    version_in_name,
+)
 
 
 class ComponentOrigin(StrEnum):
@@ -66,11 +72,12 @@ class WheelOrigin(StrEnum):
 class WheelLine:
     """盘上一份 wheel 件的读数
 
+    - version 是那份件的文件名里读出的版本号，读不出即退回文件名
     - release 是能装时那一版的目标，装不了即空
     - blocked 交出那句装不了的理由，能装交出空串
     """
 
-    file_name: str
+    version: str
     origin: WheelOrigin
     release: ReleaseRow | None
     blocked: str
@@ -223,7 +230,7 @@ def local_wheels(
         release = listed.get(name) or local_release(row.distribution, name, WHEELS_DIR)
         lines.append(
             WheelLine(
-                file_name=name,
+                version=version_in_name(name) or name,
                 origin=_origin_of(name, listed, release),
                 release=release,
                 blocked=(

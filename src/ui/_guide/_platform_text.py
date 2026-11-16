@@ -92,7 +92,7 @@ def wheel_text(line: WheelLine, blocked: str, note: str) -> str:
     gap = _gap(blocked, note)
 
     return " ".join(
-        part for part in (template.format(name=line.file_name), gap) if part
+        part for part in (template.format(version=line.version), gap) if part
     )
 
 

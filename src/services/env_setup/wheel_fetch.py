@@ -53,7 +53,7 @@ def file_name_of(url: str) -> str:
     return name
 
 
-def _version_in_name(name: str) -> str:
+def version_in_name(name: str) -> str:
     """取 wheel 文件名第二段版本号，段数不对交出空串"""
     parts = name.split("-")
     return parts[1] if len(parts) >= _WHEEL_PARTS else ""
@@ -99,7 +99,7 @@ def local_release(distribution: str, name: str, target_dir: Path) -> ReleaseRow 
     - 盘上那份件与记下的指纹不符即不算
     """
     sha256 = _recorded_digests(target_dir).get(name, "")
-    version = _version_in_name(name)
+    version = version_in_name(name)
     target = target_dir / name
     if not sha256 or not version or not target.is_file():
         return None

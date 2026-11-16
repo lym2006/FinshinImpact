@@ -120,7 +120,7 @@ class TestSameValuePairs(unittest.TestCase):
         )
         for name in samples:
             self.assertEqual(
-                wheel_fetch._version_in_name(name),
+                wheel_fetch.version_in_name(name),
                 gen_release._version_in_name(name),
             )
 

@@ -345,14 +345,11 @@ class TestLocalWheels(unittest.TestCase):
         with patch.object(mod, "WHEELS_DIR", self._root):
             return mod.local_wheels(rows, row)
 
-    def test_files_are_listed_by_name(self) -> None:
-        """盘上属于这只发行件的件按名逐份报出"""
+    def test_files_are_listed_by_version(self) -> None:
+        """盘上属于这只发行件的件按版本号逐份报出"""
         lines = self._wheels([self._row("0.2.0")], self._row("0.2.0"))
 
-        self.assertEqual(
-            [line.file_name for line in lines],
-            [_wheel_name("0.0.9"), _wheel_name("0.1.5"), _wheel_name("0.2.0")],
-        )
+        self.assertEqual([line.version for line in lines], ["0.0.9", "0.1.5", "0.2.0"])
 
     def test_three_origins_are_told_apart(self) -> None:
         """两样都没有、本机记过、目录里有，三档各归各"""
@@ -420,9 +417,7 @@ class TestLocalWheels(unittest.TestCase):
         )
         lines = self._wheels([sdk, adapter], sdk)
 
-        self.assertEqual(
-            [line.file_name for line in lines], [_wheel_name("2.0.0", _SDK)]
-        )
+        self.assertEqual([line.version for line in lines], ["2.0.0"])
         self.assertEqual(lines[0].origin, mod.WheelOrigin.RECORDED)
         self.assertEqual(lines[0].blocked, "这一版接口包超出已装适配器的要求")
 
