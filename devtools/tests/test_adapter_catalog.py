@@ -4,9 +4,12 @@
 - 平台码只认目录里写的那一值，分发名与仓名都不参与判定
 - 下载直链按独立整串收下，换 host 与换分发名互不影响
 - 整份读不出与接口包段缺失各出一条说明，不牵动其余行
+- 行内版本清单逐条验形态，坏条目只丢那一条
+- 老读法只看行级五键，多嵌那段不进判定
 """
 
 import sys
+import tomllib
 import unittest
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
@@ -28,8 +31,13 @@ _TG_URL = (
 )
 _SHA_SDK = "0" * 64
 _SHA_TG = "1" * 64
+_TG_OLD_URL = (
+    "https://example.invalid/FinshinAdapterTG/finshin_adapter_tg-8.8.8-py3-none-any.whl"
+)
+_SHA_OLD = "2" * 64
 
 _ORDER = ("platform", "distribution", "version", "url", "sha256")
+_VERSION_ORDER = ("version", "url", "sha256")
 
 _SDK_FIELDS = {
     "distribution": "finshin-sdk",
@@ -67,6 +75,32 @@ def _adapter_text(*rows: dict[str, str]) -> str:
 def _full_text() -> str:
     """接口包与一只适配器都齐的目录文本"""
     return _sdk_text() + _adapter_text(_TG_FIELDS)
+
+
+def _version_block(section: str, *rows: dict[str, str]) -> str:
+    """把版本清单写成父段下的缩进子段"""
+    lines: list[str] = []
+    for row in rows:
+        lines.append("")
+        lines.append(f"  [[{section}.versions]]")
+        lines.extend(f'  {key} = "{row[key]}"' for key in _VERSION_ORDER if key in row)
+
+    return "\n".join(lines) + "\n"
+
+
+def _older(**overrides: str) -> dict[str, str]:
+    """一条旧版条目，字段可逐样覆写成坏形态"""
+    return {
+        "version": "8.8.8",
+        "url": _TG_OLD_URL,
+        "sha256": _SHA_OLD,
+        **overrides,
+    }
+
+
+def _listed_text(*rows: dict[str, str]) -> str:
+    """接口包一段加一只带版本清单的适配器"""
+    return _sdk_text() + _adapter_text(_TG_FIELDS) + _version_block("adapter", *rows)
 
 
 class TestCatalogParse(unittest.IsolatedAsyncioTestCase):
@@ -198,6 +232,63 @@ class TestPlatformJudge(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(catalog.adapters[Platform.TELEGRAM].version, "9.9.9")
         self.assertEqual(len(catalog.rejects), 1)
         self.assertIn(str(Platform.TELEGRAM), catalog.rejects[0])
+
+
+class TestVersionList(unittest.IsolatedAsyncioTestCase):
+    """行内版本清单"""
+
+    async def _read(self, text: str) -> catalog_mod.Catalog:
+        """喂文本走一遍读取"""
+        with patch.object(
+            catalog_mod.GitClient, "get_pages", AsyncMock(return_value=text)
+        ):
+            return await catalog_mod.load_catalog()
+
+    async def test_old_shape_lists_latest_only(self) -> None:
+        """目录没带清单时，清单里只有行内那一版"""
+        row = (await self._read(_full_text())).adapters[Platform.TELEGRAM]
+        self.assertEqual([item.version for item in row.versions], ["9.9.9"])
+
+    async def test_older_versions_are_read(self) -> None:
+        """清单里的旧版接行内的发行件名，各自的直链与指纹照收"""
+        catalog = await self._read(_listed_text(_older()))
+        if catalog.rejects:
+            self.fail(f"带清单的目录被拒收：{catalog.rejects}")
+
+        versions = catalog.adapters[Platform.TELEGRAM].versions
+        self.assertEqual([item.version for item in versions], ["9.9.9", "8.8.8"])
+        self.assertEqual(
+            {item.distribution for item in versions}, {"finshin-adapter-tg"}
+        )
+        self.assertEqual(versions[1].url, _TG_OLD_URL)
+        self.assertEqual(versions[1].sha256, _SHA_OLD)
+
+    async def test_bad_entry_dropped_row_kept(self) -> None:
+        """清单里的坏条目只丢那一条，行照进表也不报拒收"""
+        catalog = await self._read(
+            _listed_text(_older(sha256="abc"), _older(version="7.7.7"))
+        )
+        if catalog.rejects:
+            self.fail(f"带坏条目的目录整行被拒收：{catalog.rejects}")
+
+        versions = catalog.adapters[Platform.TELEGRAM].versions
+        self.assertEqual([item.version for item in versions], ["9.9.9", "7.7.7"])
+
+    async def test_duplicate_version_listed_once(self) -> None:
+        """与行内同号的条目不进清单"""
+        catalog = await self._read(_listed_text(_older(version="9.9.9")))
+        versions = catalog.adapters[Platform.TELEGRAM].versions
+        self.assertEqual([item.version for item in versions], ["9.9.9"])
+
+    async def test_old_reader_ignores_the_list(self) -> None:
+        """行级五键单独过一遍旧判据，多嵌那段不参与"""
+        text = _listed_text(_older())
+        values = tomllib.loads(text)[catalog_mod._SECTION_ADAPTER][0]
+        self.assertEqual(catalog_mod._row_note(values, catalog_mod._ADAPTER_KEYS), "")
+
+        catalog = await self._read(text)
+        self.assertEqual(catalog.rejects, ())
+        self.assertEqual(catalog.adapters[Platform.TELEGRAM].version, "9.9.9")
 
 
 if __name__ == "__main__":

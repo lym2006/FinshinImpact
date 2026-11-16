@@ -20,6 +20,7 @@ from system.profile_env import set_profile  # noqa: E402
 set_profile("tg.000000")
 
 import gen_catalog  # noqa: E402
+import gen_release  # noqa: E402
 import pack_spec  # noqa: E402
 import proxy as launch_proxy  # noqa: E402
 
@@ -49,17 +50,18 @@ class TestCatalogShape(unittest.TestCase):
         self.assertEqual(
             {str(key) for key in catalog_mod._RowKey},
             {
-                gen_catalog._KEY_PLATFORM,
-                gen_catalog._KEY_DISTRIBUTION,
-                gen_catalog._KEY_VERSION,
-                gen_catalog._KEY_URL,
-                gen_catalog._KEY_SHA256,
+                gen_release.KEY_PLATFORM,
+                gen_release.KEY_DISTRIBUTION,
+                gen_release.KEY_VERSION,
+                gen_release.KEY_URL,
+                gen_release.KEY_SHA256,
+                gen_release.KEY_VERSIONS,
             },
         )
 
     def test_wheel_suffix_matches_generator(self) -> None:
         """wheel 附件名后缀两处同值"""
-        self.assertEqual(wheel_fetch._WHEEL_SUFFIX, gen_catalog._WHEEL_SUFFIX)
+        self.assertEqual(wheel_fetch._WHEEL_SUFFIX, gen_release._WHEEL_SUFFIX)
 
     def test_catalog_path_matches_workflow(self) -> None:
         """本体读的目录文件名与工作流部署的那个同名"""
@@ -97,10 +99,10 @@ class TestNaming(unittest.TestCase):
     def test_distribution_names_match_dev_sources(self) -> None:
         """生成侧认的那两个分发名与开发工具清单里的本地源码同名"""
         sources = _read_uv_sources()
-        self.assertIn(gen_catalog._SDK_DISTRIBUTION, sources)
-        others = {name for name in sources if name != gen_catalog._SDK_DISTRIBUTION}
+        self.assertIn(gen_release.SDK_DISTRIBUTION, sources)
+        others = {name for name in sources if name != gen_release.SDK_DISTRIBUTION}
         self.assertTrue(
-            all(name.startswith(gen_catalog._ADAPTER_PREFIX) for name in others)
+            all(name.startswith(gen_release._ADAPTER_PREFIX) for name in others)
         )
 
     def test_runtime_dir_name_matches_toolchain(self) -> None:

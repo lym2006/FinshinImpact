@@ -2,11 +2,12 @@
 
 - 拉 Pages 上生成的适配器目录文本并逐行验字段
 - 平台码只认表里写的那一值，认不出的整行不进表
+- 行内嵌的版本清单逐条验形态，坏条目只丢那一条
 - 坏行与坏段收成说明列表交出
 """
 
 import tomllib
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import StrEnum
 from typing import Any
 
@@ -32,10 +33,13 @@ class _RowKey(StrEnum):
     VERSION = "version"
     URL = "url"
     SHA256 = "sha256"
+    VERSIONS = "versions"
 
 
+# 逐段与逐条验形态时各要看的键位
 _RELEASE_KEYS = (_RowKey.DISTRIBUTION, _RowKey.VERSION, _RowKey.URL, _RowKey.SHA256)
 _ADAPTER_KEYS = (_RowKey.PLATFORM, *_RELEASE_KEYS)
+_VERSION_KEYS = (_RowKey.VERSION, _RowKey.URL, _RowKey.SHA256)
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,12 +48,14 @@ class ReleaseRow:
 
     - url 是独立整串，不由分发名拼出
     - sha256 归一成小写十六进制串
+    - versions 是可装版本清单，最新一版在最前且自身不带清单
     """
 
     distribution: str
     version: str
     url: str
     sha256: str
+    versions: tuple["ReleaseRow", ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -96,12 +102,45 @@ def _row_note(values: dict[str, Any], keys: tuple[_RowKey, ...]) -> str:
 
 
 def _build_row(values: dict[str, Any]) -> ReleaseRow:
-    """按已验过的字段拼发行件"""
-    return ReleaseRow(
+    """按已验过的字段拼发行件，行内版本清单一并带上"""
+    newest = ReleaseRow(
         distribution=_text_of(values, _RowKey.DISTRIBUTION),
         version=_text_of(values, _RowKey.VERSION),
         url=_text_of(values, _RowKey.URL),
         sha256=_text_of(values, _RowKey.SHA256).lower(),
+    )
+
+    return replace(newest, versions=(newest, *_older_rows(values, newest)))
+
+
+def _older_rows(values: dict[str, Any], newest: ReleaseRow) -> tuple[ReleaseRow, ...]:
+    """行内的旧版条目，形态不合或版本号与已有的重复即只丢那一条"""
+    listed = values.get(_RowKey.VERSIONS)
+    if not isinstance(listed, list):
+        return ()
+
+    older: list[ReleaseRow] = []
+    seen = {newest.version}
+    for item in listed:
+        row = _version_row(item, newest.distribution)
+        if row is None or row.version in seen:
+            continue
+        seen.add(row.version)
+        older.append(row)
+
+    return tuple(older)
+
+
+def _version_row(item: Any, distribution: str) -> ReleaseRow | None:
+    """一条旧版条目，字段或形态不合即不交出"""
+    if not isinstance(item, dict) or _row_note(item, _VERSION_KEYS):
+        return None
+
+    return ReleaseRow(
+        distribution=distribution,
+        version=_text_of(item, _RowKey.VERSION),
+        url=_text_of(item, _RowKey.URL),
+        sha256=_text_of(item, _RowKey.SHA256).lower(),
     )
 
 
