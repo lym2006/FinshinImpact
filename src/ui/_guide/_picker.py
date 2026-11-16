@@ -1,24 +1,21 @@
 """选 bot 窗口
 
 - 引导期选择、编辑或新建实例
-- 窗底右组给平台组件与依赖管理两处全局入口，空选也能开
+- 依赖管理菜单含平台组件，管本机不受选中门槛限制
 """
 
-from PySide6.QtCore import QPoint
-from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QDialog,
     QHBoxLayout,
     QLabel,
     QListWidgetItem,
-    QMenu,
     QMessageBox,
     QPushButton,
     QVBoxLayout,
 )
 
 from services.profile_store import delete_profile, list_profiles, touch_profile
-from skin.messages import PickerMessage, PlatformMessage
+from skin.messages import PickerMessage
 from skin.qss import build_bootstrap_qss
 from skin.theme import PICKER, ButtonStyle
 
@@ -27,7 +24,6 @@ from .._primitives import ThemedList, make_button
 from ._form import EditProfileDialog, NewProfileDialog
 from ._maintain import open_maintain_menu
 from ._panel import MODE_EDIT, open_panel
-from ._platform import open_platform_dialog
 
 # Qt 自定义数据角色，列表项各挂各的数据
 _ROLE_CODE = 0x0100  # Qt.UserRole，列表项挂身份码
@@ -48,30 +44,6 @@ def _run_sync(button: QPushButton, dialog: "_ProfilePickerDialog") -> None:
     - 同步对象是所有实例共享的 runtime 依赖层
     """
     open_maintain_menu(button, dialog)
-
-
-def _open_instance_menu(button: QPushButton, dialog: "_ProfilePickerDialog") -> None:
-    """在锚点按钮上方弹出实例操作菜单
-
-    - 删除项带 danger 属性，由 QSS 标红
-    - 两条都要针对选中那一行，空选时锚点钮已置灰
-    """
-    menu = QMenu(dialog)
-
-    edit_action = QAction(PickerMessage.BTN_EDIT, menu)
-    edit_action.triggered.connect(dialog._on_edit)
-    delete_action = QAction(PickerMessage.BTN_DELETE, menu)
-    delete_action.setProperty("danger", True)
-    delete_action.triggered.connect(dialog._on_delete)
-
-    menu.addAction(edit_action)
-    menu.addAction(delete_action)
-
-    # 向上弹出贴着按钮，避免菜单越出屏幕下缘
-    top_left = button.mapToGlobal(button.rect().topLeft())
-    size = menu.sizeHint()
-    menu.exec(QPoint(top_left.x(), top_left.y() - size.height()))
-    menu.deleteLater()
 
 
 class _ProfilePickerDialog(QDialog):
@@ -103,22 +75,20 @@ class _ProfilePickerDialog(QDialog):
         buttons = QHBoxLayout()
         new_btn = QPushButton(PickerMessage.BTN_NEW)
         new_btn.clicked.connect(self._on_new)
-        edit_btn = make_button(PickerMessage.BTN_EDIT_DELETE, ButtonStyle.SECONDARY)
-        edit_btn.clicked.connect(lambda: _open_instance_menu(edit_btn, self))
-
-        # 平台组件管本机装了哪些件，与实例无关，空选也能开
-        component_btn = make_button(PlatformMessage.TITLE, ButtonStyle.SECONDARY)
-        component_btn.clicked.connect(lambda: open_platform_dialog(self))
+        edit_btn = QPushButton(PickerMessage.BTN_EDIT)
+        edit_btn.clicked.connect(self._on_edit)
+        delete_btn = make_button(PickerMessage.BTN_DELETE, ButtonStyle.DANGER)
+        delete_btn.clicked.connect(self._on_delete)
 
         # 面板操作必须针对具体实例，空选入口置灰
-        # 依赖管理管的是全局 runtime，不受此限
+        # 依赖管理管的是本机共用的一层，不受此限
         plugin_btn = make_button(PickerMessage.BTN_PLUGINS, ButtonStyle.SECONDARY)
         plugin_btn.clicked.connect(self._on_plugins)
 
         sync_btn = make_button(PickerMessage.BTN_SYNC, ButtonStyle.SECONDARY)
         sync_btn.clicked.connect(lambda: _run_sync(sync_btn, self))
 
-        self._list.enable_on_selection((plugin_btn, edit_btn))
+        self._list.enable_on_selection((plugin_btn,))
 
         start_btn = make_button(PickerMessage.BTN_START, ButtonStyle.START)
         start_btn.clicked.connect(self._on_start)
@@ -129,8 +99,8 @@ class _ProfilePickerDialog(QDialog):
         # 左组改实例、右组走动作，中间拉伸拉开两组语义
         buttons.addWidget(new_btn)
         buttons.addWidget(edit_btn)
+        buttons.addWidget(delete_btn)
         buttons.addStretch()
-        buttons.addWidget(component_btn)
         buttons.addWidget(plugin_btn)
         buttons.addWidget(sync_btn)
         buttons.addWidget(start_btn)

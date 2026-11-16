@@ -25,9 +25,8 @@ class PickerMessage:
     # 用：ui._guide._launch 提示卡正计时行
     LAUNCHING_ELAPSED = "已装载 {sec} 秒，就绪后自动进入主窗口"
 
-    # 用：ui._guide._picker 窗底部按钮行与实例菜单两项
+    # 用：ui._guide._picker 窗底部按钮行
     BTN_NEW = "新建"
-    BTN_EDIT_DELETE = "编辑/删除 ▾"
     BTN_EDIT = "编辑"
     BTN_DELETE = "删除"
     BTN_START = "启动"

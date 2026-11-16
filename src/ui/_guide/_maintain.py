@@ -1,6 +1,6 @@
 """环境维护入口
 
-- 依赖管理弹下拉菜单，同步重建与清理缓存两条操作并列
+- 本机管理菜单并列三项：平台组件、同步重建与清理缓存
 - 保留清单取全实例启用并集，操作对象为共享 runtime 依赖层
 - 同步重建会删保留清单外的包，只由这个菜单发起
 """
@@ -16,8 +16,9 @@ from PySide6.QtWidgets import (
 from services.env_setup.deps_install import sync_env
 from services.env_setup.deps_keep import keep_conflicts, keep_union
 from services.env_setup.subprocess_ops import ProgressCallback, clean_cache
-from skin.messages import PluginMessage
+from skin.messages import PlatformMessage, PluginMessage
 
+from ._platform import open_platform_dialog
 from ._popup import confirm_popup
 from ._progress import run_with_progress
 
@@ -50,19 +51,21 @@ def _cache_flow(parent: QWidget | None) -> list[str]:
 
 
 def open_maintain_menu(anchor: QPushButton, parent: QWidget) -> None:
-    """在锚点按钮上方弹出依赖管理菜单
+    """在锚点按钮上方弹出本机管理菜单
 
     - parent 挂宿主窗口，选窗开着也能定位置顶
-    - 清缓存项带 danger 属性，由 QSS 标红
     """
     menu = QMenu(parent)
 
+    component_action = QAction(PlatformMessage.TITLE, menu)
+    component_action.triggered.connect(lambda: open_platform_dialog(parent))
     sync_action = QAction(PluginMessage.MENU_SYNC, menu)
     sync_action.triggered.connect(lambda: _sync_flow(parent))
     cache_action = QAction(PluginMessage.MENU_CACHE, menu)
     cache_action.setProperty("danger", True)
     cache_action.triggered.connect(lambda: _cache_flow(parent))
 
+    menu.addAction(component_action)
     menu.addAction(sync_action)
     menu.addAction(cache_action)
 
