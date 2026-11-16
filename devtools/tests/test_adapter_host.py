@@ -67,7 +67,7 @@ _DEFAULT_POINTS = 'tg = "fake_adapter.entry:parts"\n'
 def _manifest(project: str = "", tool: str = "", points: str = _DEFAULT_POINTS) -> str:
     """拼一份适配器声明文件正文，三段各按用例要验的写法给
 
-    - 平台标识住 [tool.finshin-adapter]，依赖与接口包下限住 [project].dependencies
+    - 平台标识住 [tool.finshin-adapter]，依赖与接口包版本要求住 [project].dependencies
     - 入口点段按平台标识点名入口模块，模块与属性之间用冒号
     """
     return (
@@ -314,15 +314,24 @@ class TestAdapterHost(unittest.TestCase):
         self.assertIn("这个平台的适配器还没装：qq", msg)
         self.assertNotIn("AdapterMissingError", msg)
 
-    def test_sdk_floor_read_from_deps(self) -> None:
-        """接口包下限从依赖声明里读，没写即空串"""
+    def test_sdk_requires_read_from_deps(self) -> None:
+        """接口包版本要求从依赖声明里整条读，没写即空串"""
         card = self._scan(
             _manifest(
                 project='dependencies = ["aiogram", "finshin-sdk>=0.2.0"]\n',
                 tool='platform = "tg"\n',
             )
         )
-        self.assertEqual(card[Platform.TELEGRAM].requires_sdk, "0.2.0")
+        self.assertEqual(card[Platform.TELEGRAM].requires_sdk, ">=0.2.0")
+
+        ranged = self._scan(
+            _manifest(
+                project='dependencies = ["finshin-sdk>=0.2.0,<0.3.0"]\n',
+                tool='platform = "tg"\n',
+            )
+        )
+        self.assertEqual(ranged[Platform.TELEGRAM].requires_sdk, ">=0.2.0,<0.3.0")
+
         bare = self._scan(_manifest(tool='platform = "tg"\n'))
         self.assertEqual(bare[Platform.TELEGRAM].requires_sdk, "")
 
@@ -331,7 +340,7 @@ class TestAdapterHost(unittest.TestCase):
         too_new = AdapterManifestDTO(
             platform=Platform.TELEGRAM,
             deps=(),
-            requires_sdk="99.0.0",
+            requires_sdk=">=99.0.0",
             entry="standalone_tg.entry",
         )
         with patch.object(
@@ -340,7 +349,24 @@ class TestAdapterHost(unittest.TestCase):
             with patch.object(parts_mod, "import_module") as imported:
                 with self.assertRaises(AdapterOutOfDateError) as ctx:
                     parts_mod.parts_for(Platform.TELEGRAM)
-        self.assertEqual(ctx.exception.requires, "99.0.0")
+        self.assertEqual(ctx.exception.requires, ">=99.0.0")
+        imported.assert_not_called()
+
+    def test_sdk_over_ceiling_refuses_before_import(self) -> None:
+        """本机接口包高出清单写的上限即拒载，入口模块的导入没发生"""
+        too_old = AdapterManifestDTO(
+            platform=Platform.TELEGRAM,
+            deps=(),
+            requires_sdk="<0.0.1",
+            entry="standalone_tg.entry",
+        )
+        with patch.object(
+            parts_mod, "load_adapter_manifests", lambda: {Platform.TELEGRAM: too_old}
+        ):
+            with patch.object(parts_mod, "import_module") as imported:
+                with self.assertRaises(AdapterOutOfDateError) as ctx:
+                    parts_mod.parts_for(Platform.TELEGRAM)
+        self.assertEqual(ctx.exception.requires, "<0.0.1")
         imported.assert_not_called()
 
     def test_external_adapter_importing_body_is_refused(self) -> None:
@@ -414,7 +440,7 @@ class TestAdapterHost(unittest.TestCase):
         events: list[str] = []
 
         def refuse(_platform: object) -> None:
-            raise AdapterOutOfDateError("tg", "9.9.9", "0.1.0")
+            raise AdapterOutOfDateError("tg", ">=9.9.9", "0.1.0")
 
         with (
             patch.object(main_mod, "ensure_app", lambda: object()),
@@ -435,7 +461,7 @@ class TestAdapterHost(unittest.TestCase):
             )
             self.assertEqual(main.main(), 1)
 
-        self.assertEqual(popped, ["这个平台的适配器要接口包 9.9.9 以上，本机是 0.1.0"])
+        self.assertEqual(popped, ["这个平台的适配器要接口包 >=9.9.9，本机是 0.1.0"])
         self.assertEqual(events, ["dismiss", "popup"])
 
     def test_missing_adapter_opens_the_panel(self) -> None:
@@ -551,7 +577,7 @@ class TestInstalledSource(unittest.TestCase):
 
         - 平台标识取入口点的名，入口模块取值的冒号前段
         - 依赖取包元数据声明的顶层依赖
-        - 接口包下限也从这串依赖里读
+        - 接口包版本要求也从这串依赖里读
         """
         with (
             patch.object(manifest_mod, "_adapters_dir", lambda: None),
@@ -569,7 +595,7 @@ class TestInstalledSource(unittest.TestCase):
         self.assertEqual(
             manifests[Platform.TELEGRAM].deps, ("aiogram==3.29.1", "finshin-sdk>=0.2.0")
         )
-        self.assertEqual(manifests[Platform.TELEGRAM].requires_sdk, "0.2.0")
+        self.assertEqual(manifests[Platform.TELEGRAM].requires_sdk, ">=0.2.0")
 
     def test_directory_wins_over_installed(self) -> None:
         """两路同时报出这一平台时认目录里那份

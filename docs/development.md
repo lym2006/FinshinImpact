@@ -108,7 +108,7 @@
    - `PluginSpec` 那只袋子删了。
 4. 动作名带归属：`queued_actions` 交的动作名写成「插件名.动作」，前段不等于自己的插件名整只拒装。内置对话的动作名由 `chat` 改成 `AI.chat`。
 5. 接口包撤掉没人用的形状：`ContentDTO` 的 `file_token` 与 `origin_ref`、`AdapterFieldSpec.default`、`BoundCommand.value_of`、`PrincipalRepository.find_by_key`。用到哪一处改哪一处，没用到不必动。
-6. 适配器声明改写在 `pyproject.toml`：上一版那份 `adapter.toml` 不再读取，平台标识写在 `[tool.finshin-adapter]` 的 `platform`，引擎库与接口包下限一并写在 `[project].dependencies`，形如 `finshin-sdk>=0.1.0`。
+6. 适配器声明改写在 `pyproject.toml`：上一版那份 `adapter.toml` 不再读取，平台标识写在 `[tool.finshin-adapter]` 的 `platform`，引擎库与接口包版本要求一并写在 `[project].dependencies`，形如 `finshin-sdk>=0.1.0,<0.2.0`。
    - 上一版写的 `deps` 与 `requires_sdk` 两行不再读取，新写法的判据见下面「新增平台适配器」那一节。
 7. 插件独有的库从 `plugin.toml` 的 `deps` 搬到同目录 `pyproject.toml` 的 `[project].dependencies`，清单里再写 `deps` 属未知键、一律忽略。随包插件的库走项目根的 `pyproject.toml`。
 
@@ -142,8 +142,8 @@
    - 已装的接口包进保留清单，卸掉最后一只适配器再点同步也不会被删。
    - 平台自带库的版本号以 `[project].dependencies` 这一行为准，本体的 `pyproject.toml` 不重复钉这些包。
    - `[tool.finshin-adapter]` 写平台标识 `platform`。
-   - 接口包下限写在 `[project].dependencies` 里的 `finshin-sdk>=<版本>`，没写即不设限。
-   - 要得比本机新就拒在装载入口之前，弹窗与日志各落一句写明要哪版与本机哪版。
+   - 接口包版本要求写在 `[project].dependencies` 里的 `finshin-sdk` 那一条，形如 `>=0.1.0,<0.2.0`，上下限都算数，没写即不设限。
+   - 本机接口包不在要求的区间内即拒在装载入口之前，弹窗与日志各落一句写明要求与本机版本。
    - 适配器自己的版本号单源是 `[project].version`，tag、wheel 文件名与本体读到的版本都从它取。
    - 装载侧认两路读声明：`finshin/adapter/` 里那份，与装进环境的适配器包各自的元数据。同一平台两路都在时认目录里那一份。
    - 子仓发版要上传 wheel 附件，指纹与下载直链由 GitHub 记在 release 附件上。

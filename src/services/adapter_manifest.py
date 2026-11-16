@@ -1,7 +1,7 @@
 """适配器清单读取器
 
 - 目录与已装包两路读声明，同名平台认目录里那份
-- 接口包下限两路都从依赖声明里取，声明段只自报平台码
+- 接口包版本要求两路都从依赖声明里取，声明段只自报平台码
 - 适配器代码一律从环境里那只包取，装载侧不改搜索路径
 - 声明缺失或字段非法的适配器不进表
 """
@@ -21,7 +21,7 @@ from finshin_sdk.domain import (
     Platform,
 )
 from finshin_sdk.dto import AdapterManifestDTO
-from system.distributions import SDK_DISTRIBUTION, floor_of
+from system.distributions import SDK_DISTRIBUTION, requires_of
 from system.profile_env import ROOT_DIR
 from system.toml_read import read_toml
 
@@ -156,7 +156,7 @@ def _read_dir(adapter_dir: Path) -> tuple[AdapterManifestDTO, str] | None:
         AdapterManifestDTO(
             platform=platform,
             deps=deps,
-            requires_sdk=floor_of(deps, SDK_DISTRIBUTION),
+            requires_sdk=requires_of(deps, SDK_DISTRIBUTION),
             entry=entry,
         ),
         _project_name(data),
@@ -235,13 +235,13 @@ def _from_installed() -> list[AdapterManifestDTO]:
 
     - 平台标识取入口点的名，入口模块取值的冒号前段
     - 依赖取包元数据声明的顶层依赖
-    - 接口包下限也从这串依赖里取
+    - 接口包版本要求也从这串依赖里取
     """
     return [
         AdapterManifestDTO(
             platform=item.platform,
             deps=item.requires,
-            requires_sdk=floor_of(item.requires, SDK_DISTRIBUTION),
+            requires_sdk=requires_of(item.requires, SDK_DISTRIBUTION),
             entry=item.entry,
         )
         for item in installed_adapters()

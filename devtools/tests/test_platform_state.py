@@ -3,7 +3,7 @@
 - 三档归属按本机来路、本机版本与在线版本比出来
 - 版本串读不懂、在线不比本机新、源码仓挂着且已装包都算本机已有
 - 该装的那批只收本机没有与在线更新的两档
-- 接口包没到位时适配器那颗不给装，接口包那行自己不受此限
+- 接口包没到位或高出上限时适配器那颗不给装，接口包那行自己不受此限
 - 在场平台只看已装包，源码仓挂着没装的不算
 """
 
@@ -161,7 +161,7 @@ class TestUpdateTargets(unittest.TestCase):
 
 
 class TestInstallBlocked(unittest.TestCase):
-    """接口包没到位时适配器那颗不给装，并交出那句下一步"""
+    """接口包不在要求的区间内时适配器那颗不给装，并交出那句下一步"""
 
     def test_absent_sdk_blocks_the_adapter(self) -> None:
         """本机没装接口包即挡住，那句是先装接口包"""
@@ -181,22 +181,42 @@ class TestInstallBlocked(unittest.TestCase):
         rows = _rows("", "")
         self.assertEqual(mod.install_blocked(rows, _sdk_row(rows)), "")
 
-    def test_sdk_below_floor_blocks(self) -> None:
-        """接口包在场但低于适配器声明的下限，那句换成先更新接口包"""
-        floors = {Platform.TELEGRAM: "9.9.9"}
-        with patch.object(mod, "_declared_floors", lambda: floors):
+    def test_sdk_below_range_blocks(self) -> None:
+        """接口包在场但够不到适配器要求的下限，那句换成先更新接口包"""
+        requires = {str(Platform.TELEGRAM): ">=9.9.9"}
+        with patch.object(mod, "_declared_requires", lambda: requires):
             rows = _rows("0.1.0", "0.1.0")
         self.assertEqual(
             mod.install_blocked(rows, _adapter_row(rows)),
             "先更新接口包",
         )
 
-    def test_sdk_meeting_the_floor_frees(self) -> None:
-        """接口包达到下限即放行"""
-        floors = {Platform.TELEGRAM: "0.1.0"}
-        with patch.object(mod, "_declared_floors", lambda: floors):
+    def test_sdk_over_ceiling_blocks(self) -> None:
+        """接口包高出适配器写的上限，那句换成接口包太新"""
+        requires = {str(Platform.TELEGRAM): "<0.0.1"}
+        with patch.object(mod, "_declared_requires", lambda: requires):
             rows = _rows("0.1.0", "0.1.0")
+        self.assertEqual(
+            mod.install_blocked(rows, _adapter_row(rows)),
+            "接口包太新，适配器等新版",
+        )
+
+    def test_sdk_in_range_frees(self) -> None:
+        """接口包落在要求的区间之内即放行"""
+        requires = {str(Platform.TELEGRAM): ">=0.1.0,<0.2.0"}
+        with patch.object(mod, "_declared_requires", lambda: requires):
+            rows = _rows("0.1.5", "0.1.0")
         self.assertEqual(mod.install_blocked(rows, _adapter_row(rows)), "")
+
+    def test_requires_line_keeps_both_bounds(self) -> None:
+        """要求那一行把上下限原样带出来"""
+        requires = {str(Platform.TELEGRAM): ">=0.1.0,<0.2.0"}
+        with (
+            patch.object(mod, "_declared_requires", lambda: requires),
+            patch.object(mod, "installed_version", lambda name: "0.2.0"),
+        ):
+            text = mod.deps_text(_adapter_row(_rows("0.2.0", "0.1.0")))
+        self.assertEqual(text, "要求 >=0.1.0,<0.2.0，本机 0.2.0 未满足")
 
 
 class TestPresentPlatforms(unittest.TestCase):

@@ -24,9 +24,9 @@ class AdapterMissingError(AdapterError):
 
 
 class AdapterOutOfDateError(AdapterError):
-    """适配器要的接口版本比本机新
+    """适配器要的接口版本与本机不符
 
-    - 清单写的版本下限随异常携带
+    - 清单写的版本要求随异常携带
     - 本机接口包的版本号随异常携带
     """
 
@@ -56,6 +56,6 @@ class AdapterImportError(AdapterError):
 
 ADAPTER_MAP = {
     AdapterMissingError: "这个平台的适配器还没装：{platform}\n装完请重新打开本程序",
-    AdapterOutOfDateError: "这个平台的适配器要接口包 {requires} 以上，本机是 {sdk}",
+    AdapterOutOfDateError: "这个平台的适配器要接口包 {requires}，本机是 {sdk}",
     AdapterImportError: "这个平台的适配器不许引本体内部：{platform}（{target}，{where}）",
 }

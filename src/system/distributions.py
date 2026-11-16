@@ -2,7 +2,7 @@
 
 - 接口包分发名只在这一处写
 - 已装版本取包元数据，不在场交出空串
-- 依赖声明串里取指定发行件的版本下限
+- 依赖声明串里取指定发行件的版本要求
 """
 
 import importlib.metadata
@@ -15,14 +15,16 @@ SDK_DISTRIBUTION = "finshin-sdk"
 # 包名归一只认连字符，点号与下划线按同一个分隔算
 _SEPARATOR_RUN = re.compile(r"[-_.]+")
 
-# 依赖声明串里名字与版本要求的分界
+# 依赖声明串里的发行件名、附加功能名与其后的版本要求
+_PIN = re.compile(
+    r"\s*(?P<name>[A-Za-z0-9][A-Za-z0-9._-]*)\s*(?:\[[^\]]*\])?\s*(?P<spec>.*)"
+)
+
+# 版本要求的开头字符，比较符与括号都算
 _SPEC_START = re.compile(r"[<>=!~\[(]")
 
 # 一条依赖声明里版本要求之后的附加条件
 _MARKER_SEP = ";"
-
-# 版本下限的比较符，长写法先配
-_FLOOR_OPS = (">=", "<=", "==", "~=", ">", "<", "~", "=")
 
 
 def _normalized(name: str) -> str:
@@ -38,24 +40,18 @@ def installed_version(distribution: str) -> str:
         return ""
 
 
-def floor_of(pins: Sequence[str], distribution: str) -> str:
-    """从依赖声明里取指定发行件的版本下限，没声明交出空串
+def requires_of(pins: Sequence[str], distribution: str) -> str:
+    """从依赖声明里取指定发行件的版本要求，没声明交出空串
 
-    - 一条声明带多个约束只认头一个约束
-    - 比较符写作何种形态都剥掉，交出裸版本号
+    - 一条声明里的多条约束整串交出，比较符照原样留着
+    - 没带比较符即没写版本要求，交出空串
+    - 附加功能名与整条外面的括号不算版本要求
     """
     want = _normalized(distribution)
     for pin in pins:
-        text = str(pin).split(_MARKER_SEP)[0]
-        found = _SPEC_START.search(text)
-        if found is None or _normalized(text[: found.start()]) != want:
+        parts = _PIN.fullmatch(str(pin).split(_MARKER_SEP)[0])
+        if parts is None or _normalized(parts["name"]) != want:
             continue
-        return _strip_op(text[found.start() :].split(",")[0].strip().strip("()"))
+        spec = parts["spec"].strip().strip("()")
+        return spec if _SPEC_START.match(spec) else ""
     return ""
-
-
-def _strip_op(spec: str) -> str:
-    """剥掉比较符交出版本号，没带比较符交出空串"""
-    return next(
-        (spec[len(op) :].strip() for op in _FLOOR_OPS if spec.startswith(op)), ""
-    )

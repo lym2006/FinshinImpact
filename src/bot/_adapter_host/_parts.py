@@ -10,7 +10,7 @@ from exceptions import AdapterImportError, AdapterMissingError, AdapterOutOfDate
 from finshin_sdk import SDK_VERSION, AdapterParts
 from finshin_sdk.domain import Platform
 from services.adapter_manifest import load_adapter_manifests
-from system.versions import floor_met
+from system.versions import requires_met
 from utils import get_logger
 from utils.external_scope import check_external_imports
 
@@ -21,13 +21,13 @@ def parts_for(platform: Platform) -> AdapterParts:
     """按平台标识取适配器交出的三件
 
     - 清单缺席或字段非法即缺件
-    - 清单要的接口版本比本机新即拒载，拒在导入入口之前
+    - 本机接口包不在清单要求的区间内即拒载，拒在导入入口之前
     - 随包树之外的适配器引了本体内部即拒载，同样拒在导入之前
     """
     manifest = load_adapter_manifests().get(platform)
     if manifest is None:
         raise AdapterMissingError(platform)
-    if not _sdk_is_enough(manifest.requires_sdk):
+    if not _sdk_in_range(manifest.requires_sdk):
         raise AdapterOutOfDateError(platform, manifest.requires_sdk, SDK_VERSION)
 
     package = manifest.entry.rpartition(".")[0]
@@ -37,12 +37,12 @@ def parts_for(platform: Platform) -> AdapterParts:
     return entry.parts()
 
 
-def _sdk_is_enough(requires: str) -> bool:
-    """判定本机接口包是否满足清单要的版本
+def _sdk_in_range(requires: str) -> bool:
+    """判定本机接口包是否在清单要求的区间内
 
     - 没写这一行即不设限
-    - 版本串读不懂按未满足处理，拒载那句把原串递给用户
+    - 版本串读不懂按不满足处理，拒载那句把原串递给用户
     """
     if not requires:
         return True
-    return floor_met(SDK_VERSION, requires) is True
+    return requires_met(SDK_VERSION, requires) is True

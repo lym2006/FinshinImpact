@@ -233,9 +233,9 @@ class _PlatformDialog(QDialog):
             (PlatformMessage.LABEL_SOURCE, _SOURCE_TEXT[row.source]),
             (PlatformMessage.LABEL_VERSION, _version_text(row)),
         ]
-        floor = deps_text(row)
-        if floor:
-            fields.append((PlatformMessage.LABEL_DEPS, floor))
+        requires = deps_text(row)
+        if requires:
+            fields.append((PlatformMessage.LABEL_DEPS, requires))
 
         actions = self._actions_of(block, row)
         if actions is not None:

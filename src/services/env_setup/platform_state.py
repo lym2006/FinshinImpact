@@ -9,12 +9,11 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 
-from finshin_sdk.domain import Platform
 from skin.messages import PlatformMessage
 from system.distributions import SDK_DISTRIBUTION, installed_version
 from system.profile_env import DECLARATION_FILE_NAME, ROOT_DIR
 from system.tool_settings import project_value
-from system.versions import floor_met, is_upgrade
+from system.versions import is_upgrade, over_ceiling, requires_met
 
 from ..adapter_catalog import Catalog, ReleaseRow
 from ..adapter_manifest import (
@@ -62,7 +61,7 @@ class ComponentRow:
     """一只组件在本页的一行
 
     - 接口包这行没有平台码，按空串排到最前
-    - installed 与 floor 各留各的空串，本机没在场即是空
+    - installed 与 requires 各留各的空串，本机没在场即是空
     - release 在场才有得装，目录行自带直链与指纹
     """
 
@@ -70,7 +69,7 @@ class ComponentRow:
     distribution: str
     source: ComponentSource
     installed: str
-    floor: str
+    requires: str
     release: ReleaseRow | None
     bucket: ComponentBucket
 
@@ -108,7 +107,7 @@ def update_targets(rows: Sequence[ComponentRow]) -> list[ReleaseRow]:
 def install_blocked(rows: Sequence[ComponentRow], row: ComponentRow) -> str:
     """这只组件现在不该给安装，交出那句下一步，能装交出空串
 
-    - 适配器要接口包已在本机，还须达到它声明的下限
+    - 适配器要接口包已在本机，且落在它声明的版本要求之内
     - 接口包自己不受这条限制
     - 版本串读不懂算没到位
     """
@@ -117,12 +116,12 @@ def install_blocked(rows: Sequence[ComponentRow], row: ComponentRow) -> str:
     sdk = next((item for item in rows if not item.platform), None)
     if sdk is None or not sdk.installed:
         return PlatformMessage.NEED_SDK_INSTALL
-    if not row.floor:
+    if requires_met(sdk.installed, row.requires):
         return ""
+    if over_ceiling(sdk.installed, row.requires):
+        return PlatformMessage.SDK_TOO_NEW
 
-    return (
-        "" if floor_met(sdk.installed, row.floor) else PlatformMessage.NEED_SDK_UPDATE
-    )
+    return PlatformMessage.NEED_SDK_UPDATE
 
 
 def deps_text(row: ComponentRow) -> str:
@@ -132,26 +131,26 @@ def deps_text(row: ComponentRow) -> str:
     """
     if not row.platform or row.source == ComponentSource.NONE:
         return ""
-    if not row.floor:
-        return PlatformMessage.FLOOR_NONE
+    if not row.requires:
+        return PlatformMessage.REQUIRES_NONE
 
     actual = installed_version(SDK_DISTRIBUTION)
     if not actual:
-        return PlatformMessage.FLOOR_NO_SDK.format(floor=row.floor)
+        return PlatformMessage.REQUIRES_NO_SDK.format(requires=row.requires)
 
-    met = floor_met(actual, row.floor)
+    met = requires_met(actual, row.requires)
     if met is None:
-        return PlatformMessage.FLOOR_UNREADABLE.format(floor=row.floor)
+        return PlatformMessage.REQUIRES_UNREADABLE.format(requires=row.requires)
 
-    return (PlatformMessage.FLOOR_MET if met else PlatformMessage.FLOOR_GAP).format(
-        floor=row.floor, actual=actual
-    )
+    return (
+        PlatformMessage.REQUIRES_MET if met else PlatformMessage.REQUIRES_GAP
+    ).format(requires=row.requires, actual=actual)
 
 
 def _rows(catalog: Catalog | None) -> tuple[ComponentRow, ...]:
     """按本机在场件与目录行排出组件行，接口包在最前"""
     installed = _installed_by_platform()
-    floors = {str(platform): floor for platform, floor in _declared_floors().items()}
+    requires = _declared_requires()
     tree = {str(platform): name for platform, name in tree_distributions().items()}
     releases = _releases_by_code(catalog)
     sdk_name = _sdk_tree_name()
@@ -168,7 +167,7 @@ def _rows(catalog: Catalog | None) -> tuple[ComponentRow, ...]:
     ]
 
     codes = sorted(
-        set(installed) | set(floors) | set(tree) | (set(releases) - {_SDK_CODE})
+        set(installed) | set(requires) | set(tree) | (set(releases) - {_SDK_CODE})
     )
     for code in codes:
         item = installed.get(code)
@@ -179,7 +178,7 @@ def _rows(catalog: Catalog | None) -> tuple[ComponentRow, ...]:
                 _distribution_name(tree.get(code, ""), item, release),
                 _source_of(code in tree, item is not None),
                 item.version if item else "",
-                floors.get(code, ""),
+                requires.get(code, ""),
                 release,
             )
         )
@@ -209,7 +208,7 @@ def _row(
     distribution: str,
     source: ComponentSource,
     installed: str,
-    floor: str,
+    requires: str,
     release: ReleaseRow | None,
 ) -> ComponentRow:
     """拼一行组件，归属档由来路、本机版本与目录行比出来"""
@@ -218,7 +217,7 @@ def _row(
         distribution=distribution,
         source=source,
         installed=installed,
-        floor=floor,
+        requires=requires,
         release=release,
         bucket=_bucket_of(source, installed, release),
     )
@@ -272,8 +271,8 @@ def _installed_by_platform() -> dict[str, InstalledAdapter]:
     return {str(item.platform): item for item in installed_adapters()}
 
 
-def _declared_floors() -> dict[Platform, str]:
-    """本机在场适配器声明的接口包下限"""
+def _declared_requires() -> dict[str, str]:
+    """本机在场适配器声明的接口包版本要求，按平台码归表"""
     return {
-        platform: dto.requires_sdk for platform, dto in load_adapter_manifests().items()
+        str(dto.platform): dto.requires_sdk for dto in load_adapter_manifests().values()
     }
