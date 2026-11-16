@@ -23,6 +23,9 @@ _PIN = re.compile(
 # 版本要求的开头字符，比较符与括号都算
 _SPEC_START = re.compile(r"[<>=!~\[(]")
 
+# 多条约束的排布次序，下限在前、上限在后
+_CLAUSE_OPS = (">=", ">", "==", "~=", "!=", "<=", "<")
+
 # 一条依赖声明里版本要求之后的附加条件
 _MARKER_SEP = ";"
 
@@ -44,6 +47,7 @@ def requires_of(pins: Sequence[str], distribution: str) -> str:
     """从依赖声明里取指定发行件的版本要求，没声明交出空串
 
     - 一条声明里的多条约束整串交出，比较符照原样留着
+    - 多条约束按下限在前、上限在后排，包元数据里的来路次序不作数
     - 没带比较符即没写版本要求，交出空串
     - 附加功能名与整条外面的括号不算版本要求
     """
@@ -53,5 +57,21 @@ def requires_of(pins: Sequence[str], distribution: str) -> str:
         if parts is None or _normalized(parts["name"]) != want:
             continue
         spec = parts["spec"].strip().strip("()")
-        return spec if _SPEC_START.match(spec) else ""
+        return _ordered(spec) if _SPEC_START.match(spec) else ""
     return ""
+
+
+def _ordered(spec: str) -> str:
+    """把逗号分隔的多条约束按下限在前重排"""
+    clauses = [item.strip() for item in spec.split(",") if item.strip()]
+    clauses.sort(key=_clause_rank)
+
+    return ",".join(clauses)
+
+
+def _clause_rank(clause: str) -> int:
+    """一条约束排第几档，认不出的写法排最后"""
+    return next(
+        (index for index, op in enumerate(_CLAUSE_OPS) if clause.startswith(op)),
+        len(_CLAUSE_OPS),
+    )

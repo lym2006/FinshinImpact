@@ -311,11 +311,11 @@ class TestAdapterHost(unittest.TestCase):
         assemble()
         msg, critical = self.received["fatal"]
         self.assertTrue(critical)
-        self.assertIn("这个平台的适配器还没装：qq", msg)
+        self.assertIn("qq 平台的适配器还没装", msg)
         self.assertNotIn("AdapterMissingError", msg)
 
     def test_sdk_requires_read_from_deps(self) -> None:
-        """接口包版本要求从依赖声明里整条读，没写即空串"""
+        """接口包版本要求从依赖声明里整条读，下限在前排好，没写即空串"""
         card = self._scan(
             _manifest(
                 project='dependencies = ["aiogram", "finshin-sdk>=0.2.0"]\n',
@@ -331,6 +331,14 @@ class TestAdapterHost(unittest.TestCase):
             )
         )
         self.assertEqual(ranged[Platform.TELEGRAM].requires_sdk, ">=0.2.0,<0.3.0")
+
+        flipped = self._scan(
+            _manifest(
+                project='dependencies = ["finshin-sdk<0.3.0,>=0.2.0"]\n',
+                tool='platform = "tg"\n',
+            )
+        )
+        self.assertEqual(flipped[Platform.TELEGRAM].requires_sdk, ">=0.2.0,<0.3.0")
 
         bare = self._scan(_manifest(tool='platform = "tg"\n'))
         self.assertEqual(bare[Platform.TELEGRAM].requires_sdk, "")
@@ -461,7 +469,9 @@ class TestAdapterHost(unittest.TestCase):
             )
             self.assertEqual(main.main(), 1)
 
-        self.assertEqual(popped, ["这个平台的适配器要接口包 >=9.9.9，本机是 0.1.0"])
+        self.assertEqual(
+            popped, ["tg 平台的适配器要接口包 >=9.9.9，本机接口包是 0.1.0"]
+        )
         self.assertEqual(events, ["dismiss", "popup"])
 
     def test_missing_adapter_opens_the_panel(self) -> None:
@@ -495,7 +505,7 @@ class TestAdapterHost(unittest.TestCase):
             )
             self.assertEqual(main.main(), 1)
 
-        self.assertIn("这个平台的适配器还没装：tg", popped[0])
+        self.assertIn("tg 平台的适配器还没装", popped[0])
         self.assertIn("装完请重新打开本程序", popped[0])
         self.assertEqual(events, ["dismiss", "popup", "panel"])
 

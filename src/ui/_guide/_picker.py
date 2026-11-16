@@ -9,7 +9,6 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QListWidgetItem,
-    QMessageBox,
     QPushButton,
     QVBoxLayout,
 )
@@ -24,6 +23,7 @@ from .._primitives import ThemedList, make_button
 from ._form import EditProfileDialog, NewProfileDialog
 from ._maintain import open_maintain_menu
 from ._panel import MODE_EDIT, open_panel
+from ._popup import confirm_popup, show_popup
 
 # Qt 自定义数据角色，列表项各挂各的数据
 _ROLE_CODE = 0x0100  # Qt.UserRole，列表项挂身份码
@@ -166,19 +166,14 @@ class _ProfilePickerDialog(QDialog):
             return
 
         label = _label_of(code, remark)
-        confirmed = QMessageBox.question(
-            self,
-            self.windowTitle(),
-            PickerMessage.DELETE_CONFIRM.format(label=label),
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No,
-        )
-        if confirmed != QMessageBox.StandardButton.Yes:
+        if not confirm_popup(
+            self.windowTitle(), PickerMessage.DELETE_CONFIRM.format(label=label), self
+        ):
             return
 
         # 删后复查目录仍在即失败，多见于实例正在运行占用文件
         if not delete_profile(code):
-            QMessageBox.warning(self, self.windowTitle(), PickerMessage.DELETE_FAIL)
+            show_popup(self.windowTitle(), PickerMessage.DELETE_FAIL, parent=self)
             return
         self._reload()
 

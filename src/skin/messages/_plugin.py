@@ -87,7 +87,7 @@ class PluginMessage:
 
     # 用：ui._guide._maintain 全局同步大警告
     SYNC_WARNING = (
-        "同步将重建环境为与清单一致\n已装的开发工具会保留，其余残留包会被移除，耗时较长"
+        "确定要同步重建环境吗？\n已装的开发工具会保留，其余残留包会被移除，耗时较长"
     )
 
     # 用：services.env_setup.deps_manifest 保留清单里同一只库被钉了两个版本
@@ -105,7 +105,7 @@ class PluginMessage:
 
     # 用：ui._guide._maintain 清缓存大警告
     CACHE_WARNING = (
-        "将清空 uv 下载缓存，释放磁盘占用\n清空后下次装库或同步需重新联网下载，耗时较长"
+        "确定要清空 uv 下载缓存吗？\n清空后下次装库或同步需重新联网下载，耗时较长"
     )
 
     # 用：ui._guide._maintain 清缓存进度窗标题

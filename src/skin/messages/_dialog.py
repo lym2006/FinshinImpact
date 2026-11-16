@@ -77,13 +77,17 @@ class DialogMessage:
     SHUTDOWN_TITLE = "确认退出"
     SHUTDOWN_MSG = "确定要关闭机器人并退出程序吗？"
 
-    # 用：skin/theme/_dialogs.py 通知弹窗的文案字段
+    # 用：通知弹窗的文案字段，主题令牌与引导期弹窗两侧都取这一份
     NOTICE_TITLE = "提示"
     NOTICE_OK = "知道了"
     NOTICE_FATAL_TITLE = "致命错误"
     NOTICE_FATAL_HEAD = "程序遇到无法恢复的错误，即将退出"
     NOTICE_FATAL_OK = "确认并退出"
     NOTICE_NOT_CHANGED = "您未修改任何配置"
+
+    # 用：ui._guide._popup 二次确认窗的两只按钮
+    CONFIRM_YES = "是"
+    CONFIRM_NO = "否"
 
     # 用：skin/theme/_dialogs.py 通知弹窗的人设对账字段
     PERSONA_APPLY = "用内置模板覆盖"

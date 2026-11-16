@@ -32,16 +32,16 @@ def install_flow(on_done: Callable[[], None], releases: Sequence[ReleaseRow]) ->
     if not wanted:
         return
 
-    names = "、".join(release.distribution for release in wanted)
+    items = "、".join(f"{release.distribution} {release.version}" for release in wanted)
     failed = run_with_progress(
-        PlatformMessage.WAIT_INSTALL.format(name=names),
+        PlatformMessage.WAIT_INSTALL.format(items=items),
         lambda on_line: asyncio.run(apply_updates(wanted, on_line)),
     )
     if failed:
         _report_done(
             on_done,
             PlatformMessage.INSTALL_PART_FAIL.format(
-                name=names,
+                items=items,
                 notes="\n".join(str(note) for note in failed)
                 or PlatformMessage.INSTALL_BLANK,
             ),
@@ -50,7 +50,7 @@ def install_flow(on_done: Callable[[], None], releases: Sequence[ReleaseRow]) ->
 
     show_popup(
         PLATFORM_DIALOG.title,
-        PlatformMessage.INSTALL_DONE.format(name=names),
+        PlatformMessage.INSTALL_DONE.format(items=items),
         icon_warning=False,
     )
     on_done()
@@ -74,7 +74,7 @@ def uninstall_flow(parent: QWidget, on_done: Callable[[], None], platform: str) 
         return
     if not confirm_popup(
         PLATFORM_DIALOG.title,
-        PlatformMessage.UNINSTALL_ASK.format(platform=platform, names="\n".join(names)),
+        PlatformMessage.UNINSTALL_ASK.format(platform=platform),
         parent,
     ):
         return

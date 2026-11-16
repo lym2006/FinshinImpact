@@ -42,8 +42,7 @@ _PATCHED = {
         "install_assets",
         "dev_mode",
         "run_with_progress",
-        "ensure_app",
-        "QMessageBox",
+        "show_popup",
     ),
     deps_startup: (
         "plugins_roots",
@@ -152,7 +151,7 @@ class TestSettleRuntime(_StartupBase):
         _startup.settle_runtime("AAAA")
 
         self.m["save_state"].assert_called_once_with("AAAA", [], "cat")
-        self.m["QMessageBox"].return_value.exec.assert_called_once()
+        self.m["show_popup"].assert_called_once()
 
 
 class TestInstallMissing(_StartupBase):

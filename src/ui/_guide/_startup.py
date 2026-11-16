@@ -8,8 +8,6 @@
 - 不清包缓存，清理并入环境维护手动入口
 """
 
-from PySide6.QtWidgets import QMessageBox
-
 from finshin_sdk.domain import ManifestKey
 from services.env_setup.assets import install_assets, is_asset_installed
 from services.env_setup.deps_install import install_deps
@@ -18,7 +16,7 @@ from services.env_setup.subprocess_ops import ProgressCallback, emit, is_pin_ins
 from services.env_setup.toolchain import dev_mode
 from skin.messages import PluginMessage
 
-from .._lifecycle import ensure_app
+from ._popup import show_popup
 from ._progress import run_with_progress
 
 # 补装计划条目：(插件名, 缺的 pip 包, 缺的资源)
@@ -78,14 +76,10 @@ def settle_runtime(code: str) -> None:
     dropped = disable_failed(code, failed) if failed else []
     if not failed:
         return
-    ensure_app()
-    box = QMessageBox()
-    box.setIcon(QMessageBox.Icon.Warning)
-    box.setWindowTitle(PluginMessage.SETTLE_TITLE)
-    box.setText(
+    show_popup(
+        PluginMessage.SETTLE_TITLE,
         PluginMessage.STARTUP_FAIL.format(
             plugins="、".join(dropped),
             items="\n".join(map(str, failed)),
-        )
+        ),
     )
-    box.exec()

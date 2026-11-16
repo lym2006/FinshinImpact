@@ -129,7 +129,9 @@ QPushButton#{ButtonStyle.SECONDARY}:hover {{
 }}
 
 QPushButton#{ButtonStyle.SECONDARY}:disabled {{
-    border: 1px solid {SURFACE.border_color};
+    background-color: transparent;
+    border: none;
+    color: {SURFACE.disabled_color};
 }}
 
 QPushButton#{ButtonStyle.START} {{

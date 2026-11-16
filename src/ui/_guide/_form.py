@@ -9,7 +9,6 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
-    QMessageBox,
     QVBoxLayout,
 )
 
@@ -23,6 +22,7 @@ from system.profile_env import read_token
 
 from .._primitives import fill_combo, make_button, make_combo
 from ._platform import open_platform_dialog
+from ._popup import show_popup
 
 
 def _platform_items() -> list[tuple[Platform, str]]:
@@ -89,7 +89,7 @@ class _ProfileFormDialog(QDialog):
 
     def _warn(self, body: str) -> None:
         """表单内警告弹窗"""
-        QMessageBox.warning(self, self.windowTitle(), body)
+        show_popup(self.windowTitle(), body, parent=self)
 
 
 class NewProfileDialog(_ProfileFormDialog):

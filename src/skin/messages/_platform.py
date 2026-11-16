@@ -36,12 +36,12 @@ class PlatformMessage:
     LINE_VERSIONS_ABSENT = "本机未安装 ／ 在线 {available}"
     LINE_ABSENT = "本机未安装"
 
-    # 用：services.env_setup.platform_state 接口包要求行五态
-    REQUIRES_NONE = "未声明接口包版本要求"
-    REQUIRES_NO_SDK = "要求 {requires}，本机没装接口包"
-    REQUIRES_MET = "要求 {requires}，本机 {actual} 已满足"
-    REQUIRES_GAP = "要求 {requires}，本机 {actual} 未满足"
-    REQUIRES_UNREADABLE = "要求 {requires}，版本串读不懂"
+    # 用：services.env_setup.platform_state 接口包要求行五态，行首已有「接口包要求」标签
+    REQUIRES_NONE = "未声明"
+    REQUIRES_NO_SDK = "本机没装接口包"
+    REQUIRES_MET = "{requires}，本机接口包 {actual} 已满足"
+    REQUIRES_GAP = "{requires}，本机接口包 {actual} 未满足"
+    REQUIRES_UNREADABLE = "声明的版本串读不懂"
 
     # 用：services.env_setup.platform_state 适配器那颗置灰时那句下一步
     NEED_SDK_INSTALL = "先装接口包"
@@ -58,7 +58,7 @@ class PlatformMessage:
 
     # 用：ui._guide._platform 取数中的状态行与装卸的进度窗标题
     WAIT_CATALOG = "正在等在线目录…已过 {seconds} 秒"
-    WAIT_INSTALL = "正在装 {name}…"
+    WAIT_INSTALL = "正在装 {items}…"
     WAIT_REMOVE = "正在卸 {name}…"
 
     # 用：services.env_setup.wheel_install 装完复核版本对不上
@@ -67,20 +67,20 @@ class PlatformMessage:
     # 用：ui._guide._platform 目录读不出时的那一行状态
     FETCH_FAILED = "在线目录读不到\n{reason}"
 
-    # 用：ui._guide._platform 装完后的结果文案
-    INSTALL_DONE = "{name} 已装好"
-    INSTALL_PART_FAIL = "{name} 没装成\n{notes}"
+    # 用：ui._guide._platform_flow 装完后的结果文案
+    INSTALL_DONE = "{items} 已装好"
+    INSTALL_PART_FAIL = "{items} 没装成\n{notes}"
     INSTALL_BLANK = "未报出原因"
 
     # 用：ui._guide._platform 已装包那一行的卸载按钮
     BTN_UNINSTALL = "卸载"
 
-    # 用：ui._guide._platform 卸载前的确认与拦路文案
+    # 用：ui._guide._platform_flow 卸载前的确认与拦路文案
     UNINSTALL_ASK = (
-        "要卸掉 {platform} 的适配器\n\n{names}\n\n别只平台的适配器与插件不受影响"
+        "确定要卸掉 {platform} 平台的适配器吗？\n\n其他平台的适配器与插件不受影响"
     )
-    UNINSTALL_BLOCKED = "{platform} 还有 {count} 个实例\n先把实例删掉再卸适配器"
-    UNINSTALL_DONE = "{platform} 的适配器已卸掉"
+    UNINSTALL_BLOCKED = "{platform} 平台还有 {count} 个实例\n先把实例删掉再卸适配器"
+    UNINSTALL_DONE = "{platform} 平台的适配器已卸掉"
 
     # 用：services.env_setup.deps_install 逐只点名的卸不掉那句
     REMOVE_FAILED = "{name} 没卸掉"

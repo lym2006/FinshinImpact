@@ -216,7 +216,7 @@ class TestInstallBlocked(unittest.TestCase):
             patch.object(mod, "installed_version", lambda name: "0.2.0"),
         ):
             text = mod.deps_text(_adapter_row(_rows("0.2.0", "0.1.0")))
-        self.assertEqual(text, "要求 >=0.1.0,<0.2.0，本机 0.2.0 未满足")
+        self.assertEqual(text, ">=0.1.0,<0.2.0，本机接口包 0.2.0 未满足")
 
 
 class TestPresentPlatforms(unittest.TestCase):
