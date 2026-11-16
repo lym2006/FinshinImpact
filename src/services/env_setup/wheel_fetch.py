@@ -1,7 +1,8 @@
 """wheel 取件与指纹核验
 
 - 镜像按序优先、官方直链兜底，代理地址原样递下去
-- 同名同指纹的本地件在场即不再取
+- 目录行对应的件已在盘上且指纹对得上即不重取
+- 按发行件名盘点什么件已在这台机器上，不读内容
 - 先落 .part 再改名，半截件不留盘
 - 每个源的坏法各记一句，合进一条点名到发行件的说明
 """
@@ -38,7 +39,7 @@ class DownloadOutcome:
     note: str
 
 
-def _file_name_of(url: str) -> str:
+def file_name_of(url: str) -> str:
     """取直链末段的 wheel 文件名，形态不对交出空串"""
     name = PurePosixPath(urlsplit(url).path).name
     if not name.endswith(_WHEEL_SUFFIX) or "\\" in name:
@@ -49,6 +50,36 @@ def _file_name_of(url: str) -> str:
 def _sources(url: str, mirrors: Sequence[str]) -> list[str]:
     """按镜像优先、官方直链兜底排出取件源"""
     return [f"{mirror}{url}" for mirror in mirrors] + [url]
+
+
+def is_cached(row: ReleaseRow, target_dir: Path) -> bool:
+    """目录行对应的那份件已在盘上且指纹对得上"""
+    name = file_name_of(row.url)
+    if not name:
+        return False
+    target = target_dir / name
+
+    return target.is_file() and file_digest(target) == row.sha256
+
+
+def disk_files(distribution: str, target_dir: Path) -> tuple[str, ...]:
+    """盘上属于这只发行件的 wheel 文件名，按名升序，目录不在场即空
+
+    - 下载没跑完的 .part 不算一份件
+    """
+    if not target_dir.is_dir():
+        return ()
+    stem = f"{distribution.replace('-', '_')}-"
+
+    return tuple(
+        sorted(
+            item.name
+            for item in target_dir.iterdir()
+            if item.is_file()
+            and item.name.startswith(stem)
+            and item.name.endswith(_WHEEL_SUFFIX)
+        )
+    )
 
 
 def _reject(distribution: str, reason: str) -> DownloadOutcome:
@@ -70,12 +101,12 @@ async def download_release(
 
     - 落盘件与目录指纹不符即删掉那份件并换下一源
     """
-    name = _file_name_of(row.url)
+    name = file_name_of(row.url)
     if not name:
         return _reject(row.distribution, CatalogMessage.BAD_FILE_NAME)
 
     target = target_dir / name
-    if target.is_file() and file_digest(target) == row.sha256:
+    if is_cached(row, target_dir):
         return DownloadOutcome(row.distribution, target, "")
 
     steps: list[str] = []

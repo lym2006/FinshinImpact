@@ -5,11 +5,15 @@
 - 该装的那批只收本机没有与在线更新的两档
 - 接口包没到位或高出上限时适配器那颗不给装，接口包那行自己不受此限
 - 在场平台只看已装包，源码仓挂着没装的不算
+- 版本清单逐版报本机来路，盘上的件逐份报在不在清单里
 """
 
+import hashlib
 import sys
+import tempfile
 import unittest
 from contextlib import ExitStack
+from dataclasses import replace
 from pathlib import Path
 from unittest.mock import patch
 
@@ -95,6 +99,153 @@ def _adapter_row(rows: tuple[rows_mod.ComponentRow, ...]) -> rows_mod.ComponentR
 def _sdk_row(rows: tuple[rows_mod.ComponentRow, ...]) -> rows_mod.ComponentRow:
     """读数里接口包那一行"""
     return next(row for row in rows if not row.platform)
+
+
+_WHEEL_BODY = b"wheel body"
+
+
+def _release_row(version: str, sha: str) -> ReleaseRow:
+    """一行目录，直链末段按版本号拼出 wheel 文件名"""
+    stem = _ADAPTER.replace("-", "_")
+
+    return ReleaseRow(
+        distribution=_ADAPTER,
+        version=version,
+        url=f"https://example.invalid/{stem}-{version}-py3-none-any.whl",
+        sha256=sha,
+    )
+
+
+def _wheel_on(root: Path, version: str) -> str:
+    """在临时目录落一份 wheel 件，交出它的指纹"""
+    stem = _ADAPTER.replace("-", "_")
+    (root / f"{stem}-{version}-py3-none-any.whl").write_bytes(_WHEEL_BODY)
+
+    return hashlib.sha256(_WHEEL_BODY).hexdigest()
+
+
+def _multi_row(installed: str, *versions: ReleaseRow) -> rows_mod.ComponentRow:
+    """一行读数，目录行内按给定次序带版本清单"""
+    newest, *_older = versions
+    release = replace(newest, versions=tuple(versions))
+
+    return rows_mod.ComponentRow(
+        platform=str(Platform.TELEGRAM),
+        distribution=_ADAPTER,
+        source=rows_mod.ComponentSource.INSTALLED,
+        installed=installed,
+        requires="",
+        release=release,
+        bucket=rows_mod.ComponentBucket.UPGRADABLE,
+    )
+
+
+class TestOlderVersions(unittest.TestCase):
+    """版本清单里除最新一版外的每一版"""
+
+    def setUp(self) -> None:
+        """临时 wheel 目录，0.2.0 那份件在场"""
+        holder = tempfile.TemporaryDirectory()
+        self.addCleanup(holder.cleanup)
+        self._root = Path(holder.name)
+        self._cached = _wheel_on(self._root, "0.2.0")
+
+    def _row(self, installed: str) -> rows_mod.ComponentRow:
+        """最新 0.3.0，清单里另有 0.2.0 与 0.1.0 两版"""
+        return _multi_row(
+            installed,
+            _release_row("0.3.0", _SHA),
+            _release_row("0.2.0", self._cached),
+            _release_row("0.1.0", _SHA),
+        )
+
+    def test_latest_is_not_listed(self) -> None:
+        """清单只报更早的那几版，最新一版由版本行说"""
+        with patch.object(mod, "WHEELS_DIR", self._root):
+            lines = mod.older_versions(self._row("0.1.0"))
+
+        self.assertEqual([line.release.version for line in lines], ["0.2.0", "0.1.0"])
+
+    def test_installed_version_is_marked(self) -> None:
+        """本机环境里就是那一版即标出来"""
+        with patch.object(mod, "WHEELS_DIR", self._root):
+            lines = mod.older_versions(self._row("0.2.0"))
+
+        self.assertEqual([line.installed for line in lines], [True, False])
+
+    def test_matching_digest_is_cached(self) -> None:
+        """盘上那份件指纹对得上目录即算已下载"""
+        with patch.object(mod, "WHEELS_DIR", self._root):
+            lines = mod.older_versions(self._row("0.3.0"))
+
+        self.assertEqual([line.cached for line in lines], [True, False])
+
+    def test_wrong_digest_is_not_cached(self) -> None:
+        """盘上同名那份件指纹对不上即不算已下载"""
+        row = _multi_row(
+            "0.1.0",
+            _release_row("0.3.0", _SHA),
+            _release_row("0.2.0", "f" * 64),
+        )
+        with patch.object(mod, "WHEELS_DIR", self._root):
+            lines = mod.older_versions(row)
+
+        self.assertEqual([line.cached for line in lines], [False])
+
+    def test_no_row_lists_nothing(self) -> None:
+        """没有目录行即没有清单可列"""
+        row = _multi_row("0.1.0", _release_row("0.1.0", _SHA))
+        row = replace(row, release=None)
+        with patch.object(mod, "WHEELS_DIR", self._root):
+            self.assertEqual(mod.older_versions(row), ())
+
+
+class TestLocalWheels(unittest.TestCase):
+    """盘上件的逐份读数"""
+
+    def setUp(self) -> None:
+        """临时 wheel 目录，落两份件，其中一份不在清单里"""
+        holder = tempfile.TemporaryDirectory()
+        self.addCleanup(holder.cleanup)
+        self._root = Path(holder.name)
+        self._listed = _wheel_on(self._root, "0.2.0")
+        _wheel_on(self._root, "0.0.9")
+
+    def _row(self) -> rows_mod.ComponentRow:
+        """清单里只有 0.3.0 与 0.2.0 两版"""
+        return _multi_row(
+            "0.1.0",
+            _release_row("0.3.0", _SHA),
+            _release_row("0.2.0", self._listed),
+        )
+
+    def test_files_are_listed_by_name(self) -> None:
+        """盘上属于这只发行件的件逐份报出"""
+        with patch.object(mod, "WHEELS_DIR", self._root):
+            lines = mod.local_wheels(self._row())
+
+        self.assertEqual(
+            [line.file_name for line in lines],
+            [
+                "finshin_adapter_tg-0.0.9-py3-none-any.whl",
+                "finshin_adapter_tg-0.2.0-py3-none-any.whl",
+            ],
+        )
+
+    def test_file_in_list_is_marked(self) -> None:
+        """文件名对得上清单某一版的即算在清单里"""
+        with patch.object(mod, "WHEELS_DIR", self._root):
+            lines = mod.local_wheels(self._row())
+
+        self.assertEqual([line.listed for line in lines], [False, True])
+
+    def test_no_row_leaves_files_unmarked(self) -> None:
+        """没有目录行时盘上的件一律算对不上"""
+        row = replace(self._row(), release=None)
+        with patch.object(mod, "WHEELS_DIR", self._root):
+            lines = mod.local_wheels(row)
+
+        self.assertEqual([line.listed for line in lines], [False, False])
 
 
 class TestBucket(unittest.TestCase):
