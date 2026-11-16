@@ -7,6 +7,9 @@
 - 在场平台只看已装包，源码仓挂着没装的不算
 - 版本清单逐版报本机来路，盘上的件逐份报在不在清单里
 - 来源按源码仓在不在场与包装没装进环境分四档，来路按内容从哪儿取到分三档
+
+- 夹具一律合成值，线上发新版不许把用例改红
+- 接口包源码仓那份声明也不读盘，读盘会把开发机的挂载状态混进用例
 """
 
 import hashlib
@@ -73,6 +76,7 @@ def _tg_row(installed: str, online: str, tree: bool = False) -> rows_mod.Compone
         patch.object(rows_mod, "tree_distributions", lambda: tree_names),
         patch.object(rows_mod, "load_adapter_manifests", lambda: {}),
         patch.object(rows_mod, "installed_version", lambda name: ""),
+        patch.object(rows_mod, "project_value", lambda key, path: ""),
     ):
         rows = rows_mod.component_rows(_catalog(online))
 
@@ -89,6 +93,7 @@ def _rows(sdk: str, adapter: str) -> tuple[rows_mod.ComponentRow, ...]:
         patch.object(rows_mod, "tree_distributions", lambda: {}),
         patch.object(rows_mod, "load_adapter_manifests", lambda: {}),
         patch.object(rows_mod, "installed_version", lambda name: sdk),
+        patch.object(rows_mod, "project_value", lambda key, path: ""),
     ):
         return rows_mod.component_rows(_catalog("0.1.0"))
 
@@ -638,6 +643,7 @@ class TestPresentPlatforms(unittest.TestCase):
                 patch.object(rows_mod, "tree_distributions", lambda: {}),
                 patch.object(rows_mod, "load_adapter_manifests", lambda: {}),
                 patch.object(rows_mod, "installed_version", lambda name: "0.1.0"),
+                patch.object(rows_mod, "project_value", lambda key, path: ""),
             ):
                 stack.enter_context(patcher)
             self.assertEqual(rows_mod.present_platforms(), frozenset({"tg"}))
@@ -654,6 +660,7 @@ class TestPresentPlatforms(unittest.TestCase):
                 ),
                 patch.object(rows_mod, "load_adapter_manifests", lambda: {}),
                 patch.object(rows_mod, "installed_version", lambda name: ""),
+                patch.object(rows_mod, "project_value", lambda key, path: ""),
             ):
                 stack.enter_context(patcher)
             self.assertEqual(rows_mod.present_platforms(), frozenset())
