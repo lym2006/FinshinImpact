@@ -307,7 +307,7 @@ class TestUpdateTarget(unittest.TestCase):
         rows = self._rows("0.1.0", "0.2.0", "0.1.5")
         self.assertEqual(
             mod.release_blocked(rows, rows[0], _release_row("0.2.0", _SHA, _SDK)),
-            "这一版接口包不在在场适配器要求的区间内",
+            "这一版接口包超出已装适配器的要求",
         )
 
     def test_in_range_version_is_free(self) -> None:
@@ -424,7 +424,7 @@ class TestLocalWheels(unittest.TestCase):
             [line.file_name for line in lines], [_wheel_name("2.0.0", _SDK)]
         )
         self.assertEqual(lines[0].origin, mod.WheelOrigin.RECORDED)
-        self.assertEqual(lines[0].blocked, "这一版接口包不在在场适配器要求的区间内")
+        self.assertEqual(lines[0].blocked, "这一版接口包超出已装适配器的要求")
 
 
 class TestBucket(unittest.TestCase):

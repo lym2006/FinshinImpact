@@ -54,9 +54,11 @@ class PlatformMessage:
     REQUIRES_GAP = "{requires}，本机接口包 {actual} 未满足"
     REQUIRES_UNREADABLE = "声明的版本串读不懂"
 
-    # 用：services.env_setup.platform_state 接口包那颗推不出在场适配器要求时那句
-    SDK_RANGE_GAP = "这一版接口包不在在场适配器要求的区间内"
-    SDK_RANGE_NONE = "目录里没有满足在场适配器的接口包版本"
+    # 用：services.env_setup.platform_state 装某一版接口包被已装适配器挡住时那句
+    SDK_RANGE_GAP = "这一版接口包超出已装适配器的要求"
+
+    # 用：ui._guide._platform_text 目录里找不出一版可用的接口包时那句
+    SDK_RANGE_NONE = "没有一版接口包满足已装适配器的要求"
 
     # 用：services.env_setup.platform_state 适配器那颗置灰时那句下一步
     NEED_SDK_INSTALL = "先装接口包"
