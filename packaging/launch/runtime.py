@@ -14,7 +14,6 @@ from pathlib import Path
 from pack_spec import (
     PackLayout,
     dependencies,
-    file_digest,
     lines_digest,
     require_setting,
 )
@@ -75,19 +74,24 @@ def _already_enough(wheel: Path, installed: dict[str, str]) -> bool:
 def _install_plan(root: Path) -> tuple[list[str], list[str]]:
     """交给 uv 的装单与记进免装指纹的清单
 
-    - 接口件按路径喂 uv，按内容摘要记指纹，同文件名换内容也算变动
-    - 本机已装不低于随包那版即不进装单，随包件不压新版
+    - 随包接口件按路径喂 uv，本机已装不低于那版即不进装单
+    - 指纹只记核心依赖，随包件装成功就被删
     """
     core = dependencies(root)
-    wheels = _seed_wheels(root)
     installed = _installed_versions(root / PackLayout.RUNTIME_DIR)
-    wanted = [wheel for wheel in wheels if not _already_enough(wheel, installed)]
-    marks = [f"{wheel.name}#{file_digest(wheel)}" for wheel in wheels]
+    pending = _seed_wheels(root)
+    wanted = [wheel for wheel in pending if not _already_enough(wheel, installed)]
 
-    return (
-        [*core, *(str(wheel) for wheel in wanted)],
-        [*core, *marks],
-    )
+    return [*core, *(str(wheel) for wheel in wanted)], core
+
+
+def _drop_seeds(root: Path) -> None:
+    """装成功后删掉随包接口件那一份
+
+    - 整目录删，装过之后没人再读它
+    - 失败路径不走到这里，留下的件供下次续装命中
+    """
+    shutil.rmtree(root / PackLayout.SDK_WHEEL_DIR, ignore_errors=True)
 
 
 def _list_digest(items: list[str]) -> str:
@@ -173,6 +177,7 @@ def ensure_runtime(root: Path) -> None:
     - 依次：解压嵌入式 Python、放开 site、部署 uv、装依赖
     - 只追加安装，删掉的库由引导层同步环境收口
     - 装包缓存不在此清，留到引导层同步落定后收口
+    - 随包接口件装成功即从包根删掉，装失败留着下次续装命中
     """
     runtime = root / PackLayout.RUNTIME_DIR
 
@@ -180,7 +185,8 @@ def ensure_runtime(root: Path) -> None:
     cache = runtime / str(require_setting(root, _SETTING_CACHE))
     deps, stamped = _install_plan(root)
 
-    if _installed_ok(runtime, stamped):
+    # 随包件在场即说明有一趟待装，指纹相同也要跑
+    if not _seed_wheels(root) and _installed_ok(runtime, stamped):
         return
     fresh = not (runtime / PackLayout.PYTHON_EXE).exists()
     dialogs.info("首次运行需要安装运行环境" if fresh else "升级后补装变动依赖")
@@ -208,3 +214,4 @@ def ensure_runtime(root: Path) -> None:
         )
 
     (runtime / PackLayout.INSTALL_STAMP).write_text(_list_digest(stamped))
+    _drop_seeds(root)
