@@ -145,6 +145,12 @@ QPushButton#{ButtonStyle.START}:hover {{
 
 QPushButton#{ButtonStyle.START}:pressed {{
     background-color: {SURFACE.primary_pressed_bg};
+}}
+
+QPushButton#{ButtonStyle.START}:disabled {{
+    background-color: {SURFACE.bg};
+    color: {SURFACE.disabled_color};
+    font-weight: normal;
 }}"""
 
 # 下拉菜单

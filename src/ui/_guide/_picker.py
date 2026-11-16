@@ -80,7 +80,7 @@ class _ProfilePickerDialog(QDialog):
         delete_btn = make_button(PickerMessage.BTN_DELETE, ButtonStyle.DANGER)
         delete_btn.clicked.connect(self._on_delete)
 
-        # 面板操作必须针对具体实例，空选入口置灰
+        # 实例级动作空选一律置灰：插件设置、编辑、删除与启动
         # 环境维护管的是本机共用的一层，不受此限
         plugin_btn = make_button(PickerMessage.BTN_PLUGINS, ButtonStyle.SECONDARY)
         plugin_btn.clicked.connect(self._on_plugins)
@@ -88,10 +88,10 @@ class _ProfilePickerDialog(QDialog):
         sync_btn = make_button(PickerMessage.BTN_SYNC, ButtonStyle.SECONDARY)
         sync_btn.clicked.connect(lambda: _run_sync(sync_btn, self))
 
-        self._list.enable_on_selection((plugin_btn,))
-
         start_btn = make_button(PickerMessage.BTN_START, ButtonStyle.START)
         start_btn.clicked.connect(self._on_start)
+
+        self._list.enable_on_selection((plugin_btn, edit_btn, delete_btn, start_btn))
 
         # 首个入布局的按钮默认成自动默认钮，Enter会被新建抢答，显式定归启动
         start_btn.setDefault(True)
