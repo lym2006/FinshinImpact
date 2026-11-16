@@ -35,6 +35,7 @@ from bot.error_guard import error_guard  # noqa: E402
 from exceptions import (  # noqa: E402
     AdapterImportError,
     AdapterMissingError,
+    AdapterNotInstalledError,
     AdapterOutOfDateError,
 )
 from finshin_sdk import AdapterParts, BaseAdapter, PlatformAssembly  # noqa: E402
@@ -377,6 +378,29 @@ class TestAdapterHost(unittest.TestCase):
         self.assertEqual(ctx.exception.requires, "<0.0.1")
         imported.assert_not_called()
 
+    def test_absent_package_becomes_not_installed(self) -> None:
+        """声明在场而环境里取不到那只包，换成没装进环境那句并点名模块"""
+        declared = AdapterManifestDTO(
+            platform=Platform.TELEGRAM,
+            deps=(),
+            requires_sdk="",
+            entry="finshin_adapter_tg.entry",
+        )
+        missing = ModuleNotFoundError("No module named 'finshin_adapter_tg'")
+        missing.name = "finshin_adapter_tg"
+        with (
+            patch.object(
+                parts_mod,
+                "load_adapter_manifests",
+                lambda: {Platform.TELEGRAM: declared},
+            ),
+            patch.object(parts_mod, "import_module", side_effect=missing),
+        ):
+            with self.assertRaises(AdapterNotInstalledError) as ctx:
+                parts_mod.parts_for(Platform.TELEGRAM)
+
+        self.assertEqual(ctx.exception.module, "finshin_adapter_tg")
+
     def test_external_adapter_importing_body_is_refused(self) -> None:
         """外部适配器引了本体内部即拒载，入口模块的导入没发生"""
         offender = AdapterManifestDTO(
@@ -506,6 +530,41 @@ class TestAdapterHost(unittest.TestCase):
             self.assertEqual(main.main(), 1)
 
         self.assertIn("tg 平台的适配器还没装", popped[0])
+        self.assertIn("装完请重新打开本程序", popped[0])
+        self.assertEqual(events, ["dismiss", "popup", "panel"])
+
+    def test_not_installed_package_opens_the_panel(self) -> None:
+        """声明在场而环境里取不到那只包，那句之外同样开面板
+
+        - 与缺件共用出路：面板装上那只件，重启本程序
+        - 那句点名取不到的模块名
+        """
+        popped: list[str] = []
+        events: list[str] = []
+
+        def refuse(_platform: object) -> None:
+            raise AdapterNotInstalledError("tg", "finshin_adapter_tg")
+
+        with (
+            patch.object(main_mod, "ensure_app", lambda: object()),
+            patch.object(
+                main_mod,
+                "show_popup",
+                lambda _t, body: (popped.append(body), events.append("popup")),
+            ),
+            patch.object(
+                main_mod,
+                "open_platform_dialog",
+                lambda _parent=None: events.append("panel"),
+            ),
+            patch.object(main_mod, "parts_for", refuse),
+        ):
+            main = main_mod.Main(
+                on_ready=None, close_wait=lambda: events.append("dismiss")
+            )
+            self.assertEqual(main.main(), 1)
+
+        self.assertIn("tg 平台的适配器没装进环境：找不到 finshin_adapter_tg", popped[0])
         self.assertIn("装完请重新打开本程序", popped[0])
         self.assertEqual(events, ["dismiss", "popup", "panel"])
 

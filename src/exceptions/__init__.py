@@ -8,6 +8,7 @@ from ._adapter import (
     AdapterError,
     AdapterImportError,
     AdapterMissingError,
+    AdapterNotInstalledError,
     AdapterOutOfDateError,
 )
 from ._config import (
@@ -96,5 +97,6 @@ __all__ = [
     "AdapterError",
     "AdapterImportError",
     "AdapterMissingError",
+    "AdapterNotInstalledError",
     "AdapterOutOfDateError",
 ]

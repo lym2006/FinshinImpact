@@ -6,7 +6,12 @@
 
 from importlib import import_module
 
-from exceptions import AdapterImportError, AdapterMissingError, AdapterOutOfDateError
+from exceptions import (
+    AdapterImportError,
+    AdapterMissingError,
+    AdapterNotInstalledError,
+    AdapterOutOfDateError,
+)
 from finshin_sdk import SDK_VERSION, AdapterParts
 from finshin_sdk.domain import Platform
 from services.adapter_manifest import load_adapter_manifests
@@ -22,6 +27,7 @@ def parts_for(platform: Platform) -> AdapterParts:
 
     - 清单缺席或字段非法即缺件
     - 本机接口包不在清单要求的区间内即拒载，拒在导入入口之前
+    - 声明在场而环境里取不到那只包，即按没装进环境交代
     - 随包树之外的适配器引了本体内部即拒载，同样拒在导入之前
     """
     manifest = load_adapter_manifests().get(platform)
@@ -32,7 +38,10 @@ def parts_for(platform: Platform) -> AdapterParts:
 
     package = manifest.entry.rpartition(".")[0]
     check_external_imports(str(platform), package, AdapterImportError)
-    entry = import_module(manifest.entry)
+    try:
+        entry = import_module(manifest.entry)
+    except ModuleNotFoundError as exc:
+        raise AdapterNotInstalledError(platform, str(exc.name or "")) from exc
     _logger.debug(f"{platform} 适配器来自 {entry.__file__}")
     return entry.parts()
 

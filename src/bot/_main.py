@@ -12,7 +12,12 @@ from concurrent.futures import Future
 from functools import partial
 from typing import cast
 
-from exceptions import AdapterError, AdapterMissingError, describe_error
+from exceptions import (
+    AdapterError,
+    AdapterMissingError,
+    AdapterNotInstalledError,
+    describe_error,
+)
 from skin.messages import CheckMessage, MiscMessage
 from skin.theme import WINDOW
 from system.native_dialog import describe
@@ -128,8 +133,8 @@ class Main:
         # 取件排在 GUI 之前，这句只能自己弹窗，主窗的兜底还没挂上
         self._pop_failure(detail)
 
-        # 缺件的出路在面板里，版本不合与被拒装还得人工换件
-        if isinstance(exc, AdapterMissingError):
+        # 缺件与没装进环境的出路都在面板里，版本不合与被拒装还得人工换件
+        if isinstance(exc, (AdapterMissingError, AdapterNotInstalledError)):
             open_platform_dialog()
         return 1
 

@@ -14,7 +14,7 @@ class PluginsError(BotError):
 class PluginsMissingError(PluginsError):
     """未注册插件"""
 
-    fatal = True  # 环境缺失非配置可修，向导无从补救
+    fatal = True
 
 
 class PluginEntryError(PluginsError):
@@ -39,7 +39,7 @@ class PluginDependencyError(PluginsError):
 class PluginLoadError(PluginsError):
     """插件加载抛错
 
-    - 异常类名随异常携带，面板只报到哪一类
+    - 面板只报到哪一类
     """
 
     def __init__(self, kind: str) -> None:
@@ -48,11 +48,7 @@ class PluginLoadError(PluginsError):
 
 
 class PluginImportError(PluginsError):
-    """外部插件引了本体内部
-
-    - 被引用的内部模块名随异常携带
-    - 出处落在哪份文件哪一行随异常携带
-    """
+    """外部插件引了本体内部"""
 
     def __init__(self, plugin: str, target: str, where: str) -> None:
         self.plugin = plugin
@@ -62,10 +58,7 @@ class PluginImportError(PluginsError):
 
 
 class PluginRoleError(PluginsError):
-    """命令权限声明与守卫不一致
-
-    - 对不上的命令名随异常携带，本体走调试日志
-    """
+    """命令权限声明与守卫不一致"""
 
     def __init__(self, cmd: str) -> None:
         self.cmd = cmd
@@ -73,10 +66,7 @@ class PluginRoleError(PluginsError):
 
 
 class PluginManifestError(PluginsError):
-    """插件清单的开关声明写错
-
-    - 哪只插件、哪只开关与收到的类型随异常携带
-    """
+    """插件清单的开关声明写错"""
 
     def __init__(self, plugin: str, flag: str, got: str) -> None:
         self.plugin = plugin
