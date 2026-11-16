@@ -25,8 +25,6 @@ class _PaletteTheme:
     list_bg: str = "#3C3C3C"  # 列表容器底色，行缝隙露此色
     border_color: str = "#444444"  # 描边色
     disabled_color: str = "#808080"  # 置灰文字色
-    link_color: str = "#4FA3E3"  # 文字链接色
-    link_hover_color: str = "#7FC0F5"  # 文字链接悬停色
     danger_bg: str = "#D32F2F"  # 危险操作背景色
     danger_hover_bg: str = "#B71C1C"  # 危险操作悬停色
     danger_pressed_bg: str = "#9A0007"  # 危险操作按下色
