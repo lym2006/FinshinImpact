@@ -148,6 +148,7 @@ type(scope): 主题
 | refactor | 内部重整，行为不变 |
 | perf | 性能/体验优化 |
 | docs / style | 文档 / 格式（可省 scope） |
+| test | 只改用例与用例夹具（可省 scope） |
 | build | 版本与打包定稿 |
 | revert | 回退，标题注明回退什么、恢复什么语义 |
 
