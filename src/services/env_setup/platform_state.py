@@ -1,6 +1,6 @@
 """平台组件的装与挡
 
-- 一键更新的那批只收在线比本机新的行
+- 一键更新的那批只收在线比本机新的行，接口包那行先算在场适配器的要求
 - 适配器要接口包已在本机，且落在它声明的版本要求之内
 - 接口包要求那一行的说法按本机接口包版本定
 - 可装的旧版逐版报来路，盘上的件逐份报核没核到指纹
@@ -12,7 +12,7 @@ from enum import StrEnum
 
 from skin.messages import PlatformMessage
 from system.distributions import SDK_DISTRIBUTION, installed_version
-from system.versions import over_ceiling, requires_met
+from system.versions import is_upgrade, over_ceiling, requires_met
 
 from ..adapter_catalog import ReleaseRow
 from .platform_rows import ComponentBucket, ComponentRow, ComponentSource
@@ -40,11 +40,13 @@ class VersionLine:
     """版本清单里一版可装件的读数
 
     - installed 是本机环境里就是这一版，cached 是盘上那份件对得上目录指纹
+    - blocked 交出那句装不了的理由，能装交出空串
     """
 
     release: ReleaseRow
     installed: bool
     cached: bool
+    blocked: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,15 +64,72 @@ def update_targets(rows: Sequence[ComponentRow]) -> list[ReleaseRow]:
     """一键更新的那批目录行，只收在线比本机新的
 
     - 本机没装过的不进这一批，装哪个平台由逐行的按钮定
+    - 接口包推不出在场适配器要求的那批不进这一批
     """
-    return [
-        row.release
-        for row in rows
-        if row.release is not None and row.bucket == ComponentBucket.UPGRADABLE
-    ]
+    targets: list[ReleaseRow] = []
+    for row in rows:
+        if row.bucket != ComponentBucket.UPGRADABLE:
+            continue
+        target = update_target(rows, row)
+        if target is not None:
+            targets.append(target)
+
+    return targets
 
 
-def install_blocked(rows: Sequence[ComponentRow], row: ComponentRow) -> str:
+def update_target(rows: Sequence[ComponentRow], row: ComponentRow) -> ReleaseRow | None:
+    """这一行该装的那一版，没得更动交出 None
+
+    - 适配器那行取目录最新一版
+    - 接口包那行取满足在场每只适配器要求里最新的一版，本机没装过时不比本机
+    """
+    if row.release is None:
+        return None
+    if row.platform:
+        return row.release
+
+    for item in row.release.versions:
+        newer = not row.installed or is_upgrade(row.installed, item.version) is True
+        if newer and _sdk_in_range(rows, item.version):
+            return item
+
+    return None
+
+
+def release_blocked(
+    rows: Sequence[ComponentRow], row: ComponentRow, release: ReleaseRow
+) -> str:
+    """装这一版该不该挡，交出那句理由，能装交出空串
+
+    - 适配器那行按本机接口包落在不在它声明的要求之内判
+    - 接口包那行按这一版满不满足在场每只适配器声明的要求判
+    """
+    if row.platform:
+        return _install_blocked(rows, row)
+    if _sdk_in_range(rows, release.version):
+        return ""
+
+    return PlatformMessage.SDK_RANGE_GAP
+
+
+def _declared_ranges(rows: Sequence[ComponentRow]) -> tuple[str, ...]:
+    """在场适配器各自声明的接口包要求，没装进环境的不算在场"""
+    return tuple(
+        row.requires for row in rows if row.platform and row.installed and row.requires
+    )
+
+
+def _sdk_in_range(rows: Sequence[ComponentRow], version: str) -> bool:
+    """这一版接口包是否落在在场每只适配器声明的要求之内
+
+    - 要求串或版本串读不懂算不满足
+    """
+    return all(
+        requires_met(version, requires) is True for requires in _declared_ranges(rows)
+    )
+
+
+def _install_blocked(rows: Sequence[ComponentRow], row: ComponentRow) -> str:
     """这只组件现在不该给安装，交出那句下一步，能装交出空串
 
     - 适配器要接口包已在本机，且落在它声明的版本要求之内
@@ -90,28 +149,31 @@ def install_blocked(rows: Sequence[ComponentRow], row: ComponentRow) -> str:
     return PlatformMessage.NEED_SDK_UPDATE
 
 
-def source_origin(row: ComponentRow) -> ComponentOrigin:
-    """一行摆的内容从哪儿取到，按最新那一版的件在不在盘上定
+def source_origin(rows: Sequence[ComponentRow], row: ComponentRow) -> ComponentOrigin:
+    """一行摆的内容从哪儿取到，按该装的那一版的件在不在盘上定
 
-    - 源码仓挂着只说明声明读得到，装不了
+    - 没有该装的那一版时，源码仓挂着只说明声明读得到
     """
-    if row.release is None:
+    target = update_target(rows, row)
+    if target is None:
         in_tree = row.source in (
             ComponentSource.TREE_INSTALLED,
             ComponentSource.TREE_ONLY,
         )
         return ComponentOrigin.TREE if in_tree else ComponentOrigin.NONE
-    if is_cached(row.release, WHEELS_DIR):
+    if is_cached(target, WHEELS_DIR):
         return ComponentOrigin.WHEEL
 
     return ComponentOrigin.CATALOG
 
 
-def older_versions(row: ComponentRow) -> tuple[VersionLine, ...]:
+def older_versions(
+    rows: Sequence[ComponentRow], row: ComponentRow
+) -> tuple[VersionLine, ...]:
     """版本清单里除最新一版外的每一版，装旧版即回退
 
     - 没有目录行即没有清单可列
-    - 挡不挡装由适配器那一行的接口包要求定，逐版不另判
+    - 逐版各判一次挡不挡，接口包那行的旧版可能正落在在场适配器要求之外
     """
     if row.release is None:
         return ()
@@ -121,6 +183,7 @@ def older_versions(row: ComponentRow) -> tuple[VersionLine, ...]:
             release=item,
             installed=bool(row.installed) and item.version == row.installed,
             cached=is_cached(item, WHEELS_DIR),
+            blocked=release_blocked(rows, row, item),
         )
         for item in row.release.versions[1:]
     )

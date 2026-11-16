@@ -27,8 +27,8 @@ class PlatformMessage:
 
     # 用：ui._guide._platform_block 来路行的三种取值
     LABEL_ORIGIN = "来路"
-    ORIGIN_WHEEL = "本机已下载的件"
-    ORIGIN_CATALOG = "在线目录"
+    ORIGIN_WHEEL = "本机已下载的件 {version}"
+    ORIGIN_CATALOG = "在线目录 {version}"
     ORIGIN_TREE = "源码仓"
 
     # 用：ui._guide._platform_block 每行的栏名
@@ -52,6 +52,10 @@ class PlatformMessage:
     REQUIRES_MET = "{requires}，本机接口包 {actual} 已满足"
     REQUIRES_GAP = "{requires}，本机接口包 {actual} 未满足"
     REQUIRES_UNREADABLE = "声明的版本串读不懂"
+
+    # 用：services.env_setup.platform_state 接口包那颗推不出在场适配器要求时那句
+    SDK_RANGE_GAP = "这一版接口包不在在场适配器要求的区间内"
+    SDK_RANGE_NONE = "目录里没有满足在场适配器的接口包版本"
 
     # 用：services.env_setup.platform_state 适配器那颗置灰时那句下一步
     NEED_SDK_INSTALL = "先装接口包"

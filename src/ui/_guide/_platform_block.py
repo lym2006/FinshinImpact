@@ -1,6 +1,6 @@
 """平台组件面板的组件块
 
-- 一只组件一块，块内按来源、版本、接口包要求与动作四行摆
+- 一只组件一块，块内按来源、来路、版本、接口包要求与动作逐行摆
 - 历史版本与本机安装包各展开一层，展开哪一层记在本块身上
 - 动作栏只摆做得到的动作，置灰那颗旁边跟一句下一步
 """
@@ -24,41 +24,34 @@ from services.env_setup.platform_rows import (
     ComponentSource,
 )
 from services.env_setup.platform_state import (
-    ComponentOrigin,
     VersionLine,
-    WheelLine,
     deps_text,
-    install_blocked,
     local_wheels,
     older_versions,
     source_origin,
+    update_target,
 )
 from skin.messages import PlatformMessage
 from skin.theme import PLATFORM_DIALOG, ButtonStyle, ObjectName
 
 from .._primitives import clear_layout, make_button, set_margins
 from ._platform_flow import install_flow, uninstall_flow
-
-# 来源取值给人看的那句
-_SOURCE_TEXT = {
-    ComponentSource.TREE_INSTALLED: PlatformMessage.SOURCE_TREE_INSTALLED,
-    ComponentSource.TREE_ONLY: PlatformMessage.SOURCE_TREE_ONLY,
-    ComponentSource.INSTALLED: PlatformMessage.LOCAL_INSTALLED,
-    ComponentSource.NONE: PlatformMessage.SOURCE_NONE,
-}
-
-# 来路取值给人看的那句，没得取的档位不进表
-_ORIGIN_TEXT = {
-    ComponentOrigin.WHEEL: PlatformMessage.ORIGIN_WHEEL,
-    ComponentOrigin.CATALOG: PlatformMessage.ORIGIN_CATALOG,
-    ComponentOrigin.TREE: PlatformMessage.ORIGIN_TREE,
-}
+from ._platform_text import (
+    action_text,
+    name_text,
+    origin_text,
+    row_note,
+    source_text,
+    version_line_text,
+    version_text,
+    wheel_text,
+)
 
 
 class _BlockMode(StrEnum):
     """一块当前展开到哪一层
 
-    - FOLDED 只出四行读数
+    - FOLDED 只出读数行
     - HISTORY 版本清单那一层
     - WHEELS 盘上件那一层
     """
@@ -87,25 +80,28 @@ class ComponentBlock(QFrame):
         self._rows = rows
         self._on_done = on_done
         self._mode = _BlockMode.FOLDED
-        self._note = install_blocked(rows, row)
+        self._target = update_target(rows, row)
+        self._note = row_note(rows, row, self._target)
         self.setObjectName(ObjectName.PLATFORM_BLOCK)
         self._lines = QVBoxLayout(self)
         set_margins(self._lines, PLATFORM_DIALOG.block_pad)
         self._rebuild()
 
     def _rebuild(self) -> None:
-        """按当前展开层重摆块内的行"""
+        """按当前展开层重摆块内的行
+
+        - 来路那一行只在本机有得取的内容时出，点名取的是哪一版
+        """
         clear_layout(self._lines)
-        head = QLabel(_name_of(self._row), parent=self)
+        head = QLabel(name_text(self._row), parent=self)
         head.setObjectName(ObjectName.PLATFORM_NAME)
         self._lines.addWidget(head)
-        self._add_text(
-            f"{PlatformMessage.LABEL_SOURCE}：{_SOURCE_TEXT[self._row.source]}"
-        )
-        origin = source_origin(self._row)
-        if origin in _ORIGIN_TEXT:
-            self._add_text(f"{PlatformMessage.LABEL_ORIGIN}：{_ORIGIN_TEXT[origin]}")
-        self._add_text(f"{PlatformMessage.LABEL_VERSION}：{_version_text(self._row)}")
+        self._add_text(f"{PlatformMessage.LABEL_SOURCE}：{source_text(self._row)}")
+        version = self._target.version if self._target is not None else ""
+        origin = origin_text(source_origin(self._rows, self._row), version)
+        if origin:
+            self._add_text(f"{PlatformMessage.LABEL_ORIGIN}：{origin}")
+        self._add_text(f"{PlatformMessage.LABEL_VERSION}：{version_text(self._row)}")
         self._add_layer()
 
         requires = deps_text(self._row)
@@ -116,28 +112,31 @@ class ComponentBlock(QFrame):
     def _add_layer(self) -> None:
         """展开层的那几行，没展开即不出"""
         if self._mode == _BlockMode.HISTORY:
-            self._add_versions(older_versions(self._row))
+            self._add_versions(older_versions(self._rows, self._row))
         elif self._mode == _BlockMode.WHEELS:
             for line in local_wheels(self._row):
-                self._add_text(_wheel_text(line))
+                self._add_text(wheel_text(line))
 
     def _add_versions(self, lines: Sequence[VersionLine]) -> None:
         """版本清单的那几版，逐版给一颗装它那版的钮
 
         - 本机已装那一版不给按钮
-        - 挡着装的那句在整层末尾只报一次
+        - 与整行同一句理由的不重复报，逐版各挡各的才点名到那一版
         """
         for line in lines:
-            text = _version_line_text(line)
+            note = line.blocked if line.blocked != self._note else ""
+            text = version_line_text(line, note)
             if line.installed:
                 self._add_text(text)
                 continue
             self._add_pair(
                 text,
-                self._install_button(line.release, PlatformMessage.BTN_INSTALL_VERSION),
+                self._install_button(
+                    line.release,
+                    PlatformMessage.BTN_INSTALL_VERSION,
+                    line.blocked,
+                ),
             )
-        if self._note:
-            self._add_text(self._note)
 
     def _add_actions(self) -> None:
         """动作栏的按钮，只摆做得到的动作
@@ -146,16 +145,14 @@ class ComponentBlock(QFrame):
         - 已装包的再多一颗卸载，可展开的层再多两颗
         - 一颗都没有即整行不出
         """
-        release = self._row.release
-        installable = release is not None and self._row.bucket != ComponentBucket.LOCAL
-        wanted = (
-            PlatformMessage.BTN_INSTALL
-            if not self._row.installed
-            else PlatformMessage.BTN_APPLY
+        installable = (
+            self._row.release is not None and self._row.bucket != ComponentBucket.LOCAL
         )
         buttons: list[QPushButton] = []
-        if installable and release is not None:
-            buttons.append(self._install_button(release, wanted))
+        if installable:
+            buttons.append(
+                self._install_button(self._target, action_text(self._row), self._note)
+            )
         if bool(self._row.platform) and self._row.source == ComponentSource.INSTALLED:
             buttons.append(self._uninstall_button())
         buttons.extend(self._fold_buttons())
@@ -199,11 +196,14 @@ class ComponentBlock(QFrame):
         self._mode = _BlockMode.FOLDED if self._mode == mode else mode
         self._rebuild()
 
-    def _install_button(self, release: ReleaseRow, text: str) -> QPushButton:
-        """装那一版的那颗，接口包挡着即置灰"""
+    def _install_button(
+        self, release: ReleaseRow | None, text: str, blocked: str
+    ) -> QPushButton:
+        """装那一版的那颗，挡着装即置灰，没那一版可装即不接动作"""
         button = make_button(text, ButtonStyle.PRIMARY)
-        button.setEnabled(not self._note)
-        button.clicked.connect(lambda: install_flow(self._on_done, [release]))
+        button.setEnabled(release is not None and not blocked)
+        if release is not None:
+            button.clicked.connect(lambda: install_flow(self._on_done, [release]))
 
         return button
 
@@ -229,44 +229,3 @@ class ComponentBlock(QFrame):
         pair.addWidget(value)
         pair.addStretch()
         self._lines.addWidget(holder)
-
-
-def _name_of(row: ComponentRow) -> str:
-    """块首行的组件名，两类都接各自声明的发行件名"""
-    template = (
-        PlatformMessage.NAME_SDK if not row.platform else PlatformMessage.NAME_ADAPTER
-    )
-    return template.format(name=row.distribution)
-
-
-def _version_text(row: ComponentRow) -> str:
-    """版本行的正文，本机与在线各说各的"""
-    if row.release is None:
-        return row.installed or PlatformMessage.LINE_ABSENT
-    if not row.installed:
-        return PlatformMessage.LINE_VERSIONS_ABSENT.format(
-            available=row.release.version
-        )
-
-    return PlatformMessage.LINE_VERSIONS.format(
-        installed=row.installed, available=row.release.version
-    )
-
-
-def _version_line_text(line: VersionLine) -> str:
-    """版本清单里那一版的一行，版本号后面跟本机来路"""
-    note = ""
-    if line.installed:
-        note = PlatformMessage.LOCAL_INSTALLED
-    elif line.cached:
-        note = PlatformMessage.WHEEL_CACHED
-
-    return " ".join(part for part in (line.release.version, note) if part)
-
-
-def _wheel_text(line: WheelLine) -> str:
-    """盘上那一份件的一行，对不上目录任何一版即没有权威指纹可核"""
-    template = (
-        PlatformMessage.WHEEL_LISTED if line.listed else PlatformMessage.WHEEL_STRAY
-    )
-    return template.format(name=line.file_name)
