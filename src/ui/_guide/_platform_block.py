@@ -114,29 +114,24 @@ class ComponentBlock(QFrame):
         if self._mode == _BlockMode.HISTORY:
             self._add_versions(older_versions(self._rows, self._row))
         elif self._mode == _BlockMode.WHEELS:
-            for line in local_wheels(self._row):
-                self._add_text(wheel_text(line))
+            for line in local_wheels(self._rows, self._row):
+                self._add_target(
+                    wheel_text(line, line.blocked, self._note),
+                    line.release,
+                    line.blocked,
+                )
 
     def _add_versions(self, lines: Sequence[VersionLine]) -> None:
         """版本清单的那几版，逐版给一颗装它那版的钮
 
         - 本机已装那一版不给按钮
-        - 与整行同一句理由的不重复报，逐版各挡各的才点名到那一版
         """
         for line in lines:
-            note = line.blocked if line.blocked != self._note else ""
-            text = version_line_text(line, note)
+            text = version_line_text(line, line.blocked, self._note)
             if line.installed:
                 self._add_text(text)
                 continue
-            self._add_pair(
-                text,
-                self._install_button(
-                    line.release,
-                    PlatformMessage.BTN_INSTALL_VERSION,
-                    line.blocked,
-                ),
-            )
+            self._add_target(text, line.release, line.blocked)
 
     def _add_actions(self) -> None:
         """动作栏的按钮，只摆做得到的动作
@@ -176,25 +171,36 @@ class ComponentBlock(QFrame):
             buttons.append(
                 self._toggle(_BlockMode.HISTORY, PlatformMessage.BTN_HISTORY)
             )
-        if local_wheels(self._row):
+        if local_wheels(self._rows, self._row):
             buttons.append(self._toggle(_BlockMode.WHEELS, PlatformMessage.BTN_WHEELS))
 
         return buttons
 
     def _toggle(self, mode: _BlockMode, text: str) -> QPushButton:
-        """展开那一层的那颗钮，已展开即写成收起"""
+        """展开那一层的那颗钮，已展开即写成收起，再点即收起"""
         button = make_button(
             PlatformMessage.BTN_FOLD if self._mode == mode else text,
             ButtonStyle.SECONDARY,
         )
-        button.clicked.connect(lambda: self._fold(mode))
+
+        def flip() -> None:
+            self._mode = _BlockMode.FOLDED if self._mode == mode else mode
+            self._rebuild()
+
+        button.clicked.connect(flip)
 
         return button
 
-    def _fold(self, mode: _BlockMode) -> None:
-        """同一颗再点即收起"""
-        self._mode = _BlockMode.FOLDED if self._mode == mode else mode
-        self._rebuild()
+    def _add_target(self, text: str, release: ReleaseRow | None, blocked: str) -> None:
+        """一版可装件的一行，没那一版可装即只报文本"""
+        if release is None:
+            self._add_text(text)
+            return
+
+        self._add_pair(
+            text,
+            self._install_button(release, PlatformMessage.BTN_INSTALL_VERSION, blocked),
+        )
 
     def _install_button(
         self, release: ReleaseRow | None, text: str, blocked: str

@@ -16,6 +16,7 @@ from services.env_setup.platform_state import (
     ComponentOrigin,
     VersionLine,
     WheelLine,
+    WheelOrigin,
     release_blocked,
 )
 from skin.messages import PlatformMessage
@@ -68,7 +69,7 @@ def version_text(row: ComponentRow) -> str:
     )
 
 
-def version_line_text(line: VersionLine, note: str) -> str:
+def version_line_text(line: VersionLine, blocked: str, note: str) -> str:
     """版本清单里那一版的一行，版本号后面跟本机来路与挡它那句"""
     state = ""
     if line.installed:
@@ -76,15 +77,28 @@ def version_line_text(line: VersionLine, note: str) -> str:
     elif line.cached:
         state = PlatformMessage.WHEEL_CACHED
 
-    return " ".join(part for part in (line.release.version, state, note) if part)
-
-
-def wheel_text(line: WheelLine) -> str:
-    """盘上那一份件的一行，对不上目录任何一版即没有权威指纹可核"""
-    template = (
-        PlatformMessage.WHEEL_LISTED if line.listed else PlatformMessage.WHEEL_STRAY
+    return " ".join(
+        part for part in (line.release.version, state, _gap(blocked, note)) if part
     )
-    return template.format(name=line.file_name)
+
+
+def wheel_text(line: WheelLine, blocked: str, note: str) -> str:
+    """盘上那一份件的一行，按目录里有、本机记过、两样都没有三档说"""
+    template = {
+        WheelOrigin.CATALOG: PlatformMessage.WHEEL_LISTED,
+        WheelOrigin.RECORDED: PlatformMessage.WHEEL_RECORDED,
+        WheelOrigin.UNKNOWN: PlatformMessage.WHEEL_STRAY,
+    }[line.origin]
+    gap = _gap(blocked, note)
+
+    return " ".join(
+        part for part in (template.format(name=line.file_name), gap) if part
+    )
+
+
+def _gap(blocked: str, note: str) -> str:
+    """挡那一版那句，与整行同一句的不重复报"""
+    return blocked if blocked and blocked != note else ""
 
 
 def row_note(

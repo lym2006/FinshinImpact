@@ -111,6 +111,19 @@ class TestSameValuePairs(unittest.TestCase):
         """接口包分发名本体与目录生成侧同串"""
         self.assertEqual(distributions.SDK_DISTRIBUTION, gen_release.SDK_DISTRIBUTION)
 
+    def test_wheel_version_rule_matches_generator(self) -> None:
+        """wheel 文件名里取版本号的算法本体与目录生成侧同一条"""
+        samples = (
+            "finshin_adapter_tg-0.1.1-py3-none-any.whl",
+            "finshin_sdk-1.0.0-py3-none-any.whl",
+            "two-parts.whl",
+        )
+        for name in samples:
+            self.assertEqual(
+                wheel_fetch._version_in_name(name),
+                gen_release._version_in_name(name),
+            )
+
     def test_persona_placeholder_is_in_the_template(self) -> None:
         """人设模板里写的那个占位符与注入读的那份同串"""
         text = paths.PERSONA_TEMPLATE.read_text(encoding="utf-8")

@@ -2,11 +2,13 @@
 
 - 镜像按序优先、官方直链兜底，代理地址原样递下去
 - 目录行对应的件已在盘上且指纹对得上即不重取
+- 核过指纹的件把指纹留在同目录一份索引里，目录取不到时仍认得这份件
 - 按发行件名盘点什么件已在这台机器上，不读内容
 - 先落 .part 再改名，半截件不留盘
 - 每个源的坏法各记一句，合进一条点名到发行件的说明
 """
 
+import json
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
@@ -24,6 +26,10 @@ _WHEEL_SUFFIX = ".whl"
 _PART_SUFFIX = ".part"
 
 _TIMEOUT_DOWNLOAD = 120.0  # 单只发行件下载超时 2 分钟
+_WHEEL_PARTS = 5  # wheel 文件名的段数，版本是第二段，与目录生成侧同一算法
+
+# 本机指纹索引的文件名，跟着 wheel 同进同出
+_INDEX_NAME = "downloaded.json"
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,6 +51,67 @@ def file_name_of(url: str) -> str:
     if not name.endswith(_WHEEL_SUFFIX) or "\\" in name:
         return ""
     return name
+
+
+def _version_in_name(name: str) -> str:
+    """取 wheel 文件名第二段版本号，段数不对交出空串"""
+    parts = name.split("-")
+    return parts[1] if len(parts) >= _WHEEL_PARTS else ""
+
+
+def _recorded_digests(target_dir: Path) -> dict[str, str]:
+    """本机记过的件与指纹，索引不在场或读不出即空"""
+    path = target_dir / _INDEX_NAME
+    if not path.is_file():
+        return {}
+    try:
+        table = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(table, dict):
+        return {}
+
+    return {
+        name: value
+        for name, value in table.items()
+        if isinstance(name, str) and isinstance(value, str)
+    }
+
+
+def _record_digest(target_dir: Path, name: str, sha256: str) -> bool:
+    """把核过的指纹记进本机索引，写不进即不记，读数按没记处理"""
+    table = _recorded_digests(target_dir)
+    table[name] = sha256
+    try:
+        target_dir.mkdir(parents=True, exist_ok=True)
+        (target_dir / _INDEX_NAME).write_text(
+            json.dumps(table, sort_keys=True, indent=1) + "\n", encoding="utf-8"
+        )
+    except OSError:
+        return False
+
+    return True
+
+
+def local_release(distribution: str, name: str, target_dir: Path) -> ReleaseRow | None:
+    """本机记过指纹的那份件拼成一行可装目标，没记或读不出版本即不交出
+
+    - 盘上那份件与记下的指纹不符即不算
+    """
+    sha256 = _recorded_digests(target_dir).get(name, "")
+    version = _version_in_name(name)
+    target = target_dir / name
+    if not sha256 or not version or not target.is_file():
+        return None
+    if file_digest(target) != sha256:
+        return None
+
+    return ReleaseRow(
+        distribution=distribution,
+        version=version,
+        url=target.as_uri(),
+        sha256=sha256,
+    )
 
 
 def _sources(url: str, mirrors: Sequence[str]) -> list[str]:
@@ -107,6 +174,7 @@ async def download_release(
 
     target = target_dir / name
     if is_cached(row, target_dir):
+        _record_digest(target_dir, name, row.sha256)
         return DownloadOutcome(row.distribution, target, "")
 
     steps: list[str] = []
@@ -130,6 +198,7 @@ async def download_release(
             steps.append(CatalogMessage.SHA_MISMATCH)
             continue
         part.replace(target)
+        _record_digest(target_dir, name, row.sha256)
         return DownloadOutcome(row.distribution, target, "")
 
     return _reject(row.distribution, "、".join(steps))

@@ -17,7 +17,7 @@ from system.versions import is_upgrade, over_ceiling, requires_met
 from ..adapter_catalog import ReleaseRow
 from .platform_rows import ComponentBucket, ComponentRow, ComponentSource
 from .toolchain import WHEELS_DIR
-from .wheel_fetch import disk_files, file_name_of, is_cached
+from .wheel_fetch import disk_files, file_name_of, is_cached, local_release
 
 
 class ComponentOrigin(StrEnum):
@@ -49,15 +49,31 @@ class VersionLine:
     blocked: str
 
 
+class WheelOrigin(StrEnum):
+    """盘上一份件的来路
+
+    - CATALOG 目录里有这一版，装它按目录给的指纹核
+    - RECORDED 目录里没有而本机下载时记过指纹，装它直接用盘上那份
+    - UNKNOWN 两样都没有，没有权威值可核
+    """
+
+    CATALOG = "catalog"
+    RECORDED = "recorded"
+    UNKNOWN = "unknown"
+
+
 @dataclass(frozen=True, slots=True)
 class WheelLine:
     """盘上一份 wheel 件的读数
 
-    - listed 是这份件对得上目录里的某一版，对不上即没有权威指纹可核
+    - release 是能装时那一版的目标，装不了即空
+    - blocked 交出那句装不了的理由，能装交出空串
     """
 
     file_name: str
-    listed: bool
+    origin: WheelOrigin
+    release: ReleaseRow | None
+    blocked: str
 
 
 def update_targets(rows: Sequence[ComponentRow]) -> list[ReleaseRow]:
@@ -189,21 +205,46 @@ def older_versions(
     )
 
 
-def local_wheels(row: ComponentRow) -> tuple[WheelLine, ...]:
-    """盘上属于这只发行件的每一份件，对不上目录任何一版的即没权威指纹可核
+def local_wheels(
+    rows: Sequence[ComponentRow], row: ComponentRow
+) -> tuple[WheelLine, ...]:
+    """盘上属于这只发行件的每一份件，按目录与本机记录两样定来路
 
-    - 没有目录行时盘上的件一律算对不上
+    - 目录取不到时，本机记过指纹的那几份仍算可装
+    - 两样都没有即没有权威值可核，那一份不给装
     """
     listed = (
-        {file_name_of(item.url) for item in row.release.versions}
+        {file_name_of(item.url): item for item in row.release.versions}
         if row.release is not None
-        else set()
+        else {}
     )
+    lines: list[WheelLine] = []
+    for name in disk_files(row.distribution, WHEELS_DIR):
+        release = listed.get(name) or local_release(row.distribution, name, WHEELS_DIR)
+        lines.append(
+            WheelLine(
+                file_name=name,
+                origin=_origin_of(name, listed, release),
+                release=release,
+                blocked=(
+                    release_blocked(rows, row, release) if release is not None else ""
+                ),
+            )
+        )
 
-    return tuple(
-        WheelLine(file_name=name, listed=name in listed)
-        for name in disk_files(row.distribution, WHEELS_DIR)
-    )
+    return tuple(lines)
+
+
+def _origin_of(
+    name: str, listed: dict[str, ReleaseRow], release: ReleaseRow | None
+) -> WheelOrigin:
+    """那份件的来路，目录里有即按目录那一版，只有本机记过即按本机"""
+    if name in listed:
+        return WheelOrigin.CATALOG
+    if release is not None:
+        return WheelOrigin.RECORDED
+
+    return WheelOrigin.UNKNOWN
 
 
 def deps_text(row: ComponentRow) -> str:

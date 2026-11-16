@@ -2,7 +2,8 @@
 
 - 落盘件按目录里的指纹逐样核，不符即删掉半截件
 - 镜像按序优先、官方直链兜底，代理地址原样递给取件
-- 同名同指纹的本地件在场即不再取
+- 同名同指纹的本地件在场即不重取
+- 核过指纹的件把指纹记进同目录一份索引，索引记过的件能直接拼成可装目标
 - 每个源的坏法各记一句，合进一条点名到发行件的说明
 """
 
@@ -67,7 +68,11 @@ class TestDownloadRelease(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(outcome.note, "")
         self.assertEqual(outcome.path.name, _WHEEL)
         self.assertEqual(outcome.path.read_bytes(), _BODIES)
-        self.assertEqual(list(self.target_dir.iterdir()), [outcome.path])
+        self.assertEqual(
+            sorted(item.name for item in self.target_dir.iterdir()),
+            sorted([_WHEEL, rel_mod._INDEX_NAME]),
+        )
+        self.assertEqual(rel_mod._recorded_digests(self.target_dir)[_WHEEL], _SHA)
 
     async def test_sha_mismatch_removes_partial(self) -> None:
         """指纹不符即删掉落盘件并报那一步"""
@@ -110,7 +115,7 @@ class TestDownloadRelease(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(fetch.await_count, 2)
 
     async def test_local_wheel_reused(self) -> None:
-        """同名同指纹的本地件在场即不再取件"""
+        """同名同指纹的本地件在场即不重取"""
         self.target_dir.mkdir(parents=True)
         (self.target_dir / _WHEEL).write_bytes(_BODIES)
         fetch = AsyncMock(return_value=None)
@@ -142,6 +147,81 @@ class TestDownloadRelease(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(outcome.path)
         self.assertIn("wheel 文件名", outcome.note)
         fetch.assert_not_awaited()
+
+
+class TestLocalIndex(unittest.TestCase):
+    """本机指纹索引与由它拼出的可装目标"""
+
+    def setUp(self) -> None:
+        """准备一个落盘目录与一份件"""
+        holder = tempfile.TemporaryDirectory()
+        self.addCleanup(holder.cleanup)
+        self.root = Path(holder.name)
+        (self.root / _WHEEL).write_bytes(_BODIES)
+
+    def _record(self) -> None:
+        """按核过的结果记一次指纹"""
+        self.assertTrue(rel_mod._record_digest(self.root, _WHEEL, _SHA))
+
+    def test_recorded_wheel_becomes_target(self) -> None:
+        """记过指纹的件拼成一行目标，版本取文件名，直链指向盘上那份"""
+        self._record()
+        target = rel_mod.local_release("finshin-adapter-tg", _WHEEL, self.root)
+        if target is None:
+            self.fail("记过指纹的件没拼出目标")
+
+        self.assertEqual(target.version, "9.9.9")
+        self.assertEqual(target.sha256, _SHA)
+        self.assertEqual(Path(target.url).name, _WHEEL)
+        self.assertTrue(target.url.startswith("file:"))
+
+    def test_unrecorded_wheel_has_no_target(self) -> None:
+        """索引没记那份件即拼不出目标"""
+        self.assertIsNone(
+            rel_mod.local_release("finshin-adapter-tg", _WHEEL, self.root)
+        )
+
+    def test_changed_wheel_is_not_a_target(self) -> None:
+        """盘上内容变了即不算记过的那份件"""
+        self._record()
+        (self.root / _WHEEL).write_bytes(b"other bytes")
+        self.assertIsNone(
+            rel_mod.local_release("finshin-adapter-tg", _WHEEL, self.root)
+        )
+
+    def test_missing_wheel_is_not_a_target(self) -> None:
+        """记过但那份件已不在盘上即不交出目标"""
+        self._record()
+        (self.root / _WHEEL).unlink()
+        self.assertIsNone(
+            rel_mod.local_release("finshin-adapter-tg", _WHEEL, self.root)
+        )
+
+    def test_bad_index_reads_empty(self) -> None:
+        """索引不是合法 JSON 即按没记处理"""
+        self._record()
+        (self.root / rel_mod._INDEX_NAME).write_text("not json", encoding="utf-8")
+        self.assertEqual(rel_mod._recorded_digests(self.root), {})
+
+    def test_absent_index_reads_empty(self) -> None:
+        """目录不在场即按没记处理"""
+        self.assertEqual(rel_mod._recorded_digests(self.root / "no-such-dir"), {})
+
+    def test_repeated_record_keeps_one_entry(self) -> None:
+        """同一份件记两次只留一条，别的记条不丢"""
+        self._record()
+        other = "finshin_sdk-1.0.0-py3-none-any.whl"
+        rel_mod._record_digest(self.root, other, "3" * 64)
+        self._record()
+        table = rel_mod._recorded_digests(self.root)
+
+        self.assertEqual(sorted(table), sorted([_WHEEL, other]))
+        self.assertEqual(table[_WHEEL], _SHA)
+
+    def test_version_needs_five_parts(self) -> None:
+        """文件名段数不够即读不出版本号"""
+        self.assertEqual(rel_mod._version_in_name(_WHEEL), "9.9.9")
+        self.assertEqual(rel_mod._version_in_name("two-parts.whl"), "")
 
 
 if __name__ == "__main__":

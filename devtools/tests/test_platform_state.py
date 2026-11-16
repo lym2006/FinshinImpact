@@ -32,6 +32,7 @@ from services.adapter_catalog import Catalog, ReleaseRow  # noqa: E402
 from services.adapter_manifest import InstalledAdapter  # noqa: E402
 from services.env_setup import platform_rows as rows_mod  # noqa: E402
 from services.env_setup import platform_state as mod  # noqa: E402
+from services.env_setup import wheel_fetch  # noqa: E402
 
 _ADAPTER = "finshin-adapter-tg"
 _SDK = "finshin-sdk"
@@ -123,10 +124,16 @@ def _release_row(version: str, sha: str, distribution: str = _ADAPTER) -> Releas
     )
 
 
-def _wheel_on(root: Path, version: str) -> str:
+def _wheel_name(version: str, distribution: str = _ADAPTER) -> str:
+    """wheel 文件名，与目录行直链末段同一写法"""
+    stem = distribution.replace("-", "_")
+
+    return f"{stem}-{version}-py3-none-any.whl"
+
+
+def _wheel_on(root: Path, version: str, distribution: str = _ADAPTER) -> str:
     """在临时目录落一份 wheel 件，交出它的指纹"""
-    stem = _ADAPTER.replace("-", "_")
-    (root / f"{stem}-{version}-py3-none-any.whl").write_bytes(_WHEEL_BODY)
+    (root / _wheel_name(version, distribution)).write_bytes(_WHEEL_BODY)
 
     return hashlib.sha256(_WHEEL_BODY).hexdigest()
 
@@ -315,48 +322,109 @@ class TestLocalWheels(unittest.TestCase):
     """盘上件的逐份读数"""
 
     def setUp(self) -> None:
-        """临时 wheel 目录，落两份件，其中一份不在清单里"""
+        """临时 wheel 目录，一份在清单里，一份本机记过，一份两样都没有"""
         holder = tempfile.TemporaryDirectory()
         self.addCleanup(holder.cleanup)
         self._root = Path(holder.name)
         self._listed = _wheel_on(self._root, "0.2.0")
+        self._recorded = _wheel_on(self._root, "0.1.5")
         _wheel_on(self._root, "0.0.9")
+        wheel_fetch._record_digest(self._root, _wheel_name("0.1.5"), self._recorded)
 
-    def _row(self) -> rows_mod.ComponentRow:
-        """清单里只有 0.3.0 与 0.2.0 两版"""
+    def _row(self, *versions: str) -> rows_mod.ComponentRow:
+        """一行读数，清单里按给定次序列那几版"""
         return _multi_row(
             "0.1.0",
-            _release_row("0.3.0", _SHA),
-            _release_row("0.2.0", self._listed),
+            *[_release_row(version, _SHA) for version in ("0.3.0", *versions)],
         )
 
-    def test_files_are_listed_by_name(self) -> None:
-        """盘上属于这只发行件的件逐份报出"""
+    def _wheels(
+        self, rows: list[rows_mod.ComponentRow], row: rows_mod.ComponentRow
+    ) -> tuple[mod.WheelLine, ...]:
+        """按临时目录那份件盘一遍"""
         with patch.object(mod, "WHEELS_DIR", self._root):
-            lines = mod.local_wheels(self._row())
+            return mod.local_wheels(rows, row)
+
+    def test_files_are_listed_by_name(self) -> None:
+        """盘上属于这只发行件的件按名逐份报出"""
+        lines = self._wheels([self._row("0.2.0")], self._row("0.2.0"))
 
         self.assertEqual(
             [line.file_name for line in lines],
+            [_wheel_name("0.0.9"), _wheel_name("0.1.5"), _wheel_name("0.2.0")],
+        )
+
+    def test_three_origins_are_told_apart(self) -> None:
+        """两样都没有、本机记过、目录里有，三档各归各"""
+        lines = self._wheels([self._row("0.2.0")], self._row("0.2.0"))
+
+        self.assertEqual(
+            [line.origin for line in lines],
             [
-                "finshin_adapter_tg-0.0.9-py3-none-any.whl",
-                "finshin_adapter_tg-0.2.0-py3-none-any.whl",
+                mod.WheelOrigin.UNKNOWN,
+                mod.WheelOrigin.RECORDED,
+                mod.WheelOrigin.CATALOG,
             ],
         )
 
-    def test_file_in_list_is_marked(self) -> None:
-        """文件名对得上清单某一版的即算在清单里"""
-        with patch.object(mod, "WHEELS_DIR", self._root):
-            lines = mod.local_wheels(self._row())
+    def test_recorded_wheel_is_installable(self) -> None:
+        """记过指纹的那份件拼成可装目标，版本与指纹按本机记的算"""
+        lines = self._wheels([self._row("0.2.0")], self._row("0.2.0"))
+        recorded = lines[1].release
+        if recorded is None:
+            self.fail("本机记过的那份件没拼出目标")
 
-        self.assertEqual([line.listed for line in lines], [False, True])
+        self.assertEqual(recorded.version, "0.1.5")
+        self.assertEqual(recorded.sha256, self._recorded)
+        self.assertTrue(recorded.url.startswith("file:"))
 
-    def test_no_row_leaves_files_unmarked(self) -> None:
-        """没有目录行时盘上的件一律算对不上"""
-        row = replace(self._row(), release=None)
-        with patch.object(mod, "WHEELS_DIR", self._root):
-            lines = mod.local_wheels(row)
+    def test_unknown_wheel_has_no_target(self) -> None:
+        """两样都没有的那份件不交目标，也不给理由句"""
+        lines = self._wheels([self._row("0.2.0")], self._row("0.2.0"))
 
-        self.assertEqual([line.listed for line in lines], [False, False])
+        self.assertIsNone(lines[0].release)
+        self.assertEqual(lines[0].blocked, "")
+
+    def test_catalog_wheel_keeps_the_catalog_row(self) -> None:
+        """目录里有那一版即交目录那一行，装它仍按目录指纹核"""
+        row = self._row("0.2.0")
+        lines = self._wheels([row], row)
+        if row.release is None:
+            self.fail("目录行没拼出来")
+
+        self.assertIs(lines[2].release, row.release.versions[1])
+
+    def test_absent_catalog_still_offers_recorded(self) -> None:
+        """目录取不到时本机记过的那份仍算可装"""
+        row = replace(self._row("0.2.0"), release=None)
+        lines = self._wheels([row], row)
+
+        self.assertEqual(
+            [line.origin for line in lines],
+            [
+                mod.WheelOrigin.UNKNOWN,
+                mod.WheelOrigin.RECORDED,
+                mod.WheelOrigin.UNKNOWN,
+            ],
+        )
+
+    def test_out_of_range_recorded_wheel_is_blocked(self) -> None:
+        """本机记过但超出在场适配器要求的接口包那一版照样挡"""
+        sdk = replace(_component("", _SDK, "0.1.0", "", "2.0.0"), release=None)
+        adapter = _component(
+            str(Platform.TELEGRAM), _ADAPTER, "0.1.0", ">=1.0.0,<2.0.0", "0.1.1"
+        )
+        _wheel_on(self._root, "2.0.0", _SDK)
+        wheel_fetch._record_digest(
+            self._root, _wheel_name("2.0.0", _SDK), self._recorded
+        )
+        lines = self._wheels([sdk, adapter], sdk)
+
+        self.assertEqual(
+            [line.file_name for line in lines], [_wheel_name("2.0.0", _SDK)]
+        )
+        self.assertEqual(lines[0].origin, mod.WheelOrigin.RECORDED)
+        self.assertEqual(lines[0].blocked, "这一版接口包不在在场适配器要求的区间内")
 
 
 class TestBucket(unittest.TestCase):

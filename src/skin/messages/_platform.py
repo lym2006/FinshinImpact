@@ -7,6 +7,7 @@ class PlatformMessage:
     - 三档段名、来源四档、来路三档、动作与卸载话术
     - 有目录行的组件多出动作一行，已装包的再多出卸载一行
     - 历史版本与本机安装包各展开一层，逐行报来路
+    - 盘上的件分三档：目录里有这一版、本机记过指纹、两样都没有
     """
 
     # 用：skin.theme 平台组件面板的窗名与弹窗标题
@@ -76,8 +77,9 @@ class PlatformMessage:
     WHEEL_CACHED = "已下载"
 
     # 用：ui._guide._platform_block 盘上件的逐份读数
-    WHEEL_LISTED = "{name} 在版本清单里，装它才核指纹"
-    WHEEL_STRAY = "{name} 不在版本清单里，没核到指纹，不给装"
+    WHEEL_LISTED = "{name} 目录里有这一版，装它按目录给的指纹核"
+    WHEEL_RECORDED = "{name} 本机下载时记过指纹，可直接装盘上那份"
+    WHEEL_STRAY = "{name} 目录里没这一版本机也没记过，没有权威指纹可核，不给装"
 
     # 用：ui._guide._platform 底部一键与目录拒收段的行名
     BTN_UPDATE_ALL = "一键更新"
