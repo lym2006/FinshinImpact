@@ -3,6 +3,7 @@
 - 解压嵌入式 Python、放开 site、部署 uv、装依赖
 - 随包接口件与核心依赖一条命令装齐
 - 已装且清单未变即免装，失败保缓存供续装命中
+- 随包件只补不足的那版，本机更高的版本不许被压回去
 """
 
 import shutil
@@ -13,9 +14,11 @@ from pathlib import Path
 from pack_spec import (
     PackLayout,
     dependencies,
+    file_digest,
     lines_digest,
     require_setting,
 )
+from packaging.version import InvalidVersion, Version
 from unpack import unpack_all, unpack_entry
 
 from . import console, dialogs
@@ -25,25 +28,66 @@ _SETTING_INDEX = "uv-index-urls"
 _SETTING_CACHE = "uv-cache-dir"
 _WHEEL_GLOB = "*.whl"
 
+# 运行环境里已装件的落点与命名形态
+_SITE_PACKAGES = Path("Lib") / "site-packages"
+_DIST_INFO_GLOB = "*.dist-info"
+_DIST_INFO_SUFFIX = ".dist-info"
 
-def _seed_wheels(root: Path) -> list[str]:
-    """随包接口件的文件名
+
+def _seed_wheels(root: Path) -> list[Path]:
+    """随包接口件的 wheel，按文件名升序
 
     - 构建时打进包根 `_sdk`，升级整目录替换
     """
-    return sorted(p.name for p in (root / PackLayout.SDK_WHEEL_DIR).glob(_WHEEL_GLOB))
+    return sorted((root / PackLayout.SDK_WHEEL_DIR).glob(_WHEEL_GLOB))
+
+
+def _name_and_version(stem: str) -> tuple[str, str]:
+    """文件名头两段读成发行件名与版本，下划线归回连字符"""
+    parts = stem.split("-")
+    if len(parts) < 2:
+        return "", ""
+    return parts[0].replace("_", "-"), parts[1]
+
+
+def _installed_versions(runtime: Path) -> dict[str, str]:
+    """运行环境里已装的发行件名与版本，按 dist-info 目录名读"""
+    found: dict[str, str] = {}
+    for info in (runtime / _SITE_PACKAGES).glob(_DIST_INFO_GLOB):
+        name, version = _name_and_version(info.name[: -len(_DIST_INFO_SUFFIX)])
+        if name:
+            found[name] = version
+    return found
+
+
+def _already_enough(wheel: Path, installed: dict[str, str]) -> bool:
+    """随包件要的那版本机已有更高或相等，读不懂版本即算不足"""
+    name, wanted = _name_and_version(wheel.stem)
+    have = installed.get(name, "")
+    if not have:
+        return False
+    try:
+        return Version(have) >= Version(wanted)
+    except InvalidVersion:
+        return False
 
 
 def _install_plan(root: Path) -> tuple[list[str], list[str]]:
     """交给 uv 的装单与记进免装指纹的清单
 
-    - 接口件按路径喂 uv，按文件名记指纹，挪目录不算清单变动
+    - 接口件按路径喂 uv，按内容摘要记指纹，同文件名换内容也算变动
+    - 本机已装不低于随包那版即不进装单，随包件不压新版
     """
     core = dependencies(root)
-    seeds = _seed_wheels(root)
-    paths = [str(root / PackLayout.SDK_WHEEL_DIR / name) for name in seeds]
+    wheels = _seed_wheels(root)
+    installed = _installed_versions(root / PackLayout.RUNTIME_DIR)
+    wanted = [wheel for wheel in wheels if not _already_enough(wheel, installed)]
+    marks = [f"{wheel.name}#{file_digest(wheel)}" for wheel in wheels]
 
-    return [*core, *paths], [*core, *seeds]
+    return (
+        [*core, *(str(wheel) for wheel in wanted)],
+        [*core, *marks],
+    )
 
 
 def _list_digest(items: list[str]) -> str:
@@ -163,4 +207,4 @@ def ensure_runtime(root: Path) -> None:
             "内嵌运行环境包损坏（发布包不完整）\n请到 Releases 页重新下载最新发布包"
         )
 
-    (runtime / ".installed").write_text(_list_digest(deps))
+    (runtime / PackLayout.INSTALL_STAMP).write_text(_list_digest(stamped))
