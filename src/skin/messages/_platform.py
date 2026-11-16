@@ -4,7 +4,7 @@
 class PlatformMessage:
     """平台组件面板文案
 
-    - 三档段名、来源、动作与卸载话术
+    - 三档段名、来源四档、来路三档、动作与卸载话术
     - 有目录行的组件多出动作一行，已装包的再多出卸载一行
     - 历史版本与本机安装包各展开一层，逐行报来路
     """
@@ -17,10 +17,19 @@ class PlatformMessage:
     HEAD_UPGRADABLE = "可更新"
     HEAD_ONLINE = "网络可装"
 
-    # 用：ui._guide._platform_block 来源行的三种取值
-    SOURCE_INSTALLED = "已装包"
-    SOURCE_TREE = "本机源码仓"
+    # 用：ui._guide._platform_block 来源行的四种取值
+    SOURCE_TREE_INSTALLED = "本机源码仓（已装进环境）"
+    SOURCE_TREE_ONLY = "本机源码仓（还没装进环境）"
     SOURCE_NONE = "本机没有"
+
+    # 用：ui._guide._platform_block 来源行与历史版本行都写那一句
+    LOCAL_INSTALLED = "本机已装"
+
+    # 用：ui._guide._platform_block 来路行的三种取值
+    LABEL_ORIGIN = "来路"
+    ORIGIN_WHEEL = "本机已下载的件"
+    ORIGIN_CATALOG = "在线目录"
+    ORIGIN_TREE = "源码仓"
 
     # 用：ui._guide._platform_block 每行的栏名
     LABEL_SOURCE = "来源"
@@ -60,7 +69,6 @@ class PlatformMessage:
 
     # 用：ui._guide._platform_block 历史版本每一版的读数字与装旧版那颗
     BTN_INSTALL_VERSION = "装这版"
-    LOCAL_INSTALLED = "本机已装"
     WHEEL_CACHED = "已下载"
 
     # 用：ui._guide._platform_block 盘上件的逐份读数

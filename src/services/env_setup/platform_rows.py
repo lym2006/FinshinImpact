@@ -31,12 +31,14 @@ _SDK_TREE_DIR = "finshin/sdk"
 class ComponentSource(StrEnum):
     """一只组件在本机的来路
 
-    - TREE 挂载的源码仓在场，声明按它读
+    - TREE_INSTALLED 挂载的源码仓在场，那只包也装进了环境
+    - TREE_ONLY 挂载的源码仓在场，环境里没那只包
     - INSTALLED 声明与代码都取环境里那只包
     - NONE 本机没有
     """
 
-    TREE = "tree"
+    TREE_INSTALLED = "tree_installed"
+    TREE_ONLY = "tree_only"
     INSTALLED = "installed"
     NONE = "none"
 
@@ -180,7 +182,7 @@ def _bucket_of(
         return ComponentBucket.LOCAL
     if not installed:
         return ComponentBucket.ONLINE
-    if source == ComponentSource.TREE:
+    if source == ComponentSource.TREE_INSTALLED:
         return ComponentBucket.LOCAL
     if is_upgrade(installed, release.version) is True:
         return ComponentBucket.UPGRADABLE
@@ -189,9 +191,11 @@ def _bucket_of(
 
 
 def _source_of(in_tree: bool, has_package: bool) -> ComponentSource:
-    """代码与声明从哪来，挂载仓那份优先于已装包"""
+    """代码与声明从哪来，挂载仓那份与已装包各记各的"""
     if in_tree:
-        return ComponentSource.TREE
+        return (
+            ComponentSource.TREE_INSTALLED if has_package else ComponentSource.TREE_ONLY
+        )
     if has_package:
         return ComponentSource.INSTALLED
 

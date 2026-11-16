@@ -6,6 +6,7 @@
 - 接口包没到位或高出上限时适配器那颗不给装，接口包那行自己不受此限
 - 在场平台只看已装包，源码仓挂着没装的不算
 - 版本清单逐版报本机来路，盘上的件逐份报在不在清单里
+- 来源按源码仓在不在场与包装没装进环境分四档，来路按内容从哪儿取到分三档
 """
 
 import hashlib
@@ -290,6 +291,114 @@ class TestBucket(unittest.TestCase):
         self.assertEqual(
             _tg_row("最新", "0.1.0").bucket, rows_mod.ComponentBucket.LOCAL
         )
+
+
+class TestSourceReading(unittest.TestCase):
+    """来源那行的四档读数"""
+
+    def test_tree_with_package(self) -> None:
+        """源码仓挂着且装进了环境即第一档"""
+        self.assertEqual(
+            _tg_row("0.1.0", "0.1.1", tree=True).source,
+            rows_mod.ComponentSource.TREE_INSTALLED,
+        )
+
+    def test_tree_without_package(self) -> None:
+        """源码仓挂着但环境里没那只包即第二档"""
+        self.assertEqual(
+            _tg_row("", "0.1.0", tree=True).source,
+            rows_mod.ComponentSource.TREE_ONLY,
+        )
+
+    def test_package_only(self) -> None:
+        """只有环境里那只包即第三档"""
+        self.assertEqual(
+            _tg_row("0.1.0", "0.1.1").source, rows_mod.ComponentSource.INSTALLED
+        )
+
+    def test_absent(self) -> None:
+        """两样都没有即第四档"""
+        self.assertEqual(_tg_row("", "0.1.0").source, rows_mod.ComponentSource.NONE)
+
+
+class TestOrigin(unittest.TestCase):
+    """一行摆的内容从哪儿取到"""
+
+    _BODY = b"wheel body"
+
+    def setUp(self) -> None:
+        """临时 wheel 目录，按点名决定那份件在不在场"""
+        holder = tempfile.TemporaryDirectory()
+        self.addCleanup(holder.cleanup)
+        self._root = Path(holder.name)
+
+    def _row(
+        self,
+        source: rows_mod.ComponentSource,
+        with_release: bool = True,
+        on_disk: bool = False,
+    ) -> rows_mod.ComponentRow:
+        """一行读数，直链末段就是盘上那个文件名"""
+        release = None
+        if with_release:
+            if on_disk:
+                (self._root / "finshin-adapter-tg.whl").write_bytes(self._BODY)
+            release = ReleaseRow(
+                distribution=_ADAPTER,
+                version="0.1.1",
+                url="https://example.invalid/finshin-adapter-tg.whl",
+                sha256=hashlib.sha256(self._BODY).hexdigest(),
+            )
+
+        return rows_mod.ComponentRow(
+            platform=str(Platform.TELEGRAM),
+            distribution=_ADAPTER,
+            source=source,
+            installed="0.1.0",
+            requires="",
+            release=release,
+            bucket=rows_mod.ComponentBucket.UPGRADABLE,
+        )
+
+    def _origin(self, row: rows_mod.ComponentRow) -> mod.ComponentOrigin:
+        """按临时目录那份件算来路"""
+        with patch.object(mod, "WHEELS_DIR", self._root):
+            return mod.source_origin(row)
+
+    def test_cached_file_is_the_source(self) -> None:
+        """盘上那份件指纹对得上目录即算本机已下载的件"""
+        row = self._row(rows_mod.ComponentSource.INSTALLED, on_disk=True)
+        self.assertEqual(self._origin(row), mod.ComponentOrigin.WHEEL)
+
+    def test_absent_file_falls_to_catalog(self) -> None:
+        """件不在盘上即只能走在线目录"""
+        row = self._row(rows_mod.ComponentSource.INSTALLED)
+        self.assertEqual(self._origin(row), mod.ComponentOrigin.CATALOG)
+
+    def test_wrong_digest_is_not_the_source(self) -> None:
+        """同名那份件指纹对不上即不算本机的件"""
+        (self._root / "finshin-adapter-tg.whl").write_bytes(b"other body")
+        row = self._row(rows_mod.ComponentSource.INSTALLED)
+        self.assertEqual(self._origin(row), mod.ComponentOrigin.CATALOG)
+
+    def test_tree_without_catalog_row(self) -> None:
+        """没目录行而源码仓挂着即只有源码仓"""
+        for source in (
+            rows_mod.ComponentSource.TREE_INSTALLED,
+            rows_mod.ComponentSource.TREE_ONLY,
+        ):
+            row = self._row(source, with_release=False)
+            self.assertEqual(self._origin(row), mod.ComponentOrigin.TREE)
+
+    def test_installed_package_without_catalog_row(self) -> None:
+        """没目录行而只有环境里那只包即没有可取的内容"""
+        row = self._row(rows_mod.ComponentSource.INSTALLED, with_release=False)
+        self.assertEqual(self._origin(row), mod.ComponentOrigin.NONE)
+
+    def test_absent_without_catalog_row(self) -> None:
+        """本机什么都没有即没有可取的内容"""
+        row = self._row(rows_mod.ComponentSource.NONE, with_release=False)
+        self.assertEqual(self._origin(row), mod.ComponentOrigin.NONE)
 
 
 class TestDistributionName(unittest.TestCase):

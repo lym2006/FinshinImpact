@@ -24,12 +24,14 @@ from services.env_setup.platform_rows import (
     ComponentSource,
 )
 from services.env_setup.platform_state import (
+    ComponentOrigin,
     VersionLine,
     WheelLine,
     deps_text,
     install_blocked,
     local_wheels,
     older_versions,
+    source_origin,
 )
 from skin.messages import PlatformMessage
 from skin.theme import PLATFORM_DIALOG, ButtonStyle, ObjectName
@@ -39,9 +41,17 @@ from ._platform_flow import install_flow, uninstall_flow
 
 # 来源取值给人看的那句
 _SOURCE_TEXT = {
-    ComponentSource.TREE: PlatformMessage.SOURCE_TREE,
-    ComponentSource.INSTALLED: PlatformMessage.SOURCE_INSTALLED,
+    ComponentSource.TREE_INSTALLED: PlatformMessage.SOURCE_TREE_INSTALLED,
+    ComponentSource.TREE_ONLY: PlatformMessage.SOURCE_TREE_ONLY,
+    ComponentSource.INSTALLED: PlatformMessage.LOCAL_INSTALLED,
     ComponentSource.NONE: PlatformMessage.SOURCE_NONE,
+}
+
+# 来路取值给人看的那句，没得取的档位不进表
+_ORIGIN_TEXT = {
+    ComponentOrigin.WHEEL: PlatformMessage.ORIGIN_WHEEL,
+    ComponentOrigin.CATALOG: PlatformMessage.ORIGIN_CATALOG,
+    ComponentOrigin.TREE: PlatformMessage.ORIGIN_TREE,
 }
 
 
@@ -92,6 +102,9 @@ class ComponentBlock(QFrame):
         self._add_text(
             f"{PlatformMessage.LABEL_SOURCE}：{_SOURCE_TEXT[self._row.source]}"
         )
+        origin = source_origin(self._row)
+        if origin in _ORIGIN_TEXT:
+            self._add_text(f"{PlatformMessage.LABEL_ORIGIN}：{_ORIGIN_TEXT[origin]}")
         self._add_text(f"{PlatformMessage.LABEL_VERSION}：{_version_text(self._row)}")
         self._add_layer()
 

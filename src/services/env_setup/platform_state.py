@@ -8,6 +8,7 @@
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from enum import StrEnum
 
 from skin.messages import PlatformMessage
 from system.distributions import SDK_DISTRIBUTION, installed_version
@@ -17,6 +18,21 @@ from ..adapter_catalog import ReleaseRow
 from .platform_rows import ComponentBucket, ComponentRow, ComponentSource
 from .toolchain import WHEELS_DIR
 from .wheel_fetch import disk_files, file_name_of, is_cached
+
+
+class ComponentOrigin(StrEnum):
+    """一行摆的内容从哪儿取到
+
+    - WHEEL 盘上那份件指纹对得上目录，装它不联网
+    - CATALOG 只有在线目录的直链，装它要走网络
+    - TREE 没有目录行，只有挂载的源码仓在场
+    - NONE 本机既没有目录行也没有源码仓
+    """
+
+    WHEEL = "wheel"
+    CATALOG = "catalog"
+    TREE = "tree"
+    NONE = "none"
 
 
 @dataclass(frozen=True, slots=True)
@@ -72,6 +88,23 @@ def install_blocked(rows: Sequence[ComponentRow], row: ComponentRow) -> str:
         return PlatformMessage.SDK_TOO_NEW
 
     return PlatformMessage.NEED_SDK_UPDATE
+
+
+def source_origin(row: ComponentRow) -> ComponentOrigin:
+    """一行摆的内容从哪儿取到，按最新那一版的件在不在盘上定
+
+    - 源码仓挂着只说明声明读得到，装不了
+    """
+    if row.release is None:
+        in_tree = row.source in (
+            ComponentSource.TREE_INSTALLED,
+            ComponentSource.TREE_ONLY,
+        )
+        return ComponentOrigin.TREE if in_tree else ComponentOrigin.NONE
+    if is_cached(row.release, WHEELS_DIR):
+        return ComponentOrigin.WHEEL
+
+    return ComponentOrigin.CATALOG
 
 
 def older_versions(row: ComponentRow) -> tuple[VersionLine, ...]:
