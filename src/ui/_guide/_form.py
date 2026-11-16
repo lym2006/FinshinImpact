@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
 from finshin_sdk.domain import Platform, platform_of_profile
 from services.env_setup.platform_state import present_platforms
 from services.profile_store import code_for_token, create_profile, update_profile
-from skin.messages import PickerMessage
+from skin.messages import PickerMessage, PluginMessage
 from skin.qss import build_bootstrap_qss
 from skin.theme import FORM, ButtonStyle
 from system.profile_env import read_token
@@ -112,7 +112,7 @@ class NewProfileDialog(_ProfileFormDialog):
         # 入口那颗与下拉同排，不占下拉的一项
         head = QHBoxLayout()
         head.addWidget(self._platform, 1)
-        manage = make_button(PickerMessage.BTN_MANAGE_PLATFORM, ButtonStyle.SECONDARY)
+        manage = make_button(PluginMessage.MENU_PLATFORM, ButtonStyle.SECONDARY)
         manage.clicked.connect(self._open_platform)
         head.addWidget(manage)
         form.addLayout(head)

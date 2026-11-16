@@ -47,7 +47,6 @@ class PickerMessage:
 
     # 用：ui._guide._form 平台下拉项的显示名，按平台码取，没登记的显平台码
     PLATFORM_NAMES = {"tg": "Telegram", "qq": "QQ"}
-    BTN_MANAGE_PLATFORM = "管理"
     NEW_NEED_ADAPTER = (
         "本机还没有可用的平台\n先打开平台组件装一个适配器，再回来填 Token"
     )
