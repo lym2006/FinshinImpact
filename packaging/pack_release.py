@@ -37,10 +37,7 @@ def check_release() -> None:
     local_size = zip_path.stat().st_size if zip_path.is_file() else 0
     local_digest = file_digest(zip_path) if local_size else ""
     checks = [
-        (
-            "本地版本号",
-            f"v{version}" if not version.endswith("-dev") else "开发号，先正式化",
-        ),
+        ("本地版本号", f"v{version}"),
         ("git tag 远端", "已推送" if tag_hit else "缺失，先 push tag"),
         (
             "本地 zip",

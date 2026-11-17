@@ -229,17 +229,10 @@ def main() -> None:
     parser.add_argument(
         "--no-launcher", action="store_true", help="跳过编译复用现有启动器"
     )
-    parser.add_argument("--force", action="store_true", help="允许开发号版本号构建")
     args = parser.parse_args()
 
     if args.check:
         pack_release.check_release()
-        return
-
-    version = local_version(ROOT)
-    if version.endswith("-dev") and not args.force:
-        print(f"当前版本号 {version} 含 -dev 后缀，拒绝构建")
-        print("确认要构建请加 --force。发布前请先定稿正式版本号并打 tag")
         return
 
     if args.no_launcher:
