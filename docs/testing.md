@@ -1,7 +1,7 @@
 # 测试
 
 用例在两处：本体在 `devtools/tests/`，各平台适配器随子仓带在 `finshin/adapter/<平台>/tests/`。一份文件对一个主题，命名 `test_<主题>.py`。
-条文见 [`coding-style.md`](coding-style.md)，静态检查见 [`style-checker.md`](style-checker.md)，发布前的检查顺序见 [`release-workflow.md`](release-workflow.md)。
+条文见 [coding-style.md](coding-style.md)，静态检查见 [style-checker.md](style-checker.md)，发布前的检查顺序见 [release-workflow.md](release-workflow.md)。
 
 ## 跑法
 
@@ -13,19 +13,21 @@ python -m pytest
 python -m pytest devtools/tests/test_grant_access.py -v
 ```
 
-- 在项目根一条命令跑完两处，收集范围写在 `pytest.ini` 的 `testpaths` 里。
+- 在项目根一条命令跑完两处。
+- 收集范围写在 `pytest.ini` 的 `testpaths` 里。
   - `testpaths` 不展开通配，装载根那一棵只写根目录，pytest 自己走进去收各平台用例树。
   - 没挂载时那棵目录不在，收集范围少一条也不报错，只表现为用例数少一截。
-- 用例直接 import `src` 下的真实模块，跑测试不需要装发布物，也不需要网络。
-- 子仓那棵用例按各自包名引用，每份文件只把子仓根那一棵挂进导入路径，接口包与引擎库都从环境取（跑过 `uv sync --all-packages` 即在场），跑用例要在项目根。
+- 本体用例直接 import `src` 下的真实模块，不需要装发布物。
+- 用例侧共享件不带 `test_` 前缀，pytest 不收它们，只被用例 import。
+- 子仓用例按各自包名引用，接口包与引擎库从环境取。
 
 ## 文件规矩
 
-- 首行模块 docstring 用要点列出本文件证明的全部行为，一条一个事实。
-- 开头自行把 `src` 挂进 `sys.path`，全仓无 `conftest.py`，也不依赖已安装的包。
+- 首行模块 docstring 用要点列出本文件证明的全部行为。
+- 本体用例开头自行把 `src` 挂进 `sys.path`。
 - 导入业务模块前先调 `set_profile` 落身份码。
 - 真库用例每例自开临时库，收尾合并 WAL 再删目录，例与例不共享状态。
-- 网络一律打桩，只验编排，不发真请求。
+- 网络一律打桩，只验编排。
 
 ## 加用例的判据
 
@@ -34,13 +36,15 @@ python -m pytest devtools/tests/test_grant_access.py -v
 - 同一分支的多种入参用 `subTest` 铺在一个用例里，别为每档复制一遍断言。
 - `test_style_checker_meta.py` 查的是扫描器自己。
   - 每个分节各备一份必违规样本，判据脱节即红。
+  - 样本只落临时目录，不留在 `src`。
   - 豁免清单留了不再命中的条目也红。
 
 ## 用例放宽的部分
 
-风格上免这几处，跑得过这条没免：ruff 其余规则照查，pytest 照跑，改名或漏文件照样红。
+风格上免这几处。
 
-- 规范扫描器：`tests` 目录整体跳过，devtools 整树允许直连 src 的内部实现，机制见 [style-checker.md](style-checker.md)。
+- 规范扫描器的目录豁免见 [style-checker.md](style-checker.md) 的「测试目录豁免」节。
+- 内部实现的访问范围见 [coding-style.md](coding-style.md) 的「命名与门面导出」节。
 - 类型检查（pyright）在 `pyrightconfig.json` 里管两层。
   - `exclude` 让闸门跳过本目录。
   - 编辑器单开一个用例文件时 `exclude` 拦不住分析，另按目录配一套环境：`extraPaths` 补 `src` 与 `devtools`。

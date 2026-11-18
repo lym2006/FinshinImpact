@@ -2,39 +2,34 @@
 
 面向贡献者与维护者。其余文档各管一段：
 
-- 用户侧安装与更新：根目录 [`README.md`](../README.md)
-- 发布操作：[`release-workflow.md`](release-workflow.md)
-- 构建与发布物：[`packaging.md`](packaging.md)
-- 代码风格：[`coding-style.md`](coding-style.md)，静态检查：[`style-checker.md`](style-checker.md)，回归用例：[`testing.md`](testing.md)
-- 实测出来的约束与踩坑：[`lessons/`](lessons/README.md)
+- 用户侧安装与更新：根目录 [README.md](../README.md)
+- 发布操作：[release-workflow.md](release-workflow.md)
+- 构建与发布物：[packaging.md](packaging.md)
+- 代码风格：[coding-style.md](coding-style.md)，静态检查：[style-checker.md](style-checker.md)，回归用例：[testing.md](testing.md)
+- 实测出来的约束与踩坑：[lessons/](lessons/README.md)
 
 ## 环境搭建
 
 1. 安装 `Python 3.11+`（勾选 Add to PATH）。
 2. 克隆本仓库：`git clone <地址>`。装载根与接口包两棵都不在版本库里，要按「挂载子仓」那一节自己 clone 进去。
-   - 缺适配器那棵没有平台可用。
-   - 缺接口包那棵本体起不来。
-   - 每只适配器挂在哪、目录名怎么定，见那只适配器仓自己的 README。
 3. 在项目根目录创建虚拟环境：`python -m venv .venv`。
 4. 激活虚拟环境：`.venv\Scripts\activate`。
 5. 安装依赖与开发工具：`uv sync --all-packages`，镜像源可自行配置。
-6. 启动：`python -m bootstrap`，先弹出「选择机器人」窗口，选定或新建实例后管理面板出现。
-7. 首次运行在选择窗点「新建」，平台下拉只列本机装着适配器包的平台，装新的走下拉右侧「管理平台组件」。填 Bot Token 即生成实例文件夹 `instances/<身份码>/` 并弹出配置向导，填完即完成初始化，无需手编文件。
+6. 启动：`python -m bootstrap`，先弹出"选择机器人"窗口，选定或新建实例后管理面板出现。
+7. 首次运行在选择窗点"新建"，平台下拉只列本机装着适配器包的平台，装新的走下拉右侧"管理平台组件"。填 Bot Token 即生成实例文件夹 `instances/<身份码>/` 并弹出配置向导，填完即完成初始化，无需手编文件。
 8. 实例文件夹：
-   - 内含 `config.toml`、`persona/`（内有 `persona.md`、`template.sha256`、`applied.cache`）、`profile.json`、`records/`、`db/`（内有 `bot.db` 与 `backups/`）、`logs/`，整体不进版本库。
+   - 内含 `config.toml`、`plugins.toml`（插件启用集与目录指纹）、`persona/`（内有 `persona.md`、`template.sha256`、`applied.cache`）、`profile.json`、`records/`、`db/`（内有 `bot.db` 与 `backups/`）、`logs/`，整体不进版本库。
    - Bot Token 存 `profile.json`，不进 `config.toml`，面板不渲染也不可改。
 9. 身份码：
    - 经环境变量 `FINSHINIMPACT_PROFILE` 传递，单源定义在 `src/system/profile_env.py` 的 `_PROFILE_ENV`，选窗写入、业务模块导入期读取。
    - 身份码必须在任何业务模块 import 前确定。
    - 发布包解压后手动单跑 `runtime\python.exe main.py` 也会先弹选择窗，无需自行设置该变量。
 10. `config.toml` 住在实例目录里，根目录那一份不读取，手头的老配置要自己备份，再重填 API Key 与人设。
-11. 改路径或符号名时，`.gitignore` 挡住的目录不在仓内搜索工具的可见范围里，那类目录要用命令行 `grep` 单独扫一遍。
 
 ## 新增插件（清单驱动流程）
 
 1. 建目录 `src/bundled/<Name>/`，`__init__.py` 里写一只 `BasePlugin` 子类，一只模块里只准有一只。
    - 取件优先从 `finshin_sdk` 顶层取，顶层没导出的那几样（谓词、随包档位表、分步保留串一类）再从 `finshin_sdk.domain` 取。
-   - 两份交出来的是同一个对象，不必为「只用一个入口」去撤掉子包那份。
    - 这几只方法都可以不写，不写即没有那一类能力，交出的清单按交出的顺序生效。
    - `message_routes` 交按顺序判定的路由清单，谓词只吃归一后的处理上下文，装配时由平台侧编成引擎对象。
    - `background_loops` 交常驻循环，元素为无参协程函数，随 Bot 服务起停：轮询开始即拉起，停服即取消。跑中途抛出即静默收摊，那行日志要等停服收拢时才落，循环本身不重跑。
@@ -85,16 +80,17 @@
 装卸纪律：
 
 - 禁用只改启用集，不删已装库。
-- 删库只由依赖同步执行，入口是选窗「环境维护」手动菜单。
+- 删库只由依赖同步执行，入口是选窗"环境维护"手动菜单。
 
 ## 外部插件
 
 1. 建目录 `finshin/plugin/<Name>/`，清单与字段同上，`name` 与目录名一致，代码放 `src` 那一层。
-   - 只引 `finshin_sdk` 交来的那几样，别伸手本体各层。装载前先扫一遍源码，引了本体的整只拒装，面板那行写明引了谁与落在哪个文件名第几行，一份多处只报第一处。
+   - 导入范围见 [coding-style.md](coding-style.md) 的「分层职责」节。
+   - 装载前扫描源码，引了本体的整只拒装，面板写明引用位置，一份多处只报第一处。
    - 两根目录一起扫，先读随包再读外部。外部插件的导入名是 `plugin.<Name>`，代码所在那一层按名字接到它，插件内部的相对引用走得通。
 2. 与随包插件同名的那份不放行，改 `name` 或写进启用集都不认。
-3. 被顶掉的那一份在面板单开一行，排在整张清单末尾，勾选位是「重名」按钮，点开写明插件名被谁占用。
-4. 清单声明的命令名已被拿走的整只不装载，面板把勾选位换成「冲突」按钮，点开逐条写明哪条命令被哪只插件占用。
+3. 被顶掉的那一份在面板单开一行，排在整张清单末尾，勾选位是"重名"按钮，点开写明插件名被谁占用。
+4. 清单声明的命令名已被拿走的整只不装载，面板把勾选位换成"冲突"按钮，点开逐条写明哪条命令被哪只插件占用。
    - 随包插件优先拿走命令名，同一命令名被两只外部插件一起勾上时整组不装载，状态文件怎么写都不算数。
    - 一只插件交出的是整套路由，摘不掉单独一条命令，命令名被抢走即整只不装载。
 5. 勾选与取消当场重算，撞车的另一只立刻换成按钮，不用重启也不用再保存。
@@ -108,8 +104,7 @@
    - `PluginSpec` 那只袋子删了。
 4. 动作名带归属：`queued_actions` 交的动作名写成「插件名.动作」，前段不等于自己的插件名整只拒装。内置对话的动作名由 `chat` 改成 `AI.chat`。
 5. 接口包撤掉没人用的形状：`ContentDTO` 的 `file_token` 与 `origin_ref`、`AdapterFieldSpec.default`、`BoundCommand.value_of`、`PrincipalRepository.find_by_key`。用到哪一处改哪一处，没用到不必动。
-6. 适配器声明改写在 `pyproject.toml`：上一版那份 `adapter.toml` 不再读取，平台标识写在 `[tool.finshin-adapter]` 的 `platform`，引擎库与接口包版本要求一并写在 `[project].dependencies`，形如 `finshin-sdk>=0.1.0,<0.2.0`。
-   - 上一版写的 `deps` 与 `requires_sdk` 两行不再读取，新写法的判据见下面「新增平台适配器」那一节。
+6. 把适配器声明从 `adapter.toml` 搬进 `pyproject.toml`，字段写法见「新增平台适配器」节。
 7. 插件独有的库从 `plugin.toml` 的 `deps` 搬到同目录 `pyproject.toml` 的 `[project].dependencies`，清单里再写 `deps` 属未知键、一律忽略。随包插件的库走项目根的 `pyproject.toml`。
 
 ## 新增平台适配器
@@ -119,7 +114,6 @@
    - 装载根下的目录名用平台码，`finshin/adapter/<平台码>/`，与声明里的 `platform` 同值。
    - 分发名 `finshin-adapter-tg`，可导入的包名是同一串把连字符换成下划线，两处都由子仓根的 `pyproject.toml` 派生。
    - 仓名以 `Finshin` 起头接词根，适配器族是 `FinshinAdapter` 加平台码大写。
-   - 仓名、分发名、包名是同串的三种写法。
    - 声明里的平台标识、入口点段的键、枚举里的平台码必须同值，装载侧读到不一致就整份不进表。
    - 本体只问那张表：装载、依赖保留与引擎预热都从 `load_adapter_manifests()` 取，不认路径也不写死平台名。
    - 发出去的平台靠一份远端目录在场：每行交平台码、分发名、版本、下载直链与指纹五样，直链是独立整串。
@@ -127,13 +121,13 @@
    - 清单只收正式 release，最多十版。
    - 旧版的版本号取 wheel 文件名，没报指纹的旧版不进清单。
    - 目录缺版本清单那段时按只有一版处理，老目录不必重发。
-   - 目录由主仓工作流按账号下各仓的声明聚合，新增一只适配器仓不必改本体代码，也不必改主仓清单。
+   - 在线目录的发布与刷新见 [release-workflow.md](release-workflow.md) 的「子仓供件」节。
    - 判定只看声明里写明的值与字段形态，仓名与附件名都不参与。
 2. 每只平台适配器一只独立仓，clone 进装载根 `finshin/adapter/` 下的一个目录里，主仓不记这笔登记。
    - 声明文件是仓根的 `pyproject.toml`，代码在 `src` 那一层，由 `package-dir` 映射成包，包名由 `[project].name` 定。
    - 装载侧按声明里的模块名取件，代码从环境里那只包来，取不到就走拒载那句交代。
    - 包目录改名必须同步改声明里 `[project.entry-points]` 那条值，两处同名才算一只包。
-   - 把一棵适配器放进来有两条：面板里从网络装，或手工把那只适配器仓的整棵内容放到 `finshin/adapter/<任一目录名>/`。
+   - 适配器可从面板联网安装，源码开发见「挂载子仓」节。
    - 同名同职责的模块平铺在包里，平台独有的机制放包里的 `features/`。
    - 开发说明见那只适配器仓自己的 README。
    - 入口由 `[project.entry-points."finshin.adapters"]` 那一段交出：键写平台标识，值写「入口模块:parts」，冒号后那个名字由本体规定。声明缺件、字段非法或入口点不点名本平台的适配器整份不进表。
@@ -154,18 +148,13 @@
    - `[tool.finshin-adapter]` 写平台标识 `platform`。
    - 接口包版本要求写在 `[project].dependencies` 里的 `finshin-sdk` 那一条，形如 `>=0.1.0,<0.2.0`，上下限都算数，没写即不设限。
    - 本机接口包不在要求的区间内即拒在装载入口之前，弹窗与日志各落一句写明要求与本机版本。
-   - 适配器自己的版本号单源是 `[project].version`，tag、wheel 文件名与本体读到的版本都从它取。
+   - 子仓版本号与 release 附件见 [release-workflow.md](release-workflow.md) 的「子仓供件」节。
    - 装载侧认两路读声明：`finshin/adapter/` 里那份，与装进环境的适配器包各自的元数据。同一平台两路都在时认目录里那一份。
-   - 子仓发版要上传 wheel 附件，指纹与下载直链由 GitHub 记在 release 附件上。
    - 适配器声明里的 `[tool.finshin-adapter].platform` 是平台码的对外出处，目录生成侧只读它。
-   - 单独重算一份目录跑 `python packaging/gen_catalog.py <输出路径>`，账号取自 `GITHUB_REPOSITORY`。
-3. 要实现的两份抽象接口在 `finshin_sdk`。
-   - 本体不直接引适配器，适配器经这一包取要实现的两份接口，除适配层外全仓不许 import aiogram。
-   - 适配器侧靠机器守：本体不许静态引适配器由归属用例扫 `src` 与 `packaging` 的源码，外部件（插件与外部适配器）只准引接口包由装载那一刻扫源码，本体不许引平台框架由依赖契约守。
-   - 这一包独立成仓 `FinshinSDK`，clone 进 `finshin/sdk`，构建 wheel 跑 `uv build finshin/sdk --wheel`。
-   - 发布构建现打这一只 wheel 并随包进包根 `_sdk`，首启由启动器与核心依赖一条命令装进环境，装成功即从包根删掉，装失败留着下次续装。升级整目录替换，新那份 wheel 会再带回来。
-   - 版本号单源与适配器同规则，见上文 `[project].version` 那条。
-   - 只写插件或适配器的人要的那几样都在这只包里，本体与外部件都从环境里读它，装法是 `uv sync --all-packages`。
+   - 单独生成在线目录见 [packaging.md](packaging.md) 的「在线目录」节。
+3. 分层与导入方向见 [coding-style.md](coding-style.md) 的「分层职责」节。
+   - 接口包安装见「环境搭建」节，源码挂载见「挂载子仓」节。
+   - wheel 构建与随包安装见 [packaging.md](packaging.md) 的「子仓构建」节。
 4. 入口模块交出运行时装配、频道探测与引擎预热，运行时实例交出交互端口、插件路由挂载口与路由清单编译器。
 5. 日志中间件实例由装载侧交来，挂上更新链那一步由各平台自己认，按启用序列注册插件全归装载侧。
 
@@ -185,12 +174,23 @@
 1. 挂载：`git clone <子仓地址> <挂载点>`。
 2. 日常改动：在挂载点目录里改、提交，推送跑 `git -C <挂载点> push origin main`，只推子仓自己那一笔，主仓这边没有要提的东西。
 3. 改完生效：跑 `.venv\Scripts\uv.exe sync --all-packages --reinstall-package <分发名>`，普通 sync 不重装子仓那棵。
-   - 面板与运行时读的都是环境里那只包：不重跑这一步，屏上的版本号和行为都还是旧源码的。
-   - 源码仓挂着且已装包的那一行算本机已有，既不给装也不给卸。
-   - 源码仓挂着但没装过的照样给「安装」，装上即换成本机已有。
-4. 更新：`git -C <挂载点> pull`。主仓 pull 不带动子仓，两边各拉各的。
-5. 摘掉：连目录一并删掉 `<挂载点>`。
-6. 主仓不记子仓停在哪个提交号。要把两边版本对上，看各自声明里的版本号。
+4. 面板与运行时读的都是环境里那只包：不重跑这一步，屏上的版本号和行为都还是旧源码的。
+5. 更新：`git -C <挂载点> pull`。主仓 pull 不带动子仓，两边各拉各的。
+6. 摘掉：连目录一并删掉 `<挂载点>`。
+7. 主仓不记子仓停在哪个提交号。要把两边版本对上，看各自声明里的版本号。
+
+## 新增规范扫描分节
+
+1. 先在 [coding-style.md](coding-style.md) 写条文，写明判据与后果。
+2. 在 `devtools/_style_checks/` 新建模块，只依赖 `_common`。
+   - 单文件检查导出 `check(files)`。
+   - 跨模块消费者检查导出 `check(files, graph)`。
+3. 在 `_common.py` 的 `SECTIONS` 加同名一项，分节名写法见 [style-checker.md](style-checker.md) 的「分节登记」节。
+   - 单文件检查进 `_registry.py` 的 `_FILE_CHECKS`。
+   - 导入图检查在 `run_checks` 里单独调用并传入导入图。
+4. 在 `devtools/tests/test_style_checker_meta.py` 的 `_SAMPLES` 补样本，要求见 [testing.md](testing.md) 的「加用例的判据」节。
+5. 跑 `python devtools\check_coding_style.py devtools` 自查。
+6. 跑 `python -m pytest devtools/tests/test_style_checker_meta.py`。
 
 ## 发布流程
 
@@ -198,8 +198,8 @@
 
 ## 更新方式
 
-- **「版本检查」按钮**：开发版与打包版都只比对在线版本号并弹窗提示有无新版，不当场更新，发现新版时提示重启本程序、由启动器自动完成升级。顺带拉一次发布说明清单，把弹窗焦点定到那一支版本。
+- **"版本检查"按钮**：开发版与打包版都只比对在线版本号并弹窗提示有无新版，不当场更新，发现新版时提示重启本程序、由启动器自动完成升级。顺带拉一次发布说明清单，把弹窗焦点定到那一支版本。
 - **开发版**：手动拉取新代码（`git pull` 或下载源码覆盖），依赖有变动时重跑上文环境搭建的 `uv sync --all-packages`。
 - **打包版**：启动器每次拉起主程序前自动比对版本，弹窗确认后完成下载升级，用户配置、数据与日志一律保留。
   - 启动器本体随升级当场更换，换壳机制见 [packaging.md](packaging.md)。
-  - 各版本走自动升级还是手动整包，见根目录 [`README.md`](../README.md) 的旧版迁移。
+  - 各版本走自动升级还是手动整包，见根目录 [README.md](../README.md) 的旧版迁移。

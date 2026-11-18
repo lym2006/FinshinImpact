@@ -13,8 +13,8 @@
 ```powershell
 cd src
 $env:QT_QPA_PLATFORM="offscreen"
-Remove-Item Env:FINSHINIMPACT_PROFILE
-python -c "import utils"
+Remove-Item Env:<身份码环境变量>
+python -c "import <路径族门面>"
 ```
 
 这条边界不靠人自觉，`.importlinter` 里有一条契约专门看守引导期禁引清单。引导期新增的任何窗体或工具都归契约管的那两个位置之一。
@@ -54,7 +54,7 @@ python -c "import utils"
 想知道慢在哪，用 `-X importtime` 打印每个模块的自耗时与累计耗时，别猜：
 
 ```powershell
-.venv\Scripts\python.exe -X importtime -c "import bootstrap" 2>&1 | Select-Object -Last 25
+.venv\Scripts\python.exe -X importtime -c "import <启动入口模块>" 2>&1 | Select-Object -Last 25
 ```
 
 有几笔固定的贵账值得记住。`importlib.metadata` 冷盘一次约 200 毫秒，只有查依赖装没装才用得上它，那就把 import 写进函数体，第一次真查盘才付钱。读一次磁盘元数据比重复读还贵，能合并成一次查完就别在循环里查。子包门面 eager 转发的代价见 [`layering.md`](layering.md) 的「门面与私有子包」。
@@ -69,7 +69,7 @@ python -c "import utils"
 
 主程序是被启动器用无控制台的解释器拉起来的，启动器也不等它的返回码。死得早的那一段连日志器都还没挂上——屏幕上没话、日志里也没话，用户看到的只是等待窗消失，等于什么都没发生。判据一句：**别把「日志里写了」当成给了反馈。**
 
-三类落点各管一段。界面库还活着时走应用内弹窗。界面库正是坏掉的那个时走系统原生弹窗（只依赖标准库，不碰样式与主题）。最外一层在入口脚本套一道兜底，接住「连引导包都 import 不动」那种死法。发布包的入口脚本由构建模板生成，改了要重新构建才带上。
+三类落点各管一段。界面库还活着时走应用内弹窗。界面库正是坏掉的那个时走系统原生弹窗（只依赖标准库，不碰样式与主题）。最外一层在入口脚本套一道兜底，接住「连引导包都 import 不动」那种死法。发布包的入口脚本由构建模板生成，重跑打包的判据见 [`deps-and-release.md`](deps-and-release.md) 的「发版节奏上的两个坑」。
 
 两个顺序坑：
 

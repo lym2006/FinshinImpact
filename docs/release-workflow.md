@@ -1,7 +1,7 @@
 # 发布工作流
 
-日常改动跑绿就 commit，本地攒着不 push，未 push 的段随便 rebase 整历史。
-四件套（CHANGELOG → commit → tag → release）是写完之后的定稿步骤，只在发布日按序走一遍。
+本文规定改动提交与发布步骤。
+中文措辞、条目与排版见 [coding-style.md](coding-style.md) 的「文档写法」节。
 
 ## 总流程（发布日按序执行）
 
@@ -27,7 +27,6 @@ $env:PYTHONUTF8 = 1; $env:PYTHONPATH = "src"
 .venv\Scripts\pytest.exe devtools\tests finshin/adapter -q
 ```
 
-- 闸门要一次跑齐，日常包成本地脚本执行即可，本节列出的就是脚本里真正跑的命令。
 - 绿的标准：
   - ruff format 与 check 都通过。
   - pyright 0 errors。
@@ -35,29 +34,27 @@ $env:PYTHONUTF8 = 1; $env:PYTHONPATH = "src"
   - 扫描器 0 硬性。
   - pytest 全过。
 - 闸门用本机已有的 node 直接跑 pyright 的 JS 入口，`node` 可换成任意 node 等价可执行文件。
-- 各步判据不在这里重复：
-  - 扫描器的分节、待核基线与豁免见 [style-checker.md](style-checker.md)。
-  - 用例口径见 [testing.md](testing.md)。
-  - 构建与发布物见 [packaging.md](packaging.md)。
+- 各步判据不在这里重复：扫描器的分节、待核基线与豁免见 [style-checker.md](style-checker.md)，用例口径见 [testing.md](testing.md)，构建与发布物见 [packaging.md](packaging.md)。
 
 ## 日常与定稿
 
 - 一轮改动五项闸门全绿即分组 commit。
 - 本地攒着不 push，半成品不入库。
-- 未 push 期间随便整历史：
-  - 改动按行折回它原来那笔（`git commit --fixup` 配 `rebase --autosquash`）。
-  - 同主题并笔、reword 修措辞，不留「先写后改」的碎笔。
-  - CHANGELOG 条目跟着它那条行为改动的笔一起交。
-- 整完必验 `git diff 整备前位置 HEAD` 为空，内容零变化才算整对。
-- 已 push 的笔不改写。
+- 未 push 期间随便整历史，已 push 的笔日常不改写：
+  - 改动按行折回它原来那笔。
+  - 同主题并笔、reword 修措辞，不留「先写后改」的碎笔，CHANGELOG 条目跟着它那条行为改动的笔一起交。
+  - 整完必验 `git diff 整备前位置 HEAD` 为空，内容零变化才算整对。
+- 历史整备期允许一次全量重写，条件四条：release 附件与 zip 不动、全部 tag 删旧重打并钉 tagger 日期、镜像仓重灌、`git diff 重写前位置 HEAD` 为空。
 - push、tag 只在发布日动。
 
 ## 子仓供件
 
-- 子仓的挂载、日常改动、更新与摘掉见 [development.md](development.md) 的「挂载子仓」一节。
-- 五项闸门在子仓只跑三项：格式、类型、测试。分层契约与发布物打包归本体。
-- 发版只在子仓，本体的发布链不含适配器版本：
-  - 构建：`uv build <装载根>/<平台码> --wheel`，产物名形如 `finshin_adapter_tg-0.1.0-py3-none-any.whl`，版本号取自子仓声明里的版本号单源。
+- 子仓的挂载、日常改动、更新与摘掉见 [development.md](development.md) 的「挂载子仓」节。
+- 子仓只跑格式、类型、测试三项检查。
+- 分层契约与发布物打包归本体。
+- 子仓版本号以 `pyproject.toml` 的 `[project].version` 为单源，tag、wheel 文件名与本体读到的版本都从它取。
+- wheel 构建见 [packaging.md](packaging.md) 的「子仓构建」节。
+- 适配器发版只在子仓，本体的发布链不含适配器版本：
   - tag 打在子仓那一笔上，名字就是版本号（`v0.1.0`）。
   - release 附件只放 wheel，不放源码快照，不在用户机器上构建。
   - 下载直链与指纹取 GitHub 记在 wheel 附件上的值。
@@ -89,88 +86,68 @@ $env:PYTHONUTF8 = 1; $env:PYTHONPATH = "src"
 
 ### 写什么
 
-- 只写关键条目，琐碎改动一笔带过或不写。
-- 加了又删的功能不留任何痕迹，增与删的条目一起清。
-- 用户视角写行为，不写实现细节，如写"坏配置不骗过验证"而不写"复验改走候选通道"。
-- 内部重构属实现方式变化，最终行为不变也要记一条 Changed：
-  - 写"做了什么、对维护意味着什么"，如"界面控件收敛到公共件，改样式一处生效"。
-  - 不铺实现黑话。
-- 纯注释与措辞整改不算实现方式变化，不记。
+- 只写关键条目，琐碎改动一笔带过或不写，加了又删的功能不留任何痕迹，增与删的条目一起清。
+- 用户视角写行为，不写实现细节。
+- 内部重构写对维护的影响，如「界面控件收敛到公共件，改样式一处生效」。
+- 改动类型与 CHANGELOG 归段见「Commit」节。
 
 ### 条目与措辞
 
-- 简洁优先：一句一个事实，能砍的字一律砍。
-  - 删除修饰、比喻与连接性废话。
-  - 不堆书面腔，也不刻意口语。
-- 条目正文禁用分号。
-- 分区：同域改动攒够多条即收进一个加粗主题。
-  - 主题行只写 `- **主题**：`，明细换行缩进两格逐条 `-` 起头。
-  - 主题按用户可感知的功能域命名，如「多实例身份隔离」「选窗平台」「配置向导人设预览」。
-  - 主题不按文件命名，也不按实现命名。
-  - 子项一行一个事实。
-  - 主题行不重复子项内容。
+- 主题名按功能域起。
+- 主题行不重复子项内容。
 - 单条能说完的改动不硬凑主题，保持一行 `- **要点**：说明`。
 
-### 标点与空格
+### 排版
 
 - 条目是完整句，行尾带句号。
 - 纯主题行 `- **主题**：` 止于冒号，不带句号。
-- 引用界面词一律半角双引号，不用弯引号。
-- 代码标识一律用反引号括起：
-  - 反引号落在正文，不落进加粗主题行。
-  - 专有名词与单位不算代码标识，裸写（GitHub、PySide6、KB/s）。
-- 中英文混排按 pangu spacing：
-  - 中文与英文单词、数字之间补半角空格，如 `PySide6 面板`、`20 秒`、`3 处`。
-  - 全角标点紧贴中文，不加空格。
-  - 反引号内的代码原样保留，不拆空格。
+- 反引号不落进加粗主题行。
 
 ### 回改
 
-- 已发布的版本段日常不回改。
-- Unreleased 内的条目随新规整理。
-- 历史整备期按现行规范全量重写属例外。
+- 已发布的版本段日常不回改，Unreleased 内的条目随新规整理，历史整备期按现行规范全量重写属例外。
 
 ## Commit
 
-Conventional Commits + 中文标题，多要点用 `-` 分行，详见 [`.gitmessage`](../.gitmessage)。
+- 标题采用 Conventional Commits 与中文标题的 `type(scope): 主题`，50 字符内，首字母小写，模板见 [.gitmessage](../.gitmessage)。
+- 标题与正文之间空一行。
+- 正文逐行以 `- ` 起头，每行 72 字符内。
+- 页脚用于关联 Issue，破坏性变更写在正文，不写页脚标记。
 
-```
-type(scope): 主题
+| type | 用途 | CHANGELOG 归段 |
+| :--- | :--- | :--- |
+| feat | 纯新增用户可感知的行为 | Added |
+| change | 改掉既有的用户可感知行为 | Changed |
+| fix | 纠正与既定期望相违的行为 | Fixed |
+| remove | 删掉用户可感知的行为或产物 | Removed |
+| breaking | 主体就是让用户动手 | Breaking Changes |
+| refactor | 内部重整，用户可感知行为不变 | Changed |
+| perf | 只改耗时与资源占用，功能与观感不变 | Changed |
+| docs / style / test | 只改文档 / 格式 / 用例 | 不记 |
+| build | 版本与打包定稿 | 不记 |
+| revert | 回退已推送的改动 | 跟着被回退的那两条一起清 |
+| chore | 已停用 | 历史重整时按内容归进 refactor、docs 或 build |
 
-- 要点一
-- 要点二
-```
-
-| type | 用途 |
-| :--- | :--- |
-| feat | 新增用户可感知的行为 |
-| fix | 纠正错误行为 |
-| refactor | 内部重整，行为不变 |
-| perf | 性能/体验优化 |
-| docs / style | 文档 / 格式（可省 scope） |
-| test | 只改用例与用例夹具（可省 scope） |
-| build | 版本与打包定稿 |
-| revert | 回退，标题注明回退什么、恢复什么语义 |
-
+- 第一刀按用户能不能感知分：能感知用前五类，不能感知用后六类。
+- 一笔只写一个 type，取主题主导那一面。
+- 其余面只进 CHANGELOG 对应段，不在标题里堆两类。
+- fix 与 change 的分界：有没有一条已写下的期望被违反，违反了是 fix，没违反只是改主意是 change。
+- remove 与 change 的分界：做完用户少一样能用的东西或少一个产物是 remove。
+- perf 与 change 的分界：观感与功能的变化都归 change，perf 只指耗时、内存与体积。
+- breaking 只在主体是「用户必须动手」时才用，既新增又要动手的笔按新增定 type。
+- 版本号档不由 type 决定，见「版本号（semver）」节。
+- 版本段写法见「CHANGELOG」节。
+- 标题与正文要点行尾不带句号。
 - scope 用模块域小写，取它改的那一块的名字。
+- `docs`、`style`、`test`、`build` 可省 scope，其余必带。
 - 一组提交为一个主题，不按文件凑数，同主题跨层（如消息+工具+bot）合为一组。
-- 正文要点禁用分号，一段一要点，逐行 `-` 起头。
-- 标题与正文要点行尾均不带句号，与 docstring 详情行同口径。
 - 发布定稿单独一笔 `build(release): vX.Y.Z 发布定稿`，只含 CHANGELOG 归段与 pyproject 版本号。
 
 ## 构建 zip
 
-定稿提交后本地构建，全程只构建这一次：
-
-```powershell
-python packaging\build.py
-
-# 自检，读数项见 packaging.md
-python packaging\build.py --check
-```
-
-- 成功标志：末行打印 `完成：dist\FinshinImpact-vX.Y.Z.zip`。
-- 发布前必须拿这个 zip 走一遍用户路径实测（解压、双击、装环境、收发），细节见 [packaging.md](packaging.md)。
+- 定稿提交后本地构建，全程只构建这一次。
+- 构建命令、自检与用户路径实测见 [packaging.md](packaging.md)。
+- 测试、上传使用同一次构建的 zip，任一实测环节失败都不许发布。
 
 ## Tag
 
@@ -181,8 +158,7 @@ git tag -a vX.Y.Z -m "Release vX.Y.Z: 关键词一，关键词二，关键词三
 git push origin main vX.Y.Z
 ```
 
-- 摘要用逗号分隔的功能关键词，3 个上下，无句号。
-- 打在发布定稿提交上，不追打历史提交。
+- 摘要用逗号分隔的功能关键词，3 个上下，无句号，打在发布定稿提交上，不追打历史提交。
 - 重写历史后按定稿笔标题重打全部 tag，属修正落点，不算追打历史。
 
 ## 版本号（semver）
@@ -206,12 +182,7 @@ git push origin main vX.Y.Z
 - 选上一版 tag 并点 **Generate release notes**。
 - Publish。
 
-Generate release notes 生成正文末尾比较链接：
-
-```
-**Full Changelog**: https://github.com/FinshinLabs/FinshinImpact/compare/v<上一版>...v<X.Y.Z>
-```
-
+- 比较链接由 Generate release notes 生成，形状 `**Full Changelog**: https://github.com/FinshinLabs/FinshinImpact/compare/v<上一版>...v<X.Y.Z>`。
 - 正式号那条取上一个**正式号**，覆盖整条预发布线。
 - dev 那条取紧邻的上一个号，只覆盖这一次预发布的增量。
 - 首版没有上一版 tag，比较链接那行写本版 tag 的提交链接。
@@ -233,18 +204,18 @@ Generate release notes 生成正文末尾比较链接：
 - 有破坏性变更时提示用户如何操作
 ```
 
-标题行与列表之间必须空一行，两条直链才不会被挤成一行显示。判据与实测见 [lessons/deps-and-release.md](lessons/deps-and-release.md)。
-
 ### 保留序列
 
-Release 只承担新用户首次下载与老用户回看某版变化，不承担升级链（升级走版本页与 PEP440 比对）。release 只跟正式号，不跟预发布号：
+更新方式见 [development.md](development.md) 的「更新方式」节。
+
+保留规则：
 
 - 正式号（`X.Y.Z`、`X.Y.Z-alpha.N`）各留一条 release，长期保留。
 - dev 段的 release 只在预发布期挂着供当时下载。
 - 正式号发出时把该正式号下各 dev 的变化汇总进正式号那一条，再删掉 dev 的 release 条目。
 - 汇总按用户可感知的功能域写，不复述 dev 明细。
 - 纯内部重构、用户无感知的 dev 段不写入汇总。
-- ⚠️**删的是 release 条目，tag 一律保留**。
+- ⚠️ 删的是 release 条目，tag 一律保留。
 - 正式号之间按「旧版收敛」一节撤发布包、留条目，正文只去掉两条下载直链，其余行照留。
 
 ### 旧版收敛（不带 zip）
@@ -274,9 +245,7 @@ Release 只承担新用户首次下载与老用户回看某版变化，不承担
 ## 版本页同步（发布最后一步）
 
 Release 发布完成不等于升级链生效：在线版本页是启动器与 GUI 版本检查的唯一真相。
-「版本页」在线地址的单源定义在 `packaging/pack_spec.py` 的 `_PAGES_PYPROJECT_URL`。
 
-- 主仓 workflow 随 push `main` 把 `pyproject.toml` 复制进站点目录后部署 Pages，在线只出这一只文件，**无需手动覆盖推送**。
+- 主仓 workflow 随 push `main` 部署版本页与在线目录，无需手动覆盖推送。
 - 闭环判据：跑 `python packaging\build.py --check`，「在线版本页」那一行显示新版本号。
 - Pages 部署有延迟，读数未变稍后重跑。
-- 推 tag、传 zip 两步齐了，老客户端才会在下次启动时收到升级提示。

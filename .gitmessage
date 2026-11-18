@@ -1,5 +1,6 @@
-# 提交口径单源在 docs/release-workflow.md 的「Commit」一节，本模板只摆形
-# 标题：<type>(<scope>): 主题，50 字符内，首字母小写，末尾不带句号
-# type 取那张表的九个，scope 用改的那一块的模块域名
-# 正文：逐行以 - 起头，一行一个要点，每行 72 字符内，行尾不带句号，不用分号
-# 页脚：关联的 Issue，破坏性变更写在正文而不是页脚标记
+# type(scope): 主题
+#
+# - 要点一
+# - 要点二
+#
+# 提交判据见 [release-workflow.md](docs/release-workflow.md) 的「Commit」节

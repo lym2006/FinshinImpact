@@ -1,7 +1,7 @@
 # 打包教程
 
-所有命令在项目根目录（含 `pyproject.toml`）的 `PowerShell` 中执行。
-首次使用先创建并激活虚拟环境（提示符出现 `(.venv)`），没装过依赖就先跑第一步。
+所有命令在项目根目录的 PowerShell 中执行。
+环境搭建见 [development.md](development.md) 的「环境搭建」节，发布顺序见 [release-workflow.md](release-workflow.md)。
 
 ## 原理
 
@@ -22,7 +22,7 @@ FinshinImpact\
 启动器首启：解压嵌入式 Python → 放开 site-packages → 落位随包 uv → 装依赖 → 拉起主程序。
 
 - 插件依赖与浏览器内核由引导层在启动前按需安装，不在首装链路。
-- 此后每次启动比对在线版本页，弹窗确认后整包升级。
+- 更新入口与触发方式见 [development.md](development.md) 的「更新方式」节。
 
 升级换源码与启动器：
 
@@ -31,7 +31,7 @@ FinshinImpact\
 - 新壳启动慢会弹限时提示，等不到接管则旧壳直接启动兜底。
 - 换壳失败留到下次启动换入。
 - 换壳遗留的 `.old` 备份在启动收尾限时删除，删不掉留到下次。
-- 用户资产与运行环境一律保留。
+- 运行环境保留在原目录。
 
 按名字找的文件：
 
@@ -43,26 +43,25 @@ FinshinImpact\
 - 要装的库出自 `pyproject.toml` 的核心依赖。
 - `runtime\.installed` 记依赖清单摘要，清单没变下次跳过安装。
 - 构建只在临时副本里跑，或在仓内跑完即清 `build\`、`*.egg-info`、`dist\`。
-- 启动器装依赖只追加，残留包只由引导层 `uv pip sync` 删除，无独立的移除清单。
+- 启动器装依赖只追加，删库入口见 [development.md](development.md) 的「新增插件（清单驱动流程）」节。
 
 下载缓存：
 
 - 放 `runtime\uv-cache`，启动器装完不删，供随后的依赖同步复用。
 - 手动清理走选窗"环境维护"里的"清理下载缓存"。
 
-## 第一步：装构建工具
+## 构建
+
+版本定稿与构建次数见 [release-workflow.md](release-workflow.md) 的「构建 zip」节。
+zip 名取自 `pyproject.toml`。
+
+检查构建工具：
 
 ```powershell
-uv sync --all-packages
 python -m PyInstaller --version
 ```
 
-## 第二步：定稿并构建
-
-版本号在构建前定稿，zip 名取自 `pyproject.toml`，全程只构建这一次。
-
-1. 定稿：`pyproject.toml` 的 `version` 改发布号，`CHANGELOG.md` 归段，写法见 [release-workflow.md](release-workflow.md)。
-2. 构建：
+构建命令：
 
 ```powershell
 python packaging\build.py
@@ -78,7 +77,6 @@ python packaging\build.py
 - 用随包嵌入式解释器预编暂存区 `src` 与 `main.py` 的字节码，取认内容不认时间的 checked-hash 模式，用户解压即热，首启不必现场编译。
 
 成功标志：末行打印 `完成：dist\FinshinImpact-vX.Y.Z.zip`。
-第三步测试与第四步上传用的都是第二步产出的那个包。
 
 参数：
 
@@ -86,6 +84,34 @@ python packaging\build.py
 - `--check`：逐行打印本地版本号、远端 tag、本地 zip（大小与 sha256 前缀）、在线版本页、发布包官方直连、发布包 gh-proxy 与 ghproxy.net 的镜像。
   - 探测远端资产的那几行，大小与本地包一致才算上传闭环。
   - 推 tag 前报"tag 缺失"、发布前报"不可达"属正常。
+
+## 子仓构建
+
+- 子仓挂载见 [development.md](development.md) 的「挂载子仓」节。
+- 子仓版本号与附件要求见 [release-workflow.md](release-workflow.md) 的「子仓供件」节。
+
+```powershell
+# 平台适配器
+uv build finshin/adapter/<平台码> --wheel
+
+# 接口包
+uv build finshin/sdk --wheel
+```
+
+- 适配器产物名形如 `finshin_adapter_tg-0.1.0-py3-none-any.whl`。
+- 主仓构建现打接口包 wheel，放入发布目录 `_sdk`。
+- 首启由启动器把需安装的接口包与核心依赖一条命令装进环境。
+- 安装成功后删除 `_sdk`，失败则保留供下次续装。
+- 升级整目录替换，接口包 wheel 随新发布物带入。
+
+## 在线目录
+
+```powershell
+python packaging/gen_catalog.py <输出路径>
+```
+
+- 账号取自 `GITHUB_REPOSITORY`。
+- 发布与刷新时机见 [release-workflow.md](release-workflow.md) 的「子仓供件」节。
 
 ## 构建缓存
 
@@ -95,24 +121,20 @@ python packaging\build.py
 - **原料缓存**：嵌入式 Python 与 `uv` 首次下载后存入 `dist\_cache`，二次构建直接命中，清缓存就删该目录。
 - **版本失效**：缓存名带版本号，升级 `_EMBED_VERSION` 或 `_UV_VERSION` 后自动失效重下。
 
-## 第三步：本地测试（必做）
+## 本地测试
 
-拿第二步产出的 zip 走一遍用户路径：
+拿构建出的 zip 走一遍用户路径：
 
-1. 把 zip 复制到别处（如桌面）解压，在 `dist\` 里测会污染构建目录。
-2. 双击 `FinshinImpact.exe`，看进度窗口 `[1/3]`～`[3/3]`，uv 按腾讯→阿里→清华→官方四源回退约一两分钟，别关窗口。
+1. 把 zip 复制到别处解压，不在 `dist\` 里测试。
+2. 双击 `FinshinImpact.exe`，等待环境安装完成。
 3. 验证首装：
-   - 向导填 token 能收发消息。
-   - 首启装完环境直接进主窗，要清多余包才去选窗"环境维护"手动同步。
-   - 再开一次应几秒直达，不再出现进度窗口。
-   - 测试目录只多出 `instances\` 与 `runtime\`，`payload\` 的自动删除见上面「按名字找的文件」那一节。
-   - 实例文件夹该有的内容见 [development.md](development.md) 的环境搭建。
-4. 升级件另测一条：老目录 `instances\tg-<数字>` 与新格式对不上，选窗不再显示，手工改名成 `instances\tg.<数字>` 后资产原样回来。
-5. 任一环节失败都不许发布，测完删掉测试目录。
+   - 按 [development.md](development.md) 的「环境搭建」节创建实例，完成向导后验证收发消息。
+   - 再开一次，确认依赖未变时跳过安装。
+   - 确认 `payload\` 的清理结果，见「按名字找的文件」节。
+4. 升级路径按 [README.md](../README.md) 的「旧版迁移」节验证。
+5. 测完删掉测试目录。
 
-## 第四步：正式发布
-
-tag、release 与版本页收尾见 [release-workflow.md](release-workflow.md)。
+正式发布见 [release-workflow.md](release-workflow.md)。
 
 ## 报毒
 
