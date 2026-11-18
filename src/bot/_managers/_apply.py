@@ -11,8 +11,10 @@ from skin.messages import CheckMessage, DialogMessage
 from system.profile_env import get_profile, read_token
 from ui import gui_bridge
 from utils import config_manager
+from utils.config import FieldErrors
 from utils.init_files import save_persona_text
 from utils.network import link_report
+from utils.paths import PLATFORM
 from utils.persona import applied_persona_text, load_persona_cache, save_applied_persona
 
 from ..error_guard import error_guard
@@ -135,7 +137,9 @@ class ConfigApplier:
 
         - 由主人 id 与生效正文两项构成
         """
-        owner = config_manager.get(ConfigKey.OWNER.path(ConfigSection.CHORE), str)
+        owner = config_manager.get(
+            ConfigKey.OWNER.path("plugin.AI", ConfigSection.CHORE), str
+        )
         return (owner.strip(), applied_persona_text())
 
     async def commit_persona(self, text: str, source: str) -> None:
@@ -188,12 +192,12 @@ class ConfigApplier:
             return
         self._last_identity = identity
 
-    def _request_setup(self, field_errors: dict[str, str] | None = None) -> None:
+    def _request_setup(self, field_errors: FieldErrors | None = None) -> None:
         """弹出强制配置向导"""
         self._host._logger.info("检测到配置有误，弹出配置向导...")
         gui_bridge.request_force_setup.emit(field_errors or {})
 
-    def _is_token_fatal(self, errors: dict[str, str]) -> bool:
+    def _is_token_fatal(self, errors: FieldErrors) -> bool:
         """判定是否凭证致命错"""
         # 面板改不了凭证，拦在配置向导里出不去，故报错即致命
         return FieldKey.TOKEN in errors
@@ -215,5 +219,5 @@ class ConfigApplier:
         - 凭证从实例自描述文件读
         """
         return read_token(get_profile()), config_manager.get(
-            ConfigKey.PROXY.path(ConfigSection.PROXY), str
+            ConfigKey.PROXY.path(f"adapter.{PLATFORM}", ConfigSection.PROXY), str
         ).strip()

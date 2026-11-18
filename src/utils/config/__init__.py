@@ -1,21 +1,34 @@
 """配置工具门面
 
 - 检查、读写与校验出口
+- 装配入口与段名出处
 """
 
-from system.atomic_write import write_text_atomic
+from collections.abc import Sequence
 
-from ..paths import CONFIG_FILE, PLATFORM
+from ..paths import CONFIG_FILE
 from ._differ import compare_configs
 from ._io import ConfigIO
+from ._merge import reconcile
 from ._schema import build_schema
 from ._validator import validate_types
-from ._writer import render_config
 from .models import AppConfigData, AppSchema, FieldErrors
+from .sources import (
+    ConfigPlan,
+    ConfigSource,
+    SourceKind,
+    assemble,
+    current_plan,
+    section_name,
+    use_plan,
+)
 
 __all__ = [
-    # 核心生命周期控制
+    # 装配与生命周期
     "ensure_config",
+    "ConfigSource",
+    "SourceKind",
+    "section_name",
     # 数据读写
     "get_schema",
     "load_config",
@@ -39,20 +52,35 @@ def _io() -> ConfigIO:
     return ConfigIO(CONFIG_FILE)
 
 
-def ensure_config() -> None:
-    """确保配置文件存在
+def _plan() -> ConfigPlan:
+    """取本次装配的段表，装配没发生即空表"""
+    return current_plan() or ConfigPlan(())
 
-    - 缺失则按平台段表生成初值后返回
+
+def ensure_config(sources: Sequence[ConfigSource]) -> None:
+    """确保配置文件是装配后的形状
+
+    - 缺失则逐来源写入默认值与说明
+    - 在场则搬旧裸段、补新键、按交出模板重打说明，内容没变不写盘
     - 必填项留空由本地校验报出，向导据此标红引导填写
     """
-    if CONFIG_FILE.exists():
+    plan = assemble(sources)
+    use_plan(plan)
+    notes = plan.notes()
+    if not CONFIG_FILE.exists():
+        _io().save(plan.defaults(), notes=notes)
         return
-    write_text_atomic(CONFIG_FILE, render_config(PLATFORM))
+
+    disk = _io().load()
+    merged = reconcile(plan, disk)
+    if merged == disk and _io().load_notes() == notes:
+        return
+    _io().save(merged, notes=notes)
 
 
 def get_schema() -> AppSchema:
-    """获取当前实例平台的 Schema 树"""
-    return build_schema(PLATFORM)
+    """获取当前实例的 Schema 树"""
+    return build_schema(_plan().sections)
 
 
 def load_config() -> AppConfigData:
@@ -61,5 +89,8 @@ def load_config() -> AppConfigData:
 
 
 def save_config(config_data: AppConfigData) -> None:
-    """GUI 数据写回磁盘"""
-    _io().save(config_data)
+    """GUI 数据写回磁盘
+
+    - 说明子表按交出模板重打
+    """
+    _io().save(config_data, notes=_plan().notes())

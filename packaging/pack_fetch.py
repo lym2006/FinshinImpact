@@ -11,7 +11,7 @@ import net_channel
 from pack_spec import CACHE, DOWNLOAD_HOST, file_digest, release_mirrors
 from unpack import zip_entries_ok
 
-# 构建原料下载源：镜像优先、官方兜底
+# 构建原料下载源
 _EMBED_VERSION = "3.11.9"
 _EMBED_FILE = f"python-{_EMBED_VERSION}-embed-amd64.zip"
 _EMBED_URL_SUFFIX = f"python/{_EMBED_VERSION}/{_EMBED_FILE}"
@@ -28,9 +28,7 @@ _UV_URL_SUFFIX = (
     f"astral-sh/uv/releases/download/{_UV_VERSION}/uv-x86_64-pc-windows-msvc.zip"
 )
 _UV_OFFICIAL_URL = f"{DOWNLOAD_HOST}/{_UV_URL_SUFFIX}"
-_UV_URLS = tuple(f"{mirror}{_UV_OFFICIAL_URL}" for mirror in release_mirrors()) + (
-    _UV_OFFICIAL_URL,
-)
+_UV_URLS = tuple(f"{mirror}{_UV_OFFICIAL_URL}" for mirror in release_mirrors())
 _UV_CACHE_NAME = f"uv-{_UV_VERSION}.zip"
 
 # 官方发布页校验值，升 _UV_VERSION 必须同步换值

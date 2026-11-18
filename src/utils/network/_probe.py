@@ -8,8 +8,13 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from finshin_sdk.domain import ConfigKey, FieldKey, ProxyMode
+from finshin_sdk.domain import ConfigKey, ConfigPath, ConfigSection, ProxyMode
 from skin.messages import CheckMessage
+
+from ..paths import PLATFORM
+
+# 本平台适配器交出的代理项，探测与面板标红共用同一身份
+PROXY_ITEM = ConfigKey.PROXY.path(f"adapter.{PLATFORM}", ConfigSection.PROXY)
 
 
 class RowStatus:
@@ -102,10 +107,13 @@ def uses_configured_proxy(mode: str) -> bool:
     return mode in _CFG_TESTED_MODES
 
 
-def fault_row_of(mode: str) -> str:
+def fault_row_of(mode: str) -> ConfigPath:
     """代理不通时标红哪一行"""
     # 代理项藏掉的档位，报错不能落在看不见的那行上
-    return FieldKey.PROXY if uses_configured_proxy(mode) else ConfigKey.PROXY_MODE
+    source = f"adapter.{PLATFORM}"
+    if uses_configured_proxy(mode):
+        return PROXY_ITEM
+    return ConfigKey.PROXY_MODE.path(source, ConfigSection.PROXY)
 
 
 def plan_channels(

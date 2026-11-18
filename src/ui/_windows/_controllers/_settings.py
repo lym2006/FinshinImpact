@@ -9,6 +9,7 @@
 from skin.messages import CheckMessage
 from skin.theme import SETTINGS_DIALOG
 from utils import config_manager
+from utils.config import FieldErrors
 
 from ..._bridge import gui_bridge
 from ..._dialogs import (
@@ -44,8 +45,8 @@ class SettingsController(BaseController):
         # 用于标记弹窗是否已打开（防重入）
         self._is_dialog_open: bool = False
 
-        # 上次验证失败的字段级错误：{配置键: 文案}（强制向导标注用）
-        self._field_errors: dict[str, str] = {}
+        # 上次验证失败的字段级错误：{配置项身份: 文案}（强制向导标注用）
+        self._field_errors: FieldErrors = {}
 
         # 当前打开的面板实例（EDIT/SETUP 同实例切换，防 GC 销毁 C++ 窗口）
         self._panel: SettingsDialog | None = None
@@ -149,7 +150,7 @@ class SettingsController(BaseController):
         self._field_errors = {}
         self._show_dialog()
 
-    def show_setup_dialog(self, field_errors: dict | None = None) -> None:
+    def show_setup_dialog(self, field_errors: FieldErrors | None = None) -> None:
         """外部信号启动强制向导
 
         - 面板已打开则原地切换为 SETUP 模式

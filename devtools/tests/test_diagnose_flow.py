@@ -20,12 +20,12 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
-from finshin_sdk.domain import FieldKey, ProxyMode  # noqa: E402
+from finshin_sdk.domain import ProxyMode  # noqa: E402
 from finshin_sdk.exceptions import ProxyConnectionRefusedError  # noqa: E402
 from skin.messages import CheckMessage  # noqa: E402
 from utils.check import _diagnose as diagnose_mod  # noqa: E402
 from utils.check import _verify as verify_mod  # noqa: E402
-from utils.network import FrameKey, RowId, RowStatus  # noqa: E402
+from utils.network import PROXY_ITEM, FrameKey, RowId, RowStatus  # noqa: E402
 
 _CFG = "http://127.0.0.1:7897"
 _SYS = "http://127.0.0.1:7890"
@@ -53,7 +53,7 @@ def _stubbed_round(
             raise AssertionError("探测次数超出预期")
         if passes(proxy):
             return proxy, {}
-        return None, {FieldKey.PROXY: ProxyConnectionRefusedError(proxy=proxy)}
+        return None, {PROXY_ITEM: ProxyConnectionRefusedError(proxy=proxy)}
 
     flow = partial(
         diagnose_mod.diagnose_flow,

@@ -31,7 +31,7 @@ from pack_spec import (
 from packaging.version import Version
 from unpack import is_zip, unpack_all
 
-from . import console, dialogs, proxy, runtime, shell
+from . import console, dialogs, runtime, shell
 
 # 分块粒度 64 KB（刷进度）
 _DOWNLOAD_CHUNK = 64 * 1024
@@ -48,7 +48,7 @@ def check_update(root: Path) -> None:
     - 升级前可先看本次变化
     """
     local = local_version(root)
-    remote = remote_version(proxy.system_proxy_url())
+    remote = remote_version()
     if remote is None or Version(remote) <= Version(local):
         return
     new_msg = f"新版本可用 v{local} -> v{remote}"
@@ -92,7 +92,7 @@ def _ask_upgrade(new_msg: str, version: str) -> bool:
 
 def _print_changes(version: str) -> None:
     """打印指定版本的版本变化正文"""
-    notes = remote_release_notes(version, proxy_url=proxy.system_proxy_url())
+    notes = remote_release_notes(version)
     if not notes:
         print(f"未取到 v{version} 的发布说明，详情见 GitHub Releases 页")
         console.hold_console()
@@ -109,12 +109,12 @@ def _apply_update(root: Path, version: str) -> bool:
     """
     stage = root / "_update"
     try:
-        # 下载：镜像源优先、官方源兜底，zip 校验通过才继续
+        # 下载：逐个镜像源，zip 校验通过才继续
         print(f"下载 v{version} 发布包…")
         shutil.rmtree(stage, ignore_errors=True)
         stage.mkdir(parents=True)
         zip_url = RELEASE_ZIP_URL.format(ver=version)
-        urls = [*(m + zip_url for m in release_mirrors()), zip_url]
+        urls = [m + zip_url for m in release_mirrors()]
         _fetch_zip(urls, stage / PackLayout.STAGE_ZIP)
         unpack_all(stage / PackLayout.STAGE_ZIP, stage)
 
@@ -212,9 +212,8 @@ def _fetch_zip(urls: list[str], target: Path) -> None:
     """多源下载发布物
 
     - 每源完成后校验 zip，坏包自动换源
-    - 干净直连全源失败后，带注册表系统代理再走一轮
     """
-    openers = net_channel.openers(proxy.system_proxy_url())
+    openers = net_channel.openers()
     last_error: Exception | None = None
     for opener in openers:
         last_error = _download_pass(urls, target, opener)

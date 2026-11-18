@@ -20,12 +20,6 @@ class DialogMessage:
     SETUP_RESET = "恢复默认"
     SETUP_RESET_ICON = "↺"
 
-    # 用：utils/config/_schema.py 代理模式下拉选项文案
-    SETUP_MODE_AUTO = "自动（配置→系统→直连）"
-    SETUP_MODE_CFG = "仅配置代理"
-    SETUP_MODE_SYS = "仅系统代理"
-    SETUP_MODE_DIRECT = "仅直连（代理软件开 TUN 时选这个）"
-
     # 用：人设入口行、预览窗与正文编辑窗
     SETUP_PERSONA_TITLE = "人设预览"
     SETUP_PERSONA_LABEL = "人设正文"

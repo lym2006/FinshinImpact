@@ -1,6 +1,6 @@
 """启动器与构建侧取数通道的单元测试
 
-- 通道清单按有没有代理地址排出条数
+- 通道清单只有干净直连那一条
 - 每条通道按同一节奏发到上限为止，换通道即换一次机会
 - 取 JSON、取字节、探长度坏光交出空值，落盘下载坏光交出原因
 - 落盘件写坏不留 .part
@@ -78,13 +78,9 @@ def _ok(body: bytes = b"hi") -> tuple[bytes, dict[str, str]]:
 class TestOpeners(unittest.TestCase):
     """通道清单的条数"""
 
-    def test_without_proxy_is_direct_only(self) -> None:
-        """没给代理地址即只排干净直连那一条"""
+    def test_only_clean_direct_channel(self) -> None:
+        """通道清单只排干净直连那一条"""
         self.assertEqual(len(net_channel.openers()), 1)
-
-    def test_proxy_url_adds_a_channel(self) -> None:
-        """给了代理地址再补一条显式走代理的"""
-        self.assertEqual(len(net_channel.openers("http://127.0.0.1:8")), 2)
 
 
 class TestRetries(unittest.TestCase):

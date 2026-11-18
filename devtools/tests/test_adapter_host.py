@@ -3,7 +3,7 @@
 - 目录声明齐必填项的读出导入路径，缺项或认不出的整份拒收
 - 已装包交出的入口点读出清单，同名平台认目录里那份
 - 声明的依赖读出依赖表，没写即空表，写法不对的整份拒收
-- 有清单的平台取到三件，没清单的平台抛缺件异常
+- 有清单的平台取到四件，没清单的平台抛缺件异常
 - 清单要的接口版本比本机新即拒载，读不懂的版本串同样拒载
 - 缺件那句取映射文案，带平台标识
 - 启动取件被拒与未知异常都弹窗，正文不带异常原文
@@ -46,12 +46,13 @@ from ui import gui_bridge  # noqa: E402
 
 _PARTS_KEYS = ("assemble", "channel_probe", "engine_preload")
 
-# 交出三件的假入口件源码，形状照接口包那份 AdapterParts
-_THREE_PARTS = """from finshin_sdk import AdapterParts
+# 交出四件的假入口件源码，形状照接口包那份 AdapterParts
+_FOUR_PARTS = """from finshin_sdk import AdapterParts
 
 
 def parts():
     return AdapterParts(
+        title="Fake 平台",
         assemble=lambda token, proxy: None,
         channel_probe=lambda token, proxy: None,
         engine_preload=lambda token, proxy: None,
@@ -285,8 +286,8 @@ class TestAdapterHost(unittest.TestCase):
         )
 
     def test_listed_platform_returns_parts(self) -> None:
-        """有清单的平台取到三件，三件都能调"""
-        self._take(_THREE_PARTS)
+        """有清单的平台取到四件，能调的那三件都调得动"""
+        self._take(_FOUR_PARTS)
         parts = parts_mod.parts_for(Platform.TELEGRAM)
         self.assertIsInstance(parts, AdapterParts)
         for key in _PARTS_KEYS:
@@ -609,6 +610,7 @@ class TestAdapterHost(unittest.TestCase):
         """
         adapter = _FakeAdapter()
         parts = AdapterParts(
+            title="Fake 平台",
             assemble=lambda token, proxy: adapter,
             channel_probe=None,  # type: ignore[arg-type]
             engine_preload=None,  # type: ignore[arg-type]

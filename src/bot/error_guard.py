@@ -12,20 +12,21 @@ from finshin_sdk.exceptions import BotError
 from skin.messages import ConfigMessage, MiscMessage
 from ui import gui_bridge
 from utils import get_logger
+from utils.config import FieldErrors
 from utils.error_guard import guard
 
 P = ParamSpec("P")
 T = TypeVar("T")
 
 
-def _setup_errors(exc: BotError) -> dict[str, str]:
+def _setup_errors(exc: BotError) -> FieldErrors:
     """向导字段级错误
 
     - 缺键异常须带字段标识，否则面板无标红
-    - 整段缺失时缺的是段名，字段键取点路径尾段
+    - 配置项身份直接当键，面板按同一身份找格子
     """
     if isinstance(exc, ConfigPathMissingError):
-        return {exc.key_path.rpartition(".")[2]: ConfigMessage.REQUIRED_MARK}
+        return {exc.key_path: ConfigMessage.REQUIRED_MARK}
     return {}
 
 

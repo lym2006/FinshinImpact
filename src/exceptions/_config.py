@@ -5,6 +5,7 @@
 
 from typing import Any
 
+from finshin_sdk.domain import ConfigPath
 from finshin_sdk.exceptions import BotError
 
 
@@ -37,7 +38,7 @@ class ConfigOutputError(ConfigError):
 class ConfigPathMissingError(ConfigError):
     """指定键的配置路径缺失异常"""
 
-    def __init__(self, key_path: str, missing_key: str) -> None:
+    def __init__(self, key_path: ConfigPath, missing_key: str) -> None:
         self.key_path = key_path
         self.missing_key = missing_key
         super().__init__()
@@ -50,7 +51,7 @@ class ConfigAttrError(ConfigError):
     """
 
     def __init__(
-        self, key_path: str, expected_type: type, actual_value: Any = None
+        self, key_path: ConfigPath, expected_type: type, actual_value: Any = None
     ) -> None:
         self.key_path = key_path
         self.expected_type = expected_type.__name__

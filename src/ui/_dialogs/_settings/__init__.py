@@ -13,7 +13,7 @@ from PySide6.QtWidgets import QWidget
 
 from skin.qss import build_error_label_qss, build_settings_dialog_qss
 from skin.theme import SETTINGS_DIALOG
-from utils.config import AppConfigData, AppSchema
+from utils.config import AppConfigData, AppSchema, FieldErrors
 
 from ..._bridge import gui_bridge
 from .._base import BaseDialog
@@ -54,12 +54,12 @@ class SettingsDialog(BaseDialog):
         current_config: AppConfigData,
         mode: ConfigMode = ConfigMode.EDIT,
         parent: QWidget | None = None,
-        field_errors: dict[str, str] | None = None,
+        field_errors: FieldErrors | None = None,
     ) -> None:
         super().__init__(parent=parent, title=SETTINGS_DIALOG.title)
 
-        # SETUP 模式字段级错误：{字段键: 悬浮文案}
-        self._field_errors: dict[str, str] = dict(field_errors or {})
+        # SETUP 模式字段级错误：{配置项身份: 悬浮文案}
+        self._field_errors: FieldErrors = dict(field_errors or {})
 
         # 出错字段所在段，用于标红对应标签页
         self._error_sections = self._resolve_error_sections(schema)
@@ -127,11 +127,11 @@ class SettingsDialog(BaseDialog):
         """定位出错字段所在页"""
         bad: set[str] = set()
         for tab in schema:
-            if any(f.key in self._field_errors for f in tab.fields):
+            if any(tab.path_of(f) in self._field_errors for f in tab.fields):
                 bad.add(tab.section)
         return bad
 
-    def apply_errors(self, field_errors: dict[str, str] | None) -> None:
+    def apply_errors(self, field_errors: FieldErrors | None) -> None:
         """原地刷新校验结果
 
         - 标红或清除字段错误
@@ -139,8 +139,8 @@ class SettingsDialog(BaseDialog):
         """
         self._field_errors = dict(field_errors or {})
         bad = self._resolve_error_sections(self._schema)
-        for key, (label, title) in self._fields.labels.items():
-            refresh_label(label, title, self._field_errors.get(key))
+        for item, (label, title) in self._fields.labels.items():
+            refresh_label(label, title, self._field_errors.get(item))
         self._chrome.set_error_marks(bad)
         self._fields.refresh_resets()
 
@@ -154,7 +154,7 @@ class SettingsDialog(BaseDialog):
         )
         self._chrome.lock_nav(busy)
 
-    def switch_to_setup(self, field_errors: dict[str, str] | None) -> None:
+    def switch_to_setup(self, field_errors: FieldErrors | None) -> None:
         """EDIT 原地转 SETUP
 
         - 保留已填内容，更换按钮并挂上提示

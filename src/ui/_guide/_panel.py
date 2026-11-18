@@ -28,21 +28,23 @@ from finshin_sdk.domain import (
     BUNDLED_PLUGIN_PRIORITY,
     ManifestKey,
     StateKey,
+    is_enabled,
     resolve_claims,
 )
 from services.env_setup.deps_manifest import (
     catalog_digest,
     load_manifests,
-    load_state,
     plugins_roots,
     save_state,
     shadowed_manifests,
+    state_path_of,
 )
 from services.env_setup.subprocess_ops import is_pin_installed
 from services.env_setup.toolchain import dev_mode
 from skin.messages import DialogMessage, PluginMessage
 from skin.qss import build_bootstrap_qss
 from skin.theme import GLOBAL, PANEL, ButtonStyle, ObjectName
+from system.plugin_state import load_instance_enabled
 
 from .._lifecycle import ensure_app
 from .._primitives import MarqueeLabel, TickedCheckBox, make_button
@@ -128,7 +130,7 @@ class _PluginPanelDialog(QDialog):
         if not roots:
             return
 
-        enabled = set(load_state(self._code).get(StateKey.ENABLED, []))
+        enabled = load_instance_enabled(state_path_of(self._code), StateKey.ENABLED)
         self._manifests = load_manifests(roots)
         self._titles = {
             manifest[ManifestKey.NAME]: manifest[ManifestKey.TITLE]
@@ -136,11 +138,11 @@ class _PluginPanelDialog(QDialog):
             for manifest in self._manifests
         }
 
-        _, conflicts = resolve_claims(claims_of(self._manifests), frozenset(enabled))
+        _, conflicts = resolve_claims(claims_of(self._manifests), enabled)
         for manifest in self._manifests:
             name = manifest[ManifestKey.NAME]
             lines = clash_lines(conflicts.get(name, ()), self._titles)
-            self._add_row(manifest, name in enabled, lines)
+            self._add_row(manifest, is_enabled(name, enabled), lines)
         for loser, winner in shadowed_manifests(roots):
             clash = [PluginMessage.CONFLICT_NAME.format(owner=self._titles[winner])]
             self._add_row(loser, False, clash, winner, PluginMessage.BTN_DUP_NAME)

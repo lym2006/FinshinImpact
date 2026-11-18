@@ -81,13 +81,7 @@ def register_plugins(
     for manifest in _resolve_plugins():
         bundled = manifest.name in BUNDLED_PLUGIN_PRIORITY
         try:
-            check_external_imports(
-                manifest.name, manifest.module, PluginImportError, PLUGINS_PKG
-            )
-
-            # 动态导入插件模块，再认模块里那一只入口类
-            entry = _entry_class(manifest, importlib.import_module(manifest.module))
-            plugin = entry()
+            plugin = load_plugin(manifest)
 
             routes, loops, actions, subs = _collect(plugin, manifest)
 
@@ -132,6 +126,17 @@ def register_plugins(
         tuple(handlers),
         {moment: tuple(runs) for moment, runs in platform_moments.items()},
     )
+
+
+def load_plugin(manifest: PluginManifestDTO) -> BasePlugin:
+    """导入清单点名的模块并实例化那一只入口类
+
+    - 外部件伸手本体内部当场报错
+    """
+    check_external_imports(
+        manifest.name, manifest.module, PluginImportError, PLUGINS_PKG
+    )
+    return _entry_class(manifest, importlib.import_module(manifest.module))()
 
 
 def _entry_class(manifest: PluginManifestDTO, module: ModuleType) -> type[BasePlugin]:

@@ -20,7 +20,9 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
-from finshin_sdk.domain import FieldKey  # noqa: E402
+from config_plan import assemble_for_case, fake_adapter_parts  # noqa: E402
+
+from finshin_sdk.domain import ConfigKey, ConfigSection  # noqa: E402
 from finshin_sdk.exceptions import (  # noqa: E402
     DirectTimeoutError,
     ProbeTimeoutError,
@@ -29,6 +31,9 @@ from finshin_sdk.exceptions import (  # noqa: E402
     TokenError,
 )
 from utils.check import _verify as verify_mod  # noqa: E402
+from utils.network import PROXY_ITEM  # noqa: E402
+
+_PROXY_MODE_ITEM = ConfigKey.PROXY_MODE.path("adapter.tg", ConfigSection.PROXY)
 
 
 class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
@@ -81,7 +86,9 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
         mgr = SettingsManager(lambda: ("tok", "http://127.0.0.1:9999"))
 
         async def dead(token: str, proxy: str) -> dict:
-            return {"proxy": ProxyConnectionRefusedError(proxy="http://127.0.0.1:9999")}
+            return {
+                PROXY_ITEM: ProxyConnectionRefusedError(proxy="http://127.0.0.1:9999")
+            }
 
         mod = sys.modules["bot._managers._settings"]
         with self._patches(mod, dead):
@@ -89,9 +96,9 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
 
         self.assertFalse(ok)
         self.assertIsNone(mgr.resolved_proxy)
-        self.assertEqual(list(mgr.last_errors), ["proxy"])
-        self.assertIn("均无法连通", mgr.last_errors["proxy"])
-        self.assertIn("代理软件", mgr.last_errors["proxy"])
+        self.assertEqual(list(mgr.last_errors), [PROXY_ITEM])
+        self.assertIn("均无法连通", mgr.last_errors[PROXY_ITEM])
+        self.assertIn("代理软件", mgr.last_errors[PROXY_ITEM])
 
     async def test_fallback_direct_when_config_dead(self) -> None:
         """配置代理死、直连通
@@ -108,7 +115,9 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
                 {}
                 if not proxy
                 else {
-                    "proxy": ProxyConnectionRefusedError(proxy="http://127.0.0.1:9999")
+                    PROXY_ITEM: ProxyConnectionRefusedError(
+                        proxy="http://127.0.0.1:9999"
+                    )
                 }
             )
 
@@ -153,7 +162,7 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
         mgr = SettingsManager(lambda: ("tok", ""))
 
         async def dead_direct(token: str, proxy: str) -> dict:
-            return {"proxy": DirectTimeoutError()}
+            return {PROXY_ITEM: DirectTimeoutError()}
 
         mod = sys.modules["bot._managers._settings"]
         with self._patches(mod, dead_direct):
@@ -161,9 +170,9 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
 
         self.assertFalse(ok)
         self.assertIsNone(mgr.resolved_proxy)
-        self.assertIn("直连超时", mgr.last_errors["proxy"])
-        self.assertNotIn("均无法连通", mgr.last_errors["proxy"])
-        self.assertIn("代理软件", mgr.last_errors["proxy"])
+        self.assertIn("直连超时", mgr.last_errors[PROXY_ITEM])
+        self.assertNotIn("均无法连通", mgr.last_errors[PROXY_ITEM])
+        self.assertIn("代理软件", mgr.last_errors[PROXY_ITEM])
 
     async def test_network_and_type_errors_merged(self) -> None:
         """连通性与类型错误合并上报
@@ -175,7 +184,7 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
         mgr = SettingsManager(lambda: ("tok", "prox"))
 
         async def net_fail(token: str, proxy: str) -> dict:
-            return {"proxy": ProxySchemeError(scheme="https")}
+            return {PROXY_ITEM: ProxySchemeError(scheme="https")}
 
         mod = sys.modules["bot._managers._settings"]
         with self._patches(
@@ -188,7 +197,7 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(ok)
         self.assertEqual(
             list(mgr.last_errors),
-            ["proxy", "temperature"],
+            [PROXY_ITEM, "temperature"],
             "错误顺序应为网络在前、类型在后",
         )
 
@@ -295,7 +304,9 @@ class TestVerifyConnectivityAggregation(unittest.IsolatedAsyncioTestCase):
                 {}
                 if reach["ok"]
                 else {
-                    "proxy": ProxyConnectionRefusedError(proxy="http://127.0.0.1:9999")
+                    PROXY_ITEM: ProxyConnectionRefusedError(
+                        proxy="http://127.0.0.1:9999"
+                    )
                 }
             )
 
@@ -371,6 +382,10 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
     - 用不到系统代理的档位，其地址变化不作废免测
     """
 
+    def setUp(self) -> None:
+        """装配一次段表，配置读写走装配后的段名"""
+        assemble_for_case(self)
+
     @contextmanager
     def _mode_patches(self, mod, fake_check, mode, sys_proxy=None, sys_box=None):
         """按模式打桩
@@ -399,7 +414,7 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
             patch.object(
                 mod.config_manager,
                 "get_all",
-                return_value={"proxy": {"proxy": "", "proxy_mode": mode}},
+                return_value={"adapter.tg.proxy": {"proxy": "", "proxy_mode": mode}},
             ),
         ):
             yield
@@ -434,7 +449,9 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
 
         async def dead(token: str, proxy: str) -> dict:
             calls["n"] += 1
-            return {"proxy": ProxyConnectionRefusedError(proxy="http://127.0.0.1:9999")}
+            return {
+                PROXY_ITEM: ProxyConnectionRefusedError(proxy="http://127.0.0.1:9999")
+            }
 
         mod = sys.modules["bot._managers._settings"]
         with self._mode_patches(mod, dead, "cfg"):
@@ -442,8 +459,8 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
 
         self.assertFalse(ok)
         self.assertEqual(calls["n"], 2, "单路配置模式也重检一轮")
-        self.assertIn("无法连接到代理服务器", mgr.last_errors["proxy"])
-        self.assertNotIn("均无法连通", mgr.last_errors["proxy"])
+        self.assertIn("无法连接到代理服务器", mgr.last_errors[PROXY_ITEM])
+        self.assertNotIn("均无法连通", mgr.last_errors[PROXY_ITEM])
 
     async def test_hidden_proxy_mode_takes_the_mark(self) -> None:
         """代理行隐藏的模式，网络错的标红落在代理模式行
@@ -459,7 +476,7 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
 
                 async def dead(token: str, proxy: str) -> dict:
                     return {
-                        "proxy": ProxyConnectionRefusedError(
+                        PROXY_ITEM: ProxyConnectionRefusedError(
                             proxy="http://127.0.0.1:9999"
                         )
                     }
@@ -470,9 +487,9 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
 
                 self.assertFalse(ok)
                 self.assertEqual(
-                    list(mgr.last_errors), ["proxy_mode"], "红点要落在看得见的行上"
+                    list(mgr.last_errors), [_PROXY_MODE_ITEM], "红点要落在看得见的行上"
                 )
-                self.assertIn("无法连接到代理服务器", mgr.last_errors["proxy_mode"])
+                self.assertIn("无法连接到代理服务器", mgr.last_errors[_PROXY_MODE_ITEM])
 
     async def test_single_direct_fail_retries(self) -> None:
         """仅直连模式首轮失败同样重检
@@ -488,7 +505,7 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
         async def cold_start(token: str, proxy: str) -> dict:
             calls["n"] += 1
             if calls["n"] == 1:
-                return {"proxy": DirectTimeoutError()}
+                return {PROXY_ITEM: DirectTimeoutError()}
             return {}
 
         mod = sys.modules["bot._managers._settings"]
@@ -537,7 +554,7 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
 
         self.assertFalse(ok)
         self.assertEqual(calls["n"], 0, "缺席单路不应发探测")
-        self.assertIn("系统代理未开启", mgr.last_errors["proxy_mode"])
+        self.assertIn("系统代理未开启", mgr.last_errors[_PROXY_MODE_ITEM])
 
     async def test_cfg_absent_marks_visible_proxy_row(self) -> None:
         """仅配置代理模式没填地址，红点落在代理项
@@ -560,7 +577,7 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
 
         self.assertFalse(ok)
         self.assertEqual(calls["n"], 0, "缺席单路不应发探测")
-        self.assertEqual(list(mgr.last_errors), ["proxy"])
+        self.assertEqual(list(mgr.last_errors), [PROXY_ITEM])
 
     async def test_direct_mode_ignores_system_proxy_change(self) -> None:
         """仅直连模式不吃系统代理变化的免测作废
@@ -597,9 +614,9 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
 
         async def flaky(token: str, proxy: str) -> dict:
             if not proxy:
-                return {"proxy": DirectTimeoutError()}
+                return {PROXY_ITEM: DirectTimeoutError()}
             cfg_calls["n"] += 1
-            return {"proxy": ProbeTimeoutError()} if cfg_calls["n"] <= 1 else {}
+            return {PROXY_ITEM: ProbeTimeoutError()} if cfg_calls["n"] <= 1 else {}
 
         mod = sys.modules["bot._managers._settings"]
         with self._mode_patches(mod, flaky, "auto"):
@@ -618,7 +635,9 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
 
         async def dead(token: str, proxy: str) -> dict:
             calls["n"] += 1
-            return {"proxy": ProxyConnectionRefusedError(proxy="http://127.0.0.1:9999")}
+            return {
+                PROXY_ITEM: ProxyConnectionRefusedError(proxy="http://127.0.0.1:9999")
+            }
 
         mod = sys.modules["bot._managers._settings"]
         with self._mode_patches(mod, dead, "auto"):
@@ -626,7 +645,7 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
 
         self.assertFalse(ok)
         self.assertEqual(calls["n"], 4, "两轮各两通道")
-        self.assertIn("均无法连通", mgr.last_errors["proxy"])
+        self.assertIn("均无法连通", mgr.last_errors[PROXY_ITEM])
 
     async def test_auto_retry_reopens_table_with_hint(self) -> None:
         """重检轮重发整表刷掉首轮红行，头部带重测提示"""
@@ -641,9 +660,9 @@ class TestProxyModeFlow(unittest.IsolatedAsyncioTestCase):
 
         async def flaky(token: str, proxy: str) -> dict:
             if not proxy:
-                return {"proxy": DirectTimeoutError()}
+                return {PROXY_ITEM: DirectTimeoutError()}
             cfg_calls["n"] += 1
-            return {"proxy": ProbeTimeoutError()} if cfg_calls["n"] <= 1 else {}
+            return {PROXY_ITEM: ProbeTimeoutError()} if cfg_calls["n"] <= 1 else {}
 
         frames: list[dict] = []
         bridge = MagicMock()
@@ -716,16 +735,16 @@ class TestFaultRowPlacement(unittest.TestCase):
         from finshin_sdk.domain import ProxyMode
         from utils.network import fault_row_of
 
-        self.assertEqual(fault_row_of(ProxyMode.AUTO), FieldKey.PROXY)
-        self.assertEqual(fault_row_of(ProxyMode.CFG), FieldKey.PROXY)
+        self.assertEqual(fault_row_of(ProxyMode.AUTO), PROXY_ITEM)
+        self.assertEqual(fault_row_of(ProxyMode.CFG), PROXY_ITEM)
 
     def test_hidden_proxy_row_moves_to_mode_row(self) -> None:
         """代理项整行藏掉的两档红在模式行"""
-        from finshin_sdk.domain import ConfigKey, ProxyMode
+        from finshin_sdk.domain import ProxyMode
         from utils.network import fault_row_of
 
-        self.assertEqual(fault_row_of(ProxyMode.SYS), ConfigKey.PROXY_MODE)
-        self.assertEqual(fault_row_of(ProxyMode.DIRECT), ConfigKey.PROXY_MODE)
+        self.assertEqual(fault_row_of(ProxyMode.SYS), _PROXY_MODE_ITEM)
+        self.assertEqual(fault_row_of(ProxyMode.DIRECT), _PROXY_MODE_ITEM)
 
 
 class TestEnumFieldValidation(unittest.TestCase):
@@ -738,17 +757,22 @@ class TestEnumFieldValidation(unittest.TestCase):
         """模式值不在选项表即报错"""
         from dataclasses import replace
 
-        from finshin_sdk.domain import Platform
+        from bot._managers._config_sources import config_sources
+        from finshin_sdk.domain import ConfigKey
         from utils.config._schema import build_schema
         from utils.config._validator import validate_types
+        from utils.config.sources import assemble
 
-        proxy_tab = build_schema(Platform.TELEGRAM)[0]
-        mode_field = next(f for f in proxy_tab.fields if f.key == "proxy_mode")
+        with fake_adapter_parts():
+            sections = assemble(config_sources()).sections
+        proxy_tab = build_schema(sections)[0]
+        mode_field = next(f for f in proxy_tab.fields if f.key == ConfigKey.PROXY_MODE)
         schema = [replace(proxy_tab, fields=[mode_field])]
-        self.assertIn(
-            "proxy_mode", validate_types(schema, {"proxy": {"proxy_mode": "tun"}})
+        values = {"adapter.tg.proxy": {"proxy_mode": "tun"}}
+        self.assertIn(proxy_tab.path_of(mode_field), validate_types(schema, values))
+        self.assertEqual(
+            validate_types(schema, {"adapter.tg.proxy": {"proxy_mode": "sys"}}), {}
         )
-        self.assertEqual(validate_types(schema, {"proxy": {"proxy_mode": "sys"}}), {})
 
 
 class TestStaleFrameDrain(unittest.TestCase):

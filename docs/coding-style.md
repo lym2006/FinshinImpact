@@ -218,7 +218,7 @@
 
 - 枚举基类只准 `StrEnum` 与 `IntEnum`。
 - 成员值即落盘值、即比较值，一份字面量贯穿代码、配置与库。
-- 判定一律 `==` 比成员，成员可直接参与 `in` 容器、`join`、f-string、`json.dumps`、SQLite 绑定、tomlkit 落盘、`setObjectName`，都不必先取 `.value`。
+- 判定一律 `==` 比成员，成员可直接参与 `in` 容器、`join`、f-string、`json.dumps`、SQLite 绑定、配置文件落盘、`setObjectName`，都不必先取 `.value`。
 - 函数形参禁裸 `Enum` 成员。
 - `IntEnum` 成员与裸整数本就 `==` 比中，裸数字失去分支语义，比较与赋值处一律写成员。
 - 参与大小比较（排序、阈值）的枚举写死数字并留间隔（0/10/50），禁 `auto()`，理由见 [lessons/layering.md](lessons/layering.md)。

@@ -23,7 +23,7 @@ _logger = get_logger("Mgr.Adapter")
 
 
 def parts_for(platform: Platform) -> AdapterParts:
-    """按平台标识取适配器交出的三件
+    """按平台标识取适配器交出的四件
 
     - 清单缺席或字段非法即缺件
     - 本机接口包不在清单要求的区间内即拒载，拒在导入入口之前

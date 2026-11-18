@@ -10,13 +10,13 @@ from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass, field
 
 from exceptions import describe_error
-from finshin_sdk.domain import ConfigKey, FieldKey
+from finshin_sdk.domain import ConfigPath
 from finshin_sdk.exceptions import ProbeCrashedError
 from skin.messages import CheckMessage
 
-from ..config import AppConfigData, AppSchema, validate_types
+from ..config import AppConfigData, AppSchema, FieldErrors, validate_types
 from ..logger import get_logger
-from ..network import NETWORK_ROWS, Channel, RowId, RowStatus, probe_budget
+from ..network import NETWORK_ROWS, PROXY_ITEM, Channel, RowId, RowStatus, probe_budget
 
 _logger = get_logger("Check")
 
@@ -25,7 +25,8 @@ _RETRY_WARMUP = 1.5  # 秒，等代理软件把 TUN 内核与监听拉起来再�
 
 # 探针展示句留空时由核心按"称谓：可达/不可用"拼装，缺席句等特例显式覆盖
 _ProbeCallback = Callable[
-    [Channel], Awaitable[tuple[str | None, dict[str, Exception], str]]
+    [Channel],
+    Awaitable[tuple[str | None, dict[ConfigPath | str, Exception], str]],
 ]
 _EmitCallback = Callable[[dict], None]
 _StopCheckCallback = Callable[[], bool]
@@ -33,7 +34,7 @@ _ViaLabel = Callable[[Channel], str]
 _ReplayCallback = Callable[[], object]  # 重发整表清场的回调，返回值不吃
 
 # 探针裁决：(通道可走, 生效地址, 字段错误, 表格展示句)
-_Verdict = tuple[bool, str | None, dict[str, Exception], str]
+_Verdict = tuple[bool, str | None, dict[ConfigPath | str, Exception], str]
 
 
 @dataclass
@@ -41,7 +42,7 @@ class ChannelOutcome:
     """一轮通道并发探测的结果"""
 
     resolved: str | None = None
-    errors: dict[str, Exception] = field(default_factory=dict)
+    errors: dict[ConfigPath | str, Exception] = field(default_factory=dict)
     passed: bool = False  # 任一通道可走即真（含"通道通仅 token 错"）
 
 
@@ -86,13 +87,13 @@ async def _probe_safe(
         return (
             False,
             None,
-            {FieldKey.PROXY: ProbeCrashedError()},
+            {PROXY_ITEM: ProbeCrashedError()},
             "",
         )
-    ok = resolved is not None or bool(errors and FieldKey.PROXY not in errors)
+    ok = resolved is not None or bool(errors and PROXY_ITEM not in errors)
 
     # 代理行没错误时不硬取，缺键不该把日志行自己炸掉
-    reason = describe_error(errors[FieldKey.PROXY]) if FieldKey.PROXY in errors else ""
+    reason = describe_error(errors[PROXY_ITEM]) if PROXY_ITEM in errors else ""
     state = "过" if ok else f"不通 {detail or reason}"
     _logger.debug(f"{_probe_tag(round_no, ch, started, budget)} {state}")
     return ok, resolved, errors, detail
@@ -233,9 +234,7 @@ async def run_probe_round(
     return await _run_channels(channels, 2, probe, emit, via_label, stop_check)
 
 
-def local_row(
-    schema: AppSchema, config: AppConfigData
-) -> tuple[dict, dict[ConfigKey, str]]:
+def local_row(schema: AppSchema, config: AppConfigData) -> tuple[dict, FieldErrors]:
     """本地配置校验
 
     - 交回本地行的终态帧与类型错误字典

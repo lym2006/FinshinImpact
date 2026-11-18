@@ -4,10 +4,12 @@
 - 整批失败即返回保留清单全体，开发模式只回手动命令
 - 保留清单由核心依赖、已装接口包、适配器声明依赖、已装适配器包与启用插件依赖并成
 - 各路里同名只留先读到的一条，让开的那条要交代出来
+- 从没保存过勾选的实例也并入随包插件的依赖，表外插件的按勾选算
 - 启动器那侧与本体这侧读同一份核心依赖声明，读数不一致即红
 """
 
 import sys
+import tempfile
 import unittest
 from contextlib import ExitStack
 from pathlib import Path
@@ -23,6 +25,7 @@ set_profile("tg.000000")
 
 import pack_spec  # noqa: E402
 
+from finshin_sdk.domain import ManifestKey  # noqa: E402
 from services import adapter_manifest  # noqa: E402
 from services.env_setup import deps_install, deps_keep  # noqa: E402
 
@@ -204,6 +207,66 @@ class TestKeepMerge(unittest.TestCase):
             deps_install.sync_env(["httpx==0.28.1"], lines.append, ["说明一行"])
 
         self.assertEqual(lines[0], "说明一行")
+
+
+class TestInstanceEnabledUnion(unittest.TestCase):
+    """全实例启用插件的依赖并集"""
+
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.instances = Path(self._tmp.name)
+        self.instance = self.instances / "tg.000001"
+        self.instance.mkdir()
+        self.help_row = {
+            ManifestKey.NAME: "help",
+            ManifestKey.DEPS: ["foo==1.0"],
+        }
+        self.web_row = {
+            ManifestKey.NAME: "webshot",
+            ManifestKey.DEPS: ["markdown==3.10.2"],
+        }
+        patcher = patch.object(deps_keep, "INSTANCES_DIR", self.instances)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def _union(self, manifests: list[dict]) -> list[str]:
+        """按给定的清单读数跑一遍启用并集"""
+        with (
+            patch.object(deps_keep, "plugins_roots", lambda: [self.instance]),
+            patch.object(deps_keep, "load_manifests", lambda roots: manifests),
+        ):
+            return deps_keep._enabled_deps_union()
+
+    def test_missing_state_keeps_bundled_deps(self) -> None:
+        """实例从没保存过勾选，随包插件的依赖照样并入保留清单
+
+        - 整台跳过会让随包插件的库被一次同步删掉，启动即缺件
+        """
+        self.assertEqual(self._union([self.help_row, self.web_row]), ["foo==1.0"])
+
+    def test_empty_enabled_keeps_bundled_deps(self) -> None:
+        """保存过勾选且一只表外插件都没选，同样并入随包插件的依赖"""
+        (self.instance / "plugins.toml").write_text(
+            'enabled = []\ncatalog = "dig"', encoding="utf-8"
+        )
+
+        self.assertEqual(self._union([self.help_row, self.web_row]), ["foo==1.0"])
+
+    def test_missing_state_drops_external_deps(self) -> None:
+        """没保存过勾选时表外插件不在场，它的依赖不并入"""
+        self.assertEqual(self._union([self.web_row]), [])
+
+    def test_saved_choice_adds_external_deps(self) -> None:
+        """勾过的表外插件依赖并进同一份清单"""
+        (self.instance / "plugins.toml").write_text(
+            'enabled = ["webshot"]\ncatalog = "dig"', encoding="utf-8"
+        )
+
+        self.assertEqual(
+            self._union([self.help_row, self.web_row]),
+            ["foo==1.0", "markdown==3.10.2"],
+        )
 
 
 class TestDeclarationsParity(unittest.TestCase):

@@ -3,7 +3,7 @@
 - 本体侧与生成侧、启动器侧各写一遍的串，逐样比对
 - 目录段名与键位对不上，生成的目录本体读不出
 - Pages 地址与镜像名单对不上，取件就取到别处去
-- 包内布局名与注册表值名对不上，升级保留与代理读取各说各话
+- 包内布局名与解释器名对不上，升级保留与运行环境各说各话
 - 注释点名「两处同值」的串逐条比对，改了另一侧没改这侧即红
 """
 
@@ -25,7 +25,6 @@ import gen_release  # noqa: E402
 import instancelock as launch_instancelock  # noqa: E402
 import pack_seed  # noqa: E402
 import pack_spec  # noqa: E402
-import proxy as launch_proxy  # noqa: E402
 
 from services import adapter_catalog as catalog_mod  # noqa: E402
 from services.env_setup import platform_rows, toolchain, wheel_fetch  # noqa: E402
@@ -36,7 +35,6 @@ from system import (  # noqa: E402
     links,
     proc,
     profile_env,
-    registry,
     tool_settings,
 )
 from utils import paths  # noqa: E402
@@ -183,15 +181,6 @@ class TestNaming(unittest.TestCase):
     def test_icon_name_matches_build(self) -> None:
         """图标文件名本体与构建侧同值"""
         self.assertEqual(app_identity.APP_ICON_PATH.name, pack_spec.PackLayout.ICON)
-
-
-class TestRegistryNames(unittest.TestCase):
-    """注册表值名"""
-
-    def test_proxy_value_names_match_launcher(self) -> None:
-        """代理开关与代理地址两个值名本体与启动器同值"""
-        self.assertEqual(registry._PROXY_ENABLE_VALUE, launch_proxy._PROXY_ENABLE_VALUE)
-        self.assertEqual(registry._PROXY_SERVER_VALUE, launch_proxy._PROXY_SERVER_VALUE)
 
 
 def _read_uv_sources() -> set[str]:

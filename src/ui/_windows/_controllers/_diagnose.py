@@ -11,11 +11,13 @@ from typing import Any
 from PySide6.QtCore import QThread, Signal
 from PySide6.QtWidgets import QDialog, QWidget
 
-from finshin_sdk.domain import ConfigKey, ConfigSection, ProxyMode
+from finshin_sdk.domain import ConfigKey, ConfigPath, ConfigSection, ProxyMode
 from skin.messages import CheckMessage
 from system.profile_env import get_profile, read_token
 from utils import config_manager, get_logger
+from utils.config import section_name
 from utils.network import FrameKey, RowId, RowStatus, fault_row_of, probe_skeleton
+from utils.paths import PLATFORM
 
 from ..._bridge import gui_bridge
 from ..._dialogs import Round, current_check_window, open_check_window
@@ -94,7 +96,7 @@ class DiagnoseController(BaseController):
         self._startup_settled: bool = False
 
         # 代理不通时该标红哪一行，随最近一轮读的档位刷新
-        self._red_key: str = fault_row_of(ProxyMode.AUTO)
+        self._red_key: ConfigPath = fault_row_of(ProxyMode.AUTO)
 
         # 当前在跑的诊断线程集合：finished 前禁止被 GC
         self._workers: set[_DiagnoseWorker] = set()
@@ -124,7 +126,12 @@ class DiagnoseController(BaseController):
             self.logger.info(CheckMessage.BUSY)
             return
 
-        proxy = config_manager.get_all().get(ConfigSection.PROXY) or {}
+        proxy = (
+            config_manager.get_all().get(
+                section_name(f"adapter.{PLATFORM}", ConfigSection.PROXY)
+            )
+            or {}
+        )
         configured = str(proxy.get(ConfigKey.PROXY) or "")
         mode = str(proxy.get(ConfigKey.PROXY_MODE, ProxyMode.AUTO)).strip()
         token = read_token(get_profile())

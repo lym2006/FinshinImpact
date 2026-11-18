@@ -4,7 +4,7 @@
 - 启动时按包内清理清单卸载已删依赖的旧残留
 - 启动前比对在线版本页，确认后整包升级并保留用户资产
 - 升级后拉起新版启动器，新版取得引导锁后旧进程退出
-- 弹窗、控制台、代理、运行环境、升级、换壳按域拆入 launch 子包
+- 弹窗、控制台、运行环境、升级、换壳按域拆入 launch 子包
 """
 
 import os
@@ -12,7 +12,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from launch import console, dialogs, proxy, runtime, shell, update
+from launch import console, dialogs, runtime, shell, update
 from launch.instancelock import bootstrap_taken
 from pack_spec import AUMID_ANCHOR_VAR, PROXY_ENV_VARS, PackLayout
 
@@ -68,7 +68,6 @@ def main() -> None:
         sys.exit(0)
     root = _root_dir()
     shell.apply_shell_update(root)
-    proxy.apply_system_proxy()
     runtime.ensure_runtime(root)
     update.check_update(root)
     _launch(root)

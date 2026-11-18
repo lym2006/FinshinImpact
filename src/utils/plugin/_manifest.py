@@ -1,7 +1,7 @@
 """插件清单读取器
 
 - 扫描插件目录聚合各插件自描述清单
-- 读取实例状态文件并计算启用序列
+- 按实例状态文件的启用集算启用序列
 - 外部根里名字撞上随包表的插件整份不放行
 - 命令名被在场插件拿走的整只不放行
 - 引导期另有一份只取最小字段集的精简实现
@@ -28,6 +28,7 @@ from finshin_sdk.domain import (
 )
 from finshin_sdk.dto import PluginManifestDTO
 from system.module_mount import mount_module, mount_package
+from system.plugin_state import load_instance_enabled
 from system.profile_env import DECLARATION_FILE_NAME, ROOT_DIR
 from system.toml_read import read_toml
 from system.tool_settings import declared_dependencies
@@ -171,31 +172,6 @@ def _deps_of(plugin_dir: Path, pkg: str) -> tuple[str, ...] | None:
     return declared_dependencies(plugin_dir / DECLARATION_FILE_NAME)
 
 
-def _load_instance_enabled(state_path: Path) -> frozenset[str] | None:
-    """读取实例启用集
-
-    - 只取 enabled 键，随包插件恒启用与回落由 _resolve_enabled 处理
-    - 文件不存在或解析失败返回 None，前者即实例从未保存过插件选择
-    """
-    data = read_toml(state_path)
-    if data is None:
-        return None
-
-    return frozenset(str(name) for name in data.get(StateKey.ENABLED, []))
-
-
-def _load_catalog(state_path: Path) -> str:
-    """读取实例目录指纹
-
-    - 缺失或损坏返回空串，与任何现算指纹都不等
-    """
-    data = read_toml(state_path)
-    if data is None:
-        return ""
-
-    return str(data.get(StateKey.CATALOG, ""))
-
-
 def _resolve_enabled(
     manifests: dict[str, PluginManifestDTO],
     enabled: frozenset[str] | None,
@@ -244,7 +220,7 @@ def enabled_manifests(state_path: Path) -> list[PluginManifestDTO]:
                 continue
             manifests.setdefault(name, manifest)
 
-    enabled = _load_instance_enabled(state_path)
+    enabled = load_instance_enabled(state_path, StateKey.ENABLED)
     claims = [
         PluginClaim(name=manifest.name, commands=_declared_commands(manifest))
         for manifest in manifests.values()

@@ -18,6 +18,8 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
+from config_plan import assemble_for_case  # noqa: E402
+
 from bundled.AI.core import active_tasks  # noqa: E402
 from bundled.AI.services import _ai_chat, _cleanup  # noqa: E402
 from bundled.AI.utils import make_session_key  # noqa: E402
@@ -168,6 +170,7 @@ class TestShutdownRelease(unittest.TestCase):
 
     def setUp(self) -> None:
         active_tasks.clear()
+        assemble_for_case(self)
 
     def test_teardown_clears_queue_and_cancels_inflight(self) -> None:
         """收尾清空排队，在途压缩收到取消"""

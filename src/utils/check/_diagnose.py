@@ -10,7 +10,7 @@ from collections.abc import Awaitable, Callable, Coroutine, Sequence
 from typing import Any
 
 from finshin_sdk import AdapterParts, ChannelProbe
-from finshin_sdk.domain import ProxyMode
+from finshin_sdk.domain import ConfigPath, ProxyMode
 from skin.messages import CheckMessage
 
 from ..logger import get_logger
@@ -65,13 +65,17 @@ def _opening(
 
 def _diagnose_probe(
     token: str, channel_probe: ChannelProbe
-) -> Callable[[Channel], Awaitable[tuple[str | None, dict[str, Exception], str]]]:
+) -> Callable[
+    [Channel], Awaitable[tuple[str | None, dict[ConfigPath | str, Exception], str]]
+]:
     """构造诊断探针
 
     - 用真实凭证探测
     """
 
-    async def probe(ch: Channel) -> tuple[str | None, dict[str, Exception], str]:
+    async def probe(
+        ch: Channel,
+    ) -> tuple[str | None, dict[ConfigPath | str, Exception], str]:
         start = time.monotonic()
         resolved, errors = await channel_probe(token, ch.url)
         _logger.debug(

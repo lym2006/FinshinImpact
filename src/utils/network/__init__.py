@@ -14,6 +14,7 @@ _SYMBOL_MODULES = {
     "LinkStatus": "._link",
     "link_report": "._link",
     "detect_system_proxy": "._proxy",
+    "PROXY_ITEM": "._probe",
     "NETWORK_ROWS": "._probe",
     "Channel": "._probe",
     "FrameKey": "._probe",
@@ -42,6 +43,7 @@ __all__ = [
     # 系统代理
     "detect_system_proxy",
     # 通道与协议键
+    "PROXY_ITEM",
     "NETWORK_ROWS",
     "Channel",
     "FrameKey",
@@ -67,6 +69,7 @@ if TYPE_CHECKING:
     from ._link import LinkStatus, link_report
     from ._probe import (
         NETWORK_ROWS,
+        PROXY_ITEM,
         Channel,
         FrameKey,
         RowId,

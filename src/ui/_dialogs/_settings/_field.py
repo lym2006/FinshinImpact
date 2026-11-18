@@ -18,10 +18,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from finshin_sdk.domain import ConfigPath
 from skin.qss import build_error_label_qss
 from skin.theme import GLOBAL, SETTINGS_DIALOG
-from utils.config import AppConfigData, AppSchema
-from utils.config.models import ConfigValue, FieldSchema, TabData, is_blank
+from utils.config import AppConfigData, AppSchema, FieldErrors
+from utils.config.models import ConfigValue, FieldSchema, TabData, TabSchema, is_blank
 
 from ..._primitives import make_combo, set_margins
 from ._list_widget import ConfigListRow
@@ -61,15 +62,15 @@ class FieldBuilder:
         self._font = font
         self.inputs: Inputs = {}
 
-        # {字段键: (标签控件, 原标题)}，复验结果原地刷新用
-        self.labels: dict[str, tuple[QLabel, str]] = {}
+        # {配置项身份: (标签控件, 原标题)}，复验结果原地刷新用
+        self.labels: dict[ConfigPath, tuple[QLabel, str]] = {}
         self._resets = ResetRegistry(self.inputs, self.value_of)
 
     def build(
         self,
+        tab: TabSchema,
         field: FieldSchema,
-        section: str,
-        errors: dict[str, str],
+        errors: FieldErrors,
         label_width: int = 0,
     ) -> QWidget:
         """渲染表单控件
@@ -81,14 +82,17 @@ class FieldBuilder:
         form = QFormLayout(container)
         form.setSpacing(GLOBAL.radius)
         set_margins(form, SETTINGS_DIALOG.margin, bottom=SETTINGS_DIALOG.tab_spacing)
-        current_value, restore_target, required = self._resolve_value(field, section)
-        label_widget = self._build_label(field, errors, label_width)
+        current_value, restore_target, required = self._resolve_value(
+            field, tab.section
+        )
+        item = tab.path_of(field)
+        label_widget = self._build_label(item, field, errors, label_width)
 
         input_widget = self._build_input(field, current_value)
-        self.inputs[field.key] = input_widget
+        self.inputs[item] = input_widget
         form.addRow(
             label_widget,
-            self._build_right_side(field, input_widget, restore_target, required),
+            self._build_right_side(item, field, input_widget, restore_target, required),
         )
         return container
 
@@ -99,10 +103,10 @@ class FieldBuilder:
         limit = metrics.horizontalAdvance("M") * _LABEL_WIDTH_MAX_EM
         return min(max_width, limit)
 
-    def value_of(self, field_key: str, field: FieldSchema) -> ConfigValue:
+    def value_of(self, item: ConfigPath, field: FieldSchema) -> ConfigValue:
         """从控件提取字段当前值"""
         # float 解析失败返回原文，判定必不等于默认
-        widget = self.inputs.get(field_key)
+        widget = self.inputs.get(item)
         if widget is None:
             return None
         match widget:
@@ -128,7 +132,7 @@ class FieldBuilder:
         for tab in schema:
             tab_data: TabData = {}
             for field in tab.fields:
-                tab_data[field.key] = self.value_of(field.key, field)
+                tab_data[field.key] = self.value_of(tab.path_of(field), field)
             modified[tab.section] = tab_data
         return modified
 
@@ -163,7 +167,11 @@ class FieldBuilder:
         return current_value, None, True
 
     def _build_label(
-        self, field: FieldSchema, errors: dict[str, str], label_width: int
+        self,
+        item: ConfigPath,
+        field: FieldSchema,
+        errors: FieldErrors,
+        label_width: int,
     ) -> QLabel:
         """构造字段标签
 
@@ -175,8 +183,8 @@ class FieldBuilder:
         label_widget.setAlignment(
             Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
         )
-        refresh_label(label_widget, field.label, errors.get(field.key))
-        self.labels[field.key] = (label_widget, field.label)
+        refresh_label(label_widget, field.label, errors.get(item))
+        self.labels[item] = (label_widget, field.label)
         return label_widget
 
     def _build_input(
@@ -209,6 +217,7 @@ class FieldBuilder:
 
     def _build_right_side(
         self,
+        item: ConfigPath,
         field: FieldSchema,
         input_widget: QWidget,
         restore_target: ConfigValue,
@@ -226,8 +235,8 @@ class FieldBuilder:
         if required or field.options:
             v_layout.addWidget(input_widget)
         else:
-            row, btn = self._resets.wrap(input_widget, field.key, restore_target)
-            self._resets.register(btn, field.key, field, restore_target)
+            row, btn = self._resets.wrap(input_widget, item, restore_target)
+            self._resets.register(btn, item, field, restore_target)
             v_layout.addWidget(row)
         if field.desc:
             desc_label = QLabel(field.desc)

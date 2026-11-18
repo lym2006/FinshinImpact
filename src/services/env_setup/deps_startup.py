@@ -3,14 +3,15 @@
 - 定本实例应结算哪几只插件，把装失败的插件移出启用集
 """
 
-from finshin_sdk.domain import BUNDLED_PLUGIN_PRIORITY, ManifestKey, StateKey
+from finshin_sdk.domain import ManifestKey, StateKey, is_enabled
+from system.plugin_state import load_instance_enabled
 
 from .deps_manifest import (
     catalog_digest,
     load_manifests,
-    load_state,
     plugins_roots,
     save_state,
+    state_path_of,
     top_package_name,
 )
 
@@ -24,12 +25,11 @@ def target_manifests(code: str) -> list[dict]:
     roots = plugins_roots()
     if not roots:
         return []
-    enabled = set(load_state(code).get(StateKey.ENABLED, []))
+    enabled = load_instance_enabled(state_path_of(code), StateKey.ENABLED)
     return [
         manifest
         for manifest in load_manifests(roots)
-        if manifest[ManifestKey.NAME] in BUNDLED_PLUGIN_PRIORITY
-        or manifest[ManifestKey.NAME] in enabled
+        if is_enabled(manifest[ManifestKey.NAME], enabled)
     ]
 
 
@@ -43,27 +43,26 @@ def disable_failed(code: str, failed: list[str]) -> list[str]:
     roots = plugins_roots()
     if not roots:
         return []
-    enabled = [
-        name
-        for name in load_state(code).get(StateKey.ENABLED, [])
-        if isinstance(name, str)
-    ]
+    enabled = load_instance_enabled(state_path_of(code), StateKey.ENABLED)
     if not enabled:
         return []
 
+    manifests = load_manifests(roots)
     tops = {top_package_name(item) for item in failed}
+    ordered: list[str] = []
     dropped: list[str] = []
-    for manifest in load_manifests(roots):
+    for manifest in manifests:
         name = manifest[ManifestKey.NAME]
         if name not in enabled:
             continue
+        ordered.append(name)
         deps = {top_package_name(pin) for pin in manifest[ManifestKey.DEPS]}
         assets = set(manifest[ManifestKey.ASSETS])
         if deps & tops or assets & set(failed):
             dropped.append(name)
     if not dropped:
-        dropped = list(enabled)
+        dropped = ordered
 
-    keep = [name for name in enabled if name not in dropped]
-    save_state(code, keep, catalog_digest(load_manifests(roots)))
+    keep = [name for name in ordered if name not in dropped]
+    save_state(code, keep, catalog_digest(manifests))
     return dropped

@@ -81,34 +81,39 @@ class TestErrorGuard(unittest.TestCase):
         self.assertNotIn("fatal", self.received)
 
     def test_path_missing_carries_field_error(self) -> None:
-        """缺键异常发向导时带字段键与必填文案
+        """缺键异常发向导时带字段身份与必填文案
 
-        - 供面板标红
+        - 供面板按同一身份标红
         """
         from exceptions import ConfigPathMissingError
+        from finshin_sdk.domain import ConfigKey, ConfigSection
+
+        item = ConfigKey.API_KEY.path("plugin.AI", ConfigSection.AI)
 
         @error_guard("测试")
         def boom() -> None:
-            raise ConfigPathMissingError("ai.new_key", "new_key")
+            raise ConfigPathMissingError(item, "api_key")
 
         boom()
-        self.assertEqual(list(self.received["setup"]), ["new_key"])
-        self.assertIn("必填", self.received["setup"]["new_key"])
+        self.assertEqual(list(self.received["setup"]), [item])
+        self.assertIn("必填", self.received["setup"][item])
 
-    def test_missing_section_error_uses_path_tail(self) -> None:
+    def test_missing_section_error_carries_identity(self) -> None:
         """整段缺失场景
 
-        - 字段键取点路径尾段
+        - 向导错误表的键是配置项身份，不再按点路径取尾段
         """
-
         from exceptions import ConfigPathMissingError
+        from finshin_sdk.domain import ConfigKey, ConfigSection
+
+        item = ConfigKey.OWNER.path("plugin.AI", ConfigSection.CHORE)
 
         @error_guard("测试")
         def boom() -> None:
-            raise ConfigPathMissingError("ai.model_name", "ai")
+            raise ConfigPathMissingError(item, "chore")
 
         boom()
-        self.assertEqual(list(self.received["setup"]), ["model_name"])
+        self.assertEqual(list(self.received["setup"]), [item])
 
     def test_connectivity_routes_to_setup(self) -> None:
         """连接性异常走向导信号"""

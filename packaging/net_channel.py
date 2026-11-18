@@ -1,6 +1,6 @@
 """启动器与构建侧取数通道
 
-- 通道清单给到干净直连与显式走代理两种
+- 通道清单给到忽略环境代理的干净直连
 - 取 JSON、取字节、探长度三种交出内容或空值，落盘下载一种交出末次异常
 - 每条通道按同一节奏最多发三次，含首发
 """
@@ -31,22 +31,9 @@ def _clean_opener() -> Opener:
     return urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 
-def _proxied_opener(proxy_url: str) -> Opener:
-    """显式走指定代理的取数通道"""
-    pair = {"http": proxy_url, "https": proxy_url}
-    return urllib.request.build_opener(urllib.request.ProxyHandler(pair))
-
-
-def openers(proxy_url: str | None = None) -> list[Opener]:
-    """排出取数通道清单，干净直连在前
-
-    - 给了代理地址再补一条
-    """
-    found = [_clean_opener()]
-    if proxy_url:
-        found.append(_proxied_opener(proxy_url))
-
-    return found
+def openers() -> list[Opener]:
+    """排出干净直连的取数通道清单"""
+    return [_clean_opener()]
 
 
 def fetch_json(

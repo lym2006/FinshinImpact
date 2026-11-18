@@ -23,6 +23,7 @@ from finshin_sdk.domain import (
 )
 from system.atomic_write import write_text_atomic
 from system.digest import lines_digest
+from system.plugin_state import load_instance_catalog
 from system.profile_env import DECLARATION_FILE_NAME, ROOT_DIR, profile_dir
 from system.toml_read import read_toml
 from system.tool_settings import declared_dependencies
@@ -197,17 +198,9 @@ def _command_pairs(data: dict[str, Any]) -> tuple[tuple[str, str], ...]:
     return tuple(commands)
 
 
-def _state_path_of(code: str) -> Path:
+def state_path_of(code: str) -> Path:
     """按身份码定位实例状态文件"""
     return profile_dir(code) / PluginFileName.STATE
-
-
-def load_state(code: str) -> dict[str, Any]:
-    """读取实例插件状态
-
-    - 文件不存在或解析失败返回空字典，前者即实例从未保存过插件选择
-    """
-    return read_toml(_state_path_of(code)) or {}
 
 
 def panel_needed(code: str) -> bool:
@@ -215,9 +208,8 @@ def panel_needed(code: str) -> bool:
 
     - 状态缺失、缺目录指纹或指纹与现目录不符，任一为真
     """
-    state = load_state(code)
-    catalog = state.get(StateKey.CATALOG)
-    if not isinstance(catalog, str) or not catalog:
+    catalog = load_instance_catalog(state_path_of(code), StateKey.CATALOG)
+    if not catalog:
         return True
     roots = plugins_roots()
     if not roots:
@@ -230,15 +222,15 @@ def save_state(code: str, enabled: list[str], catalog: str) -> None:
 
     - 随包插件不写进启用集，读取侧恒并入
     - 引导期写入，运行期只读不写
+    - 两项取值是目录名与摘要串，都不含要转义的字符
     """
-    import tomlkit
-
-    doc = tomlkit.document()
-    doc.add(StateKey.ENABLED, enabled)
-    doc.add(StateKey.CATALOG, catalog)
-    target = _state_path_of(code)
+    names = ", ".join(f'"{name}"' for name in enabled)
+    target = state_path_of(code)
     target.parent.mkdir(parents=True, exist_ok=True)
-    write_text_atomic(target, tomlkit.dumps(doc))
+    write_text_atomic(
+        target,
+        f'{StateKey.ENABLED} = [{names}]\n{StateKey.CATALOG} = "{catalog}"\n',
+    )
 
 
 def top_package_name(pin: str) -> str:

@@ -5,11 +5,12 @@
 """
 
 from ._manifest import enabled_manifests
-from ._register import register_plugins
+from ._register import load_plugin, register_plugins
 
 __all__ = [
     # 清单消费
     "enabled_manifests",
     # 插件注册
+    "load_plugin",
     "register_plugins",
 ]

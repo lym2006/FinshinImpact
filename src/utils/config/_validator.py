@@ -29,12 +29,12 @@ def validate_types(schema: AppSchema, data: AppConfigData) -> FieldErrors:
         for fld in tab.fields:
             if fld.key not in section_data:
                 if fld.required:
-                    errors[fld.key] = ConfigMessage.REQUIRED_MARK
+                    errors[tab.path_of(fld)] = ConfigMessage.REQUIRED_MARK
                 continue
 
             value = section_data[fld.key]
             if fld.required and is_blank(value):
-                errors[fld.key] = ConfigMessage.REQUIRED_MARK
+                errors[tab.path_of(fld)] = ConfigMessage.REQUIRED_MARK
                 continue
 
             expected = fld.value_type
@@ -43,18 +43,18 @@ def validate_types(schema: AppSchema, data: AppConfigData) -> FieldErrors:
 
             if not _match(value, expected):
                 tname = _TYPE_NAMES[expected]
-                errors[fld.key] = f"类型应为 {tname}，当前 {value!r}"
+                errors[tab.path_of(fld)] = f"类型应为 {tname}，当前 {value!r}"
                 continue
 
             if fld.options and value not in {k for k, _ in fld.options}:
                 legal = " / ".join(v for v, _ in fld.options)
-                errors[fld.key] = f"取值应为 {legal} 之一，当前 {value!r}"
+                errors[tab.path_of(fld)] = f"取值应为 {legal} 之一，当前 {value!r}"
                 continue
 
             if fld.bounds and expected is float:
                 lo, hi = fld.bounds
                 if not lo <= value <= hi:  # type: ignore[operator]
-                    errors[fld.key] = f"取值应在 {lo:g}~{hi:g}，当前 {value!r}"
+                    errors[tab.path_of(fld)] = f"取值应在 {lo:g}~{hi:g}，当前 {value!r}"
 
     return errors
 

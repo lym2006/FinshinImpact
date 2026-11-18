@@ -3,6 +3,7 @@
 - 判定纯实测：pip 包与资源逐项查盘，出补装计划
 - 计划为空即免结算，进度窗一次都不开
 - 补装只喂实测缺失项，只装不删
+- 在场范围按启用集与随包表定，没保存过选择的实例也含随包插件
 - 失败项命中哪个插件就禁用哪个，命中不了全禁，禁用不动已装库
 """
 
@@ -18,7 +19,7 @@ from system.profile_env import set_profile  # noqa: E402
 
 set_profile("tg.000000")
 
-from finshin_sdk.domain import ManifestKey, StateKey  # noqa: E402
+from finshin_sdk.domain import ManifestKey  # noqa: E402
 from services.env_setup import deps_startup  # noqa: E402
 from ui._guide import _startup  # noqa: E402
 
@@ -47,7 +48,7 @@ _PATCHED = {
     deps_startup: (
         "plugins_roots",
         "load_manifests",
-        "load_state",
+        "load_instance_enabled",
         "save_state",
         "catalog_digest",
     ),
@@ -66,7 +67,7 @@ class _StartupBase(unittest.TestCase):
                 self.m[name] = self.stack.enter_context(patch.object(module, name))
         self.m["plugins_roots"].return_value = [_SENTINEL]
         self.m["load_manifests"].return_value = [_AI, _WEB]
-        self.m["load_state"].return_value = {StateKey.ENABLED: ["webshot"]}
+        self.m["load_instance_enabled"].return_value = frozenset({"webshot"})
         self.m["dev_mode"].return_value = False
         self.m["is_pin_installed"].return_value = True
         self.m["is_asset_installed"].return_value = True
@@ -99,13 +100,28 @@ class TestCollectMissing(_StartupBase):
 
     def test_bundled_plugin_always_checked(self) -> None:
         """启用集为空也覆盖随包插件的缺失"""
-        self.m["load_state"].return_value = {StateKey.ENABLED: []}
+        self.m["load_instance_enabled"].return_value = frozenset()
         bundled = {
             ManifestKey.NAME: "help",
             ManifestKey.DEPS: ["foo==1.0"],
             ManifestKey.ASSETS: [],
         }
         self.m["load_manifests"].return_value = [bundled]
+        self.m["is_pin_installed"].return_value = False
+
+        plan = _startup._collect_missing("AAAA")
+
+        self.assertEqual(plan, [("help", ["foo==1.0"], [])])
+
+    def test_never_saved_state_keeps_bundled(self) -> None:
+        """实例从没保存过勾选，随包插件的缺失照样列入计划"""
+        self.m["load_instance_enabled"].return_value = None
+        bundled = {
+            ManifestKey.NAME: "help",
+            ManifestKey.DEPS: ["foo==1.0"],
+            ManifestKey.ASSETS: [],
+        }
+        self.m["load_manifests"].return_value = [bundled, _WEB]
         self.m["is_pin_installed"].return_value = False
 
         plan = _startup._collect_missing("AAAA")
@@ -189,7 +205,7 @@ class TestDisableFailed(_StartupBase):
 
     def test_drops_plugin_matched_by_dep(self) -> None:
         """失败项命中某插件的依赖，只禁该插件并落盘剩余启用集"""
-        self.m["load_state"].return_value = {StateKey.ENABLED: ["webshot", "other"]}
+        self.m["load_instance_enabled"].return_value = frozenset({"webshot", "other"})
         other = {
             ManifestKey.NAME: "other",
             ManifestKey.DEPS: ["foo==1.0"],
@@ -219,7 +235,7 @@ class TestDisableFailed(_StartupBase):
 
     def test_no_enabled_no_write(self) -> None:
         """启用集为空无需落盘"""
-        self.m["load_state"].return_value = {StateKey.ENABLED: []}
+        self.m["load_instance_enabled"].return_value = frozenset()
 
         dropped = deps_startup.disable_failed("AAAA", ["playwright==1.62.0"])
 

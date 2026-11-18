@@ -34,7 +34,6 @@ _MAIN_REPO = "FinshinImpact"
 _PAGES_HOST = f"https://{_ACCOUNT}.github.io"
 API_HOST = "https://api.github.com"
 DOWNLOAD_HOST = "https://github.com"
-PROXY_SCHEME = "http://"  # 注册表只记地址与端口时补齐的协议头
 
 
 class PackLayout:
@@ -98,7 +97,7 @@ AUMID_ANCHOR_VAR = "FINSHINIMPACT_EXE_PATH"
 DETACHED_PROCESS = 0x00000008  # 新壳不继承旧进度窗口，换壳无闪窗
 CREATE_NO_WINDOW = 0x08000000  # 后台命令不弹控制台窗口
 
-# 安装期注入的代理环境变量名，拉起主程序前剔除
+# 外部可能注入的代理环境变量名，拉起主程序前从子进程环境剔除
 PROXY_ENV_VARS = ("HTTP_PROXY", "HTTPS_PROXY")
 
 
@@ -113,10 +112,10 @@ def local_version(root: Path) -> str:
     return str(_pyproject_data(root)["project"]["version"])
 
 
-def remote_version(proxy_url: str | None = None) -> str | None:
+def remote_version() -> str | None:
     """读取版本页在线版本号，失败返回 None"""
     body = net_channel.fetch_bytes(
-        _PAGES_PYPROJECT_URL, net_channel.openers(proxy_url), {}, _TIMEOUT_VERSION_PAGE
+        _PAGES_PYPROJECT_URL, net_channel.openers(), {}, _TIMEOUT_VERSION_PAGE
     )
     if body is None:
         return None
@@ -133,11 +132,11 @@ def _drop_download_lines(body: str) -> str:
     ).strip()
 
 
-def remote_release_notes(version: str, *, proxy_url: str | None = None) -> str:
+def remote_release_notes(version: str) -> str:
     """读取指定版本 release 正文，失败返回空串"""
     data = net_channel.fetch_json(
         _RELEASE_API_URL.format(ver=version),
-        net_channel.openers(proxy_url),
+        net_channel.openers(),
         {HDR_USER_AGENT: _API_USER_AGENT},
         _TIMEOUT_RELEASE,
     )

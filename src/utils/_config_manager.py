@@ -1,6 +1,6 @@
 """配置管理器
 
-- 按点分路径读取配置
+- 按配置项身份读取配置
 - 非必填缺键回退 schema 默认值，必填缺键维持抛错
 """
 
@@ -8,10 +8,10 @@ from copy import deepcopy
 from typing import Any, TypeVar, cast, get_origin
 
 from exceptions import ConfigAttrError, ConfigPathMissingError
-from finshin_sdk.domain.ids import ConfigPath
+from finshin_sdk.domain import ConfigPath
 
-from .config import AppConfigData, AppSchema, get_schema
-from .config.models import ConfigValue
+from .config import AppConfigData, AppSchema, get_schema, section_name
+from .config.models import ConfigValue, TabData
 
 T = TypeVar("T")
 
@@ -30,16 +30,6 @@ class _ConfigManager:
             self._schema = get_schema()
         return self._schema
 
-    @property
-    def _required_paths(self) -> frozenset[ConfigPath]:
-        """必填键点分路径集合"""
-        return frozenset(
-            ConfigPath(f"{tab.section}.{fld.key}")
-            for tab in self.schema
-            for fld in tab.fields
-            if fld.required
-        )
-
     def load(self, config_data: AppConfigData) -> None:
         """全量加载/覆盖配置"""
         self._config = deepcopy(config_data)
@@ -51,28 +41,25 @@ class _ConfigManager:
         """
         return deepcopy(self._config)
 
-    def get(self, path: ConfigPath, expected_type: type[T]) -> T:
-        """点路径读取并校验
+    def get(self, item: ConfigPath, expected_type: type[T]) -> T:
+        """按配置项身份读取并校验
 
+        - 盘上段名由来源串与段名拼出
         - 非必填键缺失取 schema 默认值
         - 必填键缺失直接抛错，由校验轮标红引导填写
         """
-        keys = path.split(".")
-        value: Any = self._config
+        section = section_name(item.source, item.section)
+        values: TabData = self._config.get(section) or {}
 
         # 路径穿透
-        for key in keys:
-            if isinstance(value, dict) and key in value:
-                value = value[key]
-            elif path in self._required_paths:
-                raise ConfigPathMissingError(path, key) from None
-            else:
-                value = self._schema_default(path)
-                break
+        if item.key in values:
+            value: Any = values[item.key]
+        else:
+            value = self._schema_default(item)
 
         # 空值检查
         if value is None:
-            raise ConfigAttrError(path, expected_type, None) from None
+            raise ConfigAttrError(item, expected_type, None) from None
 
         if (  # 类型转换
             isinstance(value, int) and expected_type is float
@@ -84,30 +71,33 @@ class _ConfigManager:
         if get_origin(expected_type) is list and isinstance(
             value, list
         ):  # 列表内全部转 str 类型
-            value = [str(item) for item in value]
+            value = [str(element) for element in value]
 
         # 提取泛型信息
         target_type = get_origin(expected_type) or expected_type
 
         # 校验外层类型
         if not isinstance(value, target_type):
-            raise ConfigAttrError(path, expected_type, value) from None
+            raise ConfigAttrError(item, expected_type, value) from None
 
         return cast(T, value)
 
-    def _schema_default(self, path: ConfigPath) -> ConfigValue:
-        """按点路径取 schema 默认值"""
-        section, _, key = path.partition(".")
+    def _schema_default(self, item: ConfigPath) -> ConfigValue:
+        """按来源、段与键取 schema 默认值"""
         for tab in self.schema:
-            if tab.section != section:
+            if tab.group != item.source or tab.section_id != item.section:
                 continue
             for fld in tab.fields:
-                if fld.key == key:
-                    # deepcopy 隔离：防调用方就地改写 schema 里的共享默认对象
-                    return deepcopy(fld.default)
+                if fld.key != item.key:
+                    continue
+                if fld.required:
+                    raise ConfigPathMissingError(item, item.key) from None
+
+                # deepcopy 隔离：防调用方就地改写 schema 里的共享默认对象
+                return deepcopy(fld.default)
 
         # schema 也没有该字段属代码错误，照抛缺键
-        raise ConfigPathMissingError(path, key) from None
+        raise ConfigPathMissingError(item, item.key) from None
 
 
 config_manager = _ConfigManager()  # 全局单例

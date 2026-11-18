@@ -21,9 +21,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from finshin_sdk.domain import ConfigGroup, ConfigKey, ConfigSection
+from finshin_sdk.domain import ConfigKey, ConfigPath
 from skin.theme import GLOBAL, SETTINGS_DIALOG, ButtonStyle, ObjectName
-from utils.config import AppSchema
+from utils.config import AppSchema, FieldErrors
 from utils.config.models import TabSchema
 from utils.network import uses_configured_proxy
 
@@ -43,7 +43,7 @@ class ChromeBuilder:
         self,
         host: QWidget,
         fields: FieldBuilder,
-        errors: dict[str, str],
+        errors: FieldErrors,
         error_qss: str,
         error_font: QFont,
         on_exit: Callable[[], None],
@@ -66,9 +66,9 @@ class ChromeBuilder:
 
         # 导航引用：复验结果原地刷新用（免关窗重开的闪烁）
         # 页段 -> (大类, 页签序号, 无标记标题)，大类 -> (列表项, 无标记文案)
-        self._group_tabs: dict[ConfigGroup, QTabWidget] = {}
-        self._tab_refs: dict[str, tuple[ConfigGroup, int, str]] = {}
-        self._category_items: dict[ConfigGroup, tuple[QListWidgetItem, str]] = {}
+        self._group_tabs: dict[str, QTabWidget] = {}
+        self._tab_refs: dict[str, tuple[str, int, str]] = {}
+        self._category_items: dict[str, tuple[QListWidgetItem, str]] = {}
         self._categories = QListWidget()
         self._pages = QStackedWidget()
         self.save_btn: QPushButton | None = None
@@ -118,10 +118,10 @@ class ChromeBuilder:
     def _build_nav(self, schema: AppSchema) -> QHBoxLayout:
         """装配左侧大类与右侧上排页签
 
-        - 段按 domain 表顺序归组，大类首次出现即定列表行序
+        - 段按来源顺序归组，大类首次出现即定列表行序
         - 一个大类一本页签，切大类只换堆叠页，已填内容不重建
         """
-        groups: dict[ConfigGroup, list[TabSchema]] = {}
+        groups: dict[str, list[TabSchema]] = {}
         for tab in schema:
             groups.setdefault(tab.group, []).append(tab)
 
@@ -156,7 +156,7 @@ class ChromeBuilder:
         - 出错页签挂标记，其所属大类跟着挂
         - 只换标题文字，控件与已填内容不动
         """
-        bad_groups: set[ConfigGroup] = set()
+        bad_groups: set[str] = set()
         for section, (group, index, title) in self._tab_refs.items():
             marked = section in error_sections
             if marked:
@@ -190,33 +190,35 @@ class ChromeBuilder:
         main_layout = QVBoxLayout(container)
         main_layout.setSpacing(SETTINGS_DIALOG.tab_spacing)
         label_width = self._fields.label_width_of(tab_schema.fields)
-        rows: dict[str, QWidget] = {}
+        rows: dict[ConfigPath, QWidget] = {}
         for field in tab_schema.fields:
-            row = self._fields.build(
-                field, tab_schema.section, self._errors, label_width
-            )
-            rows[field.key] = row
+            row = self._fields.build(tab_schema, field, self._errors, label_width)
+            rows[tab_schema.path_of(field)] = row
             main_layout.addWidget(row)
-        self._mount_persona_row(tab_schema.section, main_layout, label_width)
-        self._mount_proxy_mode_lock(tab_schema.section, rows)
+        self._mount_persona_row(tab_schema, main_layout, label_width)
+        self._mount_proxy_mode_lock(tab_schema, rows)
         main_layout.addStretch()
         scroll = make_scroller(container)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setAutoFillBackground(False)
         return scroll
 
-    def _mount_proxy_mode_lock(self, section: str, rows: dict[str, QWidget]) -> None:
+    def _mount_proxy_mode_lock(
+        self, tab: TabSchema, rows: dict[ConfigPath, QWidget]
+    ) -> None:
         """代理项随模式显隐
 
         - 仅系统代理与仅直连两档用不到代理项，整行隐藏
         - 标题、输入框与恢复钮同消，值保留在控件里切回即现
-        - 两个控件缺一即不接线，缺件说明字段表已改键
+        - 本页缺代理项或模式项即不接线，缺件说明字段表已改键
         """
-        if section != ConfigSection.PROXY:
+        by_key = {field.key: field for field in tab.fields}
+        mode_field = by_key.get(ConfigKey.PROXY_MODE)
+        proxy_field = by_key.get(ConfigKey.PROXY)
+        if mode_field is None or proxy_field is None:
             return
-        inputs = self._fields.inputs
-        mode_combo = inputs.get(ConfigKey.PROXY_MODE)
-        proxy_row = rows.get(ConfigKey.PROXY)
+        mode_combo = self._fields.inputs.get(tab.path_of(mode_field))
+        proxy_row = rows.get(tab.path_of(proxy_field))
         if not isinstance(mode_combo, QComboBox) or proxy_row is None:
             return
         self.proxy_row = proxy_row
@@ -232,22 +234,23 @@ class ChromeBuilder:
 
     def _mount_persona_row(
         self,
-        section: str,
+        tab: TabSchema,
         layout: QVBoxLayout,
         label_width: int,
     ) -> None:
         """人设入口行挂载
 
-        - 主人输入行取不到或控件类型不符即不挂载，缺件说明字段表已改键
+        - 本页取不到主人输入控件即不挂载，缺件说明字段表已改键
         """
-        if section != ConfigSection.CHORE:
-            return
-        owner = self._fields.inputs.get(ConfigKey.OWNER)
+        owner = next((f for f in tab.fields if f.key == ConfigKey.OWNER), None)
         if owner is None:
+            return
+        owner_input = self._fields.inputs.get(tab.path_of(owner))
+        if owner_input is None:
             return
 
         row = PersonaPreviewRow(label_width)
-        if not row.bind(owner):
+        if not row.bind(owner_input):
             return
         layout.addWidget(row)
 

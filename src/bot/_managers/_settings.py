@@ -6,11 +6,10 @@
 
 import time
 from collections.abc import Awaitable, Callable
-from typing import cast
 
 from exceptions import describe_error
 from finshin_sdk import ChannelProbe
-from finshin_sdk.domain import ConfigKey, ConfigSection, FieldKey, ProxyMode
+from finshin_sdk.domain import ConfigKey, ConfigPath, ConfigSection, ProxyMode
 from skin.messages import CheckMessage
 from ui import gui_bridge
 from utils import config_manager
@@ -21,8 +20,10 @@ from utils.config import (
     ensure_config,
     get_schema,
     load_config,
+    section_name,
 )
 from utils.network import (
+    PROXY_ITEM,
     Channel,
     FrameKey,
     RowId,
@@ -41,6 +42,7 @@ from utils.paths import PLATFORM
 
 from .._adapter_host import parts_for
 from ._base import BaseManager
+from ._config_sources import config_sources
 
 
 def _channel_probe() -> ChannelProbe:
@@ -49,13 +51,13 @@ def _channel_probe() -> ChannelProbe:
     return parts_for(PLATFORM).channel_probe
 
 
-def _label_of(schema: AppSchema, key: str) -> str:
-    """字段键映射界面标题"""
+def _label_of(schema: AppSchema, item: ConfigPath | str) -> str:
+    """配置项身份映射界面标题"""
     for tab in schema:
         for fld in tab.fields:
-            if fld.key == key:
+            if tab.path_of(fld) == item:
                 return fld.label
-    return key
+    return str(item)
 
 
 class SettingsManager(BaseManager):
@@ -72,8 +74,8 @@ class SettingsManager(BaseManager):
         super().__init__()
         self._get_config = get_config_func
 
-        # 最近一次验证失败：{配置键: 错误文案}，供向导标注字段
-        self.last_errors: dict[str, str] = {}
+        # 最近一次验证失败：{配置项身份: 错误文案}，供向导标注字段
+        self.last_errors: FieldErrors = {}
 
         # 三级解析出的生效通道，未通过为 None，空串表示直连
         self.resolved_proxy: str | None = None
@@ -86,7 +88,7 @@ class SettingsManager(BaseManager):
 
     async def _execute(self) -> None:
         """加载配置进内存"""
-        ensure_config()
+        ensure_config(config_sources())
         config_manager.load(load_config())
 
     async def verify_connectivity(self) -> bool:
@@ -118,7 +120,7 @@ class SettingsManager(BaseManager):
         type_errors = self._emit_opening(channels, sys_dedup, single, schema)
         if single is not None and not channels:
             # 缺席的选路填不上地址：红点落在看得见的那一行
-            net_errors: dict[str, str] = {fault_row_of(mode): single[2]}
+            net_errors: FieldErrors = {fault_row_of(mode): single[2]}
             resolved: str | None = None
         else:
             probe = self._make_probe(token)
@@ -150,7 +152,12 @@ class SettingsManager(BaseManager):
         - 配置代理串、代理模式与系统代理地址三项
         - 用得到系统代理的档位才计入它，另两档的开关变化与连通校验无关
         """
-        proxy = config_manager.get_all().get(ConfigSection.PROXY) or {}
+        proxy = (
+            config_manager.get_all().get(
+                section_name(f"adapter.{PLATFORM}", ConfigSection.PROXY)
+            )
+            or {}
+        )
         mode = str(proxy.get(ConfigKey.PROXY_MODE, ProxyMode.AUTO)).strip()
         return (
             configured.strip(),
@@ -165,7 +172,7 @@ class SettingsManager(BaseManager):
         - 一个探测包都没发，只报免测不报用时
         """
         _, type_errors = local_row(schema, config_manager.get_all())
-        self.last_errors = cast("dict[str, str]", type_errors)
+        self.last_errors = type_errors
         self.logger.info(CheckMessage.LOCAL_ONLY)
         return self._emit_advice(schema)
 
@@ -201,14 +208,18 @@ class SettingsManager(BaseManager):
 
     def _make_probe(
         self, token: str
-    ) -> Callable[[Channel], Awaitable[tuple[str | None, dict[str, Exception], str]]]:
+    ) -> Callable[
+        [Channel], Awaitable[tuple[str | None, dict[ConfigPath | str, Exception], str]]
+    ]:
         """构造单通道探针
 
         - token 错误时不换代理重试
         """
         channel_probe = _channel_probe()
 
-        async def probe(ch: Channel) -> tuple[str | None, dict[str, Exception], str]:
+        async def probe(
+            ch: Channel,
+        ) -> tuple[str | None, dict[ConfigPath | str, Exception], str]:
             start = time.monotonic()
             resolved, errors = await channel_probe(token, ch.url)
             self.logger.debug(
@@ -224,7 +235,7 @@ class SettingsManager(BaseManager):
 
     def _aggregate_errors(
         self, outcome: ChannelOutcome, channels: list[Channel], mode: str
-    ) -> dict[str, str]:
+    ) -> FieldErrors:
         """聚合代理错误
 
         - 探测交出的是异常，这里取成给人看的那句
@@ -232,10 +243,12 @@ class SettingsManager(BaseManager):
         - 尾句指引用户自查代理软件
         - 红点行由档位单源判据给出
         """
-        errors = {key: describe_error(value) for key, value in outcome.errors.items()}
-        if outcome.resolved is not None or FieldKey.PROXY not in errors:
+        errors: FieldErrors = {
+            key: describe_error(value) for key, value in outcome.errors.items()
+        }
+        if outcome.resolved is not None or PROXY_ITEM not in errors:
             return errors
-        base = CheckMessage.ALL_FAIL if len(channels) > 1 else errors[FieldKey.PROXY]
+        base = CheckMessage.ALL_FAIL if len(channels) > 1 else errors[PROXY_ITEM]
         return {
             fault_row_of(mode): f"{base}\n{CheckMessage.PROXY_GUIDE}",
         }

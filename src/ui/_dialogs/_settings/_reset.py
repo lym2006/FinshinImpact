@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from finshin_sdk.domain import ConfigPath
 from skin.theme import SETTINGS_DIALOG, ButtonStyle
 from utils.config.models import ConfigValue, FieldSchema
 
@@ -24,7 +25,7 @@ from ..._primitives import make_button, set_margins
 from ._list_widget import ConfigListRow
 
 _InputWidget: TypeAlias = ConfigListRow | QLineEdit | QTextEdit | QComboBox
-Inputs: TypeAlias = dict[str, _InputWidget]
+Inputs: TypeAlias = dict[ConfigPath, _InputWidget]
 
 
 def _value_signal(widget: _InputWidget) -> SignalInstance | None:
@@ -52,16 +53,16 @@ class ResetRegistry:
     def __init__(
         self,
         inputs: Inputs,
-        value_of: Callable[[str, FieldSchema], ConfigValue],
+        value_of: Callable[[ConfigPath, FieldSchema], ConfigValue],
     ) -> None:
         self._inputs = inputs
         self._value_of = value_of
 
-        # {字段键: (按钮, 字段, 恢复目标)}
-        self._rows: dict[str, tuple[QPushButton, FieldSchema, ConfigValue]] = {}
+        # {配置项身份: (按钮, 字段, 恢复目标)}
+        self._rows: dict[ConfigPath, tuple[QPushButton, FieldSchema, ConfigValue]] = {}
 
     def wrap(
-        self, widget: QWidget, field_key: str, restore_target: ConfigValue
+        self, widget: QWidget, item: ConfigPath, restore_target: ConfigValue
     ) -> tuple[QWidget, QPushButton]:
         """输入控件右侧挂恢复按钮"""
         # 图标态，悬停出提示
@@ -74,14 +75,14 @@ class ResetRegistry:
         btn.setToolTip(SETTINGS_DIALOG.reset_text)
 
         # 恢复只回填控件：落盘仍走正常保存链路，确认环节由 diff 窗把
-        btn.clicked.connect(lambda: self.reset(field_key, restore_target))
+        btn.clicked.connect(lambda: self.reset(item, restore_target))
         h_layout.addWidget(btn)
         return row, btn
 
     def register(
         self,
         btn: QPushButton,
-        field_key: str,
+        item: ConfigPath,
         field: FieldSchema,
         restore_target: ConfigValue,
     ) -> None:
@@ -92,8 +93,8 @@ class ResetRegistry:
         """
         # 显隐统一交给刷新时机判定
         btn.setVisible(False)
-        self._rows[field_key] = (btn, field, restore_target)
-        widget = self._inputs.get(field_key)
+        self._rows[item] = (btn, field, restore_target)
+        widget = self._inputs.get(item)
         if widget is not None and (sig := _value_signal(widget)) is not None:
             sig.connect(self.refresh)
 
@@ -103,16 +104,16 @@ class ResetRegistry:
         - 面板打开与校验回传时各刷一次
         """
         # 判定对象是控件里的当前值而非磁盘快照，手改待保存的偏离同样亮钮
-        for field_key, (btn, field, restore_target) in self._rows.items():
-            btn.setVisible(self._value_of(field_key, field) != restore_target)
+        for item, (btn, field, restore_target) in self._rows.items():
+            btn.setVisible(self._value_of(item, field) != restore_target)
 
-    def reset(self, field_key: str, restore_target: ConfigValue) -> None:
+    def reset(self, item: ConfigPath, restore_target: ConfigValue) -> None:
         """按控件类型回填恢复目标值
 
         - 回填后重估按钮显隐
         """
         # 本行按钮随之消失
-        widget = self._inputs.get(field_key)
+        widget = self._inputs.get(item)
         if widget is None:
             return
         text = "" if restore_target is None else str(restore_target)

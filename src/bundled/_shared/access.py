@@ -29,7 +29,9 @@ def _owner_id() -> str:
 
     - 主人配置值去空白后交出
     """
-    return config_manager.get(ConfigKey.OWNER.path(ConfigSection.CHORE), str).strip()
+    return config_manager.get(
+        ConfigKey.OWNER.path("plugin.AI", ConfigSection.CHORE), str
+    ).strip()
 
 
 async def role_of(principal: PrincipalDTO) -> CommandRole:

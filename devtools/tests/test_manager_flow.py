@@ -34,9 +34,16 @@ from aiogram.methods import GetMe  # noqa: E402
 from bot._managers import BotManager, _apply  # noqa: E402
 from bot._service import AdapterRuntime  # noqa: E402
 from finshin_sdk import CapabilityCall  # noqa: E402
-from finshin_sdk.domain import FieldKey, Platform, PlatformMoment  # noqa: E402
+from finshin_sdk.domain import (  # noqa: E402
+    ConfigKey,
+    ConfigPath,
+    FieldKey,
+    Platform,
+    PlatformMoment,
+)
 from skin.messages import DialogMessage  # noqa: E402
 from ui import gui_bridge  # noqa: E402
+from utils.network import PROXY_ITEM  # noqa: E402
 
 
 async def _say(principal: object, text: str) -> None:
@@ -93,7 +100,7 @@ class ManagerFlowTestBase(unittest.IsolatedAsyncioTestCase):
             self.verify_calls += 1
             ok = self.verify_results.pop(0) if self.verify_results else True
             if not ok:
-                sm.last_errors = {FieldKey.PROXY: "代理不通"}
+                sm.last_errors = {PROXY_ITEM: "代理不通"}
             return ok
 
         async def _count_start() -> None:
@@ -104,11 +111,11 @@ class ManagerFlowTestBase(unittest.IsolatedAsyncioTestCase):
             patch.object(vm, "execute", new=_count_start),
         ]
 
-        # 对话身份只读主人一项，其余路径按取不到走原降级分支
-        def _read_config(path: str, expected_type: type) -> str:
-            if path.endswith("owner"):
+        # 对话身份只读主人一项，其余身份按取不到走原降级分支
+        def _read_config(item: ConfigPath, expected_type: type) -> str:
+            if item.key == ConfigKey.OWNER:
                 return ""
-            raise KeyError(path)
+            raise KeyError(item)
 
         patches += [patch.object(_apply.config_manager, "get", _read_config)]
         for p in patches:
@@ -134,7 +141,7 @@ class TestApplyConfig(ManagerFlowTestBase):
         await self.manager._applier.apply_config()
 
         self.assertEqual(len(self.force_events), 1, "失败应弹出一次向导")
-        self.assertIn(FieldKey.PROXY, self.force_events[0], "向导应携带字段错误")
+        self.assertIn(PROXY_ITEM, self.force_events[0], "向导应携带字段错误")
         self.assertEqual(self.service_starts["n"], 0, "失败时不得启动服务")
 
         # 用户保存 → 重入校验
@@ -303,7 +310,7 @@ class TestProxyFaultVoidsLinkCycle(ManagerFlowTestBase):
             reasons.append(reason)
 
         async def _fail_verify() -> bool:
-            sm.last_errors = {FieldKey.PROXY: "代理不通"}
+            sm.last_errors = {PROXY_ITEM: "代理不通"}
             sm.link_verified = link_verified
             return False
 
@@ -433,7 +440,7 @@ class TestTokenFatal(ManagerFlowTestBase):
 
             async def _proxy_fail() -> bool:
                 sm.last_errors = {
-                    FieldKey.PROXY: "代理不通",
+                    PROXY_ITEM: "代理不通",
                     FieldKey.TOKEN: "暂未检测",
                 }
                 return False
@@ -463,11 +470,11 @@ class TestIdentityReset(ManagerFlowTestBase):
         async def _reset(call: object) -> None:
             calls.append(1)
 
-        def _read(path: str, expected_type: type):
-            """只给主人那条路径，其余按取不到处理"""
-            if path.endswith("owner"):
+        def _read(item: ConfigPath, expected_type: type):
+            """只给主人那条身份，其余按取不到处理"""
+            if item.key == ConfigKey.OWNER:
                 return owner["v"]
-            raise KeyError(path)
+            raise KeyError(item)
 
         for patcher in (
             patch.object(
