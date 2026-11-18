@@ -1,6 +1,7 @@
 """编码规范检查公共设施
 
 - 文件装载、点分模块名解析与解析失败记录
+- 发布记录与入库 md 随目标一并装载，非 py 载体由分节入口自行取舍
 - 跨模块导入图构建，供命名与门面分节使用
 - 违规条目数据结构与整行注释提取
 """
@@ -14,6 +15,9 @@ import tokenize
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
+
+from ._doc_carriers import iter_md
+from ._package_alias import AliasCache, module_name
 
 # 扫描器基础配置
 SECTIONS: tuple[str, ...] = (
@@ -29,6 +33,7 @@ SECTIONS: tuple[str, ...] = (
     "回调形参",
     "类型注解",
     "导入",
+    "文档写法",
 )
 
 # 跳过名单：缓存与构建产物目录，末尾的 tests 是测试目录豁免
@@ -50,6 +55,9 @@ _EXCLUDE_SUFFIXES: tuple[str, ...] = (".egg-info",)
 
 # 开发者工具整树可直连私有模块，其引用也不给公共名转正
 DEVTOOLS_PREFIX = "devtools/"
+
+# 仓库根发布记录，作为非 py 载体随装载入口一并读取
+CHANGELOG_NAME = "CHANGELOG.md"
 
 _CJK_RE = re.compile(r"[\u4e00-\u9fff]")
 
@@ -121,12 +129,15 @@ def all_names(file: FileData) -> set[str]:
 
 
 def load_files(root: Path, targets: list[Path]) -> list[FileData]:
-    """装载扫描范围内的全部 py 文件"""
+    """装载扫描目标下的 py 文件、仓库根 CHANGELOG 与入库 md"""
     files: list[FileData] = []
+    aliases: AliasCache = {}
     for target in targets:
         for path in _iter_py(target, root):
             rel = path.relative_to(root).as_posix()
-            files.append(_read_file(path, rel, root))
+            files.append(_read_file(path, rel, root, aliases))
+    for path in iter_md(root, CHANGELOG_NAME):
+        files.append(_read_file(path, path.relative_to(root).as_posix(), root, aliases))
     return sorted(files, key=lambda f: f.rel)
 
 
@@ -143,10 +154,10 @@ def _iter_py(target: Path, root: Path) -> Iterator[Path]:
         yield path
 
 
-def _read_file(path: Path, rel: str, root: Path) -> FileData:
+def _read_file(path: Path, rel: str, root: Path, aliases: AliasCache) -> FileData:
     """读文件并解析 ast，解析失败只记录不中断"""
     source = path.read_text(encoding="utf-8-sig", errors="replace")
-    module = _module_name(path, root)
+    module = module_name(path, root, aliases)
     try:
         tree = ast.parse(source, filename=str(path))
         error = ""
@@ -165,23 +176,6 @@ def _read_file(path: Path, rel: str, root: Path) -> FileData:
         eol=eol,
         parse_error=error,
     )
-
-
-def _module_name(path: Path, root: Path) -> str:
-    """沿 __init__.py 链上溯解析点分模块名"""
-    if path.name == "__init__.py":
-        parts: list[str] = []
-        cur = path.parent
-    else:
-        parts = [path.stem]
-        cur = path.parent
-    while (cur / "__init__.py").is_file() and cur != root:
-        parts.append(cur.name)
-        cur = cur.parent
-    module = ".".join(reversed(parts))
-    if module.startswith("src."):
-        module = module[4:]
-    return module
 
 
 def _extract_comments(source: str) -> tuple[dict[int, str], dict[int, str]]:

@@ -1,7 +1,8 @@
 """检查登记表
 
-- 具名收集十二个分节的检查函数，赋予各自明确的消费者
+- 具名收集十三个分节的检查函数，赋予各自明确的消费者
 - run_checks 统一入口，屏蔽命名节需要额外导入图的签名差异
+- 非 py 载体只进对口的细则入口，py 专属分节一律按 py 文件取
 """
 
 from __future__ import annotations
@@ -17,10 +18,12 @@ from ._s5d_access import check as _check_access
 from ._s5e_enum import check as _check_enum
 from ._s6_magic import check as _check_magic
 from ._s7_text import check as _check_text
+from ._s7b_changelog import check_changelog as _check_changelog
 from ._s8_messages import check as _check_messages
 from ._s8b_callback_param import check as _check_callback_param
 from ._s9_typing import check as _check_typing
 from ._s10_import_direction import check as _check_import_direction
+from ._s11_docs import check as _check_docs
 
 if TYPE_CHECKING:
     from ._common import FileData, Finding, ImportGraph
@@ -43,9 +46,13 @@ _FILE_CHECKS = (
 
 def run_checks(files: list[FileData], graph: ImportGraph) -> list[Finding]:
     """按登记表顺序执行全部分节检查"""
+    sources = [f for f in files if f.path.suffix == ".py"]
+    docs = [f for f in files if f.path.suffix != ".py"]
     findings: list[Finding] = []
     for file_check in _FILE_CHECKS:
-        findings.extend(file_check(files))
-    findings.extend(_check_naming(files, graph))
-    findings.extend(_check_access(files, graph))
+        findings.extend(file_check(sources))
+    findings.extend(_check_changelog(docs))
+    findings.extend(_check_docs(docs))
+    findings.extend(_check_naming(sources, graph))
+    findings.extend(_check_access(sources, graph))
     return findings

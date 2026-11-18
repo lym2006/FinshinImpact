@@ -30,6 +30,12 @@ match = "startup_guard"
 reason = "发布包入口脚本由 build.py 按文本生成，导入图查不到消费方"
 
 [[waiver]]
+section = "命名与门面导出"
+path = "finshin/adapter/tg/src/entry.py"
+match = "parts"
+reason = "适配器装载时按清单里的入口串 import 再取属性，导入图查不到这个消费方"
+
+[[waiver]]
 section = "拆分粒度"
 path = "src/ui/_dialogs/_check.py"
 match = "CheckDialog"

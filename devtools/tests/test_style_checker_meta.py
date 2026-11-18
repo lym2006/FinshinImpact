@@ -1,11 +1,14 @@
 """扫描器自检的单元测试
 
-- 十二个分节各备一份故意违规的样本，防判据空转与包路径搬家后静默失效
+- 十三个分节各备一份故意违规的样本，防判据空转与包路径搬家后静默失效
 - 违规条目的分节名必须在 SECTIONS 内，防字面量改写错位
+- 每个分节名在 coding-style 都有同名开头的小节标题，防文档改节名后命令行与豁免指空
 - 回调形参四条判据各命中一次，业务协程与已合规写法不误报
 - 日志消息串留占位往后传参判硬性，就地拼好与百分号当单位不误报
+- CHANGELOG 载体三类判据各命中一次，合规样张零条目
+- 文档写法两条判据各命中一次，代码区里的分号与链接字面不报
 - 模块级别名按消费者定私有性，类型构造与被他模块取用的别名不判
-- 豁免清单只罩待核，条目须可解析且每条都在命中，失效即红
+- 豁免清单只罩待核，条目须可解析，本轮装载到的路径没命中才判失效转硬性
 - devtools 树可直连私有模块：不报越界，其引用不把 src 公共名算成对外
 - 扫描目标路径写错即报错退出
 """
@@ -20,6 +23,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import check_coding_style  # noqa: E402
+import gates  # noqa: E402
 from _style_checks import (  # noqa: E402
     SECTIONS,
     Finding,
@@ -30,15 +34,15 @@ from _style_checks import (  # noqa: E402
     load_waivers,
     run_checks,
 )
-from check_coding_style import _SCAN_ROOTS, _full_scan, _run  # noqa: E402
+from check_coding_style import _judged_dead, _run  # noqa: E402
 
 _HERE = Path(__file__).resolve().parent
 _ROOT = _HERE.parent.parent
 
 
-def _present_roots() -> list[Path]:
-    """按盘上在场的扫描根算覆盖面"""
-    return [root for root in _SCAN_ROOTS if root.is_dir()]
+def _gate_targets() -> list[Path]:
+    """按闸门那份目标算覆盖面，本体三棵树加盘上在场的子仓源码目录"""
+    return [_ROOT / rel for rel in gates._source_targets(_ROOT)]
 
 
 def _skeleton(rel: str) -> str:
@@ -52,6 +56,10 @@ _FUNC_DOC = '    """定位\n\n    - 说明\n    """\n'
 
 # 样本里的模块级符号一律带 `_` 前缀，避开命名分节的连带条目
 _USE = "_USE = None\n"
+
+# 临时树按主仓形状带一份改名声明，样本里的点分模块名才与现码同形
+_PYPROJECT_REL = "pyproject.toml"
+_ROOT_DECLARATION = '[tool.setuptools]\npackage-dir = {"" = "src"}\n'
 
 
 def _message_enum(rel: str, cls: str, member: str, text: str) -> tuple[str, str]:
@@ -171,6 +179,16 @@ _SAMPLES: dict[str, tuple[tuple[str, str], ...]] = {
             + "from ui._probe_other import Thing\n\n_USE = Thing\n",
         ),
     ),
+    "文档写法": (
+        ("docs/_probe_semi.md", "- 一句话说完；再来一句\n"),
+        ("docs/_probe_fence.md", '```powershell\npy -3 -c "a=1; b=2"\n```\n'),
+        (
+            "docs/_probe_link.md",
+            "[文字](_probe_link_target.md)\n`[文字](no_such_file.md)`\n",
+        ),
+        ("docs/_probe_link_target.md", "被活链指向的样张。\n"),
+        ("docs/_probe_dead.md", "[文字](_no_such_target.md)\n"),
+    ),
 }
 
 # 样本共用的包门面，只为把点分模块名解析出来
@@ -188,6 +206,7 @@ def _scan(
 ) -> dict[str, list[str]]:
     """在临时树里落样本并跑全量检查，按分节归名"""
     tree: dict[str, str] = {rel: _skeleton(rel) for rel in _PKG_INITS}
+    tree[_PYPROJECT_REL] = _ROOT_DECLARATION
     tree.update(dict(samples))
     with tempfile.TemporaryDirectory() as raw:
         root = Path(raw)
@@ -231,6 +250,21 @@ class TestSectionLive(unittest.TestCase):
             [msg for msg in messages if "在线地址裸写在家外" in msg],
             f"链接归家细则没命中：{messages}",
         )
+
+    def test_section_names_have_doc_headings(self) -> None:
+        """分节名与规范册小节标题对得上"""
+        headings = [
+            line.removeprefix("## ").strip()
+            for line in (_ROOT / "docs/coding-style.md")
+            .read_text(encoding="utf-8")
+            .splitlines()
+            if line.startswith("## ")
+        ]
+        for section in SECTIONS:
+            self.assertTrue(
+                any(title.startswith(section) for title in headings),
+                f"分节 {section} 在 coding-style 找不到同名小节标题",
+            )
 
     def test_section_names_are_known(self) -> None:
         """条目分节名必须在名单内，防字面量改写错位"""
@@ -374,6 +408,74 @@ class TestLazyLogArgs(unittest.TestCase):
         self.assertIsNone(bucket.get("日志与文案"))
 
 
+class TestChangelogCarrier(unittest.TestCase):
+    """CHANGELOG 载体三类判据的命中与对照"""
+
+    _COMPLIANT = (
+        "# Changelog\n"
+        "\n"
+        "本项目的所有重要更改都记录在此文件中。\n"
+        "\n"
+        "## [Unreleased]\n"
+        "\n"
+        "### ✨ Added\n"
+        "\n"
+        "- **跨平台**：QQ 平台实装。\n"
+        "\n"
+        "## [1.0.0-alpha.7.dev7] - 2026-11-17\n"
+        "\n"
+        "### 🔧 Changed\n"
+        "\n"
+        "- 一条改动，句末带句号。\n"
+        "  - 缩进子项一行。\n"
+    )
+
+    def _hits(self, body: str) -> list[str]:
+        """扫一份 CHANGELOG 样张，取日志与文案分节条目"""
+        return _scan([("CHANGELOG.md", body)]).get("日志与文案", [])
+
+    def test_compliant_body_passes(self) -> None:
+        """合规样张零条目"""
+        self.assertEqual(self._hits(self._COMPLIANT), [])
+
+    def test_fullwidth_semicolon_flagged(self) -> None:
+        """行含全角分号即报"""
+        hits = self._hits("- 一句话说完；再来一句。\n")
+        self.assertEqual(len([t for t in hits if "全角分号" in t]), 1, hits)
+
+    def test_version_heading_shapes(self) -> None:
+        """版本号坏形状、缺日期后缀与 Unreleased 多余内容三条都按形状不符报出"""
+        hits = self._hits(
+            "## [1.0] - 2026-11-18\n"
+            "\n"
+            "## [1.2.3] 2026-11-18\n"
+            "\n"
+            "## [Unreleased] - 2026-11-18\n"
+        )
+        self.assertEqual(len([t for t in hits if "版本段标题形状不符" in t]), 3, hits)
+
+    def test_prerelease_heading_accepted(self) -> None:
+        """alpha、beta 与 rc 各带 dev 实录后缀的段标题都放行"""
+        hits = self._hits(
+            "## [1.0.0-alpha.7.dev7] - 2026-11-17\n"
+            "\n"
+            "## [1.0.0-beta.2.dev3] - 2026-11-17\n"
+            "\n"
+            "## [1.0.0-rc.1] - 2026-11-17\n"
+        )
+        self.assertEqual(hits, [])
+
+    def test_dev_suffix_needs_stage(self) -> None:
+        """实录段只在预发布阶段之后放行，裸 dev 串报出"""
+        hits = self._hits("## [1.0.1.dev0] - 2026-11-18\n")
+        self.assertEqual(len([t for t in hits if "版本段标题形状不符" in t]), 1, hits)
+
+    def test_bullet_period(self) -> None:
+        """子项行末缺句号即报，止于冒号的纯主题行不误报"""
+        hits = self._hits("- 缺句号的子项\n- **主题**：\n")
+        self.assertEqual(len([t for t in hits if "子项行末缺句号" in t]), 1, hits)
+
+
 class TestAliasPrivacy(unittest.TestCase):
     """模块级别名按消费者定私有性"""
 
@@ -419,6 +521,44 @@ class TestAliasPrivacy(unittest.TestCase):
         rel = "src/ui/_probe_styled.py"
         found = self._naming([(rel, _skeleton(rel) + "WIDGET_SET = 1\n")])
         self.assertEqual(len([text for text in found if "WIDGET_SET" in text]), 1)
+
+
+class TestPackageDeclaration(unittest.TestCase):
+    """点分模块名按各仓自己的改名声明算"""
+
+    def _naming(self, declared: bool) -> list[str]:
+        """造一只子仓与一个按声明名取用它的消费者，回命名分节的相关条目"""
+        provider = "mini/src/_log.py"
+        user = "src/core/_use_log.py"
+        samples: list[tuple[str, str]] = [
+            (
+                provider,
+                _skeleton(provider) + f"def bind_logger() -> None:\n{_FUNC_DOC}",
+            ),
+            (
+                user,
+                _skeleton(user)
+                + "from mini_pkg._log import bind_logger\n\n_USE = bind_logger\n",
+            ),
+        ]
+        if declared:
+            samples.insert(
+                0,
+                (
+                    "mini/pyproject.toml",
+                    '[tool.setuptools]\npackage-dir = {"mini_pkg" = "src"}\n',
+                ),
+            )
+        found = _scan(samples, ("src", "mini")).get("命名与门面导出", [])
+        return [text for text in found if "bind_logger" in text]
+
+    def test_declared_package_name(self) -> None:
+        """子仓声明了改名就按声明算名，取用它的符号不判无消费者"""
+        self.assertEqual(self._naming(True), [])
+
+    def test_missing_declaration_falls_back(self) -> None:
+        """没有声明才退回按目录上溯，此时声明名那条对不上、照常报出"""
+        self.assertTrue(self._naming(False))
 
 
 class TestWaiverFile(unittest.TestCase):
@@ -480,46 +620,45 @@ class TestWaiverFile(unittest.TestCase):
                 self.assertTrue(waiver.reason.strip(), "豁免理由为空")
 
     def test_no_dead_waiver(self) -> None:
-        """全量扫到后，清单里不许留失效条目"""
-        files = load_files(_ROOT, _present_roots())
+        """按闸门那份目标扫到后，清单里不许留失效条目"""
+        files = load_files(_ROOT, _gate_targets())
         findings = run_checks(files, ImportGraph(files))
         waivers = load_waivers(_HERE.parent / "style_waivers.toml")
         _, dead = apply_waivers(findings, waivers)
+        judged = _judged_dead(dead, list(SECTIONS), {f.rel for f in files})
         self.assertEqual(
-            [(w.section, w.path) for w in dead],
+            [(w.section, w.path) for w in judged],
             [],
             "有豁免条目已不再命中，代码改完要删清单",
         )
 
     def test_hard_only_keeps_live_waivers(self) -> None:
         """只输出硬性时不许把在用的豁免判成失效"""
-        ordered, _ = _run(_present_roots(), list(SECTIONS), True)
+        ordered, _ = _run(_gate_targets(), list(SECTIONS), True)
         self.assertEqual(
             [f.message for f in ordered if "失效豁免" in f.message],
             [],
             "硬性过滤排在豁免匹配之前，清单条目会全被判死",
         )
 
-    def test_full_scan_needs_root_coverage(self) -> None:
-        """覆盖面判据，漏改会让失效检测静默停摆"""
-        src, packaging, devtools, ui = (
-            _ROOT / "src",
-            _ROOT / "packaging",
-            _ROOT / "devtools",
-            _ROOT / "src" / "ui",
-        )
+    def test_dead_waiver_needs_path_loaded(self) -> None:
+        """失效判据按本轮装载的路径与分节覆盖面算，漏改会让失效检测静默停摆"""
+        src_waiver = Waiver("命名与门面导出", "src/ui/_probe.py", "理由")
+        sub_waiver = Waiver("命名与门面导出", "finshin/sdk/src/x.py", "理由")
+        dead = (src_waiver, sub_waiver)
+        loaded = {"src/ui/_probe.py", "CHANGELOG.md"}
         sections = list(SECTIONS)
-        for targets, expected in (
-            ([_ROOT], True),
-            ([src], True),
-            ([src, packaging, devtools], True),
-            ([packaging, devtools], False),
-            ([ui], False),
-        ):
-            with self.subTest(targets=[str(item.name) for item in targets]):
-                self.assertEqual(_full_scan(sections, targets), expected)
-        with self.subTest(msg="只扫单个分节不算扫全"):
-            self.assertFalse(_full_scan([sections[0]], [_ROOT]))
+        cases = (
+            (dead, sections, loaded, (src_waiver,)),
+            (dead, sections[:2], loaded, ()),
+            (dead, sections, set(), ()),
+            ((), sections, loaded, ()),
+        )
+        for want_dead, want_sections, want_loaded, expected in cases:
+            with self.subTest(sections=len(want_sections), loaded=sorted(want_loaded)):
+                self.assertEqual(
+                    _judged_dead(want_dead, want_sections, want_loaded), expected
+                )
 
 
 class TestDevtoolsWhiteBox(unittest.TestCase):

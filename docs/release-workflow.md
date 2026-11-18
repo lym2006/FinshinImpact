@@ -17,23 +17,20 @@
 ## 五项闸门（提交与发布前跑齐）
 
 ```powershell
-.venv\Scripts\ruff.exe format --check .
-.venv\Scripts\ruff.exe check .
-$env:ELECTRON_RUN_AS_NODE = 1
-node .venv\Lib\site-packages\pyright\dist\index.js --pythonpath .venv\Scripts\python.exe --project pyrightconfig.json src packaging devtools finshin/adapter finshin/sdk
-$env:PYTHONUTF8 = 1; $env:PYTHONPATH = "src"
-.venv\Scripts\lint-imports.exe
-.venv\Scripts\python.exe devtools\check_coding_style.py src packaging devtools
-.venv\Scripts\pytest.exe devtools\tests finshin/adapter -q
+.venv\Scripts\python.exe devtools\gates.py
 ```
 
+- 一条命令跑齐五步，每步一行读数，任一步红即整体退一。
+- 红的那步下面带最多 30 行原始输出。
+- 只重跑点名的步：`--only` 接步名，可多次，候选 `ruff`／`pyright`／`imports`／`style`／`pytest`。
+- 目标不写死：类型检查与用例两步按挂载现场算，含本体三棵树与各挂载子仓声明的源码与用例目录。
 - 绿的标准：
   - ruff format 与 check 都通过。
   - pyright 0 errors。
   - 契约 0 broken。
   - 扫描器 0 硬性。
   - pytest 全过。
-- 闸门用本机已有的 node 直接跑 pyright 的 JS 入口，`node` 可换成任意 node 等价可执行文件。
+- pyright 跑的是开发依赖带的 node：`devtools/pyproject.toml` 声明 `pyright[nodejs]`，`uv sync --all-packages` 之后即齐，不需要另外装 Node.js。
 - 各步判据不在这里重复：扫描器的分节、待核基线与豁免见 [style-checker.md](style-checker.md)，用例口径见 [testing.md](testing.md)，构建与发布物见 [packaging.md](packaging.md)。
 
 ## 日常与定稿
@@ -50,7 +47,7 @@ $env:PYTHONUTF8 = 1; $env:PYTHONPATH = "src"
 ## 子仓供件
 
 - 子仓的挂载、日常改动、更新与摘掉见 [development.md](development.md) 的「挂载子仓」节。
-- 子仓只跑格式、类型、测试三项检查。
+- 子仓跑格式、类型、规范、用例四项检查，目标由闸门那条命令按挂载现场算。
 - 分层契约与发布物打包归本体。
 - 子仓版本号以 `pyproject.toml` 的 `[project].version` 为单源，tag、wheel 文件名与本体读到的版本都从它取。
 - wheel 构建见 [packaging.md](packaging.md) 的「子仓构建」节。
@@ -75,6 +72,7 @@ $env:PYTHONUTF8 = 1; $env:PYTHONPATH = "src"
   - `### ⚠️ Breaking Changes` → `### ✨ Added` → `### 🔧 Changed` → `### 🐛 Fixed` → `### 🗑️ Removed`
   - `### 📝 Planned` 只出现在 `## [Unreleased]` 里，恒排最前。
 - `## [Unreleased]` 恒在顶部。
+  - 标题行只写 `## [Unreleased]`，不带日期，也不带别的字。
   - 发布时把其中内容归入新段 `## [X.Y.Z] - YYYY-MM-DD`，日期为发布当天。
   - Planned 段留在 Unreleased 里不过期。
 - 预发布线：`devN` 段随每次预发布实录。
@@ -166,10 +164,14 @@ git push origin main vX.Y.Z
 | 场景 | 升位 |
 | :--- | :--- |
 | 正式定版 | 1.0.0 |
-| 定版前公开试用 | 预发布号 `X.Y.Z-alpha.N`（如 `1.0.0-alpha.1`），tag 与产物名全程带后缀 |
+| 定版前公开试用 | 预发布号 `X.Y.Z-<阶段>.N`（如 `1.0.0-alpha.1`），tag 与产物名全程带后缀 |
 | 纯修复 | patch（1.0.0 → 1.0.1） |
 | 有新功能 | minor（1.0.0 → 1.1.0） |
 | 破坏性行为变更 | major（1.0.0 → 2.0.0） |
+
+- 预发布阶段取 `alpha`、`beta`、`rc` 三档之一，写作 `X.Y.Z-<阶段>.N`。
+  - 每次预发布的实录段在其后再缀 `.devM`，写作 `X.Y.Z-<阶段>.N.devM`。
+  - 三种串在 CHANGELOG 版本段、tag、产物名与 pyproject 版本号全程同形，只差 tag 与产物名前那个 `v`。
 
 ## Release
 
@@ -210,7 +212,7 @@ git push origin main vX.Y.Z
 
 保留规则：
 
-- 正式号（`X.Y.Z`、`X.Y.Z-alpha.N`）各留一条 release，长期保留。
+- 正式号（不带 `.devM` 的那两种串，形状见「版本号（semver）」节）各留一条 release，长期保留。
 - dev 段的 release 只在预发布期挂着供当时下载。
 - 正式号发出时把该正式号下各 dev 的变化汇总进正式号那一条，再删掉 dev 的 release 条目。
 - 汇总按用户可感知的功能域写，不复述 dev 明细。

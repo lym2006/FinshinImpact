@@ -1,6 +1,6 @@
 # 规范扫描器
 
-扫描器在 `devtools/check_coding_style.py`，按 [coding-style.md](coding-style.md) 的分节静态检查代码。
+扫描器在 `devtools/check_coding_style.py`，按 [coding-style.md](coding-style.md) 的分节静态检查代码与入库 md。
 只报不改，输出供人工核实。
 
 ## 跑法
@@ -20,7 +20,9 @@ python devtools\check_coding_style.py --section 注释
 ```
 
 - 命令行给了路径就只扫那几个，没给即默认扫 `src`。
-- 仓库根 `CHANGELOG.md` 恒随装载，不受命令行路径影响，非 py 文件只进 CHANGELOG 细则。
+- 入库 md 恒随装载，不受命令行路径影响，细则只吃对口载体。
+  - 名单是仓库根 `README.md` 与 `CHANGELOG.md`，加 `docs/` 与 `assets/` 下的 md，`docs/design/` 工作底稿除外。
+  - `CHANGELOG.md` 只进「日志与文案」细则，其余 md 只进「文档写法」细则。
 - 子仓的 py 文件按挂载现场点名进扫描，闸门那条命令自动带上，手动跑就把目录写上。
 - 本机没挂上那只子仓就没得扫。
   - 包名按各仓项目声明里的 setuptools 改名表算，主仓不写第二份子仓名字。
@@ -78,6 +80,7 @@ python devtools\check_coding_style.py --section 注释
 - 回调形参：`_s8b_callback_param.py`
 - 类型注解：`_s9_typing.py`
 - 导入：`_s10_import_direction.py`
+- 文档写法：`_s11_docs.py`
 
 `_waivers.py` 不属于任何分节，只负责读清单与按清单静音。
 

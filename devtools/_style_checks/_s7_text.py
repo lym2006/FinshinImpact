@@ -6,6 +6,7 @@
 - 日志器禁用长级别名，面板列宽只容五字符
 - 日志消息串禁 `%s` 占位传参，要求就地拼好
 - theme 令牌文件禁持有话术字面量
+- CHANGELOG 载体的四类判据拆在 `_s7b_changelog`，由登记表按载体分拨
 """
 
 from __future__ import annotations

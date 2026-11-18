@@ -1,6 +1,6 @@
 r"""编码规范扫描器
 
-- 按 docs/coding-style.md 十二个分节静态检查代码
+- 按 docs/coding-style.md 十三个分节静态检查代码与入库 md
 - 输出违规清单供人工核实，不自动修改任何文件
 - 硬性=[H] 规则明确可判
 - 待核=[?] 启发式提示需人工确认
@@ -55,7 +55,7 @@ def _run(
         kept = [f for f in kept if f.hard]
 
     # 只在扫到清单覆盖面时才判失效，局部扫描的没命中不作数
-    dead = dead if _full_scan(sections, targets) else ()
+    dead = _judged_dead(dead, sections, {f.rel for f in files})
     entries = kept + [_dead_finding(waiver) for waiver in dead]
     ordered = sorted(entries, key=lambda f: (SECTIONS.index(f.section), f.rel, f.line))
     return ordered, waived
@@ -72,19 +72,17 @@ def _dead_finding(waiver: Waiver) -> Finding:
     )
 
 
-_SCAN_ROOTS = (_ROOT / "src",)
+def _judged_dead(
+    dead: tuple[Waiver, ...], sections: list[str], loaded: set[str]
+) -> tuple[Waiver, ...]:
+    """哪些没命中的豁免算真失效
 
-
-def _full_scan(sections: list[str], targets: list[Path]) -> bool:
-    """清单覆盖面扫到才判失效豁免
-
-    - 目标含仓库根或全部扫描根才算扫全
-    - 单扫一棵时清单本来就可能不命中，不误报失效
+    - 只扫单个分节时其余分节的条目不作数
+    - 本轮没装载的路径不作数，只扫本体时指向子仓的条目本来命中不了
     """
     if len(sections) != len(SECTIONS):
-        return False
-    hit = {path for path in targets if path in {_ROOT, *_SCAN_ROOTS}}
-    return _ROOT in hit or set(_SCAN_ROOTS) <= hit
+        return ()
+    return tuple(waiver for waiver in dead if waiver.path in loaded)
 
 
 def _render(findings: list[Finding], sections: list[str]) -> str:
