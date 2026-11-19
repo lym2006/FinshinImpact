@@ -25,7 +25,6 @@ class MiscMessage:
     # 功能入口名：工具栏按钮与它打开的窗口标题共用一词
     ENTRY_SETTINGS = "修改配置"
     ENTRY_DIAGNOSE = "网络诊断"
-    ENTRY_VERSION = "版本检查"
     ENTRY_NOTES = "版本变化"
 
     # 用：bootstrap 单实例冲突弹窗
@@ -55,7 +54,6 @@ class MiscMessage:
         (ENTRY_SETTINGS, "settings"),
         (ENTRY_DIAGNOSE, "diagnose"),
         ("查看日志", "log"),
-        (ENTRY_VERSION, "version"),
         (ENTRY_NOTES, "release_notes"),
         ("清空仪表盘", "clear"),
         ("关闭机器人", "shutdown"),  # 该按钮应被隐藏

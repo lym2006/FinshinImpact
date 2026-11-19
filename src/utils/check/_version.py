@@ -1,14 +1,13 @@
-"""版本检查
+"""版本比对
 
-- 本地与远程版本比对
-- 升级检测与失败回调
-- 从 GitHub release 正文取版本变化内容
+- 从 GitHub release 列表取各版正文
+- 最新一版标签与本地版本比对
 """
 
 import re
-import tomllib
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Literal, NoReturn, cast
+from typing import Any, NoReturn, cast
 
 from exceptions import (
     HTTPStatusError,
@@ -19,14 +18,16 @@ from exceptions import (
     describe_error,
 )
 from skin.messages import VersionMessage
-from system.links import RELEASES_PAGE_PATH, VERSION_PAGE_PATH
+from system.links import RELEASES_PAGE_PATH
 from system.tool_settings import declaration
 from system.versions import is_upgrade
 
 from ..network import GitClient
 
-_TIMEOUT = 3.0  # 版本页读取超时 3 秒
 _TIMEOUT_RELEASE = 10.0  # release 正文读取超时 10 秒
+
+# release 标签前缀
+_TAG_PREFIX = "v"
 
 # 未认证 API 单页最多 100 条，多出的量换页取
 _RELEASE_PAGE_SIZE = 100
@@ -55,17 +56,10 @@ def _get_local_version() -> str | NoReturn:
         raise LocalVersionError(VersionMessage.LOCAL_BROKEN) from e
 
 
-async def _fetch(
-    path: str,
-    timeout: float,
-    *,
-    kind: Literal["json", "text"] = "text",
-) -> dict[str, Any] | str | NoReturn:
+async def _fetch(path: str, timeout: float) -> Any | NoReturn:
     """读取远程内容指定路径"""
     try:
-        if kind == "json":
-            return await GitClient.get_api(path, timeout)
-        return await GitClient.get_pages(path, timeout)
+        return await GitClient.get_api(path, timeout)
     except HTTPStatusError as e:
         raise RemoteVersionError(describe_error(e)) from e
     except NetworkError as e:
@@ -84,30 +78,6 @@ def _drop_download_lines(body: str) -> str:
 def _autolink_bare_urls(body: str) -> str:
     """release 正文的裸链接改写为尖括号自动链接"""
     return _BARE_URL.sub(r"<\1>", body)
-
-
-async def _get_remote_version() -> str | NoReturn:
-    """读取远程版本号"""
-    text = cast(str, await _fetch(VERSION_PAGE_PATH, _TIMEOUT))
-    try:
-        data = tomllib.loads(text)
-        return data["project"]["version"]
-    except Exception as e:
-        raise RemoteVersionError(VersionMessage.REMOTE_BROKEN) from e
-
-
-async def check_updates() -> str | NoReturn:
-    """检查是否为最新版本"""
-    local_version = _get_local_version()
-    remote_version = await _get_remote_version()
-
-    newer = is_upgrade(local_version, remote_version)
-    if newer is None:
-        raise RemoteVersionError(VersionMessage.REMOTE_BROKEN)
-    if newer:
-        raise NewVersionError(local_version, remote_version)
-
-    return local_version
 
 
 @dataclass(frozen=True)
@@ -141,7 +111,6 @@ async def release_history() -> tuple[ReleaseNote, ...] | NoReturn:
             await _fetch(
                 RELEASES_PAGE_PATH.format(size=_RELEASE_PAGE_SIZE, page=page),
                 _TIMEOUT_RELEASE,
-                kind="json",
             ),
         )
         if not isinstance(rows, list):
@@ -155,3 +124,21 @@ async def release_history() -> tuple[ReleaseNote, ...] | NoReturn:
         raise RemoteVersionError(VersionMessage.REMOTE_BROKEN)
 
     return tuple(notes)
+
+
+def check_latest(notes: Sequence[ReleaseNote]) -> str | NoReturn:
+    """最新一版是否比本机新
+
+    - 取最新一条标签去掉前缀与本地版本比对
+    - 读不懂的版本串按远程内容损坏报错
+    """
+    local_version = _get_local_version()
+    remote_version = notes[0].tag.removeprefix(_TAG_PREFIX)
+
+    newer = is_upgrade(local_version, remote_version)
+    if newer is None:
+        raise RemoteVersionError(VersionMessage.REMOTE_BROKEN)
+    if newer:
+        raise NewVersionError(local_version, remote_version)
+
+    return local_version

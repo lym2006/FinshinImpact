@@ -1,19 +1,14 @@
-"""版本检测文案"""
+"""版本比对文案
 
-from ._misc import MiscMessage
+- 异常填充话术与等待窗中断文案
+"""
 
 
 class VersionMessage:
-    """版本检测文案
+    """版本比对文案
 
-    - 升级检查回执与异常填充话术
+    - 版本异常的错误正文填充值与中断话术
     """
-
-    # 用：ui/_windows/_controllers/_version.py 回执通知窗标题
-    CHECK_TITLE = MiscMessage.ENTRY_VERSION
-
-    # 用：skin/theme/_dialogs.py 等待窗的回执字段
-    UP_TO_DATE = "已是最新版本：v{ver}"
 
     # 用：skin/theme/_dialogs.py 等待窗的兜底字段
     CRASH = "检查异常中断：{err}，详情见日志"

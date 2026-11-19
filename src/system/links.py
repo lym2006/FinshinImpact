@@ -9,8 +9,7 @@ _MAIN_REPO = "FinshinImpact"
 PAGES_BASE_URL = f"https://{_ACCOUNT}.github.io"
 API_BASE_URL = "https://api.github.com"
 
-# 本体读的三份远端内容
-VERSION_PAGE_PATH = f"/{_MAIN_REPO}/pyproject.toml"
+# 本体读的两份远端内容
 CATALOG_PATH = f"/{_MAIN_REPO}/adapters.toml"
 RELEASES_PAGE_PATH = (
     f"/repos/{_ACCOUNT}/{_MAIN_REPO}/releases?per_page={{size}}&page={{page}}"

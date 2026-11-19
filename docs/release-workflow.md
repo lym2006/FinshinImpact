@@ -246,7 +246,7 @@ git push origin main vX.Y.Z
 
 ## 版本页同步（发布最后一步）
 
-Release 发布完成不等于升级链生效：在线版本页是启动器与 GUI 版本检查的唯一真相。
+Release 发布完成不等于升级链生效：在线版本页是启动器检查更新的唯一来源。
 
 - 主仓 workflow 随 push `main` 部署版本页与在线目录，无需手动覆盖推送。
 - 闭环判据：跑 `python packaging\build.py --check`，「在线版本页」那一行显示新版本号。

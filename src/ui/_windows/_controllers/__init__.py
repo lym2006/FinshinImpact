@@ -13,7 +13,6 @@ from ._release_notes import ReleaseNotesController
 from ._settings import SettingsController
 from ._shutdown import ShutdownController
 from ._system import LogsController
-from ._version import VersionController
 
 if TYPE_CHECKING:
     from .._main_window import BotGUI
@@ -35,7 +34,6 @@ _CONTROLLER_CLASSES = (
     LogsController,
     SettingsController,
     ShutdownController,
-    VersionController,
     ReleaseNotesController,
 )
 

@@ -119,8 +119,6 @@ class WaitDialogTheme:
     title: str = DialogMessage.WAIT_TITLE
     ok_text: str = DialogMessage.NOTICE_OK
     cancel_text: str = DialogMessage.BTN_CANCEL
-    check_text: str = DialogMessage.WAIT_CHECK
-    up_to_date: str = VersionMessage.UP_TO_DATE
     crash_text: str = VersionMessage.CRASH
 
     # 颜色与符号
