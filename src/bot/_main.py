@@ -98,7 +98,6 @@ class Main:
 
             self._wire_signals(window, instances)
 
-            # 启动后台线程
             loop_thread = threading.Thread(
                 target=self._loop.run_forever,
                 daemon=True,
@@ -113,7 +112,6 @@ class Main:
             )
             self.logger.info("调度器启动完成")
 
-            # 进入 Qt 主循环
             return app.exec()
 
         except AdapterError as e:
@@ -154,7 +152,6 @@ class Main:
         self, window: BotGUI, instances: dict[str, BaseController]
     ) -> None:
         """接通总线信号到 GUI 与 Manager"""
-        # 获取控制器
         settings_controller = cast(SettingsController, instances.get("settings"))
         shutdown_controller = cast(ShutdownController, instances.get("shutdown"))
         window.set_shutdown_handler(shutdown_controller.shutdown_now)

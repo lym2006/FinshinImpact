@@ -78,8 +78,6 @@ class _ProfilePickerDialog(BaseDialog):
         delete_btn = make_button(PickerMessage.BTN_DELETE, ButtonStyle.DANGER)
         delete_btn.clicked.connect(self._on_delete)
 
-        # 实例级动作空选一律置灰：插件设置、编辑、删除与启动
-        # 环境维护管的是本机共用的一层，不受此限
         plugin_btn = make_button(PickerMessage.BTN_PLUGINS, ButtonStyle.OUTLINE)
         plugin_btn.clicked.connect(self._on_plugins)
 
@@ -95,6 +93,8 @@ class _ProfilePickerDialog(BaseDialog):
         )
         start_btn.clicked.connect(self._on_start)
 
+        # 实例级动作空选一律置灰：插件设置、编辑、删除与启动
+        # 环境维护管的是本机共用的一层，不受此限
         self._list.enable_on_selection((plugin_btn, edit_btn, delete_btn, start_btn))
 
         # 左组改实例、右组走动作，中间拉伸拉开两组语义

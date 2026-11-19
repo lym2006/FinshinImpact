@@ -117,7 +117,6 @@ class SettingsDialog(BaseDialog):
 
         - 取消退出时本窗原样保留
         """
-        # 确认框取消时本窗与已填内容原样保留
         gui_bridge.request_exit.emit(self)
 
     def _resolve_error_sections(self, schema: AppSchema) -> set[str]:

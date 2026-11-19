@@ -98,7 +98,6 @@ def _build_launcher() -> Path:
     - 打包形态用 onedir，不解压不压缩
     - 产物指纹未变时复用已编译产物，避免用户端重复下载
     """
-    # onedir 不解压不压缩，降低杀毒软件误报
     out = DIST / "_launcher" / APP_NAME
     stamp = DIST / "_launcher" / ".launcher_sha"
     fp = _launcher_fingerprint()
@@ -159,7 +158,6 @@ def _precompile_stage() -> None:
     - 按内容哈希判失效
     - 构建机解释器版本与嵌入式不一致也不作废产物
     """
-    # pyc 不认 mtime，checked-hash 才扛得住 zip 往返
     with tempfile.TemporaryDirectory(prefix="finshin-embed-") as tmp:
         embed = Path(tmp) / "embed"
         unpack.unpack_all(pack_fetch.fetch_embed(), embed)
@@ -171,6 +169,7 @@ def _precompile_stage() -> None:
                 "-m",
                 "compileall",
                 "-q",
+                # pyc 不认 mtime，checked-hash 才扛得住 zip 往返
                 "--invalidation-mode",
                 "checked-hash",
                 *(str(t) for t in targets),

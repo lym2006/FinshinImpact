@@ -32,7 +32,6 @@ class ShutdownDialog(BaseDialog):
         set_margins(layout, SHUTDOWN_DIALOG.padding)
         layout.setSpacing(SHUTDOWN_DIALOG.spacing)
 
-        # 提示文字
         self._label = QLabel(SHUTDOWN_DIALOG.message)
         self._label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._label.setFont(QFont(SHUTDOWN_DIALOG.font_name, SHUTDOWN_DIALOG.font_size))
@@ -40,11 +39,9 @@ class ShutdownDialog(BaseDialog):
         btn_layout = QHBoxLayout()  # 按钮区
         btn_layout.addStretch()
 
-        # 取消按钮
         self._cancel_btn = make_button(SHUTDOWN_DIALOG.cancel_text, ButtonStyle.NEUTRAL)
         self._cancel_btn.clicked.connect(self.reject)
 
-        # 确认按钮
         self._confirm_btn = make_button(
             SHUTDOWN_DIALOG.confirm_text, ButtonStyle.DANGER
         )

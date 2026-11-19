@@ -61,7 +61,6 @@ def shutdown_all() -> list[str]:
 
 def _run_shutdown() -> list[str]:
     """执行一轮完整清理"""
-    # 收集失败项
     failures: list[str] = []
 
     def _run_on_loop(

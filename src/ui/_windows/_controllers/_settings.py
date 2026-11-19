@@ -182,7 +182,6 @@ class SettingsController(BaseController):
 
     def _show_dialog(self) -> None:
         """打开配置弹窗"""
-        # 用 show 打开，不靠 exec 挡调用方，模态范围仍照基类那一份
         if self._is_dialog_open:
             # 面板已在前台时再点按钮应聚焦它而不是无响应
             if self._panel is not None:
@@ -197,6 +196,8 @@ class SettingsController(BaseController):
         dialog = self._panel
         dialog.save_requested.connect(lambda: self._save.requested(dialog))
         dialog.finished.connect(self._on_panel_finished)
+
+        # 用 show 打开，不靠 exec 挡调用方，模态范围仍照基类那一份
         self._panel.show()
 
         # 先面板后跟随窗：面板后出场会反压检测窗，顺序不可颠倒

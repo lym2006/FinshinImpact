@@ -51,13 +51,11 @@ class _ConfigManager:
         section = section_name(item.source, item.section)
         values: TabData = self._config.get(section) or {}
 
-        # 路径穿透
         if item.key in values:
             value: Any = values[item.key]
         else:
             value = self._schema_default(item)
 
-        # 空值检查
         if value is None:
             raise ConfigAttrError(item, expected_type, None) from None
 
@@ -73,10 +71,8 @@ class _ConfigManager:
         ):  # 列表内全部转 str 类型
             value = [str(element) for element in value]
 
-        # 提取泛型信息
         target_type = get_origin(expected_type) or expected_type
 
-        # 校验外层类型
         if not isinstance(value, target_type):
             raise ConfigAttrError(item, expected_type, value) from None
 

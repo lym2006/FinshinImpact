@@ -46,7 +46,6 @@ def _char_diff(old: str, new: str) -> tuple[_Line, _Line]:
 
     - 旧/新各输出 (类型, 文本) 分段
     """
-    # 公共部分白色
     sm = difflib.SequenceMatcher(a=old, b=new, autojunk=False)
     left: _Line = []
     right: _Line = []
