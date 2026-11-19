@@ -78,7 +78,7 @@ class TestErrorGuard(unittest.TestCase):
         from exceptions import ConfigPathMissingError
         from finshin_sdk.domain import ConfigKey, ConfigSection
 
-        item = ConfigKey.API_KEY.path("plugin.AI", ConfigSection.AI)
+        item = ConfigKey.API_KEY.path("plugin.AI", ConfigSection.MODEL)
 
         @error_guard("测试")
         def boom() -> None:

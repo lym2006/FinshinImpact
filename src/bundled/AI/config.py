@@ -30,11 +30,11 @@ _HOUR_SECONDS = 60 * 60
 _DAY_SECONDS = 24 * _HOUR_SECONDS
 
 _MODEL_SECTION = SectionSpec(
-    section=ConfigSection.AI,
+    section=ConfigSection.MODEL,
     title="模型",
     fields=(
         FieldSpec(
-            section=ConfigSection.AI,
+            section=ConfigSection.MODEL,
             key=ConfigKey.API_KEY,
             value_type=str,
             default="",
@@ -43,7 +43,7 @@ _MODEL_SECTION = SectionSpec(
             required=True,
         ),
         FieldSpec(
-            section=ConfigSection.AI,
+            section=ConfigSection.MODEL,
             key=ConfigKey.TEMPERATURE,
             value_type=float,
             default=0.7,
@@ -130,13 +130,13 @@ class _DynamicAIConfig:
     @property
     def api_key(self) -> str:
         """模型密钥"""
-        return self._read(ConfigKey.API_KEY.path("plugin.AI", ConfigSection.AI), str)
+        return self._read(ConfigKey.API_KEY.path("plugin.AI", ConfigSection.MODEL), str)
 
     @property
     def temperature(self) -> float:
         """采样温度"""
         return self._read(
-            ConfigKey.TEMPERATURE.path("plugin.AI", ConfigSection.AI), float
+            ConfigKey.TEMPERATURE.path("plugin.AI", ConfigSection.MODEL), float
         )
 
     @property

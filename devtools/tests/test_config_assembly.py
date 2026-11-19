@@ -250,11 +250,11 @@ class TestSourceAssembly(unittest.TestCase):
     def test_duplicate_key_in_one_section_is_refused_and_named(self) -> None:
         """同一来源同一段里键重复时只留先出现的一项，日志点名来源、段与键"""
         section = SectionSpec(
-            section=ConfigSection.AI,
+            section=ConfigSection.MODEL,
             title="模型",
             fields=(
                 FieldSpec(
-                    section=ConfigSection.AI,
+                    section=ConfigSection.MODEL,
                     key=ConfigKey.API_KEY,
                     value_type=str,
                     default="sk-先",
@@ -262,7 +262,7 @@ class TestSourceAssembly(unittest.TestCase):
                     desc="",
                 ),
                 FieldSpec(
-                    section=ConfigSection.AI,
+                    section=ConfigSection.MODEL,
                     key=ConfigKey.API_KEY,
                     value_type=str,
                     default="sk-后",

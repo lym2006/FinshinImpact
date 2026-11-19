@@ -60,7 +60,7 @@ _MODEL_SECTION = "plugin.AI.model"
 _CHORE_SECTION = "plugin.AI.chore"
 
 
-def _item(key: ConfigKey, section: ConfigSection = ConfigSection.AI) -> ConfigPath:
+def _item(key: ConfigKey, section: ConfigSection = ConfigSection.MODEL) -> ConfigPath:
     """本组用例的配置项身份"""
     return key.path(_GROUP, section)
 
@@ -73,7 +73,7 @@ def _schema() -> list[TabSchema]:
             section=_MODEL_SECTION,
             group=_GROUP,
             group_title="AI 设置",
-            section_id=ConfigSection.AI,
+            section_id=ConfigSection.MODEL,
             fields=[
                 FieldSchema(ConfigKey.TEMPERATURE, "温度", "", 0.7, float),
                 FieldSchema(ConfigKey.API_KEY, "模型", "", "gpt", str),
@@ -147,7 +147,7 @@ class TestRequiredValidation(unittest.TestCase):
                 section=_MODEL_SECTION,
                 group=_GROUP,
                 group_title="AI 设置",
-                section_id=ConfigSection.AI,
+                section_id=ConfigSection.MODEL,
                 fields=[
                     FieldSchema(
                         ConfigKey.API_KEY, "密钥", "", "sk", str, required=True
