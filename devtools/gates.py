@@ -175,7 +175,9 @@ def _step_style() -> _StepResult:
     ]
     code, text = _execute(cmd, _DOC_ENV)
     hard = _match_int(r"硬性 (\d+)", text)
-    return _StepResult(code == 0 and hard == "0", f"硬性 {hard}", text)
+    soft = _match_int(r"待核 (\d+)", text)
+    ok = code == 0 and hard == "0"
+    return _StepResult(ok, f"硬性 {hard} / 待核 {soft}", text)
 
 
 def _step_pytest() -> _StepResult:
