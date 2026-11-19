@@ -43,8 +43,8 @@ python -m pytest devtools/tests/test_grant_access.py -v
 
 风格上免这几处。
 
-- 规范扫描器的目录豁免见 [style-checker.md](style-checker.md) 的「测试目录豁免」节。
-- 内部实现的访问范围见 [coding-style.md](coding-style.md) 的「命名与门面导出」节。
+- 规范扫描器的目录豁免见 [测试目录豁免](style-checker.md#测试目录豁免)。
+- 内部实现的访问范围见 [命名与门面导出](coding-style.md#命名与门面导出)。
 - 类型检查（pyright）在 `pyrightconfig.json` 里管两层。
   - `exclude` 让闸门跳过本目录。
   - 编辑器单开一个用例文件时 `exclude` 拦不住分析，另按目录配一套环境：`extraPaths` 补 `src` 与 `devtools`。

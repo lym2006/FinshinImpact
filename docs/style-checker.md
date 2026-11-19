@@ -1,6 +1,6 @@
 # 规范扫描器
 
-扫描器在 `devtools/check_coding_style.py`，按 [coding-style.md](coding-style.md) 的分节静态检查代码与入库 md。
+扫描器在 `devtools/check_coding_style.py`，按 [coding-style.md](coding-style.md) 与 [写作规范](writing-style.md) 的分节静态检查代码与入库 md。
 只报不改，输出供人工核实。
 
 ## 跑法
@@ -33,8 +33,8 @@ python devtools\check_coding_style.py --section 注释
 - 待核条数与上一轮比对，只许减不许增。
   - 基线取登记完豁免清单后的读数。
   - 预留待接的项照样报，不算新增。
-- 提交与发布的扫描范围、通过标准见 [release-workflow.md](release-workflow.md) 的「五项闸门（提交与发布前跑齐）」节。
-- 子仓检查范围见 [release-workflow.md](release-workflow.md) 的「子仓供件」节。
+- 提交与发布的扫描范围、通过标准见 [五项闸门](release-workflow.md#五项闸门提交与发布前跑齐)。
+- 子仓检查范围见 [子仓供件](release-workflow.md#子仓供件)。
 - 测试目录的跳过机制见「测试目录豁免」节，其余用例放宽项见 [testing.md](testing.md)。
 - 措辞类（背景解释、变更叙述、自评句）静态查不出，禁词清单与 grep 兜底见 [coding-style.md](coding-style.md)。
 
@@ -85,18 +85,18 @@ python devtools\check_coding_style.py --section 注释
 
 `_waivers.py` 不属于任何分节，只负责读清单与按清单静音。
 
-「分层职责」不由本扫描器检查，判据见 [coding-style.md](coding-style.md) 的「分层职责」节，检查命令见 [release-workflow.md](release-workflow.md)。
+「分层职责」不由本扫描器检查，判据见 [分层职责](coding-style.md#分层职责)，检查命令见 [release-workflow.md](release-workflow.md)。
 
 ## 工具树直连内部实现
 
-允许范围见 [coding-style.md](coding-style.md) 的「命名与门面导出」节。
+允许范围见 [命名与门面导出](coding-style.md#命名与门面导出)。
 
 - 私有模块访问检查由 `_s5d_access` 执行。
 - 消费者范围检查由 `_s5_naming` 执行。
 
 ## 符号私有性查哪些名字
 
-「对外」判据见 [coding-style.md](coding-style.md) 的「命名与门面导出」节。
+「对外」判据见 [命名与门面导出](coding-style.md#命名与门面导出)。
 
 检查范围：
 
@@ -108,7 +108,7 @@ python devtools\check_coding_style.py --section 注释
 
 ## 回调形参查什么
 
-形参写法见 [coding-style.md](coding-style.md) 的「回调形参」节。
+形参写法见 [回调形参](coding-style.md#回调形参)。
 
 - 协程形参含 `Message` 注解或 `platform_raw` 时进入回调检查，否则跳过。
 - 事件与上下文形参的命名、位置、注解违规报硬性。
@@ -118,7 +118,7 @@ python devtools\check_coding_style.py --section 注释
 
 ## 分节登记
 
-新增步骤见 [development.md](development.md) 的「新增规范扫描分节」节。
+新增步骤见 [新增规范扫描分节](development.md#新增规范扫描分节)。
 
 - 分节名在各检查模块里写死字面量，不按 `SECTIONS` 的位置取。
 - 模块写了 `SECTIONS` 里没有的名字，排序时当场报错。

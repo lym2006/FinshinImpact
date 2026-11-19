@@ -5,13 +5,13 @@
 - 用户侧安装与更新：根目录 [README.md](../README.md)
 - 发布操作：[release-workflow.md](release-workflow.md)
 - 构建与发布物：[packaging.md](packaging.md)
-- 代码风格：[coding-style.md](coding-style.md)，静态检查：[style-checker.md](style-checker.md)，回归用例：[testing.md](testing.md)
+- 代码风格：[coding-style.md](coding-style.md)，静态检查：[style-checker.md](style-checker.md)，回归用例：[testing.md](testing.md)，文案与指针：[writing-style.md](writing-style.md)
 - 实测出来的约束与踩坑：[lessons/](lessons/README.md)
 
 ## 环境搭建
 
 1. 安装 `Python 3.11+`（勾选 Add to PATH）。
-2. 克隆本仓库：`git clone <地址>`。装载根与接口包两棵都不在版本库里，要按「挂载子仓」那一节自己 clone 进去。
+2. 克隆本仓库：`git clone <地址>`。装载根与接口包两棵都不在版本库里，要按 [挂载子仓](#挂载子仓) 自己 clone 进去。
 3. 在项目根目录创建虚拟环境：`python -m venv .venv`。
 4. 激活虚拟环境：`.venv\Scripts\activate`。
 5. 安装依赖与开发工具：`uv sync --all-packages`，镜像源可自行配置。
@@ -85,7 +85,7 @@
 ## 外部插件
 
 1. 建目录 `finshin/plugin/<Name>/`，清单与字段同上，`name` 与目录名一致，代码放 `src` 那一层。
-   - 导入范围见 [coding-style.md](coding-style.md) 的「分层职责」节。
+   - 导入范围见 [分层职责](coding-style.md#分层职责)。
    - 装载前扫描源码，引了本体的整只拒装，面板写明引用位置，一份多处只报第一处。
    - 两根目录一起扫，先读随包再读外部。外部插件的导入名是 `plugin.<Name>`，代码所在那一层按名字接到它，插件内部的相对引用走得通。
 2. 与随包插件同名的那份不放行，改 `name` 或写进启用集都不认。
@@ -121,13 +121,13 @@
    - 清单只收正式 release，最多十版。
    - 旧版的版本号取 wheel 文件名，没报指纹的旧版不进清单。
    - 目录缺版本清单那段时按只有一版处理，老目录不必重发。
-   - 在线目录的发布与刷新见 [release-workflow.md](release-workflow.md) 的「子仓供件」节。
+   - 在线目录的发布与刷新见 [子仓供件](release-workflow.md#子仓供件)。
    - 判定只看声明里写明的值与字段形态，仓名与附件名都不参与。
 2. 每只平台适配器一只独立仓，clone 进装载根 `finshin/adapter/` 下的一个目录里，主仓不记这笔登记。
    - 声明文件是仓根的 `pyproject.toml`，代码在 `src` 那一层，由 `package-dir` 映射成包，包名由 `[project].name` 定。
    - 装载侧按声明里的模块名取件，代码从环境里那只包来，取不到就走拒载那句交代。
    - 包目录改名必须同步改声明里 `[project.entry-points]` 那条值，两处同名才算一只包。
-   - 适配器可从面板联网安装，源码开发见「挂载子仓」节。
+   - 适配器可从面板联网安装，源码开发见 [挂载子仓](#挂载子仓)。
    - 同名同职责的模块平铺在包里，平台独有的机制放包里的 `features/`。
    - 开发说明见那只适配器仓自己的 README。
    - 入口由 `[project.entry-points."finshin.adapters"]` 那一段交出：键写平台标识，值写「入口模块:parts」，冒号后那个名字由本体规定。声明缺件、字段非法或入口点不点名本平台的适配器整份不进表。
@@ -148,13 +148,13 @@
    - `[tool.finshin-adapter]` 写平台标识 `platform`。
    - 接口包版本要求写在 `[project].dependencies` 里的 `finshin-sdk` 那一条，形如 `>=0.1.0,<0.2.0`，上下限都算数，没写即不设限。
    - 本机接口包不在要求的区间内即拒在装载入口之前，弹窗与日志各落一句写明要求与本机版本。
-   - 子仓版本号与 release 附件见 [release-workflow.md](release-workflow.md) 的「子仓供件」节。
+   - 子仓版本号与 release 附件见 [子仓供件](release-workflow.md#子仓供件)。
    - 装载侧认两路读声明：`finshin/adapter/` 里那份，与装进环境的适配器包各自的元数据。同一平台两路都在时认目录里那一份。
    - 适配器声明里的 `[tool.finshin-adapter].platform` 是平台码的对外出处，目录生成侧只读它。
-   - 单独生成在线目录见 [packaging.md](packaging.md) 的「在线目录」节。
-3. 分层与导入方向见 [coding-style.md](coding-style.md) 的「分层职责」节。
-   - 接口包安装见「环境搭建」节，源码挂载见「挂载子仓」节。
-   - wheel 构建与随包安装见 [packaging.md](packaging.md) 的「子仓构建」节。
+   - 单独生成在线目录见 [在线目录](packaging.md#在线目录)。
+3. 分层与导入方向见 [分层职责](coding-style.md#分层职责)。
+   - 接口包安装见 [环境搭建](#环境搭建)，源码挂载见 [挂载子仓](#挂载子仓)。
+   - wheel 构建与随包安装见 [子仓构建](packaging.md#子仓构建)。
 4. 入口模块交出运行时装配、频道探测与引擎预热，运行时实例交出交互端口、插件路由挂载口与路由清单编译器。
 5. 日志中间件实例由装载侧交来，挂上更新链那一步由各平台自己认，按启用序列注册插件全归装载侧。
 
@@ -185,10 +185,10 @@
 2. 在 `devtools/_style_checks/` 新建模块，只依赖 `_common`。
    - 单文件检查导出 `check(files)`。
    - 跨模块消费者检查导出 `check(files, graph)`。
-3. 在 `_common.py` 的 `SECTIONS` 加同名一项，分节名写法见 [style-checker.md](style-checker.md) 的「分节登记」节。
+3. 在 `_common.py` 的 `SECTIONS` 加同名一项，分节名写法见 [分节登记](style-checker.md#分节登记)。
    - 单文件检查进 `_registry.py` 的 `_FILE_CHECKS`。
    - 导入图检查在 `run_checks` 里单独调用并传入导入图。
-4. 在 `devtools/tests/test_style_checker_meta.py` 的 `_SAMPLES` 补样本，要求见 [testing.md](testing.md) 的「加用例的判据」节。
+4. 在 `devtools/tests/test_style_checker_meta.py` 的 `_SAMPLES` 补样本，要求见 [加用例的判据](testing.md#加用例的判据)。
 5. 跑 `python devtools\check_coding_style.py devtools` 自查。
 6. 跑 `python -m pytest devtools/tests/test_style_checker_meta.py`。
 

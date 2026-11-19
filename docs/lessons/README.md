@@ -2,7 +2,7 @@
 
 这里沉淀实现过程中实测出来的经验：某条约束的真实成因、某个结论是怎么验出来的、哪条路踩过并为什么走不通。
 
-代码与中文写法见 [coding-style.md](../coding-style.md)，发布流程见 [release-workflow.md](../release-workflow.md)，环境搭建见 [development.md](../development.md)。
+代码见 [coding-style.md](../coding-style.md)，中文写法见 [writing-style.md](../writing-style.md)，发布流程见 [release-workflow.md](../release-workflow.md)，环境搭建见 [development.md](../development.md)。
 
 ## 怎么找
 
@@ -24,7 +24,7 @@
 
 - 只收换个项目还用得上的抽象教训，实例写成类别说法。
 - 安全相关的只写判据，不写攻防原文、模型输出原句与本项目泄露史。
-- 文件路径、行号与项目内符号名换成角色类别。
+- 文件路径与符号的写法见 [指针写法](../writing-style.md#指针写法)。
 - 第三方 API 的键名、命令行与工具名照写。
 - 新经验并进已有主题，找不到归属才另开一份。
 - 每节开头交代适用场景，再写成因与做法。

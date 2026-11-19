@@ -1,7 +1,7 @@
 # 发布工作流
 
 本文规定改动提交与发布步骤。
-中文措辞、条目与排版见 [coding-style.md](coding-style.md) 的「文档写法」节。
+中文措辞、条目与排版见 [写作规范](writing-style.md)。
 
 ## 总流程（发布日按序执行）
 
@@ -46,11 +46,11 @@
 
 ## 子仓供件
 
-- 子仓的挂载、日常改动、更新与摘掉见 [development.md](development.md) 的「挂载子仓」节。
+- 子仓的挂载、日常改动、更新与摘掉见 [挂载子仓](development.md#挂载子仓)。
 - 子仓跑格式、类型、规范、用例四项检查，目标由闸门那条命令按挂载现场算。
 - 分层契约与发布物打包归本体。
 - 子仓版本号以 `pyproject.toml` 的 `[project].version` 为单源，tag、wheel 文件名与本体读到的版本都从它取。
-- wheel 构建见 [packaging.md](packaging.md) 的「子仓构建」节。
+- wheel 构建见 [子仓构建](packaging.md#子仓构建)。
 - 适配器发版只在子仓，本体的发布链不含适配器版本：
   - tag 打在子仓那一笔上，名字就是版本号（`v0.1.0`）。
   - release 附件只放 wheel，不放源码快照，不在用户机器上构建。
@@ -92,14 +92,11 @@
 ### 条目与措辞
 
 - 主题名按功能域起。
-- 主题行不重复子项内容。
-- 单条能说完的改动不硬凑主题，保持一行 `- **要点**：说明`。
+- 主题行与子项的层级、单条能说完的改动怎么摆，见 [条目与排版](writing-style.md#条目与排版)。
 
 ### 排版
 
-- 条目是完整句，行尾带句号。
-- 纯主题行 `- **主题**：` 止于冒号，不带句号。
-- 反引号不落进加粗主题行。
+- 条目、主题行与反引号的标点口径见 [标点](writing-style.md#标点)。
 
 ### 回改
 
@@ -108,8 +105,7 @@
 ## Commit
 
 - 标题采用 Conventional Commits 与中文标题的 `type(scope): 主题`，50 字符内，首字母小写，模板见 [.gitmessage](../.gitmessage)。
-- 标题与正文之间空一行。
-- 正文逐行以 `- ` 起头，每行 72 字符内。
+- 标题与正文的行形状见 [条目与排版](writing-style.md#条目与排版)。
 - 页脚用于关联 Issue，破坏性变更写在正文，不写页脚标记。
 
 | type | 用途 | CHANGELOG 归段 |
@@ -134,7 +130,7 @@
 - breaking 只在主体是「用户必须动手」时才用，既新增又要动手的笔按新增定 type。
 - 版本号档不由 type 决定，见「版本号（semver）」节。
 - 版本段写法见「CHANGELOG」节。
-- 标题与正文要点行尾不带句号。
+- 行尾句号口径见 [标点](writing-style.md#标点)。
 - scope 用模块域小写，取它改的那一块的名字。
 - `docs`、`style`、`test`、`build` 可省 scope，其余必带。
 - 一组提交为一个主题，不按文件凑数，同主题跨层（如消息+工具+bot）合为一组。
@@ -155,7 +151,7 @@ git tag -a vX.Y.Z -m "Release vX.Y.Z: 关键词一，关键词二，关键词三
 git push origin main vX.Y.Z
 ```
 
-- 摘要用逗号分隔的功能关键词，3 个上下，无句号，打在发布定稿提交上，不追打历史提交。
+- 摘要用逗号分隔的功能关键词，3 个上下，打在发布定稿提交上，不追打历史提交，句号口径见 [标点](writing-style.md#标点)。
 - 重写历史后按定稿笔标题重打全部 tag，属修正落点，不算追打历史。
 
 ## 版本号（semver）
@@ -183,7 +179,7 @@ git push origin main vX.Y.Z
 - 选上一版 tag 并点 **Generate release notes**。
 - Publish。
 
-- 正文条目从 CHANGELOG 对应版本段提炼改写，句号判据见「CHANGELOG」节「排版」，段名行与下载直链行不带句号。
+- 正文条目从 CHANGELOG 对应版本段提炼改写，句号判据见 [标点](writing-style.md#标点)，段名行与下载直链行不带句号。
 - 比较链接由 Generate release notes 生成，形状 `**Full Changelog**: https://github.com/FinshinLabs/FinshinImpact/compare/v<上一版>...v<X.Y.Z>`。
 - 正式号那条取上一个**正式号**，覆盖整条预发布线。
 - dev 那条取紧邻的上一个号，只覆盖这一次预发布的增量。
@@ -208,7 +204,7 @@ git push origin main vX.Y.Z
 
 ### 保留序列
 
-更新方式见 [development.md](development.md) 的「更新方式」节。
+更新方式见 [更新方式](development.md#更新方式)。
 
 保留规则：
 

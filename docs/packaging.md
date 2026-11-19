@@ -1,7 +1,7 @@
 # 打包教程
 
 所有命令在项目根目录的 PowerShell 中执行。
-环境搭建见 [development.md](development.md) 的「环境搭建」节，发布顺序见 [release-workflow.md](release-workflow.md)。
+环境搭建见 [环境搭建](development.md#环境搭建)，发布顺序见 [release-workflow.md](release-workflow.md)。
 
 ## 原理
 
@@ -22,9 +22,9 @@ FinshinImpact\
 启动器首启：解压嵌入式 Python → 放开 site-packages → 落位随包 uv → 装依赖 → 拉起主程序。
 
 - 插件依赖与浏览器内核由引导层在启动前按需安装，不在首装链路。
-- 更新入口与触发方式见 [development.md](development.md) 的「更新方式」节。
+- 更新入口与触发方式见 [更新方式](development.md#更新方式)。
 
-升级换源码与启动器：
+### 升级换源码与启动器
 
 - 新壳有变化时暂存 `_shell_update\`，当场换入，由旧壳拉起新壳。
 - 新程序抢到引导锁后旧壳退场。
@@ -33,26 +33,26 @@ FinshinImpact\
 - 换壳遗留的 `.old` 备份在启动收尾限时删除，删不掉留到下次。
 - 运行环境保留在原目录。
 
-按名字找的文件：
+### 按名字找的文件
 
 - `runtime\python-embed.zip` **改名会坏**。
 - `payload\uv.zip` 供首启解出 `uv.exe`，取用后 payload 自动删除。
 
-依赖清单：
+### 依赖清单
 
 - 要装的库出自 `pyproject.toml` 的核心依赖。
 - `runtime\.installed` 记依赖清单摘要，清单没变下次跳过安装。
 - 构建只在临时副本里跑，或在仓内跑完即清 `build\`、`*.egg-info`、`dist\`。
-- 启动器装依赖只追加，删库入口见 [development.md](development.md) 的「新增插件（清单驱动流程）」节。
+- 启动器装依赖只追加，删库入口见 [新增插件](development.md#新增插件清单驱动流程)。
 
-下载缓存：
+### 下载缓存
 
 - 放 `runtime\uv-cache`，启动器装完不删，供随后的依赖同步复用。
 - 手动清理走选窗"环境维护"里的"清理下载缓存"。
 
 ## 构建
 
-版本定稿与构建次数见 [release-workflow.md](release-workflow.md) 的「构建 zip」节。
+版本定稿与构建次数见 [构建 zip](release-workflow.md#构建-zip)。
 zip 名取自 `pyproject.toml`。
 
 检查构建工具：
@@ -87,8 +87,8 @@ python packaging\build.py
 
 ## 子仓构建
 
-- 子仓挂载见 [development.md](development.md) 的「挂载子仓」节。
-- 子仓版本号与附件要求见 [release-workflow.md](release-workflow.md) 的「子仓供件」节。
+- 子仓挂载见 [挂载子仓](development.md#挂载子仓)。
+- 子仓版本号与附件要求见 [子仓供件](release-workflow.md#子仓供件)。
 
 ```powershell
 # 平台适配器
@@ -111,7 +111,7 @@ python packaging/gen_catalog.py <输出路径>
 ```
 
 - 账号取自 `GITHUB_REPOSITORY`。
-- 发布与刷新时机见 [release-workflow.md](release-workflow.md) 的「子仓供件」节。
+- 发布与刷新时机见 [子仓供件](release-workflow.md#子仓供件)。
 
 ## 构建缓存
 
@@ -128,10 +128,10 @@ python packaging/gen_catalog.py <输出路径>
 1. 把 zip 复制到别处解压，不在 `dist\` 里测试。
 2. 双击 `FinshinImpact.exe`，等待环境安装完成。
 3. 验证首装：
-   - 按 [development.md](development.md) 的「环境搭建」节创建实例，完成向导后验证收发消息。
+   - 按 [环境搭建](development.md#环境搭建) 创建实例，完成向导后验证收发消息。
    - 再开一次，确认依赖未变时跳过安装。
-   - 确认 `payload\` 的清理结果，见「按名字找的文件」节。
-4. 升级路径按 [README.md](../README.md) 的「旧版迁移」节验证。
+   - 确认 `payload\` 的清理结果，见 [按名字找的文件](#按名字找的文件)。
+4. 升级路径按 [旧版迁移](../README.md#previous) 验证。
 5. 测完删掉测试目录。
 
 正式发布见 [release-workflow.md](release-workflow.md)。
