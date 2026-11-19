@@ -3,7 +3,7 @@
 - 解压嵌入式 Python、放开 site、部署 uv、装依赖
 - 随包接口件与核心依赖一条命令装齐
 - 已装且清单未变即免装，失败保缓存供续装命中
-- 随包件只补不足的那版，本机更高的版本不许被压回去
+- 随包件同版本照装，本机更高的版本不许被压回去
 """
 
 import shutil
@@ -60,13 +60,16 @@ def _installed_versions(runtime: Path) -> dict[str, str]:
 
 
 def _already_enough(wheel: Path, installed: dict[str, str]) -> bool:
-    """随包件要的那版本机已有更高或相等，读不懂版本即算不足"""
+    """随包件要的那版本机已有更高才算够，读不懂版本即算不足
+
+    - 同版本照装：重打不抬版本号的件只靠这一步换掉
+    """
     name, wanted = _name_and_version(wheel.stem)
     have = installed.get(name, "")
     if not have:
         return False
     try:
-        return Version(have) >= Version(wanted)
+        return Version(have) > Version(wanted)
     except InvalidVersion:
         return False
 
@@ -74,7 +77,7 @@ def _already_enough(wheel: Path, installed: dict[str, str]) -> bool:
 def _install_plan(root: Path) -> tuple[list[str], list[str]]:
     """交给 uv 的装单与记进免装指纹的清单
 
-    - 随包接口件按路径喂 uv，本机已装不低于那版即不进装单
+    - 随包接口件按路径喂 uv，本机已装高于那版才不进装单
     - 指纹只记核心依赖，随包件装成功就被删
     """
     core = dependencies(root)

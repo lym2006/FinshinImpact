@@ -1,6 +1,6 @@
 """随包接口件补装判定的单元测试
 
-- 本机已装不低于随包那版即不进装单，随包件不压新版
+- 本机已装高于随包那版即不进装单，同版本照装，随包件不压新版
 - 免装指纹只记核心依赖，随包件装成功就被删
 - 装成功即从包根删掉随包目录，目录不在场也不报错
 """
@@ -28,9 +28,9 @@ class TestAlreadyEnough(unittest.TestCase):
         """本机更高即不装，随包件不压新版"""
         self.assertTrue(mod._already_enough(self.wheel, {"finshin-sdk": "0.2.0"}))
 
-    def test_same_version_is_enough(self) -> None:
-        """相等即已到位"""
-        self.assertTrue(mod._already_enough(self.wheel, {"finshin-sdk": "0.1.0"}))
+    def test_same_version_needs_install(self) -> None:
+        """同版本照装：重打的件不靠版本号分辨"""
+        self.assertFalse(mod._already_enough(self.wheel, {"finshin-sdk": "0.1.0"}))
 
     def test_lower_installed_needs_install(self) -> None:
         """本机更低即照装"""
@@ -66,6 +66,14 @@ class TestInstallPlan(unittest.TestCase):
             with patch.object(mod, "dependencies", lambda _root: []):
                 deps, _ = mod._install_plan(root)
             self.assertEqual([item for item in deps if item.endswith(".whl")], [])
+
+    def test_same_version_installed_puts_the_wheel_in(self) -> None:
+        """本机同版本，装单里照样带随包件"""
+        with TemporaryDirectory() as raw:
+            root = self._root(Path(raw), installed="0.1.0")
+            with patch.object(mod, "dependencies", lambda _root: []):
+                deps, _ = mod._install_plan(root)
+            self.assertTrue([item for item in deps if item.endswith(".whl")])
 
     def test_absent_installed_puts_the_wheel_in(self) -> None:
         """本机没装，装单里按路径带上随包件"""
