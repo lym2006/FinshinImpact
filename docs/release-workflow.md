@@ -55,7 +55,7 @@
   - tag 打在子仓那一笔上，名字就是版本号（`v0.1.0`）。
   - release 附件只放 wheel，不放源码快照，不在用户机器上构建。
   - 下载直链与指纹取 GitHub 记在 wheel 附件上的值。
-  - 正文标题行写 `🐳 仓名-v版本号`。
+  - 正文标题行写 `🐳 仓名-v版本号`，其下空一行直接铺条目，不带段名行，条目形状见「Release」节。
   - 正文不写下载直链，wheel 只以附件在场。
   - release 建完即定稿，旧版附件不撤。
   - 在线目录由本体的 Pages 工作流按账号下各仓的声明聚合，与版本页同一份产物一起部署。
@@ -183,6 +183,7 @@ git push origin main vX.Y.Z
 - 选上一版 tag 并点 **Generate release notes**。
 - Publish。
 
+- 正文条目从 CHANGELOG 对应版本段提炼改写，句号判据见「CHANGELOG」节「排版」，段名行与下载直链行不带句号。
 - 比较链接由 Generate release notes 生成，形状 `**Full Changelog**: https://github.com/FinshinLabs/FinshinImpact/compare/v<上一版>...v<X.Y.Z>`。
 - 正式号那条取上一个**正式号**，覆盖整条预发布线。
 - dev 那条取紧邻的上一个号，只覆盖这一次预发布的增量。
@@ -197,12 +198,12 @@ git push origin main vX.Y.Z
 - 官方直连：https://github.com/FinshinLabs/FinshinImpact/releases/download/vX.Y.Z/FinshinImpact-vX.Y.Z.zip
 
 变化
-- 条目一（用户视角，2~5 条，从 CHANGELOG 该版本段提炼）
-- 条目二
+- 条目一（用户视角，2~5 条，从 CHANGELOG 该版本段提炼）。
+- 条目二。
 
 注意（仅升级路径或行为有特殊约束时写，无则整段省略）
-- 只写事实与用户需要的动作，一句一条，禁口语、修辞、情绪化措辞
-- 有破坏性变更时提示用户如何操作
+- 只写事实与用户需要的动作，一句一条，禁口语、修辞、情绪化措辞。
+- 有破坏性变更时提示用户如何操作。
 ```
 
 ### 保留序列
@@ -227,11 +228,11 @@ git push origin main vX.Y.Z
 🐳 FinshinImpact-vX.Y.Z
 
 变化
-- 条目一
-- 条目二
+- 条目一。
+- 条目二。
 
 注意
-- 条目一
+- 条目一。
 
 **Full Changelog**: https://github.com/FinshinLabs/FinshinImpact/compare/v<上一版>...vX.Y.Z
 ```
