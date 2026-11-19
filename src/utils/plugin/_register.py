@@ -2,7 +2,7 @@
 
 - 按清单与实例启用集决定加载序列
 - 从插件模块里认那只入口类，实例化后收它交出的路由、循环、动作与时机
-- 入口类缺失或多只、外部件伸手本体内部，都记失败并写明原因
+- 入口类缺失或多只、外部件伸手本体内部、界面库或平台框架，都记失败并写明原因
 - 清单声明的命令权限与实际拦截对不上即记失败
 """
 
@@ -131,10 +131,15 @@ def register_plugins(
 def load_plugin(manifest: PluginManifestDTO) -> BasePlugin:
     """导入清单点名的模块并实例化那一只入口类
 
-    - 外部件伸手本体内部当场报错
+    - 外部件伸手本体内部、界面库或平台框架当场报错
     """
     check_external_imports(
-        manifest.name, manifest.module, PluginImportError, PLUGINS_PKG
+        manifest.name,
+        manifest.module,
+        PluginImportError,
+        PLUGINS_PKG,
+        # 平台框架只许适配器引
+        extra_forbidden=("aiogram",),
     )
     return _entry_class(manifest, importlib.import_module(manifest.module))()
 

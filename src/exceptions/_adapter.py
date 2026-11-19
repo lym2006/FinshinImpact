@@ -1,6 +1,6 @@
 """适配器异常族
 
-- 定义适配器安装、版本与引本体内部三类异常
+- 定义适配器安装、版本与引用范围三类异常
 """
 
 from finshin_sdk.exceptions import BotError
@@ -43,7 +43,7 @@ class AdapterOutOfDateError(AdapterError):
 
 
 class AdapterImportError(AdapterError):
-    """外部适配器导入本体内部模块"""
+    """外部适配器引了本体内部或界面库"""
 
     def __init__(self, platform: str, target: str, where: str) -> None:
         self.platform = platform
@@ -60,5 +60,5 @@ ADAPTER_MAP = {
     AdapterOutOfDateError: (
         "{platform} 平台的适配器要接口包 {requires}，本机接口包是 {sdk}"
     ),
-    AdapterImportError: "{platform} 平台的适配器不许引本体内部（{target}，{where}）",
+    AdapterImportError: "{platform} 平台的适配器不许引本体内部或界面库（{target}，{where}）",
 }

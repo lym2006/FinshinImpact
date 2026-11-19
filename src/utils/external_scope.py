@@ -1,6 +1,7 @@
 """外部代码的引用范围检查
 
-- 导入之前先扫一遍源码，本体各层一律不许引
+- 导入之前先扫一遍源码，本体各层与界面库一律不许引
+- 插件另不许引平台框架，额外禁名由调用方交来
 - 插件与适配器共用这一份判据，该报哪只异常由调用方交来
 """
 
@@ -30,29 +31,37 @@ _BODY_ROOTS = frozenset(
     }
 )
 
+# 适配器与插件都不许引的第三方包，界面只能由本体画
+_THIRD_PARTY_ROOTS = frozenset({"PySide6"})
+
 
 def check_external_imports(
     source: str,
     module: str,
     make_error: Callable[[str, str, str], Exception],
     bundled_root: str | None = None,
+    extra_forbidden: tuple[str, ...] = (),
 ) -> None:
-    """本体引用检查
+    """外部引用检查
 
-    - 引了本体内部即按交来的错法报错
+    - 引了禁引的包即按交来的错法报错
+    - 禁名含本体顶层包名与界面库，调用方另可追加
     - 顶层包名撞上 bundled_root 即随包树，不查
     - 没给 bundled_root 即这一族没有随包那一份，一律照查
     - 只定位目录不执行，定位不到即放过，缺件那步自有另一句报
     """
     if bundled_root is not None and module.partition(".")[0] == bundled_root:
         return
-    offence = _first_body_import(module)
+    forbidden = _BODY_ROOTS | _THIRD_PARTY_ROOTS | frozenset(extra_forbidden)
+    offence = _first_forbidden_import(module, forbidden)
     if offence is not None:
         raise make_error(source, offence[0], offence[1])
 
 
-def _first_body_import(module: str) -> tuple[str, str] | None:
-    """首处本体导入
+def _first_forbidden_import(
+    module: str, forbidden: frozenset[str]
+) -> tuple[str, str] | None:
+    """首处禁名导入
 
     - 交出「引了谁」与出处
     - 只数会被装载的源码，作者放在 tests 目录里的用例不参与
@@ -68,14 +77,16 @@ def _first_body_import(module: str) -> tuple[str, str] | None:
             label = path.relative_to(root)
             if _TEST_DIR in label.parts:
                 continue
-            offence = _file_body_import(path, label)
+            offence = _file_forbidden_import(path, label, forbidden)
             if offence is not None:
                 return offence
     return None
 
 
-def _file_body_import(file: Path, label: Path) -> tuple[str, str] | None:
-    """取这份文件里第一处伸向本体的导入
+def _file_forbidden_import(
+    file: Path, label: Path, forbidden: frozenset[str]
+) -> tuple[str, str] | None:
+    """取这份文件里第一处撞上禁名的导入
 
     - 交出「引了谁」与「落在哪份文件哪一行」
     - 出处按件的根目录写相对路径，子目录里的那份才找得着
@@ -89,7 +100,7 @@ def _file_body_import(file: Path, label: Path) -> tuple[str, str] | None:
         if not isinstance(node, (ast.Import, ast.ImportFrom)):
             continue
         for name in _imported_names(node):
-            if name.partition(".")[0] in _BODY_ROOTS:
+            if name.partition(".")[0] in forbidden:
                 return name, f"{label.as_posix()}:{node.lineno}"
     return None
 

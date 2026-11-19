@@ -48,7 +48,7 @@ class PluginLoadError(PluginsError):
 
 
 class PluginImportError(PluginsError):
-    """外部插件引了本体内部"""
+    """外部插件引了本体内部、界面库或平台框架"""
 
     def __init__(self, plugin: str, target: str, where: str) -> None:
         self.plugin = plugin
@@ -82,6 +82,6 @@ PLUGINS_MAP = {
     PluginLoadError: "加载失败：{kind}",
     PluginRoleError: "命令权限说明与实际拦截对不上",
     PluginManifestError: "插件 {plugin} 的开关 {flag} 默认值只能写 int/float/str（收到 {got}）",
-    PluginImportError: "外部插件 {plugin} 不许引本体内部：{target}（{where}）",
+    PluginImportError: "外部插件 {plugin} 不许引本体内部、界面库或平台框架：{target}（{where}）",
     PluginsMissingError: "一只插件都没装上，程序无法运行",
 }

@@ -3,6 +3,7 @@
 - 覆盖随包树不查、干净的外部件放行、引了本体即报出引了谁与出处
 - 覆盖标准库与相对导入不查
 - 覆盖 tests 目录里的用例不参与装载即不查
+- 覆盖界面库对两边都禁、平台框架只对插件禁
 - 覆盖 Telegram 适配层这份现码伸向本体的手是一处不剩
 - 覆盖体检扫的是空集时当场红，别让放行一切也算过
 """
@@ -107,6 +108,49 @@ class TestExternalImports(_TempPackage):
         )
         with self.assertRaises(PluginImportError):
             check_external_imports("late", name, PluginImportError)
+
+    def test_gui_library_is_forbidden_for_adapter(self) -> None:
+        """适配器引界面库即报出引了谁"""
+        name = self._make(
+            "gui_tg",
+            {"__init__.py": "from PySide6.QtWidgets import QWidget\n"},
+        )
+        with self.assertRaises(AdapterImportError) as ctx:
+            check_external_imports("tg", name, AdapterImportError)
+        self.assertEqual(ctx.exception.target, "PySide6.QtWidgets")
+
+    def test_gui_library_is_forbidden_for_plugin(self) -> None:
+        """插件引界面库同样报错，出处行号对得上
+
+        - 这条红了说明界面库那条判据没跟着插件调用走
+        """
+        name = self._make(
+            "gui_plugin",
+            {"__init__.py": "import json\n\nfrom PySide6 import QtCore\n"},
+        )
+        with self.assertRaises(PluginImportError) as ctx:
+            check_external_imports("gui", name, PluginImportError, PLUGINS_PKG)
+        self.assertEqual(ctx.exception.where, "__init__.py:3")
+
+    def test_platform_framework_is_forbidden_for_plugin_only(self) -> None:
+        """平台框架适配器放行，插件报错
+
+        - 这条红了说明平台框架的禁名跟着搭进了默认那一组
+        """
+        name = self._make(
+            "aiogram_tg",
+            {"__init__.py": "from aiogram import Router\n"},
+        )
+        check_external_imports("tg", name, AdapterImportError)
+        with self.assertRaises(PluginImportError) as ctx:
+            check_external_imports(
+                "plug",
+                name,
+                PluginImportError,
+                PLUGINS_PKG,
+                extra_forbidden=("aiogram",),
+            )
+        self.assertEqual(ctx.exception.target, "aiogram")
 
 
 class TestTestsDirIsSkipped(_TempPackage):

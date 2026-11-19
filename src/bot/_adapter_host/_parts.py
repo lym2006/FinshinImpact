@@ -28,7 +28,7 @@ def parts_for(platform: Platform) -> AdapterParts:
     - 清单缺席或字段非法即缺件
     - 本机接口包不在清单要求的区间内即拒载，拒在导入入口之前
     - 声明在场而环境里取不到那只包，即按没装进环境交代
-    - 随包树之外的适配器引了本体内部即拒载，同样拒在导入之前
+    - 适配器引了本体内部或界面库即拒载，同样拒在导入之前
     """
     manifest = load_adapter_manifests().get(platform)
     if manifest is None:
