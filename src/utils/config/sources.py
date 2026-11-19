@@ -21,9 +21,6 @@ from .models import AppConfigData, NotesBySection
 
 _logger = get_logger("Config")
 
-# 旧文件里的裸段名，段现名对旧写法按这一处换算
-_RENAMED: dict[str, tuple[str, ...]] = {str(ConfigSection.AI): ("ai",)}
-
 
 class SourceKind(StrEnum):
     """配置段的来源类型
@@ -55,12 +52,11 @@ class ConfigSource:
 class AssembledSection:
     """装配后的一个配置段
 
-    - name 为带来源前缀的段名，legacy 为该段在旧文件里可能写作何名
+    - name 为带来源前缀的段名
     - identity 为来源身份串，source_title 为该来源交出的标题，两者定面板左列
     """
 
     name: str
-    legacy: tuple[str, ...]
     identity: str
     source_title: str
     spec: SectionSpec
@@ -114,7 +110,6 @@ def assemble(sources: Sequence[ConfigSource]) -> ConfigPlan:
         items.extend(
             AssembledSection(
                 name=section_name(identity, sec.section),
-                legacy=(str(sec.section), *_RENAMED.get(str(sec.section), ())),
                 identity=identity,
                 source_title=source.title,
                 spec=_unique_fields(identity, sec),

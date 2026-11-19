@@ -55,13 +55,6 @@ class ConfigIO:
         """
         return self._parse()[0]
 
-    def load_notes(self) -> NotesBySection:
-        """读取盘上的说明子表
-
-        - 装配器据此判断说明要不要重打
-        """
-        return self._parse()[1]
-
     def save(self, config_data: AppConfigData, *, notes: NotesBySection) -> None:
         """全量保存配置
 
@@ -90,18 +83,13 @@ class ConfigIO:
 
 
 def _render_config(config_data: AppConfigData, *, notes: NotesBySection) -> str:
-    """按段名渲染整份配置文本
+    """逐段渲染成带来源块的 TOML 文本
 
-    - 带前缀的段按来源归块，一块一个身份码，段块写在所属来源块内
+    - 每块先写一行身份码，块内写该来源的段
     - 说明子表紧随本段之后
-    - 无人认领的裸段仍写成顶层表，值原样留着
     """
     names = _write_order((*config_data, *notes))
-    units = [
-        unit
-        for name in (n for n in names if "." not in n)
-        for unit in _section_units((name,), config_data.get(name, {}), notes.get(name))
-    ]
+    units: list[str] = []
     for identity in _identities(names):
         units.append(f"[[{_SOURCE_TABLE}]]\n{_IDENTITY_KEY} = {_quoted_str(identity)}")
         for name in (n for n in names if n.rpartition(".")[0] == identity):
@@ -196,14 +184,14 @@ def _quoted_str(value: str) -> str:
 
 
 def _sources(document: Mapping[str, Any]) -> dict[str, Any]:
-    """来源块换成段名到键值表的写法，段名带上块内身份码
+    """只认来源块，摊成段名到键值表
 
-    - 块内除身份码还有别的直接键即拒那一块，那些键按无人认领留下
-    - 同一身份码第二次出现即拒那一块，账只记来源块身份，顶层裸段不算
+    - 段名写作「身份码.段名」
+    - 块内除身份码还有别的直接键：整块不进配置，那几个键按身份码另立一段保留
+    - 身份码为空时那段取 `source.序号`
+    - 同一身份码出现两次：后一块整块不进配置，记一句错
     """
-    converted: dict[str, Any] = {
-        key: value for key, value in document.items() if key != _SOURCE_TABLE
-    }
+    converted: dict[str, Any] = {}
     blocks = document.get(_SOURCE_TABLE)
     if not isinstance(blocks, list):
         return converted

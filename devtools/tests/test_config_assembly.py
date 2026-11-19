@@ -1,13 +1,11 @@
 """配置装配与点分段名的回归用例
 
-- ConfigIO：点分三层段名读写与单层段名同值，notes 子表读盘丢弃
+- ConfigIO：点分三层段名读写，notes 子表读盘丢弃
 - _ConfigManager：按来源身份与段名拼出的段名取到值
-- ensure_config：缺文件时逐来源复制默认值，新键合入不覆盖已有值
+- ensure_config：缺文件时逐来源复制默认值，已有文件不读不写
 - assemble：同一身份码被两份认领时拒后交的那份并点名，同一来源段内重键只留先出现的
   那一项，跨来源同名段各留各的
 - config_sources：各来源自己交标题与段，装载不成的插件那一只不进配置
-- reconcile：交出者撤项的残留键点名不代删
-- 旧裸段的值搬进带前缀的段，搬完不留裸段、不产生备份文件
 """
 
 import sys
@@ -35,7 +33,7 @@ from finshin_sdk.domain import (  # noqa: E402
     SectionSpec,
 )
 from utils._config_manager import _ConfigManager  # noqa: E402
-from utils.config import ensure_config, load_config  # noqa: E402
+from utils.config import ensure_config  # noqa: E402
 from utils.config._io import ConfigIO  # noqa: E402
 from utils.config._schema import build_schema  # noqa: E402
 from utils.config.models import FieldSchema, TabSchema  # noqa: E402
@@ -70,17 +68,14 @@ class TestDottedSectionRoundtrip(unittest.TestCase):
         self.assertIn("[source.proxy]", text)
         self.assertNotIn('["proxy"]', text)
 
-    def test_three_level_reads_back_same_as_single_level(self) -> None:
-        """三层段名读写一轮后的值与单层段名读写一轮后的值相同"""
-        deep = {"adapter.tg.proxy": {"proxy": _PROXY_VALUE, "proxy_mode": "auto"}}
-        flat = {"proxy": {"proxy": _PROXY_VALUE, "proxy_mode": "auto"}}
-        cases = {"deep": deep, "flat": flat}
+    def test_three_level_roundtrip(self) -> None:
+        """三层段名存读一轮后值不变"""
+        path = _temp_file()
+        data = {"adapter.tg.proxy": {"proxy": _PROXY_VALUE, "proxy_mode": "auto"}}
 
-        for name, data in cases.items():
-            with self.subTest(section=name):
-                path = _temp_file()
-                ConfigIO(path).save(data, notes={})
-                self.assertEqual(ConfigIO(path).load(), data)
+        ConfigIO(path).save(data, notes={})
+
+        self.assertEqual(ConfigIO(path).load(), data)
 
     def test_manager_reads_assembled_section(self) -> None:
         """取值入口按来源身份与段名拼出的段名读值"""
@@ -104,13 +99,17 @@ class TestDottedSectionRoundtrip(unittest.TestCase):
         """notes 子表属文件说明，读盘不并进配置"""
         path = _temp_file()
         path.write_text(
-            "[adapter.tg.proxy]\n"
+            "[[source]]\n"
+            'id = "adapter.tg"\n'
+            "[source.proxy]\n"
             'proxy = "http://127.0.0.1:7890"\n'
-            "[adapter.tg.proxy.notes]\n"
+            "[source.proxy.notes]\n"
             'proxy = "自动与仅配置代理两档使用该项"\n'
-            "[core.data]\n"
+            "[[source]]\n"
+            'id = "core"\n'
+            "[source.data]\n"
             "record_keep = 30.0\n"
-            "[core.data.notes]\n"
+            "[source.data.notes]\n"
             'record_keep = "闲置超过这个天数的对话记录一并删除"\n',
             encoding="utf-8",
         )
@@ -141,7 +140,7 @@ class TestDottedSectionRoundtrip(unittest.TestCase):
 class TestSourceBlockShape(unittest.TestCase):
     """回归点
 
-    - 来源块里除 id 还有别的直接键即拒那一块并点名，那些键按无人认领留下
+    - 来源块里除 id 还有别的直接键即拒那一块并点名，那几个键另立一段保留
     - 同一身份码写两块时只认前一块，后一块拒收并点名块序
     """
 
@@ -159,24 +158,10 @@ class TestSourceBlockShape(unittest.TestCase):
             encoding="utf-8",
         )
 
-        with (
-            patch("utils.config.CONFIG_FILE", path),
-            fake_adapter_parts(),
-            self.assertLogs("Bot.Config", level="ERROR") as logs,
-        ):
-            ensure_config(config_sources())
+        with self.assertLogs("Bot.Config", level="ERROR") as logs:
+            data = ConfigIO(path).load()
 
-        data = ConfigIO(path).load()
-        self.assertEqual(
-            set(data),
-            {
-                "core",
-                "adapter.tg.proxy",
-                "plugin.AI.model",
-                "plugin.AI.chore",
-                "core.data",
-            },
-        )
+        self.assertEqual(set(data), {"core", "plugin.AI.model"})
         self.assertEqual(data["core"]["data"], "本该写成 [source.data]")
         self.assertTrue(any("整块不进配置" in line for line in logs.output))
 
@@ -203,24 +188,6 @@ class TestSourceBlockShape(unittest.TestCase):
         self.assertEqual(len(named), 1, logs.output)
         self.assertIn("第 2 块", named[0])
         self.assertIn("第 1 块", named[0])
-
-    def test_top_level_section_is_not_a_duplicate_identity(self) -> None:
-        """顶层裸段名与来源身份同串不算重复块"""
-        path = _temp_file()
-        path.write_text(
-            "[core]\n"
-            "record_keep = 1.0\n"
-            "[[source]]\n"
-            'id = "core"\n'
-            "[source.data]\n"
-            "record_keep = 12.0\n",
-            encoding="utf-8",
-        )
-
-        data = ConfigIO(path).load()
-
-        self.assertEqual(data["core.data"]["record_keep"], 12.0)
-        self.assertEqual(data["core"]["record_keep"], 1.0)
 
 
 class TestSourceAssembly(unittest.TestCase):
@@ -361,80 +328,24 @@ class TestSourceAssembly(unittest.TestCase):
         self.assertTrue(any("AI" in line for line in logs.output))
 
 
-class TestMergeAndDeadKeys(unittest.TestCase):
+class TestExistingFileUntouched(unittest.TestCase):
     """回归点
 
-    - 模板新增的键补默认值，已有值不动
-    - 交出者撤项后的残留键点名不代删
+    - 配置文件已存在时启动不动盘，模板多出来的键不补进文件
     """
 
-    def test_new_keys_join_without_overwriting(self) -> None:
-        """已填过的值照留，模板多出来的键补默认值"""
+    def test_existing_file_is_not_rewritten(self) -> None:
+        """已填过的值照留，模板里的其它键不进文件"""
         path = _temp_file()
-        path.write_text('[plugin.AI.model]\napi_key = "sk-已填"\n', encoding="utf-8")
+        ConfigIO(path).save({"plugin.AI.model": {"api_key": "sk-已填"}}, notes={})
+        before = path.read_bytes()
 
         with patch("utils.config.CONFIG_FILE", path), fake_adapter_parts():
             ensure_config(config_sources())
 
+        self.assertEqual(path.read_bytes(), before)
         data = ConfigIO(path).load()
-        self.assertEqual(data["plugin.AI.model"]["api_key"], "sk-已填")
-        self.assertEqual(data["plugin.AI.model"]["temperature"], 0.7)
-
-    def test_dead_key_is_named_and_kept(self) -> None:
-        """交出者已撤的键点一句名，值原样留着"""
-        path = _temp_file()
-        path.write_text(
-            "[core.data]\nrecord_keep = 12.0\nold_switch = true\n", encoding="utf-8"
-        )
-
-        with (
-            patch("utils.config.CONFIG_FILE", path),
-            fake_adapter_parts(),
-            self.assertLogs("Bot.Config", level="INFO") as logs,
-        ):
-            ensure_config(config_sources())
-
-        self.assertIn("old_switch", ConfigIO(path).load()["core.data"])
-        self.assertEqual(ConfigIO(path).load()["core.data"]["record_keep"], 12.0)
-        self.assertTrue(any("old_switch" in line for line in logs.output))
-
-
-class TestLegacyMove(unittest.TestCase):
-    """回归点
-
-    - 旧裸段的值搬进带来源前缀的段，搬完不留裸段、不产生备份文件
-    - 搬完再装配一次不再落盘
-    """
-
-    def test_legacy_sections_move_values_once(self) -> None:
-        """四段旧写法搬成新形状且值不丢"""
-        path = _temp_file()
-        path.write_text(
-            '[proxy]\nproxy_mode = "cfg"\nproxy = "http://1.1.1.1:8080"\n'
-            '[ai]\napi_key = "sk-old"\n'
-            '[chore]\nowner = "9527"\n'
-            "[data]\nrecord_keep = 7.0\n",
-            encoding="utf-8",
-        )
-
-        with patch("utils.config.CONFIG_FILE", path), fake_adapter_parts():
-            ensure_config(config_sources())
-            data = load_config()
-            first = path.read_text(encoding="utf-8")
-            ensure_config(config_sources())
-
-        self.assertEqual(data["adapter.tg.proxy"]["proxy"], "http://1.1.1.1:8080")
-        self.assertEqual(data["adapter.tg.proxy"]["proxy_mode"], "cfg")
-        self.assertEqual(data["plugin.AI.model"]["api_key"], "sk-old")
-        self.assertEqual(data["plugin.AI.chore"]["owner"], "9527")
-        self.assertEqual(data["core.data"]["record_keep"], 7.0)
-        for legacy in ("proxy", "ai", "chore", "data"):
-            self.assertNotIn(legacy, data)
-
-        self.assertIn("[source.proxy]", first)
-        self.assertNotIn("[ai]", first)
-        self.assertEqual(path.read_text(encoding="utf-8"), first)
-        self.assertEqual([item.name for item in path.parent.iterdir()], ["config.toml"])
+        self.assertEqual(data, {"plugin.AI.model": {"api_key": "sk-已填"}})
 
 
 if __name__ == "__main__":

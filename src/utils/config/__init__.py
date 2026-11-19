@@ -9,7 +9,6 @@ from collections.abc import Sequence
 from ..paths import CONFIG_FILE
 from ._differ import compare_configs
 from ._io import ConfigIO
-from ._merge import reconcile
 from ._schema import build_schema
 from ._validator import validate_types
 from .models import AppConfigData, AppSchema, FieldErrors
@@ -58,24 +57,16 @@ def _plan() -> ConfigPlan:
 
 
 def ensure_config(sources: Sequence[ConfigSource]) -> None:
-    """确保配置文件是装配后的形状
+    """装配段表并确保配置文件存在
 
-    - 缺失则逐来源写入默认值与说明
-    - 在场则搬旧裸段、补新键、按交出模板重打说明，内容没变不写盘
+    - 文件不存在时按段表写默认值与说明
+    - 文件已存在则不读内容、不改、不写盘
     - 必填项留空由本地校验报出，向导据此标红引导填写
     """
     plan = assemble(sources)
     use_plan(plan)
-    notes = plan.notes()
     if not CONFIG_FILE.exists():
-        _io().save(plan.defaults(), notes=notes)
-        return
-
-    disk = _io().load()
-    merged = reconcile(plan, disk)
-    if merged == disk and _io().load_notes() == notes:
-        return
-    _io().save(merged, notes=notes)
+        _io().save(plan.defaults(), notes=plan.notes())
 
 
 def get_schema() -> AppSchema:
