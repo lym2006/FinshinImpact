@@ -53,7 +53,7 @@ class _Look:
 
 
 _METRICS = {
-    ButtonSize.SMALL: _Metrics(padding_v=4, padding_h=12, min_width=70),
+    ButtonSize.SMALL: _Metrics(4, 12, 70, 28),
     ButtonSize.STANDARD: _Metrics(6, 16, 90, 30),
     ButtonSize.LARGE: _Metrics(6, 16, 120, 30, bold=True),
     ButtonSize.COMPACT: _Metrics(6, 14, 60, 32, bold=True),

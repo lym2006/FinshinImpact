@@ -177,13 +177,12 @@ class ChromeBuilder:
         container.setObjectName(ObjectName.TAB_CONTAINER)
         main_layout = QVBoxLayout(container)
         main_layout.setSpacing(SETTINGS_DIALOG.tab_spacing)
-        label_width = self._fields.label_width_of(tab_schema.fields)
         rows: dict[ConfigPath, QWidget] = {}
         for field in tab_schema.fields:
-            row = self._fields.build(tab_schema, field, self._errors, label_width)
+            row = self._fields.build(tab_schema, field, self._errors)
             rows[tab_schema.path_of(field)] = row
             main_layout.addWidget(row)
-        self._mount_persona_row(tab_schema, main_layout, label_width)
+        self._mount_persona_row(tab_schema, main_layout)
         self._mount_proxy_mode_lock(tab_schema, rows)
         main_layout.addStretch()
         scroll = make_scroller(container)
@@ -220,12 +219,7 @@ class ChromeBuilder:
         mode_combo.currentIndexChanged.connect(lambda: sync(mode_combo.currentData()))
         sync(mode_combo.currentData())
 
-    def _mount_persona_row(
-        self,
-        tab: TabSchema,
-        layout: QVBoxLayout,
-        label_width: int,
-    ) -> None:
+    def _mount_persona_row(self, tab: TabSchema, layout: QVBoxLayout) -> None:
         """人设入口行挂载
 
         - 本页取不到主人输入控件即不挂载
@@ -237,7 +231,7 @@ class ChromeBuilder:
         if owner_input is None:
             return
 
-        row = PersonaPreviewRow(label_width)
+        row = PersonaPreviewRow()
         if not row.bind(owner_input):
             return
         layout.addWidget(row)

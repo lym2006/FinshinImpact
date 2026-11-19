@@ -16,7 +16,7 @@ class SettingsDialogTheme:
 
     # 主体
     min_width: int = 800  # 最小宽度
-    min_height: int = 480  # 最小高度
+    min_height: int = 560  # 最小高度
     margin: int = 0  # 通用间距
     desc_spacing: int = 4  # 控件与提示语间距
 

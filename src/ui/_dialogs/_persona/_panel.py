@@ -75,21 +75,20 @@ class _PersonaPreviewDialog(BaseDialog):
 class PersonaPreviewRow(QWidget):
     """人设正文入口行
 
-    - 标签列宽与对齐同字段行
+    - 标题在上，三颗入口在下一排
     - 预览与编辑各开一窗
     """
 
-    def __init__(self, label_width: int = 0, parent: QWidget | None = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._owner: _TextWidget | None = None
 
-        layout = QHBoxLayout(self)
+        layout = QVBoxLayout(self)
         set_margins(layout, SETTINGS_DIALOG.margin)
         layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
 
         title = QLabel(SETTINGS_DIALOG.persona_label)
-        title.setMinimumWidth(label_width)
-        title.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        title.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
 
         btn_preview = make_button(
             SETTINGS_DIALOG.persona_preview_text,
@@ -112,12 +111,15 @@ class PersonaPreviewRow(QWidget):
         )
         btn_reload.clicked.connect(self._on_reload_clicked)
 
-        # 本行内容顶部对齐，不与上方多行输入框的底边缠斗
+        btn_layout = QHBoxLayout()
+        btn_layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
+        btn_layout.addWidget(btn_preview)
+        btn_layout.addWidget(btn_edit)
+        btn_layout.addWidget(btn_reload)
+        btn_layout.addStretch()
+
         layout.addWidget(title)
-        layout.addWidget(btn_preview, alignment=Qt.AlignmentFlag.AlignTop)
-        layout.addWidget(btn_edit, alignment=Qt.AlignmentFlag.AlignTop)
-        layout.addWidget(btn_reload, alignment=Qt.AlignmentFlag.AlignTop)
-        layout.addStretch()
+        layout.addLayout(btn_layout)
 
     def bind(self, owner: QWidget) -> bool:
         """绑定主人输入行

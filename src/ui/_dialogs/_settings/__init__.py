@@ -67,7 +67,7 @@ class SettingsDialog(BaseDialog):
         self._schema = schema
         self._mode = mode
 
-        self._fields = FieldBuilder(current_config, self.font())
+        self._fields = FieldBuilder(current_config)
         self._chrome = ChromeBuilder(
             host=self,
             fields=self._fields,

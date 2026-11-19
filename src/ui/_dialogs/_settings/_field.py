@@ -7,10 +7,8 @@
 from copy import deepcopy
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QFont, QFontMetrics
 from PySide6.QtWidgets import (
     QComboBox,
-    QFormLayout,
     QLabel,
     QLineEdit,
     QTextEdit,
@@ -20,15 +18,13 @@ from PySide6.QtWidgets import (
 
 from finshin_sdk.domain import ConfigPath
 from skin.qss import build_error_label_qss
-from skin.theme import GLOBAL, SETTINGS_DIALOG
+from skin.theme import SETTINGS_DIALOG
 from utils.config import AppConfigData, AppSchema, FieldErrors
 from utils.config.models import ConfigValue, FieldSchema, TabData, TabSchema, is_blank
 
 from ..._primitives import make_combo, set_margins
 from ._list_widget import ConfigListRow
 from ._reset import Inputs, ResetRegistry
-
-_LABEL_WIDTH_MAX_EM = 8  # 标签列宽上限为 8 倍「M」字宽
 
 # 必填项空态渲染值：按默认值类型呈现"未填写"的样子
 _BLANK_BY_TYPE: dict[type, ConfigValue] = {
@@ -57,51 +53,37 @@ class FieldBuilder:
     - 持有控件表与标签表，供弹窗跨方法共享
     """
 
-    def __init__(self, current: AppConfigData, font: QFont) -> None:
+    def __init__(self, current: AppConfigData) -> None:
         self._current = current
-        self._font = font
         self.inputs: Inputs = {}
 
         # {配置项身份: (标签控件, 原标题)}，复验结果原地刷新用
         self.labels: dict[ConfigPath, tuple[QLabel, str]] = {}
         self._resets = ResetRegistry(self.inputs, self.value_of)
 
-    def build(
-        self,
-        tab: TabSchema,
-        field: FieldSchema,
-        errors: FieldErrors,
-        label_width: int = 0,
-    ) -> QWidget:
+    def build(self, tab: TabSchema, field: FieldSchema, errors: FieldErrors) -> QWidget:
         """渲染表单控件
 
+        - 标题、输入区与说明自上而下排
         - 必填键缺失或留空一律空态上屏
         - 非必填键缺失回退默认值
         """
         container = QWidget()
-        form = QFormLayout(container)
-        form.setSpacing(GLOBAL.radius)
-        set_margins(form, SETTINGS_DIALOG.margin, bottom=SETTINGS_DIALOG.tab_spacing)
+        layout = QVBoxLayout(container)
+        layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
+        set_margins(layout, SETTINGS_DIALOG.margin, bottom=SETTINGS_DIALOG.tab_spacing)
         current_value, restore_target, required = self._resolve_value(
             field, tab.section
         )
         item = tab.path_of(field)
-        label_widget = self._build_label(item, field, errors, label_width)
+        layout.addWidget(self._build_label(item, field, errors))
 
         input_widget = self._build_input(field, current_value)
         self.inputs[item] = input_widget
-        form.addRow(
-            label_widget,
-            self._build_right_side(item, field, input_widget, restore_target, required),
+        layout.addWidget(
+            self._build_input_block(item, field, input_widget, restore_target, required)
         )
         return container
-
-    def label_width_of(self, fields: list[FieldSchema]) -> int:
-        """计算标签统一列宽"""
-        metrics = QFontMetrics(self._font)
-        max_width = max((metrics.horizontalAdvance(f.label) for f in fields), default=0)
-        limit = metrics.horizontalAdvance("M") * _LABEL_WIDTH_MAX_EM
-        return min(max_width, limit)
 
     def value_of(self, item: ConfigPath, field: FieldSchema) -> ConfigValue:
         """从控件提取字段当前值"""
@@ -171,17 +153,15 @@ class FieldBuilder:
         item: ConfigPath,
         field: FieldSchema,
         errors: FieldErrors,
-        label_width: int,
     ) -> QLabel:
         """构造字段标签
 
         - 出错字段标红
         """
         label_widget = QLabel(field.label)
-        label_widget.setMinimumWidth(label_width)
         label_widget.setWordWrap(True)
         label_widget.setAlignment(
-            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
         )
         refresh_label(label_widget, field.label, errors.get(item))
         self.labels[item] = (label_widget, field.label)
@@ -215,7 +195,7 @@ class FieldBuilder:
         display = str(current_value) if current_value is not None else ""
         return QLineEdit(display)
 
-    def _build_right_side(
+    def _build_input_block(
         self,
         item: ConfigPath,
         field: FieldSchema,
@@ -223,13 +203,13 @@ class FieldBuilder:
         restore_target: ConfigValue,
         required: bool,
     ) -> QWidget:
-        """构造右侧区域
+        """构造输入区
 
         - 输入框与可选恢复按钮，外加说明文字
         - 枚举项不挂恢复按钮
         """
-        right_wrapper = QWidget()
-        v_layout = QVBoxLayout(right_wrapper)
+        block = QWidget()
+        v_layout = QVBoxLayout(block)
         set_margins(v_layout, SETTINGS_DIALOG.margin)
         v_layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
         if required or field.options:
@@ -242,4 +222,4 @@ class FieldBuilder:
             desc_label = QLabel(field.desc)
             desc_label.setWordWrap(True)
             v_layout.addWidget(desc_label)
-        return right_wrapper
+        return block
