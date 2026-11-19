@@ -542,7 +542,7 @@ class TestExternalScope(ExternalRootCase):
         - 这条红了说明放行按恒启用表挑人，新加的随包件会被误拦
         """
         module = f"{PLUGINS_PKG}.inner"
-        check_external_imports("inner", module, PLUGINS_PKG, PluginImportError)
+        check_external_imports("inner", module, PluginImportError, PLUGINS_PKG)
 
 
 if __name__ == "__main__":
