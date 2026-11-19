@@ -89,7 +89,7 @@
 - 🚀 **发布工作流与打包**：[`docs/release-workflow.md`](docs/release-workflow.md)、[`docs/packaging.md`](docs/packaging.md)，commit 模板 [`.gitmessage`](.gitmessage)
 - 📚 **工程经验**（实测踩坑与验证方法）：[`docs/lessons/README.md`](docs/lessons/README.md)
 - 🧩 **插件清单模板**：[`assets/plugin.example.toml`](assets/plugin.example.toml)，配置字段表单源在接口包的 `domain/config/`
-- 🔌 **平台适配器**：每只平台一只独立仓，开发时 clone 进 `finshin/adapter/` 下的一个目录并同步环境即被认出来。新增平台照 [`docs/development.md`](docs/development.md) 的「新增平台适配器」一节做，本体代码不用改。
+- 🔌 **平台适配器**：每只平台一只独立仓，Telegram 的那只在 [`FinshinAdapterTG`](https://github.com/FinshinLabs/FinshinAdapterTG)，开发时 clone 进 `finshin/adapter/` 下的一个目录并同步环境即被认出来。新增平台照 [`docs/development.md`](docs/development.md) 的「新增平台适配器」一节做，本体代码不用改。
 - 📦 **接口包**：本体与插件、适配器共用的形状在独立仓 [`FinshinSDK`](https://github.com/FinshinLabs/FinshinSDK)，开发时 clone 进 `finshin/sdk`，手顺见 [`docs/development.md`](docs/development.md) 的「挂载子仓」一节
 
 [⤴️ 返回目录](#menu)
