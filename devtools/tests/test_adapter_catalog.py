@@ -106,13 +106,11 @@ def _listed_text(*rows: dict[str, str]) -> str:
 class TestCatalogParse(unittest.IsolatedAsyncioTestCase):
     """在线目录文本解析"""
 
-    async def _read(
-        self, text: str, proxy: str | None = None
-    ) -> tuple[catalog_mod.Catalog, AsyncMock]:
+    async def _read(self, text: str) -> tuple[catalog_mod.Catalog, AsyncMock]:
         """喂文本走一遍读取，交出目录与取件替身"""
         fetch = AsyncMock(return_value=text)
         with patch.object(catalog_mod.GitClient, "get_pages", fetch):
-            catalog = await catalog_mod.load_catalog(proxy)
+            catalog = await catalog_mod.load_catalog()
 
         return catalog, fetch
 
@@ -126,13 +124,6 @@ class TestCatalogParse(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(catalog.sdk.distribution, "finshin-sdk")
         self.assertEqual(catalog.sdk.sha256, _SHA_SDK)
         self.assertEqual(catalog.adapters[Platform.TELEGRAM].url, _TG_URL)
-
-    async def test_proxy_passed_to_fetch(self) -> None:
-        """交出代理地址即原样递给取件那一步"""
-        catalog, fetch = await self._read(_full_text(), "http://127.0.0.1:7897")
-        self.assertEqual(fetch.call_args.args[2], "http://127.0.0.1:7897")
-        if catalog.sdk is None:
-            self.fail(f"带代理的目录没读出来：{catalog.rejects}")
 
     async def test_url_independent_of_distribution(self) -> None:
         """直链换 host 照收，不由分发名拼出"""

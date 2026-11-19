@@ -237,12 +237,11 @@ def _parse(text: str) -> Catalog:
     return Catalog(sdk, adapters, (*sdk_notes, *row_notes))
 
 
-async def load_catalog(proxy: str | None = None) -> Catalog:
+async def load_catalog() -> Catalog:
     """读取在线目录
 
     - 一次请求取文本，字段逐行验
-    - 传入代理地址即走代理取
     """
-    text = await GitClient.get_pages(CATALOG_PATH, _TIMEOUT, proxy)
+    text = await GitClient.get_pages(CATALOG_PATH, _TIMEOUT)
 
     return _parse(text)

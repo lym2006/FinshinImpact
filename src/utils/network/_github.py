@@ -26,28 +26,24 @@ class GitClient(BaseClient):
     """
 
     @classmethod
-    async def get_pages(
-        cls, path: str, timeout: float, proxy: str | None = None
-    ) -> str:
+    async def get_pages(cls, path: str, timeout: float) -> str:
         """取 Pages 上的一份文本"""
-        content = await cls._request("text", PAGES_BASE_URL, path, timeout, proxy)
+        content = await cls._request("text", PAGES_BASE_URL, path, timeout)
 
         return cast(str, content or "")
 
     @classmethod
-    async def get_api(cls, path: str, timeout: float, proxy: str | None = None) -> Any:
+    async def get_api(cls, path: str, timeout: float) -> Any:
         """取 release 接口的一段 JSON"""
         return cast(
             dict[str, Any],
-            await cls._request("json", API_BASE_URL, path, timeout, proxy),
+            await cls._request("json", API_BASE_URL, path, timeout),
         )
 
     @classmethod
-    async def get_file(
-        cls, url: str, timeout: float, proxy: str | None = None
-    ) -> bytes:
+    async def get_file(cls, url: str, timeout: float) -> bytes:
         """按完整地址取一份二进制内容"""
-        return cast(bytes, await cls._request("bytes", "", url, timeout, proxy))
+        return cast(bytes, await cls._request("bytes", "", url, timeout))
 
     @classmethod
     async def _request(
@@ -56,17 +52,16 @@ class GitClient(BaseClient):
         base_url: str,
         path: str,
         timeout: float,
-        proxy: str | None,
     ) -> Any:
         """取一份内容
 
         - 建连失败或超时重发一次
         """
         try:
-            return await cls._once(kind, base_url, path, timeout, proxy)
+            return await cls._once(kind, base_url, path, timeout)
         except (ConnectionFailedError, RequestTimeoutError):
             await asyncio.sleep(_RETRY_DELAY)
-            return await cls._once(kind, base_url, path, timeout, proxy)
+            return await cls._once(kind, base_url, path, timeout)
 
     @classmethod
     async def _once(
@@ -75,7 +70,6 @@ class GitClient(BaseClient):
         base_url: str,
         path: str,
         timeout: float,
-        proxy: str | None,
     ) -> Any:
         """发一次请求
 
@@ -86,7 +80,6 @@ class GitClient(BaseClient):
             base_url=base_url,
             request_path=path,
             headers=_HEADER,
-            proxy=proxy,
             timeout=timeout,
             connect_timeout=_CONNECT_TIMEOUT,
         )

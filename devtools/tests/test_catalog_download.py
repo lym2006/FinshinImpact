@@ -1,7 +1,7 @@
 """在线目录取件的单元测试
 
 - 落盘件按目录里的指纹逐样核，不符即删掉半截件
-- 镜像按序优先、官方直链兜底，代理地址原样递给取件
+- 镜像按序优先、官方直链兜底
 - 同名同指纹的本地件在场即不重取
 - 核过指纹的件把指纹记进同目录一份索引，索引记过的件能直接拼成可装目标
 - 每个源的坏法各记一句，合进一条点名到发行件的说明
@@ -84,15 +84,12 @@ class TestDownloadRelease(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(list(self.target_dir.iterdir()), [])
 
     async def test_mirrors_before_official(self) -> None:
-        """镜像排在官方地址前面，代理原样递下去"""
+        """镜像排在官方地址前面"""
         fetch = AsyncMock(return_value=_BODIES)
         with patch.object(rel_mod.GitClient, "get_file", fetch):
-            await rel_mod.download_release(
-                _row(), self.target_dir, _MIRRORS, "http://127.0.0.1:7897"
-            )
+            await rel_mod.download_release(_row(), self.target_dir, _MIRRORS)
         fetch.assert_awaited_once()
         self.assertEqual(fetch.call_args.args[0], f"{_MIRROR}{_OFFICIAL}")
-        self.assertEqual(fetch.call_args.args[2], "http://127.0.0.1:7897")
 
     async def test_second_source_succeeds(self) -> None:
         """首个源坏即换下一源，坏法各记一句但整笔算成"""

@@ -1,8 +1,7 @@
 """HTTP 基类客户端
 
 - 会话生命周期与 GET/POST 封装
-- SSE 解析与代理注入
-- 代理只由参数注入，环境里的代理表不参与
+- SSE 解析
 """
 
 from collections.abc import AsyncGenerator
@@ -27,7 +26,6 @@ class BaseClient:
         cls,
         base_url: str = "",
         headers: dict[str, Any] | None = None,
-        proxy: str | None = None,
         timeout: float = _DEFAULT_TIMEOUT,
         connect_timeout: float = _CONNECT_TIMEOUT,
     ) -> AsyncGenerator[httpx.AsyncClient, None]:
@@ -43,8 +41,7 @@ class BaseClient:
             base_url=base_url,
             headers=headers,
             timeout=timeout_config,
-            proxy=proxy,
-            # 代理只由参数注入，环境里的代理表与 NO_PROXY 不参与建客户端
+            # 不吃环境里的代理表与 NO_PROXY，也不读 SSL_CERT_FILE 与 SSL_CERT_DIR
             trust_env=False,
         )
         try:
@@ -73,12 +70,11 @@ class BaseClient:
         request_path: str = "",
         headers: dict[str, Any] | None = None,
         payload: Any = None,
-        proxy: str | None = None,
         timeout: float = _DEFAULT_TIMEOUT,
     ) -> AsyncGenerator[str, None]:
         """流式 POST 请求"""
         async with cls._create_client(
-            base_url=base_url, headers=headers, proxy=proxy, timeout=timeout
+            base_url=base_url, headers=headers, timeout=timeout
         ) as client:
             async with client.stream("POST", request_path, json=payload) as response:
                 cls._deal_with_exception(response, "POST")
@@ -94,7 +90,6 @@ class BaseClient:
         base_url: str = "",
         request_path: str = "",
         headers: dict[str, Any] | None = None,
-        proxy: str | None = None,
         timeout: float = _DEFAULT_TIMEOUT,
         connect_timeout: float = _CONNECT_TIMEOUT,
     ) -> dict[str, Any] | str | bytes | None:
@@ -105,7 +100,6 @@ class BaseClient:
         async with cls._create_client(
             base_url=base_url,
             headers=headers,
-            proxy=proxy,
             timeout=timeout,
             connect_timeout=connect_timeout,
         ) as client:

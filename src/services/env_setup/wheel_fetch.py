@@ -1,6 +1,6 @@
 """wheel 取件与指纹核验
 
-- 镜像按序优先、官方直链兜底，代理地址原样递下去
+- 镜像按序优先、官方直链兜底
 - 目录行对应的件已在盘上且指纹对得上即不重取
 - 核过指纹的件把指纹记进同目录一份索引
 - 按发行件名盘点盘上属于它的件
@@ -181,7 +181,6 @@ async def download_release(
     row: ReleaseRow,
     target_dir: Path,
     mirrors: Sequence[str],
-    proxy: str | None = None,
 ) -> DownloadOutcome:
     """取一只发行件并核指纹
 
@@ -200,7 +199,7 @@ async def download_release(
     part = target.with_name(target.name + _PART_SUFFIX)
     for source in _sources(row.url, mirrors):
         try:
-            body = await GitClient.get_file(source, _TIMEOUT_DOWNLOAD, proxy)
+            body = await GitClient.get_file(source, _TIMEOUT_DOWNLOAD)
         except NetworkError:
             body = None
         if body is None:
