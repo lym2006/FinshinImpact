@@ -27,7 +27,12 @@ from utils.config import AppSchema, FieldErrors
 from utils.config.models import TabSchema
 from utils.network import uses_configured_proxy
 
-from ..._primitives import clear_layout, make_button, make_scroller
+from ..._primitives import (
+    ButtonBar,
+    ButtonSpec,
+    clear_layout,
+    make_scroller,
+)
 from .._persona import PersonaPreviewRow
 from ._field import FieldBuilder
 
@@ -256,28 +261,39 @@ class ChromeBuilder:
 
     def _build_bottom_buttons(self, is_setup: bool) -> QHBoxLayout:
         """按模式构建底部按钮"""
-        btn_layout = QHBoxLayout()
-        btn_layout.setSpacing(GLOBAL.radius)
-        btn_layout.addStretch()
-
+        # 发信号而非 accept：校验通过才关窗，失败则原窗保留已填内容
         if is_setup:
-            btn_exit = QPushButton(SETTINGS_DIALOG.exit_text)
-            btn_exit.clicked.connect(self._on_exit)
-            btn_finish = make_button(SETTINGS_DIALOG.finish_text, ButtonStyle.PRIMARY)
-            btn_finish.setMinimumWidth(SETTINGS_DIALOG.finish_btn_min_width)
+            specs = [
+                ButtonSpec(
+                    SETTINGS_DIALOG.exit_text,
+                    ButtonStyle.OUTLINE,
+                    on_click=self._on_exit,
+                ),
+                ButtonSpec(
+                    SETTINGS_DIALOG.finish_text,
+                    ButtonStyle.PRIMARY,
+                    on_click=self._on_save,
+                ),
+            ]
+            self.save_text = SETTINGS_DIALOG.finish_text
+        else:
+            specs = [
+                ButtonSpec(
+                    SETTINGS_DIALOG.cancel_text,
+                    ButtonStyle.OUTLINE,
+                    on_click=self._on_cancel,
+                ),
+                ButtonSpec(
+                    SETTINGS_DIALOG.save_text,
+                    ButtonStyle.PRIMARY,
+                    on_click=self._on_save,
+                ),
+            ]
+            self.save_text = SETTINGS_DIALOG.save_text
 
-            # 发信号而非 accept：校验通过才关窗，失败则原窗保留已填内容
-            btn_finish.clicked.connect(self._on_save)
-            self.save_btn, self.save_text = btn_finish, SETTINGS_DIALOG.finish_text
-            btn_layout.addWidget(btn_exit)
-            btn_layout.addWidget(btn_finish)
-            return btn_layout
-
-        btn_cancel = QPushButton(SETTINGS_DIALOG.cancel_text)
-        btn_cancel.clicked.connect(self._on_cancel)
-        btn_save = make_button(SETTINGS_DIALOG.save_text, ButtonStyle.PRIMARY)
-        btn_save.clicked.connect(self._on_save)
-        self.save_btn, self.save_text = btn_save, SETTINGS_DIALOG.save_text
-        btn_layout.addWidget(btn_cancel)
-        btn_layout.addWidget(btn_save)
+        bar = ButtonBar(specs, self._host, spacing=GLOBAL.radius)
+        self.save_btn = bar.buttons[-1]
+        btn_layout = QHBoxLayout()
+        btn_layout.setContentsMargins(0, 0, 0, 0)
+        btn_layout.addWidget(bar)
         return btn_layout

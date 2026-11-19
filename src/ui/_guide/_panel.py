@@ -15,7 +15,6 @@ from typing import Any
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import (
     QCheckBox,
-    QDialog,
     QHBoxLayout,
     QLabel,
     QListWidgetItem,
@@ -46,7 +45,7 @@ from skin.theme import GLOBAL, PANEL, ButtonStyle, ObjectName
 from system.plugin_state import load_instance_enabled
 
 from .._lifecycle import ensure_app
-from .._primitives import MarqueeLabel, TickedCheckBox, make_button
+from .._primitives import BaseDialog, MarqueeLabel, TickedCheckBox, make_button
 from ._conflict import (
     claims_of,
     clash_lines,
@@ -77,13 +76,13 @@ def _status_label(manifest: dict[str, Any]) -> str:
     return PluginMessage.STATUS_MISSING.format(count=missing)
 
 
-class _PluginPanelDialog(QDialog):
+class _PluginPanelDialog(BaseDialog):
     """插件设置面板"""
 
     def __init__(self, code: str, *, mode: str = MODE_AUTO) -> None:
         """按实例与来源装配面板"""
         # code 为实例身份码，全程显式传参不读冻结值
-        super().__init__()
+        super().__init__(title=PluginMessage.TITLE.format(code=code))
         self._code = code
         self._mode = mode
         self._manifests: list[dict[str, Any]] = []
@@ -97,7 +96,6 @@ class _PluginPanelDialog(QDialog):
         - 列表自带搜索行，行内容按清单与实例状态填充
         - 底栏只摆一颗保存钮，文案随模式换
         """
-        self.setWindowTitle(PluginMessage.TITLE.format(code=self._code))
         self.setStyleSheet(build_bootstrap_qss())
         self.resize(PANEL.width, PANEL.height)
         self.setMinimumSize(PANEL.min_width, PANEL.min_height)
@@ -113,8 +111,8 @@ class _PluginPanelDialog(QDialog):
             if self._mode == MODE_AUTO
             else DialogMessage.BTN_SAVE,
             ButtonStyle.PRIMARY,
+            default=True,
         )
-        save_btn.setDefault(True)
         save_btn.clicked.connect(self._on_save)
 
         buttons.addStretch()

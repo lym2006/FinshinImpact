@@ -6,16 +6,16 @@
 
 from ..theme import (
     BODY,
-    BTN,
     GLOBAL,
     LIST_DIALOG,
+    PALETTE,
     SCROLLBAR,
     SETTINGS_DIALOG,
     TOOLBAR,
-    ButtonStyle,
     ObjectName,
 )
-from ._base import DIALOG_BASE_QSS, DIALOG_BUTTON_QSS, DIALOG_LABEL_QSS, Qss
+from ._base import DIALOG_BASE_QSS, DIALOG_LABEL_QSS, DIALOG_PREVIEW_QSS, Qss
+from ._buttons import build_button_qss
 from ._combo import build_combo_qss
 
 # 标签页
@@ -44,7 +44,7 @@ QTabBar::tab:!selected:hover {{
 }}
 
 QTabBar::tab:!selected:pressed {{
-    background-color: {BTN.pressed_bg};
+    background-color: {PALETTE.pressed_bg};
 }}
 
 QTabBar::tab:selected {{
@@ -148,37 +148,6 @@ QScrollArea > QScrollBar::sub-line:vertical {{
     height: {SCROLLBAR.arrow_height}px;
 }}"""
 
-# 列表字段底部工具栏按钮
-_LIST_BTN_QSS = f"""\
-QPushButton#{ButtonStyle.LIST_ADD} {{
-    background-color: {LIST_DIALOG.primary_bg};
-    color: {LIST_DIALOG.primary_color};
-    border: none;
-    border-radius: {GLOBAL.radius}px;
-    padding: {LIST_DIALOG.btn_padding_v}px {LIST_DIALOG.btn_padding_h}px;
-    min-width: {LIST_DIALOG.btn_min_width}px;
-}}
-
-QPushButton#{ButtonStyle.LIST_ADD}:hover {{
-    background-color: {LIST_DIALOG.primary_hover_bg};
-}}
-
-QPushButton#{ButtonStyle.LIST_DEL} {{
-    background-color: transparent;
-    color: {LIST_DIALOG.secondary_color};
-    border: {LIST_DIALOG.item_border_width}px solid {LIST_DIALOG.secondary_border_color};
-    border-radius: {GLOBAL.radius}px;
-    padding: {LIST_DIALOG.btn_padding_v}px {LIST_DIALOG.btn_padding_h}px;
-    min-width: {LIST_DIALOG.btn_min_width}px;
-}}
-
-QPushButton#{ButtonStyle.LIST_DEL}:hover {{
-    border-color: {LIST_DIALOG.secondary_hover_border_color};
-    color: {LIST_DIALOG.secondary_hover_color};
-    background-color: {LIST_DIALOG.secondary_hover_bg};
-}}
-"""
-
 # 列表项
 _LIST_ITEM_QSS = f"""\
 QListWidget#{ObjectName.LIST_WIDGET} {{
@@ -213,16 +182,17 @@ _SETTINGS_DIALOG_QSS = "\n".join(
         _TAB_QSS,
         _CATEGORY_QSS,
         DIALOG_LABEL_QSS,
+        DIALOG_PREVIEW_QSS,
         _LINEEDIT_QSS,
         _TEXTEDIT_QSS,
         _COMBO_QSS,
-        DIALOG_BUTTON_QSS,
+        build_button_qss(),
         _SCROLL_QSS,
     ]
 )
 
 # 列表项 QSS 拼接
-_SETTINGS_LIST_QSS = f"{_LIST_BTN_QSS}\n{_LIST_ITEM_QSS}"
+_SETTINGS_LIST_QSS = "\n".join([build_button_qss(), _LIST_ITEM_QSS])
 
 
 def build_settings_dialog_qss() -> Qss:

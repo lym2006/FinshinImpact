@@ -70,28 +70,6 @@ class ToolbarTheme:
 
 
 @dataclass(frozen=True)
-class ButtonTheme:
-    """按钮配置"""
-
-    bg: str = PALETTE.list_bg  # 默认背景色
-    hover_bg: str = "#505050"  # 悬停背景色
-    pressed_bg: str = PALETTE.pressed_bg  # 按下背景色
-    min_width: int = 100  # 最小宽度
-    height: int = 32  # 高度
-    padding_v: int = 6  # 垂直内边距
-    padding_h: int = 16  # 水平内边距
-
-
-@dataclass(frozen=True)
-class ButtonDangerTheme:
-    """危险操作按钮配置"""
-
-    bg: str = PALETTE.danger_bg  # 背景色
-    hover_bg: str = PALETTE.danger_hover_bg  # 悬停色
-    pressed_bg: str = PALETTE.danger_pressed_bg  # 按下色
-
-
-@dataclass(frozen=True)
 class ScrollbarTheme:
     """滚动条配置"""
 

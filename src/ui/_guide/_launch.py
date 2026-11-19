@@ -21,9 +21,10 @@ from skin.qss import build_bootstrap_qss
 from skin.theme import GLOBAL, LAUNCH, ObjectName
 
 from .._lifecycle import Ticker, ensure_app
+from .._primitives import BaseDialog
 
 
-class _LaunchWaitDialog(QDialog):
+class _LaunchWaitDialog(BaseDialog):
     """无边框启动提示卡
 
     - 图标、两行文案与正计时
@@ -31,10 +32,9 @@ class _LaunchWaitDialog(QDialog):
     """
 
     def __init__(self, code: str) -> None:
-        super().__init__()
+        super().__init__(title=PickerMessage.TITLE)
         remark = remark_of(code)
         label = f"{remark}（{code}）" if remark else code
-        self.setWindowTitle(PickerMessage.TITLE)
         self.setStyleSheet(build_bootstrap_qss())
         self.resize(LAUNCH.width, LAUNCH.height)
 

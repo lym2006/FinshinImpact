@@ -12,8 +12,7 @@ from skin.qss import build_release_notes_dialog_qss
 from skin.theme import RELEASE_NOTES_DIALOG, ButtonStyle, ObjectName
 from utils.check import ReleaseNote
 
-from .._primitives import ThemedList, make_button, set_margins
-from ._base import BaseDialog
+from .._primitives import BaseDialog, ThemedList, make_button, set_margins
 
 # 无选中行时的行号
 _NO_ROW = -1
@@ -47,9 +46,10 @@ class ReleaseNotesDialog(BaseDialog):
         panes.addWidget(self._build_list(notes, focus_tag))
         panes.addWidget(self._view, 1)
         layout.addLayout(panes)
-        btn = make_button(RELEASE_NOTES_DIALOG.ok_text, ButtonStyle.PRIMARY)
+        btn = make_button(
+            RELEASE_NOTES_DIALOG.ok_text, ButtonStyle.PRIMARY, default=True
+        )
         btn.clicked.connect(self.accept)
-        btn.setDefault(True)
         layout.addWidget(btn, alignment=Qt.AlignmentFlag.AlignCenter)
 
         # 尺寸定死：正文再长也不把窗口顶出屏幕，读不完的部分交给滚动

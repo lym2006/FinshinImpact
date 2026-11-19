@@ -4,14 +4,13 @@
 """
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from skin.qss import build_notice_dialog_qss
 from skin.theme import NOTICE_DIALOG, ButtonStyle
 from utils.init_files import apply_persona_template, mark_persona_prompted
 
-from ..._primitives import make_button, set_margins
-from .._base import BaseDialog
+from ..._primitives import BaseDialog, make_button, set_margins
 from .._notice import NoticeDialog
 
 
@@ -65,11 +64,12 @@ class PersonaSyncDialog(BaseDialog):
         """建两颗选择按钮"""
         btn_layout = QHBoxLayout()
         btn_layout.addStretch()
-        btn_keep = QPushButton(NOTICE_DIALOG.persona_keep_text)
+        btn_keep = make_button(NOTICE_DIALOG.persona_keep_text, ButtonStyle.OUTLINE)
         btn_keep.clicked.connect(self.reject)
-        btn_apply = make_button(NOTICE_DIALOG.persona_apply_text, ButtonStyle.PRIMARY)
+        btn_apply = make_button(
+            NOTICE_DIALOG.persona_apply_text, ButtonStyle.PRIMARY, default=True
+        )
         btn_apply.clicked.connect(self.accept)
-        btn_apply.setDefault(True)
         btn_layout.addWidget(btn_keep)
         btn_layout.addWidget(btn_apply)
         return btn_layout

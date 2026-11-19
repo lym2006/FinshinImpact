@@ -16,7 +16,7 @@ from skin.theme import SETTINGS_DIALOG
 from utils.config import AppConfigData, AppSchema, FieldErrors
 
 from ..._bridge import gui_bridge
-from .._base import BaseDialog
+from ..._primitives import BaseDialog
 from ._change import ChangeConfirmDialog
 from ._chrome import ChromeBuilder
 from ._field import FieldBuilder, refresh_label

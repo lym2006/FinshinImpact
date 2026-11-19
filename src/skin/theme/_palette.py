@@ -14,6 +14,7 @@ class _PaletteTheme:
     color: str = "#D4D4D4"  # 文字色
     hover_bg: str = "#3A3A3A"  # 悬停背景色
     hover_color: str = "#FFFFFF"  # 悬停文字色
+    hover_lift_bg: str = "#505050"  # 浅底上的悬停背景色
     pressed_bg: str = "#2A2A2A"  # 按下背景色
     sel_bg: str = "#264F78"  # 选中背景色
     sel_color: str = "#FFFFFF"  # 选中文字色
@@ -25,6 +26,7 @@ class _PaletteTheme:
     danger_bg: str = "#D32F2F"  # 危险操作背景色
     danger_hover_bg: str = "#B71C1C"  # 危险操作悬停色
     danger_pressed_bg: str = "#9A0007"  # 危险操作按下色
+    neutral_bg: str = "#555555"  # 中性按钮背景色
     primary_hover_bg: str = "#2B5A8A"  # 主按钮悬停色
     primary_pressed_bg: str = "#1A4060"  # 主按钮按下色
     radius: int = 4  # 全局圆角

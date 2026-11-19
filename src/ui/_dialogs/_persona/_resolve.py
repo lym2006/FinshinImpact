@@ -20,8 +20,7 @@ from skin.qss import build_change_dialog_qss
 from skin.theme import CHANGE_DIALOG, SETTINGS_DIALOG, ButtonStyle
 
 from ..._bridge import gui_bridge
-from ..._primitives import make_button, set_margins
-from .._base import BaseDialog
+from ..._primitives import BaseDialog, make_button, set_margins
 from .._diff import diff_html, make_long_diff_cell, split_diff_aligned, to_lines
 from .._notice import NoticeDialog
 
@@ -96,7 +95,9 @@ class PersonaResolveDialog(BaseDialog):
         row = QHBoxLayout()
         row.addWidget(QLabel(SETTINGS_DIALOG.persona_resolve_text))
         row.addStretch()
-        self._btn_fold = QPushButton(SETTINGS_DIALOG.persona_resolve_expand)
+        self._btn_fold = make_button(
+            SETTINGS_DIALOG.persona_resolve_expand, ButtonStyle.OUTLINE
+        )
         self._btn_fold.clicked.connect(self._toggle_fold)
         row.addWidget(self._btn_fold)
         return row
@@ -110,14 +111,15 @@ class PersonaResolveDialog(BaseDialog):
         columns = QHBoxLayout()
         columns.setSpacing(SETTINGS_DIALOG.tab_spacing)
         self._btn_old = make_button(
-            SETTINGS_DIALOG.persona_resolve_use, ButtonStyle.SECONDARY
+            SETTINGS_DIALOG.persona_resolve_use, ButtonStyle.OUTLINE
         )
         self._btn_old.clicked.connect(lambda: self._on_use(self._btn_old))
         self._btn_new = make_button(
-            SETTINGS_DIALOG.persona_resolve_use, ButtonStyle.PRIMARY
+            SETTINGS_DIALOG.persona_resolve_use,
+            ButtonStyle.PRIMARY,
+            default=True,
         )
         self._btn_new.clicked.connect(lambda: self._on_use(self._btn_new))
-        self._btn_new.setDefault(True)
         left, self._left_cell = self._make_column(old_label, self._btn_old)
         right, self._right_cell = self._make_column(new_label, self._btn_new)
         columns.addWidget(left, stretch=1)
@@ -210,7 +212,9 @@ class PersonaResolveDialog(BaseDialog):
         self._confirm_tip = QLabel("")
         layout.addWidget(self._confirm_tip)
         layout.addStretch()
-        btn_back = QPushButton(SETTINGS_DIALOG.persona_resolve_back)
+        btn_back = make_button(
+            SETTINGS_DIALOG.persona_resolve_back, ButtonStyle.OUTLINE
+        )
         btn_back.clicked.connect(self._restore_choose)
         self._btn_commit = make_button(
             SETTINGS_DIALOG.confirm_text, ButtonStyle.PRIMARY

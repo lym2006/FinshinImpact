@@ -184,7 +184,7 @@ class ComponentBlock(QFrame):
         """一层展开与收起的按钮"""
         button = make_button(
             PlatformMessage.BTN_FOLD if self._mode == mode else text,
-            ButtonStyle.SECONDARY,
+            ButtonStyle.OUTLINE,
         )
 
         def flip() -> None:

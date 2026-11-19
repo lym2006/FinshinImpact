@@ -10,8 +10,7 @@ from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 from skin.qss import build_notice_dialog_qss
 from skin.theme import NOTICE_DIALOG, ButtonStyle
 
-from .._primitives import make_button, set_margins
-from ._base import BaseDialog
+from .._primitives import BaseDialog, make_button, set_margins
 
 
 class NoticeDialog(BaseDialog):
@@ -59,9 +58,9 @@ class NoticeDialog(BaseDialog):
         btn = make_button(
             NOTICE_DIALOG.fatal_ok if critical else NOTICE_DIALOG.ok_text,
             ButtonStyle.PRIMARY,
+            default=True,
         )
         btn.clicked.connect(self.accept)
-        btn.setDefault(True)
         layout.addWidget(btn, alignment=Qt.AlignmentFlag.AlignCenter)
 
         # 宽度定死，高度交内容撑开：数换行会漏掉超宽自动折行的部分，裁掉末行

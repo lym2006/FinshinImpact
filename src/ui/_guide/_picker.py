@@ -5,7 +5,6 @@
 """
 
 from PySide6.QtWidgets import (
-    QDialog,
     QHBoxLayout,
     QLabel,
     QListWidgetItem,
@@ -16,10 +15,10 @@ from PySide6.QtWidgets import (
 from services.profile_store import delete_profile, list_profiles, touch_profile
 from skin.messages import PickerMessage
 from skin.qss import build_bootstrap_qss
-from skin.theme import PICKER, ButtonStyle
+from skin.theme import PICKER, ButtonSize, ButtonStyle
 
 from .._lifecycle import ensure_app
-from .._primitives import ThemedList, make_button
+from .._primitives import BaseDialog, ThemedList, make_button
 from ._form import EditProfileDialog, NewProfileDialog
 from ._maintain import open_maintain_menu
 from ._panel import MODE_EDIT, open_panel
@@ -46,20 +45,19 @@ def _run_sync(button: QPushButton, dialog: "_ProfilePickerDialog") -> None:
     open_maintain_menu(button, dialog)
 
 
-class _ProfilePickerDialog(QDialog):
+class _ProfilePickerDialog(BaseDialog):
     """实例选择窗
 
     - 列已有实例，可启动、编辑或转入新建
     """
 
     def __init__(self) -> None:
-        super().__init__()
+        super().__init__(title=PickerMessage.TITLE)
         self.code = ""
         self._build()
 
     def _build(self) -> None:
         """装配控件"""
-        self.setWindowTitle(PickerMessage.TITLE)
         self.setStyleSheet(build_bootstrap_qss())
         self.resize(PICKER.width, PICKER.height)
         self.setMinimumSize(PICKER.min_width, PICKER.min_height)
@@ -73,28 +71,31 @@ class _ProfilePickerDialog(QDialog):
         layout.addWidget(self._list)
 
         buttons = QHBoxLayout()
-        new_btn = QPushButton(PickerMessage.BTN_NEW)
+        new_btn = make_button(PickerMessage.BTN_NEW, ButtonStyle.OUTLINE)
         new_btn.clicked.connect(self._on_new)
-        edit_btn = QPushButton(PickerMessage.BTN_EDIT)
+        edit_btn = make_button(PickerMessage.BTN_EDIT, ButtonStyle.OUTLINE)
         edit_btn.clicked.connect(self._on_edit)
         delete_btn = make_button(PickerMessage.BTN_DELETE, ButtonStyle.DANGER)
         delete_btn.clicked.connect(self._on_delete)
 
         # 实例级动作空选一律置灰：插件设置、编辑、删除与启动
         # 环境维护管的是本机共用的一层，不受此限
-        plugin_btn = make_button(PickerMessage.BTN_PLUGINS, ButtonStyle.SECONDARY)
+        plugin_btn = make_button(PickerMessage.BTN_PLUGINS, ButtonStyle.OUTLINE)
         plugin_btn.clicked.connect(self._on_plugins)
 
-        sync_btn = make_button(PickerMessage.BTN_SYNC, ButtonStyle.SECONDARY)
+        sync_btn = make_button(PickerMessage.BTN_SYNC, ButtonStyle.OUTLINE)
         sync_btn.clicked.connect(lambda: _run_sync(sync_btn, self))
 
-        start_btn = make_button(PickerMessage.BTN_START, ButtonStyle.START)
+        # 首个入布局的按钮默认成自动默认钮，Enter会被新建抢答，显式定归启动
+        start_btn = make_button(
+            PickerMessage.BTN_START,
+            ButtonStyle.PRIMARY,
+            size=ButtonSize.LARGE,
+            default=True,
+        )
         start_btn.clicked.connect(self._on_start)
 
         self._list.enable_on_selection((plugin_btn, edit_btn, delete_btn, start_btn))
-
-        # 首个入布局的按钮默认成自动默认钮，Enter会被新建抢答，显式定归启动
-        start_btn.setDefault(True)
 
         # 左组改实例、右组走动作，中间拉伸拉开两组语义
         buttons.addWidget(new_btn)

@@ -8,7 +8,6 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QHeaderView,
     QLabel,
-    QPushButton,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -19,8 +18,7 @@ from skin.qss import build_change_dialog_qss
 from skin.theme import CHANGE_DIALOG, SETTINGS_DIALOG, ButtonStyle, ObjectName
 from utils.config.models import ConfigValue
 
-from ..._primitives import make_button
-from .._base import BaseDialog
+from ..._primitives import BaseDialog, make_button
 from .._diff import make_diff_cell, split_diff, to_lines
 
 
@@ -105,7 +103,7 @@ class ChangeConfirmDialog(BaseDialog):
         """建底部两颗按钮"""
         btn_layout = QHBoxLayout()
         btn_layout.addStretch()
-        btn_cancel = QPushButton(CHANGE_DIALOG.cancel_text)
+        btn_cancel = make_button(CHANGE_DIALOG.cancel_text, ButtonStyle.OUTLINE)
         btn_cancel.clicked.connect(self.reject)
         btn_ok = make_button(CHANGE_DIALOG.confirm_text, ButtonStyle.PRIMARY)
         btn_ok.clicked.connect(self.accept)

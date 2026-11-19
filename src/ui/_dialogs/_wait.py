@@ -13,8 +13,7 @@ from skin.qss import build_wait_dialog_qss
 from skin.theme import GLOBAL, WAIT_DIALOG, ButtonStyle, ObjectName
 
 from .._lifecycle import Ticker
-from .._primitives import make_button, set_margins
-from ._base import BaseDialog
+from .._primitives import BaseDialog, make_button, set_margins
 
 
 class WaitDialog(BaseDialog):

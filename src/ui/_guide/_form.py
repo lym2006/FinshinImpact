@@ -5,7 +5,6 @@
 """
 
 from PySide6.QtWidgets import (
-    QDialog,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -20,7 +19,7 @@ from skin.qss import build_bootstrap_qss
 from skin.theme import FORM, ButtonStyle
 from system.profile_env import read_token
 
-from .._primitives import fill_combo, make_button, make_combo
+from .._primitives import BaseDialog, fill_combo, make_button, make_combo
 from ._platform import open_platform_dialog
 from ._popup import show_popup
 
@@ -36,20 +35,19 @@ def _platform_items() -> list[tuple[Platform, str]]:
     ]
 
 
-class _ProfileFormDialog(QDialog):
+class _ProfileFormDialog(BaseDialog):
     """实例表单窗
 
     - 收 token 与备注名，token 提示常显于输入框下方
     """
 
     def __init__(self, title: str) -> None:
-        super().__init__()
+        super().__init__(title=title)
         self.code = ""
-        self._build(title)
+        self._build()
 
-    def _build(self, title: str) -> None:
+    def _build(self) -> None:
         """装配控件"""
-        self.setWindowTitle(title)
         self.setStyleSheet(build_bootstrap_qss())
         self.resize(FORM.width, FORM.height)
         self.setMinimumSize(FORM.min_width, FORM.min_height)
@@ -117,7 +115,7 @@ class NewProfileDialog(_ProfileFormDialog):
         # 入口那颗与下拉同排，不占下拉的一项
         head = QHBoxLayout()
         head.addWidget(self._platform, 1)
-        manage = make_button(PluginMessage.MENU_PLATFORM, ButtonStyle.SECONDARY)
+        manage = make_button(PluginMessage.MENU_PLATFORM, ButtonStyle.OUTLINE)
         manage.clicked.connect(self._open_platform)
         head.addWidget(manage)
         form.addLayout(head)

@@ -21,8 +21,7 @@ from skin.theme import CHECK_DIALOG, ButtonStyle, ObjectName
 from utils.network import FrameKey, RowId, RowStatus
 
 from .._lifecycle import Ticker
-from .._primitives import bring_front, make_button, set_margins
-from ._base import BaseDialog
+from .._primitives import BaseDialog, bring_front, make_button, set_margins
 from ._table import RowTable
 
 

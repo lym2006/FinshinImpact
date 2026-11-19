@@ -1,22 +1,32 @@
 """控件构造工厂
 
-- 按样式名建按钮
+- 按用途词与尺寸档建按钮，objectName 由词表统一拼
 - 按取值与文本灌下拉
 """
 
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 
 from PySide6.QtWidgets import QComboBox, QPushButton, QWidget
 
-from skin.theme import ButtonStyle
+from skin.theme import ButtonSize, ButtonStyle, button_object_name
 
 
 def make_button(
-    text: str, style: ButtonStyle, parent: QWidget | None = None
+    text: str,
+    style: ButtonStyle,
+    parent: QWidget | None = None,
+    *,
+    size: ButtonSize = ButtonSize.STANDARD,
+    on_click: Callable[[], None] | None = None,
+    default: bool = False,
 ) -> QPushButton:
-    """按样式名建一个按钮"""
+    """按用途词与尺寸档建一个按钮"""
     button = QPushButton(text, parent)
-    button.setObjectName(style)
+    button.setObjectName(button_object_name(style, size))
+    if on_click is not None:
+        button.clicked.connect(on_click)
+    if default:
+        button.setDefault(True)
     return button
 
 

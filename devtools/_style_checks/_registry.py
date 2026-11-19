@@ -1,6 +1,6 @@
 """检查登记表
 
-- 具名收集十三个分节的检查函数，赋予各自明确的消费者
+- 具名收集十四个分节的检查函数，赋予各自明确的消费者
 - run_checks 统一入口，屏蔽命名节需要额外导入图的签名差异
 - 非 py 载体只进对口的细则入口，py 专属分节一律按 py 文件取
 """
@@ -24,6 +24,7 @@ from ._s8b_callback_param import check as _check_callback_param
 from ._s9_typing import check as _check_typing
 from ._s10_import_direction import check as _check_import_direction
 from ._s11_docs import check as _check_docs
+from ._s12_buttons import check as _check_buttons
 
 if TYPE_CHECKING:
     from ._common import FileData, Finding, ImportGraph
@@ -41,6 +42,7 @@ _FILE_CHECKS = (
     _check_callback_param,
     _check_typing,
     _check_import_direction,
+    _check_buttons,
 )
 
 

@@ -1048,7 +1048,7 @@ class TestResultWindowOwner(unittest.TestCase):
         """开着的是普通模态窗就挂它"""
         from unittest.mock import MagicMock
 
-        from ui._dialogs import BaseDialog
+        from ui._primitives import BaseDialog
 
         host = MagicMock(spec=BaseDialog)
         host.RESULT_WINDOW = False
@@ -1066,11 +1066,11 @@ class TestResultWindowOwner(unittest.TestCase):
         from unittest.mock import MagicMock
 
         from ui._dialogs import (
-            BaseDialog,
             NoticeDialog,
             PersonaResolveDialog,
             PersonaSyncDialog,
         )
+        from ui._primitives import BaseDialog
 
         self.assertFalse(BaseDialog.RESULT_WINDOW)
         for window in (NoticeDialog, PersonaResolveDialog, PersonaSyncDialog):

@@ -42,12 +42,8 @@ class SettingsDialogTheme:
     border_color: str = PALETTE.border_color  # 边框色
 
     # 按钮
-    finish_btn_min_width: int = 150  # "完成"按钮最小宽度
-    btn_min_width: int = 90  # 普通按钮最小宽度
     reset_btn_size: int = 26  # 恢复默认图标按钮边长
     reset_btn_font: int = 15  # 恢复默认图标字号
-    btn_hover_bg: str = "#2B5A8A"  # 主按钮悬停背景色
-    btn_pressed_bg: str = "#1A4060"  # 主按钮按下背景色
 
     # 人设预览
     persona_preview_height: int = 420  # 预览弹窗正文固定高度
@@ -120,22 +116,12 @@ class SettingsDialogTheme:
 class SettingsListTheme:
     """配置编辑列表项配置"""
 
-    # 主按钮
-    primary_bg = "#264F78"  # 背景色
-    primary_hover_bg = "#3A6FA5"  # 悬停背景色
-    primary_color = "#FFFFFF"  # 文字色
-
     # 次按钮
     secondary_color = "#AAAAAA"  # 文字色
     secondary_border_color = "#555555"  # 边框色
     secondary_hover_border_color = "#FF4D4F"  # 悬停边框色
     secondary_hover_color = "#FF4D4F"  # 悬停文字色
     secondary_hover_bg = "#2A0F10"  # 悬停背景色
-
-    # 按钮尺寸
-    btn_padding_h = 12  # 水平内边距
-    btn_padding_v = 4  # 垂直内边距
-    btn_min_width = 70  # 最小宽度
 
     # 列表项
     item_padding_v: int = 4  # 垂直内边距

@@ -13,8 +13,7 @@ from skin.qss import build_link_dialog_qss
 from skin.theme import LINK_DIALOG, ButtonStyle, ObjectName
 from utils.network import LinkStatus
 
-from .._primitives import make_button, set_margins
-from ._base import BaseDialog
+from .._primitives import BaseDialog, make_button, set_margins
 
 
 class LinkDialog(BaseDialog):
@@ -60,7 +59,7 @@ class LinkDialog(BaseDialog):
 
         # 本次不提示按钮
         btn_layout = QHBoxLayout()
-        mute_btn = make_button(LINK_DIALOG.mute_text, ButtonStyle.SECONDARY)
+        mute_btn = make_button(LINK_DIALOG.mute_text, ButtonStyle.NEUTRAL)
         mute_btn.clicked.connect(lambda: self._dismiss(on_mute))
         btn_layout.addStretch()
         btn_layout.addWidget(mute_btn)

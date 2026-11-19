@@ -11,18 +11,16 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
-    QPushButton,
     QTextEdit,
     QVBoxLayout,
     QWidget,
 )
 
 from skin.qss import build_settings_dialog_qss
-from skin.theme import SETTINGS_DIALOG, ButtonStyle, ObjectName
+from skin.theme import SETTINGS_DIALOG, ButtonSize, ButtonStyle, ObjectName
 from utils.persona import applied_persona_text, inject_owner, read_persona_file
 
-from ..._primitives import make_button, set_margins
-from .._base import BaseDialog
+from ..._primitives import BaseDialog, make_button, set_margins
 from .._notice import NoticeDialog
 from ._edit import PersonaEditorDialog
 from ._resolve import PersonaResolveDialog
@@ -66,9 +64,10 @@ class _PersonaPreviewDialog(BaseDialog):
 
         btn_layout = QHBoxLayout()
         btn_layout.addStretch()
-        btn_close = QPushButton(SETTINGS_DIALOG.persona_close_text)
+        btn_close = make_button(
+            SETTINGS_DIALOG.persona_close_text, ButtonStyle.OUTLINE, default=True
+        )
         btn_close.clicked.connect(self.accept)
-        btn_close.setDefault(True)
         btn_layout.addWidget(btn_close)
         layout.addLayout(btn_layout)
 
@@ -93,15 +92,23 @@ class PersonaPreviewRow(QWidget):
         title.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
 
         btn_preview = make_button(
-            SETTINGS_DIALOG.persona_preview_text, ButtonStyle.PERSONA
+            SETTINGS_DIALOG.persona_preview_text,
+            ButtonStyle.PRIMARY,
+            size=ButtonSize.SMALL,
         )
         btn_preview.clicked.connect(self._on_preview_clicked)
 
-        btn_edit = make_button(SETTINGS_DIALOG.persona_edit_text, ButtonStyle.PERSONA)
+        btn_edit = make_button(
+            SETTINGS_DIALOG.persona_edit_text,
+            ButtonStyle.PRIMARY,
+            size=ButtonSize.SMALL,
+        )
         btn_edit.clicked.connect(self._on_edit_clicked)
 
         btn_reload = make_button(
-            SETTINGS_DIALOG.persona_reload_text, ButtonStyle.PERSONA
+            SETTINGS_DIALOG.persona_reload_text,
+            ButtonStyle.PRIMARY,
+            size=ButtonSize.SMALL,
         )
         btn_reload.clicked.connect(self._on_reload_clicked)
 

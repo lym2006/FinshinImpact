@@ -9,7 +9,7 @@ import time
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QCloseEvent
-from PySide6.QtWidgets import QDialog, QLabel, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 from services.adapter_catalog import Catalog
 from services.env_setup.platform_rows import (
@@ -23,7 +23,13 @@ from skin.qss import build_platform_dialog_qss
 from skin.theme import GLOBAL, PLATFORM_DIALOG, ButtonStyle, ObjectName
 
 from .._lifecycle import Ticker, ensure_app
-from .._primitives import clear_layout, make_button, make_scroller, set_margins
+from .._primitives import (
+    BaseDialog,
+    clear_layout,
+    make_button,
+    make_scroller,
+    set_margins,
+)
 from ._catalog_task import CatalogTask
 from ._platform_block import ComponentBlock
 from ._platform_flow import install_flow
@@ -40,7 +46,7 @@ _SECTIONS = (
 _RUNNING: set[CatalogTask] = set()
 
 
-class _PlatformDialog(QDialog):
+class _PlatformDialog(BaseDialog):
     """平台组件面板
 
     - 动作按钮就地起装卸，跑完按最新读数重灌
@@ -48,13 +54,12 @@ class _PlatformDialog(QDialog):
     """
 
     def __init__(self, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
+        super().__init__(parent, PLATFORM_DIALOG.title)
         self._catalog: Catalog | None = None
         self._note = ""
         self._reading = True
         self._start = time.monotonic()
         self._wait_label: QLabel | None = None
-        self.setWindowTitle(PLATFORM_DIALOG.title)
         self.setStyleSheet(build_platform_dialog_qss())
 
         layout = QVBoxLayout(self)

@@ -11,8 +11,7 @@ from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 from skin.qss import build_shutdown_dialog_qss
 from skin.theme import SHUTDOWN_DIALOG, ButtonStyle
 
-from .._primitives import make_button, set_margins
-from ._base import BaseDialog
+from .._primitives import BaseDialog, make_button, set_margins
 
 
 class ShutdownDialog(BaseDialog):
@@ -42,9 +41,7 @@ class ShutdownDialog(BaseDialog):
         btn_layout.addStretch()
 
         # 取消按钮
-        self._cancel_btn = make_button(
-            SHUTDOWN_DIALOG.cancel_text, ButtonStyle.SECONDARY
-        )
+        self._cancel_btn = make_button(SHUTDOWN_DIALOG.cancel_text, ButtonStyle.NEUTRAL)
         self._cancel_btn.clicked.connect(self.reject)
 
         # 确认按钮

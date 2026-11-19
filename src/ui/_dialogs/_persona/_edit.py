@@ -7,7 +7,6 @@
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
-    QPushButton,
     QTextEdit,
     QVBoxLayout,
     QWidget,
@@ -17,8 +16,7 @@ from skin.qss import build_settings_dialog_qss
 from skin.theme import SETTINGS_DIALOG, ButtonStyle, ObjectName
 from utils.persona import applied_persona_text, read_template_text
 
-from ..._primitives import make_button, set_margins
-from .._base import BaseDialog
+from ..._primitives import BaseDialog, ButtonBar, ButtonSpec, set_margins
 from .._notice import NoticeDialog
 from ._resolve import PersonaResolveDialog
 
@@ -52,19 +50,35 @@ class PersonaEditorDialog(BaseDialog):
         layout.addWidget(tip)
 
         btn_layout = QHBoxLayout()
-        btn_template = make_button(
-            SETTINGS_DIALOG.persona_use_template, ButtonStyle.DANGER
+        left_bar = ButtonBar(
+            [
+                ButtonSpec(
+                    SETTINGS_DIALOG.persona_use_template,
+                    ButtonStyle.DANGER,
+                    on_click=self._on_use_template,
+                )
+            ],
+            self,
+            align_left=True,
         )
-        btn_template.clicked.connect(self._on_use_template)
-        btn_cancel = QPushButton(SETTINGS_DIALOG.cancel_text)
-        btn_cancel.clicked.connect(self.reject)
-        btn_ok = make_button(SETTINGS_DIALOG.confirm_text, ButtonStyle.PRIMARY)
-        btn_ok.clicked.connect(self.accept)
-        btn_ok.setDefault(True)
-        btn_layout.addWidget(btn_template)
-        btn_layout.addStretch()
-        btn_layout.addWidget(btn_cancel)
-        btn_layout.addWidget(btn_ok)
+        btn_layout.addWidget(left_bar)
+        right_bar = self.install_button_bar(
+            btn_layout,
+            [
+                ButtonSpec(
+                    SETTINGS_DIALOG.cancel_text,
+                    ButtonStyle.OUTLINE,
+                    on_click=self.reject,
+                ),
+                ButtonSpec(
+                    SETTINGS_DIALOG.confirm_text,
+                    ButtonStyle.PRIMARY,
+                    on_click=self.accept,
+                    default=True,
+                ),
+            ],
+        )
+        btn_layout.setStretchFactor(right_bar, 1)
         layout.addLayout(btn_layout)
 
         self._body = body

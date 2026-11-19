@@ -46,10 +46,6 @@ class ShutdownDialogTheme:
     # 颜色配置
     bg_color: str = "#2b2b2b"  # 弹窗背景色
     text_color: str = "#ffffff"  # 提示文字颜色
-    cancel_bg: str = "#555555"  # 取消按钮背景
-    cancel_color: str = "#ffffff"  # 取消按钮文字
-    confirm_bg: str = "#d32f2f"  # 确认按钮背景（警告红）
-    confirm_color: str = "#ffffff"  # 确认按钮文字
 
 
 @dataclass(frozen=True)
@@ -211,8 +207,6 @@ class LinkDialogTheme:
     bg_color: str = "#2b2b2b"  # 弹窗背景色
     text_color: str = "#ffffff"  # 提示文字颜色
     timer_color: str = _FAIL_COLOR  # 计时行红显
-    mute_bg: str = "#3c3c3c"  # 静默按钮背景
-    btn_color: str = "#ffffff"  # 按钮文字色
 
 
 @dataclass(frozen=True)

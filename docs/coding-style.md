@@ -275,3 +275,10 @@
 - `super().__init__(*args, **kwargs)` 这类纯转发不为注解引入 `ParamSpec`。
 - 能收口的写显式签名，收口不了的按上面三类豁免。
 - `# type: ignore` 一律带 `[具体错误码]`，devtools 扫描器按此查，理由见 [lessons/tooling-false-green.md](lessons/tooling-false-green.md)。
+
+## 按钮样式
+
+- 一颗按钮只由三样东西决定：词、档、回调。词取 `skin/theme/_buttons.py` 的 `ButtonStyle`，档取同文件的 `ButtonSize`，对象名由 `button_object_name` 算出，构造统一走 `make_button`。
+- 调用点只传词、档与回调，不写颜色、内边距、最小宽。
+- 按钮样式规则唯一出处在 `src/skin/qss/_buttons.py`，各窗经 `build_button_qss()` 取得，其余 qss 文件不出现 `QPushButton` 规则。
+- 规则按「词×档」的实际组合生成，组合数固定，窗数增加不增加规则段。

@@ -50,14 +50,11 @@ class PanelTheme:
 
 
 @dataclass(frozen=True)
-class GuideButtonTheme:
-    """按钮尺寸"""
+class GuideFieldTheme:
+    """输入控件留白"""
 
-    min_width: int = 90  # 最小宽度
-    height: int = 30  # 最小高度
     padding_v: int = 5  # 垂直内边距
     padding_h: int = 14  # 水平内边距
-    start_width: int = 120  # 主操作启动钮定宽，视觉重心
 
 
 @dataclass(frozen=True)

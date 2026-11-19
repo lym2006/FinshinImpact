@@ -81,6 +81,7 @@ python devtools\check_coding_style.py --section 注释
 - 类型注解：`_s9_typing.py`
 - 导入：`_s10_import_direction.py`
 - 文档写法：`_s11_docs.py`
+- 按钮样式：`_s12_buttons.py`
 
 `_waivers.py` 不属于任何分节，只负责读清单与按清单静音。
 

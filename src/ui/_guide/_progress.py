@@ -11,19 +11,18 @@ from typing import Any
 from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtGui import QCloseEvent, QFont, QTextCursor
 from PySide6.QtWidgets import (
-    QDialog,
     QHBoxLayout,
     QPlainTextEdit,
-    QPushButton,
     QVBoxLayout,
 )
 
 from services.env_setup.subprocess_ops import log_ops
 from skin.messages import PluginMessage
 from skin.qss import build_bootstrap_qss
-from skin.theme import FONT, ObjectName
+from skin.theme import FONT, ButtonStyle, ObjectName
 
 from .._lifecycle import ensure_app
+from .._primitives import BaseDialog, make_button
 
 # 日志字号
 _LOG_FONT_SIZE = 9
@@ -72,7 +71,7 @@ class _Task(QThread):
         self.result_ready.emit(self.failed)
 
 
-class _ProgressDialog(QDialog):
+class _ProgressDialog(BaseDialog):
     """模态进度窗
 
     - 任务未完禁关
@@ -80,10 +79,9 @@ class _ProgressDialog(QDialog):
 
     def __init__(self, title: str, fn: _TaskCallback) -> None:
         """起窗即启动任务线程"""
-        super().__init__()
+        super().__init__(title=title)
         self._seen = 0
         self._task = _Task(fn, title)
-        self.setWindowTitle(title)
         self.setStyleSheet(build_bootstrap_qss())
         self.resize(_WINDOW_WIDTH, _LOG_HEIGHT)
 
@@ -97,7 +95,7 @@ class _ProgressDialog(QDialog):
         self._log.setFont(QFont(FONT.mono_family, _LOG_FONT_SIZE))
         layout.addWidget(self._log)
 
-        self._button = QPushButton(PluginMessage.BTN_RUNNING)
+        self._button = make_button(PluginMessage.BTN_RUNNING, ButtonStyle.OUTLINE)
         self._button.setEnabled(False)
         self._button.clicked.connect(self.accept)
         row = QHBoxLayout()

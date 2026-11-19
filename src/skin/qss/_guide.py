@@ -4,15 +4,15 @@
 """
 
 from ..theme import (
-    GUIDE_BTN,
+    GUIDE_FIELD,
     PANEL,
-    ButtonStyle,
     ObjectName,
 )
 from ..theme import (
     PALETTE as SURFACE,
 )
 from ._base import Qss
+from ._buttons import build_button_qss
 from ._combo import build_combo_qss
 
 # 引导期控件统一描边宽度（像素）
@@ -36,7 +36,7 @@ QLineEdit {{
     color: {SURFACE.color};
     border: 1px solid {SURFACE.border_color};
     border-radius: {SURFACE.radius}px;
-    padding: {GUIDE_BTN.padding_v}px {GUIDE_BTN.padding_h // 2}px;
+    padding: {GUIDE_FIELD.padding_v}px {GUIDE_FIELD.padding_h // 2}px;
     selection-background-color: {SURFACE.sel_bg};
     selection-color: {SURFACE.sel_color};
 }}
@@ -52,108 +52,12 @@ _COMBO_QSS = build_combo_qss(
     border_color=SURFACE.border_color,
     border_width=_BORDER_PX,
     radius=SURFACE.radius,
-    pad_v=GUIDE_BTN.padding_v,
-    pad_h=GUIDE_BTN.padding_h // 2,
+    pad_v=GUIDE_FIELD.padding_v,
+    pad_h=GUIDE_FIELD.padding_h // 2,
     accent_border=SURFACE.hover_bg,
     sel_bg=SURFACE.sel_bg,
     sel_color=SURFACE.sel_color,
 )
-
-# 按钮
-_BUTTON_QSS = f"""\
-QPushButton {{
-    background-color: {SURFACE.input_bg};
-    color: {SURFACE.color};
-    border: none;
-    border-radius: {SURFACE.radius}px;
-    padding: {GUIDE_BTN.padding_v}px {GUIDE_BTN.padding_h}px;
-    min-width: {GUIDE_BTN.min_width}px;
-    min-height: {GUIDE_BTN.height}px;
-}}
-
-QPushButton:hover {{
-    background-color: {SURFACE.hover_bg};
-    color: {SURFACE.hover_color};
-}}
-
-QPushButton:pressed {{
-    background-color: {SURFACE.pressed_bg};
-}}
-
-QPushButton:disabled {{
-    color: {SURFACE.disabled_color};
-    background-color: {SURFACE.bg};
-}}
-
-QPushButton#{ButtonStyle.PRIMARY} {{
-    background-color: {SURFACE.sel_bg};
-    color: {SURFACE.sel_color};
-}}
-
-QPushButton#{ButtonStyle.PRIMARY}:hover {{
-    background-color: {SURFACE.primary_hover_bg};
-}}
-
-QPushButton#{ButtonStyle.PRIMARY}:pressed {{
-    background-color: {SURFACE.primary_pressed_bg};
-}}
-
-QPushButton#{ButtonStyle.DANGER} {{
-    background-color: {SURFACE.danger_bg};
-    color: {SURFACE.sel_color};
-}}
-
-QPushButton#{ButtonStyle.DANGER}:hover {{
-    background-color: {SURFACE.danger_hover_bg};
-}}
-
-QPushButton#{ButtonStyle.DANGER}:pressed {{
-    background-color: {SURFACE.danger_pressed_bg};
-}}
-
-QPushButton#{ButtonStyle.DANGER}:disabled {{
-    background-color: {SURFACE.bg};
-    color: {SURFACE.disabled_color};
-}}
-
-QPushButton#{ButtonStyle.SECONDARY} {{
-    background-color: transparent;
-    color: {SURFACE.color};
-    border: 1px solid {SURFACE.border_color};
-}}
-
-QPushButton#{ButtonStyle.SECONDARY}:hover {{
-    background-color: {SURFACE.hover_bg};
-    border: 1px solid {SURFACE.sel_bg};
-    color: {SURFACE.hover_color};
-}}
-
-QPushButton#{ButtonStyle.SECONDARY}:disabled {{
-    background-color: transparent;
-    border: none;
-    color: {SURFACE.disabled_color};
-}}
-
-QPushButton#{ButtonStyle.START} {{
-    background-color: {SURFACE.sel_bg};
-    color: {SURFACE.sel_color};
-    font-weight: bold;
-    min-width: {GUIDE_BTN.start_width}px;
-}}
-
-QPushButton#{ButtonStyle.START}:hover {{
-    background-color: {SURFACE.primary_hover_bg};
-}}
-
-QPushButton#{ButtonStyle.START}:pressed {{
-    background-color: {SURFACE.primary_pressed_bg};
-}}
-
-QPushButton#{ButtonStyle.START}:disabled {{
-    background-color: {SURFACE.bg};
-    color: {SURFACE.disabled_color};
-    font-weight: normal;
-}}"""
 
 # 下拉菜单
 _MENU_QSS = f"""\
@@ -165,7 +69,7 @@ QMenu {{
 }}
 
 QMenu::item {{
-    padding: {GUIDE_BTN.padding_v}px {GUIDE_BTN.padding_h}px;
+    padding: {GUIDE_FIELD.padding_v}px {GUIDE_FIELD.padding_h}px;
     border-radius: {SURFACE.radius}px;
 }}
 
@@ -208,40 +112,6 @@ QListWidget::item:hover {{
 QLabel#{ObjectName.ROW_BUNDLED_MARK} {{
     color: {SURFACE.disabled_color};
     background-color: transparent;
-}}
-
-QPushButton#{ButtonStyle.CONFLICT} {{
-    background-color: transparent;
-    color: {SURFACE.danger_bg};
-    border: none;
-    border-radius: {SURFACE.radius}px;
-    padding: 0; margin: 6px {PANEL.check_width - PANEL.conflict_box_w}px 6px 0;
-    min-width: {PANEL.conflict_box_w}px; min-height: {PANEL.conflict_box_h}px;
-}}
-
-QPushButton#{ButtonStyle.CONFLICT}::menu-indicator {{
-    image: none;
-    width: 0;
-}}
-
-QPushButton#{ButtonStyle.CONFLICT}:hover {{
-    background-color: {SURFACE.danger_bg};
-    color: {SURFACE.sel_color};
-}}
-
-QPushButton#{ButtonStyle.COMMAND} {{
-    background-color: transparent;
-    color: {SURFACE.color};
-    border: 1px solid {SURFACE.border_color};
-    border-radius: {SURFACE.radius}px;
-    padding: 0; margin: 4px 0;
-    min-width: {PANEL.command_width}px; min-height: {PANEL.command_box_h}px;
-}}
-
-QPushButton#{ButtonStyle.COMMAND}:hover {{
-    background-color: {SURFACE.hover_bg};
-    border: 1px solid {SURFACE.sel_bg};
-    color: {SURFACE.hover_color};
 }}"""
 
 # 滚动条
@@ -297,7 +167,7 @@ _BOOTSTRAP_QSS = "\n".join(  # 引导期各窗共用皮肤
         _DARK_QSS,
         _INPUT_QSS,
         _COMBO_QSS,
-        _BUTTON_QSS,
+        build_button_qss(),
         _MENU_QSS,
         _LIST_QSS,
         _SCROLL_QSS,

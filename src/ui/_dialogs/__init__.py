@@ -1,11 +1,10 @@
 """弹窗子包门面
 
-- 代发基类、提示、等待、关闭确认与配置、检查、断连、版本变化、人设对账各类业务弹窗
+- 代发提示、等待、关闭确认与配置、检查、断连、版本变化、人设对账各类业务弹窗
 - 代发自家两窗之间的常驻浮顶件
 - 代发常驻检查窗的取用与判空
 """
 
-from ._base import BaseDialog
 from ._check import (
     CheckDialog,
     Round,
@@ -22,8 +21,6 @@ from ._shutdown import ShutdownDialog
 from ._wait import WaitDialog
 
 __all__ = [
-    # 弹窗基类
-    "BaseDialog",
     # 通用弹窗
     "NoticeDialog",
     "PersonaSyncDialog",

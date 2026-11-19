@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 _SYMBOL_MODULES = {
     "gui_bridge": "._bridge",
-    "BaseDialog": "._dialogs",
+    "BaseDialog": "._primitives",
     "NoticeDialog": "._dialogs",
     "ShutdownDialog": "._dialogs",
     "CheckDialog": "._dialogs",
@@ -97,7 +97,6 @@ __all__ = [
 if TYPE_CHECKING:
     from ._bridge import gui_bridge
     from ._dialogs import (
-        BaseDialog,
         ChangeConfirmDialog,
         CheckDialog,
         ConfigMode,
@@ -121,6 +120,7 @@ if TYPE_CHECKING:
     )
     from ._lifecycle import Ticker, ensure_app, pump_events
     from ._primitives import (
+        BaseDialog,
         ThemedList,
         TickedCheckBox,
         make_button,

@@ -9,17 +9,21 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QListWidgetItem,
-    QPushButton,
     QVBoxLayout,
     QWidget,
 )
 
 from skin.messages import ConfigMessage
 from skin.qss import build_settings_dialog_qss, build_settings_list_qss
-from skin.theme import LIST_DIALOG, SETTINGS_DIALOG, ButtonStyle, ObjectName
+from skin.theme import (
+    LIST_DIALOG,
+    SETTINGS_DIALOG,
+    ButtonSize,
+    ButtonStyle,
+    ObjectName,
+)
 
-from ..._primitives import ThemedList, make_button, set_margins
-from .._base import BaseDialog
+from ..._primitives import BaseDialog, ThemedList, make_button, set_margins
 
 
 class _ConfigListWidget(QWidget):
@@ -62,8 +66,12 @@ class _ConfigListWidget(QWidget):
         set_margins(layout, SETTINGS_DIALOG.margin)
         layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
 
-        btn_add = make_button(ConfigMessage.LIST_ADD_TEXT, ButtonStyle.LIST_ADD)
-        btn_del = make_button(ConfigMessage.LIST_DEL_TEXT, ButtonStyle.LIST_DEL)
+        btn_add = make_button(
+            ConfigMessage.LIST_ADD_TEXT, ButtonStyle.PRIMARY, size=ButtonSize.SMALL
+        )
+        btn_del = make_button(
+            ConfigMessage.LIST_DEL_TEXT, ButtonStyle.DELETE, size=ButtonSize.SMALL
+        )
 
         btn_add.clicked.connect(self.add_item)
         btn_del.clicked.connect(self.remove_selected)
@@ -127,11 +135,12 @@ class _ConfigListDialog(BaseDialog):
         layout.addWidget(tip)
 
         btn_layout = QHBoxLayout()
-        btn_cancel = QPushButton(SETTINGS_DIALOG.cancel_text)
+        btn_cancel = make_button(SETTINGS_DIALOG.cancel_text, ButtonStyle.OUTLINE)
         btn_cancel.clicked.connect(self.reject)
-        btn_ok = make_button(SETTINGS_DIALOG.confirm_text, ButtonStyle.PRIMARY)
+        btn_ok = make_button(
+            SETTINGS_DIALOG.confirm_text, ButtonStyle.PRIMARY, default=True
+        )
         btn_ok.clicked.connect(self.accept)
-        btn_ok.setDefault(True)
         btn_layout.addStretch()
         btn_layout.addWidget(btn_cancel)
         btn_layout.addWidget(btn_ok)
@@ -171,7 +180,7 @@ class ConfigListRow(QWidget):
         layout = QHBoxLayout(self)
         set_margins(layout, SETTINGS_DIALOG.margin)
         layout.setSpacing(SETTINGS_DIALOG.desc_spacing)
-        self._button = make_button(self._button_text(), ButtonStyle.SECONDARY)
+        self._button = make_button(self._button_text(), ButtonStyle.OUTLINE)
         self._button.clicked.connect(self._on_edit)
         layout.addWidget(self._button)
         layout.addStretch()

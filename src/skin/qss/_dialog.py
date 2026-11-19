@@ -6,18 +6,16 @@
 
 from ..theme import (
     BODY,
-    BTN,
     GLOBAL,
     LINK_DIALOG,
-    PALETTE,
     PLATFORM_DIALOG,
     SETTINGS_DIALOG,
     SHUTDOWN_DIALOG,
     TOOLBAR,
-    ButtonStyle,
     ObjectName,
 )
 from ._base import WAIT_QSS, Qss, with_dialog_base
+from ._buttons import PLATFORM_PRIMARY_DISABLED_QSS, build_button_qss
 
 # 退出确认窗窗口与文字
 _SHUTDOWN_WINDOW_QSS = f"""\
@@ -27,27 +25,6 @@ QDialog {{
 
 QLabel {{
     color: {SHUTDOWN_DIALOG.text_color};
-}}"""
-
-# 退出确认窗两颗按钮
-# 尺寸显式取全局按钮令牌，否则无父窗时没人给尺寸（祖先样式表下渗不可依赖）
-_SHUTDOWN_BUTTON_QSS = f"""\
-QPushButton#{ButtonStyle.SECONDARY} {{
-    background-color: {SHUTDOWN_DIALOG.cancel_bg};
-    color: {SHUTDOWN_DIALOG.cancel_color};
-    border-radius: {GLOBAL.radius}px;
-    padding: {BTN.padding_v}px {BTN.padding_h}px;
-    min-width: {BTN.min_width}px;
-    min-height: {BTN.height}px;
-}}
-
-QPushButton#{ButtonStyle.DANGER} {{
-    background-color: {SHUTDOWN_DIALOG.confirm_bg};
-    color: {SHUTDOWN_DIALOG.confirm_color};
-    border-radius: {GLOBAL.radius}px;
-    padding: {BTN.padding_v}px {BTN.padding_h}px;
-    min-width: {BTN.min_width}px;
-    min-height: {BTN.height}px;
 }}"""
 
 # 断连计时窗窗口与三行文字
@@ -64,19 +41,6 @@ QLabel#{ObjectName.LINK_RETRIES} {{
 QLabel#{ObjectName.LINK_TIMER} {{
     color: {LINK_DIALOG.timer_color};
 }}"""
-
-# 断连计时窗按钮
-# 尺寸显式取全局按钮令牌，否则无父窗时没人给尺寸（祖先样式表下渗不可依赖）
-_LINK_BUTTON_QSS = f"""\
-QPushButton#{ButtonStyle.SECONDARY} {{
-    background-color: {LINK_DIALOG.mute_bg};
-    color: {LINK_DIALOG.btn_color};
-    border-radius: {GLOBAL.radius}px;
-    padding: {BTN.padding_v}px {BTN.padding_h}px;
-    min-width: {BTN.min_width}px;
-    min-height: {BTN.height}px;
-}}"""
-
 
 # 版本变化窗正文区
 _RELEASE_NOTES_VIEW_QSS = f"""\
@@ -105,11 +69,6 @@ QFrame#{ObjectName.PLATFORM_BLOCK} {{
 QLabel#{ObjectName.PLATFORM_NAME} {{
     font-size: {PLATFORM_DIALOG.name_font_size}px;
     font-weight: bold;
-}}
-
-QPushButton#{ButtonStyle.PRIMARY}:disabled {{
-    background-color: {TOOLBAR.bg};
-    color: {PALETTE.disabled_color};
 }}"""
 
 
@@ -130,14 +89,14 @@ def build_wait_dialog_qss() -> Qss:
 
 def build_shutdown_dialog_qss() -> Qss:
     """构建退出确认弹窗 QSS"""
-    return Qss("\n\n".join([_SHUTDOWN_WINDOW_QSS, _SHUTDOWN_BUTTON_QSS]))
+    return Qss("\n\n".join([_SHUTDOWN_WINDOW_QSS, build_button_qss()]))
 
 
 def build_link_dialog_qss() -> Qss:
     """构建断连计时弹窗 QSS"""
-    return Qss("\n\n".join([_LINK_WINDOW_QSS, _LINK_BUTTON_QSS]))
+    return Qss("\n\n".join([_LINK_WINDOW_QSS, build_button_qss()]))
 
 
 def build_platform_dialog_qss() -> Qss:
     """构建平台组件面板 QSS"""
-    return with_dialog_base(_PLATFORM_BLOCK_QSS)
+    return with_dialog_base(_PLATFORM_BLOCK_QSS, PLATFORM_PRIMARY_DISABLED_QSS)

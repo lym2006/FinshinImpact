@@ -1,6 +1,6 @@
 """扫描器自检的单元测试
 
-- 十三个分节各备一份故意违规的样本，防判据空转与包路径搬家后静默失效
+- 十四个分节各备一份故意违规的样本，防判据空转与包路径搬家后静默失效
 - 违规条目的分节名必须在 SECTIONS 内，防字面量改写错位
 - 每个分节名在 coding-style 都有同名开头的小节标题，防文档改节名后命令行与豁免指空
 - 回调形参四条判据各命中一次，业务协程与已合规写法不误报
@@ -188,6 +188,12 @@ _SAMPLES: dict[str, tuple[tuple[str, str], ...]] = {
         ),
         ("docs/_probe_link_target.md", "被活链指向的样张。\n"),
         ("docs/_probe_dead.md", "[文字](_no_such_target.md)\n"),
+    ),
+    "按钮样式": (
+        (
+            "src/skin/qss/_probe_btn.py",
+            'QSS = """\nQPushButton#probe {\n    color: #FFFFFF;\n}\n"""\n',
+        ),
     ),
 }
 

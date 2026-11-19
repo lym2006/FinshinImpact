@@ -11,25 +11,35 @@ from PySide6.QtWidgets import (
     QApplication,
     QHBoxLayout,
     QMainWindow,
-    QPushButton,
     QVBoxLayout,
     QWidget,
 )
 
-from skin.theme import BodyTheme, FontTheme, ObjectName, ToolbarTheme, WindowTheme
+from skin.theme import (
+    BodyTheme,
+    ButtonSize,
+    ButtonStyle,
+    FontTheme,
+    ObjectName,
+    ToolbarTheme,
+    WindowTheme,
+)
 from utils import get_logger
 
 from .._dialogs import (
-    BaseDialog,
     NoticeDialog,
     PersonaResolveDialog,
     PersonaSyncDialog,
 )
 from .._lifecycle import Ticker
+from .._primitives import BaseDialog, make_button
 from ._dashboard import DashboardWidget, TextHandler
 
 # 通知重试
 _NOTICE_RETRY_DELAY_MS = 800  # 模态占用时 0.8 秒后重弹
+
+# 走危险色的工具栏动作
+_DANGER_ACTIONS = frozenset({"clear", "shutdown"})
 
 
 def _result_owner(fallback: QWidget) -> QWidget | None:
@@ -116,11 +126,14 @@ class BotGUI(QMainWindow):
             if key in self._hidden_actions:
                 continue  # 直接跳过按钮的创建和布局添加
 
-            btn = QPushButton(text)
-            btn.setObjectName(btn_id)
-
-            btn.clicked.connect(  # 统一绑定点击事件
-                lambda checked=False, bid=btn_id: self._handle_button(bid)
+            style = (
+                ButtonStyle.DANGER if key in _DANGER_ACTIONS else ButtonStyle.NEUTRAL
+            )
+            btn = make_button(
+                text,
+                style,
+                size=ButtonSize.COMPACT,
+                on_click=lambda checked=False, bid=btn_id: self._handle_button(bid),
             )
 
             toolbar_layout.addWidget(btn)
