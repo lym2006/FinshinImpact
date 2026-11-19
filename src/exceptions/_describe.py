@@ -1,7 +1,7 @@
 """异常文案查询
 
-- 各族文案表摊成一张，按继承链找最近的一句
-- 填参容错，模板要的字段异常上没有即退回模板原文
+- 七族文案表合成一张查找表
+- 模板要的字段异常上没有即退回模板原文
 """
 
 from typing import Any
@@ -31,8 +31,8 @@ for _table in (
 def describe_error(exc: BaseException) -> str:
     """取异常那句给人看的话
 
-    - 沿继承链往上找，族里新加的子类没点名也能落到父类那一句
-    - 表里一句都没有即报异常类名，细节归调试日志
+    - 沿继承链往上找最近的一句文案
+    - 表里没有即报异常类名
     """
     attrs: dict[str, Any] = vars(exc)
     for cls in type(exc).__mro__:

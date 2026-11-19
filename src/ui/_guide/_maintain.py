@@ -2,7 +2,7 @@
 
 - 本机管理菜单并列三项：平台组件、同步重建与清理缓存
 - 保留清单取全实例启用并集，操作对象为共享 runtime 依赖层
-- 同步重建会删保留清单外的包，只由这个菜单发起
+- 同步重建会删保留清单外的包
 """
 
 from PySide6.QtCore import QPoint
@@ -36,7 +36,7 @@ def _sync_flow(parent: QWidget | None) -> list[str]:
 
 
 def _cache_task(on_line: ProgressCallback | None = None) -> list[str]:
-    """清空下载缓存，本操作无失败项概念恒回空表"""
+    """清空下载缓存"""
     clean_cache(on_line)
     return []
 
@@ -53,7 +53,7 @@ def _cache_flow(parent: QWidget | None) -> list[str]:
 def open_maintain_menu(anchor: QPushButton, parent: QWidget) -> None:
     """在锚点按钮上方弹出本机管理菜单
 
-    - parent 挂宿主窗口，选窗开着也能定位置顶
+    - 菜单以宿主窗口为父件
     """
     menu = QMenu(parent)
 

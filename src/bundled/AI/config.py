@@ -2,7 +2,7 @@
 
 - 固定取值落在类属性上
 - 配置中心字段按访问实时读取
-- 交出本插件认领的来源标题与模型、主人两段字段表
+- 交出本插件的来源声明与配置字段表
 """
 
 from pathlib import Path
@@ -96,7 +96,7 @@ CONFIG_SOURCE = SourceDeclaration(
 class _DynamicAIConfig:
     """配置取用出口
 
-    - 配置中心字段每次访问现读，改完不必重启
+    - 配置中心字段每次访问现读
     """
 
     # 路径配置

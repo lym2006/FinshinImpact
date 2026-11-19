@@ -37,7 +37,7 @@ async def handle_ai_chat(ctx: HandlerContext) -> None:
 async def _run_chat_task(ctx: HandlerContext) -> None:
     """消费一条问答
 
-    - 原消息被删只记账，取消照线上抛，其余报错交上报
+    - 原消息被删只记错误，任务取消继续上抛，其余错误走错误上报
     """
     key = make_session_key(ctx.event.principal)
     try:

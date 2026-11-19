@@ -40,7 +40,6 @@ def is_asset_installed(asset: str) -> bool:
     """判断资源是否已落盘
 
     - 走 dry-run 取权威目录，逐个存在才算已装
-    - 内核目录挪过位置也判得出，不误装
     """
     parts = asset.split()
     if len(parts) != 2:
@@ -83,7 +82,7 @@ def install_assets(
 def _install_argv(asset: str) -> list[str] | None:
     """拆两段式资源声明为安装参数
 
-    - 空格分词必须恰为 模块名+资源名 两段，否则返回 None
+    - 空格分词恰为模块名与资源名两段，否则交出 None
     """
     parts = asset.split()
     if len(parts) != 2:

@@ -32,7 +32,7 @@ async def compress_history(key: SessionKey, rows: tuple[MessageDTO, ...]) -> Non
     """压缩问答并写回摘要
 
     - 请求失败或返回空即保持原摘要不动
-    - 落笔前先确认会话没被清掉
+    - 写入成功时记一行日志
     - 异常只记录不外抛
     """
     text = render_history(rows)

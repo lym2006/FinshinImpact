@@ -94,7 +94,7 @@ async def _purge_history() -> None:
     """清空全部会话与落盘记录
 
     - 换过人设或主人后所有人的历史一并作废
-    - 动手前先落记号，删不净或中途断掉都靠下次启动补完
+    - 先落清理记号，删净后撤记号
     """
     _set_pending_mark(True)
     await (await _repo()).delete_all()
@@ -139,7 +139,7 @@ def _set_pending_mark(pending: bool) -> None:
 
 
 def _purge_records() -> bool:
-    """落盘记录清理结果
+    """清掉落盘记录并交是否全清
 
     - 单个删不掉继续删其他的
     """
@@ -156,8 +156,8 @@ def _purge_records() -> bool:
 async def purge_stale(persona: str, session_key: SessionKey) -> SessionDTO:
     """人设版本不符时的历史清理
 
-    - 换过人设或主人而不重开程序时，读取与问答两条路都在此收口
-    - 这一条是兜底路径，动手必记一行，禁静默删掉所有人的历史
+    - 首条记录的人设与当前不符即清空历史与落盘记录
+    - 清理前先记一行日志
     """
     snapshot = await read_session(session_key)
     if snapshot.messages and not matches_persona(persona, snapshot.messages):

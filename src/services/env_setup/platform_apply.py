@@ -2,7 +2,6 @@
 
 - 装一批按目录行取件，再一条命令装进运行环境
 - 卸一只先数实例，再算只属于那只包的发行件名
-- 镜像次序由取件与装机那两侧各自定
 """
 
 from collections.abc import Sequence
@@ -34,8 +33,8 @@ def uninstall_names(platform: str) -> tuple[str, ...]:
     """卸一只平台适配器要动的发行件名
 
     - 适配器包自身，加只有这一只声明过的库
-    - 核心依赖、接口包、别只适配器与启用插件点过的库一律留下
-    - 传递依赖不在这里算，同步环境那一步收口
+    - 核心依赖、接口包、别的适配器与启用插件点过的库一律留下
+    - 只算顶层发行件，传递依赖不在本函数算
     """
     target = next(
         (item for item in installed_adapters() if str(item.platform) == platform), None
@@ -54,7 +53,10 @@ def uninstall_names(platform: str) -> tuple[str, ...]:
 async def apply_updates(
     releases: Sequence[ReleaseRow], on_line: ProgressCallback | None = None
 ) -> list[str]:
-    """按目录行取件并装进运行环境，交出点名到发行件的失败行"""
+    """按目录行取件并装进运行环境
+
+    - 交出点名到发行件的失败行
+    """
     files: list[WheelFile] = []
     notes: list[str] = []
     for release in releases:

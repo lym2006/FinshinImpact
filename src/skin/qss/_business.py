@@ -77,5 +77,5 @@ def build_check_dialog_qss() -> Qss:
 
 
 def build_error_label_qss() -> Qss:
-    """构建字段标红串"""
+    """构建字段标红样式"""
     return Qss(_ERROR_LABEL_QSS)

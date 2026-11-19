@@ -52,8 +52,8 @@ class _BlockMode(StrEnum):
     """一块当前展开到哪一层
 
     - FOLDED 只出读数行
-    - HISTORY 版本清单那一层
-    - WHEELS 盘上件那一层
+    - HISTORY 展开版本清单
+    - WHEELS 展开盘上安装包
     """
 
     FOLDED = "folded"
@@ -65,7 +65,6 @@ class ComponentBlock(QFrame):
     """一只组件一块
 
     - 装卸跑完面板整片重灌，块跟着重建即收起
-    - rows 是同一份完整读数，挡装要按接口包那一行判
     """
 
     def __init__(
@@ -110,7 +109,7 @@ class ComponentBlock(QFrame):
         self._add_actions()
 
     def _add_layer(self) -> None:
-        """展开层的那几行，没展开即不出"""
+        """摆当前展开层的那几行"""
         if self._mode == _BlockMode.HISTORY:
             self._add_versions(older_versions(self._rows, self._row))
         elif self._mode == _BlockMode.WHEELS:
@@ -122,8 +121,9 @@ class ComponentBlock(QFrame):
                 )
 
     def _add_versions(self, lines: Sequence[VersionLine]) -> None:
-        """版本清单的那几版，逐版给一颗装它那版的钮
+        """逐版摆一行
 
+        - 配一颗装这一版的按钮
         - 本机已装那一版不给按钮
         """
         for line in lines:
@@ -134,10 +134,11 @@ class ComponentBlock(QFrame):
             self._add_target(text, line.release, line.blocked)
 
     def _add_actions(self) -> None:
-        """动作栏的按钮，只摆做得到的动作
+        """动作栏按钮
 
+        - 只摆做得到的动作
         - 更新或安装那颗只在有得装时出，置灰时旁边跟一句下一步
-        - 已装包的再多一颗卸载，可展开的层再多两颗
+        - 已装包的多一颗卸载，可展开的层各多一颗展开钮
         - 一颗都没有即整行不出
         """
         installable = (
@@ -165,7 +166,10 @@ class ComponentBlock(QFrame):
         self._add_pair(f"{PlatformMessage.LABEL_ACTION}：", holder)
 
     def _fold_buttons(self) -> list[QPushButton]:
-        """展开两层的那两颗，没内容可展开即不出"""
+        """两层展开按钮
+
+        - 没内容可展开即不出
+        """
         buttons: list[QPushButton] = []
         if self._row.release is not None and len(self._row.release.versions) > 1:
             buttons.append(
@@ -177,7 +181,7 @@ class ComponentBlock(QFrame):
         return buttons
 
     def _toggle(self, mode: _BlockMode, text: str) -> QPushButton:
-        """展开那一层的那颗钮，已展开即写成收起，再点即收起"""
+        """一层展开与收起的按钮"""
         button = make_button(
             PlatformMessage.BTN_FOLD if self._mode == mode else text,
             ButtonStyle.SECONDARY,
@@ -192,7 +196,10 @@ class ComponentBlock(QFrame):
         return button
 
     def _add_target(self, text: str, release: ReleaseRow | None, blocked: str) -> None:
-        """一版可装件的一行，没那一版可装即只报文本"""
+        """摆一版可装件
+
+        - 没得装即只摆文本
+        """
         if release is None:
             self._add_text(text)
             return
@@ -205,7 +212,10 @@ class ComponentBlock(QFrame):
     def _install_button(
         self, release: ReleaseRow | None, text: str, blocked: str
     ) -> QPushButton:
-        """装那一版的那颗，挡着装即置灰，没那一版可装即不接动作"""
+        """装这一版的按钮
+
+        - 挡住即置灰，没有这一版即不接动作
+        """
         button = make_button(text, ButtonStyle.PRIMARY)
         button.setEnabled(release is not None and not blocked)
         if release is not None:

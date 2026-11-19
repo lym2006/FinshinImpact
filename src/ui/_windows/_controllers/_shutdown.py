@@ -47,10 +47,7 @@ class ShutdownController(BaseController):
         self._on_close_intercepted(source)
 
     def shutdown_now(self) -> None:
-        """跳过确认直接退出
-
-        - 致命错误确认后调用
-        """
+        """跳过确认直接退出"""
         if self._is_shutting_down:
             return
         gui_bridge.set_shutdown_pending(True)

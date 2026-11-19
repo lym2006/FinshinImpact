@@ -98,7 +98,10 @@ class BaseClient:
         timeout: float = _DEFAULT_TIMEOUT,
         connect_timeout: float = _CONNECT_TIMEOUT,
     ) -> dict[str, Any] | str | bytes | None:
-        """发起一次 GET 请求，网络与状态码异常原样上抛"""
+        """GET 请求
+
+        - 网络与状态码异常各自转成本体异常上抛
+        """
         async with cls._create_client(
             base_url=base_url,
             headers=headers,

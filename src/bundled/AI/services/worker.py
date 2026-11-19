@@ -46,7 +46,7 @@ def _save_conversation_record(
     """写入对话记录
 
     - 一群一份、一私聊一份，条目内注明发言人
-    - 问句一行与交模型的 user 轮同文，含引用块，只是网址在这里留着原文
+    - 问句一行与交模型的 user 轮同文，网址留原文
     - 落盘失败只记错误，不影响本轮应答
     """
     wrt = (
@@ -87,7 +87,7 @@ async def _collect_reply(
     """收全一轮应答
 
     - 交出正文与是否出错
-    - 拿到端点读数即用它倒推每条消息的打包开销，并记一行对账
+    - 拿到端点读数即倒推每条消息的打包开销并记一行
     """
     final_msg = ""
     has_error = False
@@ -112,7 +112,7 @@ def _kick_compression(
 ) -> None:
     """投递后台压缩协程
 
-    - 压缩不落对话队列，跟用户命令不抢同一条语义
+    - 压缩另起协程跑，不进对话队列
     """
     _logger.info(f"{key} 上下文 {tokens} token 超线，交后台压缩")
     summary_task = asyncio.create_task(compress_history(key, head))

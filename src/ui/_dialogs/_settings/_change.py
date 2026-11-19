@@ -50,7 +50,11 @@ class ChangeConfirmDialog(BaseDialog):
         return dialog.exec() == dialog.DialogCode.Accepted
 
     def _build_ui(self, logs: list[tuple[str, ConfigValue, ConfigValue]]) -> None:
-        """提示语 + diff 表格 + 按钮区"""
+        """拼装弹窗版面
+
+        - 自上而下为提示语、变更表格与底部按钮区
+        - 无变更行时省掉表格，补一段拉伸把按钮区顶回提示语下
+        """
         layout = QVBoxLayout(self)
         layout.setSpacing(SETTINGS_DIALOG.tab_spacing)
         tip = QLabel(CHANGE_DIALOG.tip_text)
@@ -98,7 +102,7 @@ class ChangeConfirmDialog(BaseDialog):
         return table
 
     def _make_buttons(self) -> QHBoxLayout:
-        """返回修改 / 确认保存"""
+        """建底部两颗按钮"""
         btn_layout = QHBoxLayout()
         btn_layout.addStretch()
         btn_cancel = QPushButton(CHANGE_DIALOG.cancel_text)

@@ -66,7 +66,9 @@ def _installed_dir() -> Path:
 
 
 def _plugins_roots() -> list[_PluginRoot]:
-    """列出插件根，随包在前外部在后
+    """插件根清单
+
+    - 随包在前，外部在后
 
     - 外部目录不存在即不进表
     """
@@ -162,8 +164,9 @@ def _read_manifest(dir_path: Path, dir_name: str, pkg: str) -> PluginManifestDTO
 
 
 def _deps_of(plugin_dir: Path, pkg: str) -> tuple[str, ...] | None:
-    """一只插件的库，随包那份按根声明算即空表
+    """插件的依赖表
 
+    - 随包那份的库在根声明里，此处即空表
     - 外部那份交出 None 即自家声明的依赖表读不出，整份不认
     """
     if pkg == PLUGINS_PKG:

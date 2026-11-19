@@ -39,7 +39,7 @@ class AIClient(BaseClient):
         """AI 流式聊天请求
 
         - 解析 SSE delta
-        - 交出读数容器即填入端点报的输入 token 数
+        - 交入读数容器即写入端点报的输入 token 数
         """
         payload = {
             "model": ai_config.model_name,

@@ -88,7 +88,7 @@ def _head_segment(inbound: InboundEventDTO) -> str:
 
 
 def _content_segments(inbound: InboundEventDTO) -> list[str]:
-    """命令段与媒体张数、附文字数各列一段
+    """内容段清单
 
     - 命令整段抄正文，只把连续空白折成单空格
     - 张数按媒体条目计，同图的多档分辨率只算一条目

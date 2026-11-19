@@ -54,11 +54,15 @@ def _cmd_forms(manifest: dict[str, Any]) -> list[str]:
 
 
 class _PluginSearch(QWidget):
-    """搜索输入框、筛选档与空命中提示三件"""
+    """插件行搜索件
+
+    - 输入框、筛选档与空命中提示三样
+    """
 
     def __init__(self, rows: ThemedList) -> None:
-        """接上要筛的清单，行上的最小清单按 ROLE_MANIFEST 取
+        """接上要筛的清单
 
+        - 行上的最小清单按列表项数据角色取
         - 清单由装配入口创建，本件只切每行的显隐
         """
         super().__init__()
@@ -83,7 +87,11 @@ class _PluginSearch(QWidget):
         self._scope.currentIndexChanged.connect(self.refresh)
 
     def mount(self, layout: QVBoxLayout) -> None:
-        """把搜索行插到清单上方、空命中提示接到清单下方"""
+        """挂上搜索行与空命中提示
+
+        - 搜索行插到清单上方
+        - 空命中提示接到清单下方
+        """
         index = layout.indexOf(self._rows)
         layout.insertWidget(index, self)
         layout.insertWidget(index + 2, self._tip)
@@ -93,7 +101,7 @@ class _PluginSearch(QWidget):
 
         - 空串即整表恢复显示，勾选态本就没动过
         - 隐藏行仍算在启用集里，保存按整张表提交
-        - 行上挂的控件跟着行一起隐，只隐行会盖住顶行
+        - 行上挂的控件跟着行一起隐
         """
         query = self._edit.text().strip().lower()
         scope = self._scope.currentData()
@@ -110,8 +118,9 @@ class _PluginSearch(QWidget):
 
 
 def build_searchable_list(layout: QVBoxLayout) -> tuple[ThemedList, _PluginSearch]:
-    """装配可搜索的插件清单，交出清单与搜索件
+    """装配可搜索插件清单
 
+    - 交出清单与搜索件
     - 清单、搜索行与空命中提示按这个顺序进布局
     - 行内容仍由调用方填，重拼行之后要叫搜索件补筛一次
     """

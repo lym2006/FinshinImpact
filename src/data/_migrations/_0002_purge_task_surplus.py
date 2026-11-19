@@ -1,7 +1,8 @@
-"""抹掉任务与主体表上没人读的列
+"""抹掉任务与主体表的废弃列
 
-- 建在这些列上的索引先撤，任务索引随后按剩下的列重建
-- 逐列先核在不在，重跑迁移不报错
+- 先撤建在这些列上的索引
+- 重建按剩余列的任务索引
+- 逐列核过在不在再删
 """
 
 import aiosqlite
@@ -31,7 +32,7 @@ _TASK_INDEX = (
 
 
 async def apply(conn: aiosqlite.Connection) -> None:
-    """撤索引、逐列删除并重建任务索引"""
+    """执行任务与主体表废弃列清理"""
     for name in _DROPPED_INDEXES:
         await conn.execute(f"DROP INDEX IF EXISTS {name}")
 

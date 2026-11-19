@@ -23,7 +23,7 @@ class _LogSignal(QObject):
 
 
 class TextHandler(logging.Handler):
-    """仪表盘日志重定向 Handler"""
+    """仪表盘日志重定向处理器"""
 
     def __init__(self, widget: "DashboardWidget", formatter: logging.Formatter) -> None:
         super().__init__()

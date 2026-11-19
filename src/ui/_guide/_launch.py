@@ -2,7 +2,6 @@
 
 - 选窗收场到主窗就绪之间给出可见的等待界面
 - 启动导入分步泵事件，卡片靠正计时与重绘应答活着
-- 主程序导入须留在主线程跑，界面组件在导入期即建 QObject
 """
 
 import time
@@ -25,8 +24,9 @@ from .._lifecycle import Ticker, ensure_app
 
 
 class _LaunchWaitDialog(QDialog):
-    """无边框提示卡，图标加两行文案带正计时
+    """无边框启动提示卡
 
+    - 图标、两行文案与正计时
     - 分步泵事件让秒表逐秒刷新，界面全程有应答
     """
 
@@ -73,12 +73,15 @@ class _LaunchWaitDialog(QDialog):
         self._center_on_screen()
 
     def _tick(self) -> None:
-        """副注行刷成正计时，泵到即跳秒"""
+        """副注行刷成正计时
+
+        - 事件泵到即跳秒
+        """
         sec = int(time.monotonic() - self._start)
         self._note.setText(PickerMessage.LAUNCHING_ELAPSED.format(sec=sec))
 
     def _center_on_screen(self) -> None:
-        """屏幕正中落位，无边框窗不会自动居中"""
+        """屏幕正中落位"""
         area = ensure_app().primaryScreen().availableGeometry()
         self.move(
             area.x() + (area.width() - self.width()) // 2,
@@ -95,7 +98,7 @@ def show_launch_wait(code: str) -> QDialog:
     """弹出启动提示卡并交回句柄
 
     - 调用方主窗就绪后对句柄 close 收起
-    - 两轮 processEvents 分别兑现建窗与首帧合成，此后靠分步泵保持应答
+    - 交回前先跑两轮事件，让窗与首帧都画出来
     """
     app = ensure_app()
     dialog = _LaunchWaitDialog(code)

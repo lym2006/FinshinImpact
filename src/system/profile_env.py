@@ -85,7 +85,7 @@ def set_profile(code: str) -> str:
 def profile_dir(code: str) -> Path:
     """按身份码定位实例目录
 
-    - 空身份码直接抛错，绝不回退父目录
+    - 空身份码抛 ValueError
     """
     clean = _sanitize_profile(code)
     if not clean:

@@ -8,10 +8,7 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class _PaletteTheme:
-    """深色主题调色板
-
-    - 字段按用途命名，消费方按用途取值
-    """
+    """深色主题调色板"""
 
     bg: str = "#1E1E1E"  # 窗口背景色
     color: str = "#D4D4D4"  # 文字色

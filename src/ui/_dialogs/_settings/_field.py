@@ -1,7 +1,7 @@
 """字段渲染
 
 - 按 schema 渲染表单控件与标签
-- 持有控件表与标签表，恢复登记另交一只登记表件
+- 持有表单控件表与标签表
 """
 
 from copy import deepcopy
@@ -226,7 +226,7 @@ class FieldBuilder:
         """构造右侧区域
 
         - 输入框与可选恢复按钮，外加说明文字
-        - 枚举项不挂恢复钮：选中即意图，无"偏离默认"可恢复
+        - 枚举项不挂恢复按钮
         """
         right_wrapper = QWidget()
         v_layout = QVBoxLayout(right_wrapper)

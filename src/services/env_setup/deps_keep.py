@@ -1,7 +1,7 @@
 """环境保留清单
 
 - 五路依赖并成一份去重的保留清单，同名取先读到的那条 pin
-- 同名被两处钉了不同版本时交出说明行，供同步动手前播报
+- 同名被两处钉了不同版本时交出说明行
 """
 
 from finshin_sdk.domain import (
@@ -26,7 +26,7 @@ def keep_union(exclude: Platform | None = None) -> list[str]:
 
     - 核心依赖、接口包、适配器声明依赖、已装适配器包与全实例启用插件依赖并集
     - 同一只库只留一条，取各路顺序里先读到的那条 pin
-    - 本实例刚保存的启用集已在盘上，并集即最新状态
+    - 启用集按盘上状态现读
     - 点名排除即不计那一平台适配器的声明与包
     """
     return _merge_keep(exclude)[0]
@@ -35,8 +35,7 @@ def keep_union(exclude: Platform | None = None) -> list[str]:
 def keep_conflicts() -> list[str]:
     """同一只库被两处钉了不同版本时的说明行
 
-    - 保留按各路顺序取先到的，报的是让开的那一条
-    - 清单照旧能跑，这句只把谁让了谁摆到台面上
+    - 报的是同一只库后面那路被丢下的 pin
     """
     return _merge_keep()[1]
 
@@ -45,7 +44,6 @@ def dev_dependencies() -> list[str]:
     """读取开发工具清单
 
     - 只取钉了版本的条目，声明文件不在场返回空表
-    - 仅供同步环境时保留已装工具
     """
     data = declaration(DEVTOOLS_DECLARATION)
     return [
@@ -67,7 +65,7 @@ def _keep_sources(exclude: Platform | None = None) -> list[list[str]]:
 def _installed_sdk_pin() -> list[str]:
     """已装接口包的 pin
 
-    - 不在场不追加，避免 sync 顺带从索引强装
+    - 不在场不追加
     """
     version = installed_version(SDK_DISTRIBUTION)
     return [f"{SDK_DISTRIBUTION}=={version}"] if version else []

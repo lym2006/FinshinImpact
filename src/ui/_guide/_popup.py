@@ -14,7 +14,10 @@ from .._lifecycle import ensure_app
 
 
 def confirm_popup(title_text: str, body: str, parent: QWidget | None = None) -> bool:
-    """模态二次确认，默认按钮停在否"""
+    """模态二次确认
+
+    - 默认按钮停在否
+    """
     box = _box(title_text, body, QMessageBox.Icon.Question, parent)
     yes = box.addButton(DialogMessage.CONFIRM_YES, QMessageBox.ButtonRole.AcceptRole)
     no = box.addButton(DialogMessage.CONFIRM_NO, QMessageBox.ButtonRole.RejectRole)
@@ -31,7 +34,10 @@ def show_popup(
     icon_warning: bool = True,
     parent: QWidget | None = None,
 ) -> None:
-    """模态弹出一句提示，只给一只「知道了」"""
+    """模态提示窗
+
+    - 只给一颗「知道了」
+    """
     icon = QMessageBox.Icon.Warning if icon_warning else QMessageBox.Icon.Information
     box = _box(title_text, body, icon, parent)
     box.addButton(DialogMessage.NOTICE_OK, QMessageBox.ButtonRole.AcceptRole)
@@ -41,7 +47,11 @@ def show_popup(
 def _box(
     title_text: str, body: str, icon: QMessageBox.Icon, parent: QWidget | None = None
 ) -> QMessageBox:
-    """装配一只不带按钮的提示窗，按钮由调用处点名"""
+    """装配一只提示窗
+
+    - 样式、图标、标题与正文就地定下
+    - 按钮一概不摆，由调用处点名
+    """
     ensure_app()
     box = QMessageBox(parent)
     box.setStyleSheet(build_bootstrap_qss())

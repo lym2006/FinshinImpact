@@ -22,7 +22,7 @@ class SqliteMediaRepository(MediaRepository):
     async def register(self, ref: MsgReferenceDTO, entry: MediaEntryDTO) -> None:
         """登记一条媒体索引
 
-        - 同定位同序号重写即覆盖本地路径与体积
+        - 同定位同序号重写即覆盖路径、体积与登记时间
         """
         await self._conn.execute(
             "INSERT INTO media_asset(platform, container, message_id, kind, slot,"
@@ -69,7 +69,7 @@ class SqliteMediaRepository(MediaRepository):
     async def delete_by_principal(self, key: PrincipalKey) -> int:
         """清除主体全部媒体索引
 
-        - 群媒体的索引归容器，群内任一成员清除即整容器生效
+        - 按主体键的容器段整段清除
         """
         platform, container = _split_container_segment(key)
         async with self._conn.execute(

@@ -1,6 +1,6 @@
 """SQLite 存储门面
 
-- aiosqlite 驱动的仓储实现归属地
+- 代发连接入口与仓储装配
 """
 
 from ._connection import close_all, get_connection

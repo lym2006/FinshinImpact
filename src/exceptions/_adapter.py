@@ -1,6 +1,6 @@
 """适配器异常族
 
-- 定义平台装配件缺失、版本不合与被拒装的异常
+- 定义适配器安装、版本与引本体内部三类异常
 """
 
 from finshin_sdk.exceptions import BotError
@@ -9,7 +9,7 @@ from finshin_sdk.exceptions import BotError
 class AdapterError(BotError):
     """适配器异常基类
 
-    - 致命等级整族置真：出路在装件、更新或换件，改配置修不好
+    - 整族致命等级置真
     """
 
     fatal = True
@@ -24,7 +24,7 @@ class AdapterMissingError(AdapterError):
 
 
 class AdapterNotInstalledError(AdapterError):
-    """适配器声明在场，环境里取不到那只包"""
+    """适配器包不在环境里"""
 
     def __init__(self, platform: str, module: str) -> None:
         self.platform = platform
@@ -43,7 +43,7 @@ class AdapterOutOfDateError(AdapterError):
 
 
 class AdapterImportError(AdapterError):
-    """外部适配器引了本体内部"""
+    """外部适配器导入本体内部模块"""
 
     def __init__(self, platform: str, target: str, where: str) -> None:
         self.platform = platform

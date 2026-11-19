@@ -4,8 +4,8 @@
 - 判定纯实测：启用插件的 pip 包与内核逐项查盘，全齐即静默放行
 - 启用集增删不触发结算，缺什么补什么只认实测缺失
 - 装失败即禁用相关插件并弹窗告知，降级为不含该插件的启动
-- 禁用与卸载分开：结算只装不删，删包只发生在依赖同步里
-- 不清包缓存，清理并入环境维护手动入口
+- 结算只装不删，删包走依赖同步
+- 包缓存清理走环境维护手动入口
 """
 
 from finshin_sdk.domain import ManifestKey
@@ -46,23 +46,22 @@ def _collect_missing(code: str) -> list[_Pending]:
 def _install_missing(
     plan: list[_Pending], on_line: ProgressCallback | None
 ) -> list[str]:
-    """按计划补装缺失依赖与资源
-
-    - 重复安装同一包会快速跳过，被删的内核借同一命令重新下载
-    """
+    """按计划补装缺失依赖与资源"""
     failed: list[str] = []
     for name, missing, assets in plan:
         emit(on_line, PluginMessage.STARTUP_INSTALL.format(name=name))
+
+        # 重复装同一包会快速跳过，被删的内核借同一命令重新下载
         failed += install_deps(missing, on_line)
         failed += install_assets(assets, on_line)
     return failed
 
 
 def settle_runtime(code: str) -> None:
-    """启动前结算 runtime 依赖，装完才放行启动
+    """启动前结算 runtime 依赖
 
+    - 开发模式下不结算
     - 实测全齐直接返回，不弹任何窗
-    - 装失败即禁用相关插件并弹窗告知，不带着错误启动
     - 进度窗任务未完禁关，强退进程等于放弃本次启动
     """
     if dev_mode():

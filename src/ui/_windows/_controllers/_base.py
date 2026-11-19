@@ -29,7 +29,7 @@ class BaseController(ABC):
     def _execute(self) -> None:
         """业务逻辑入口
 
-        - 未实现时实例化抛 TypeError，由 ABC 元类强制
+        - 未实现时实例化抛 TypeError
         """
 
     def __init__(self, gui_ref: "BotGUI") -> None:

@@ -1,7 +1,7 @@
 """信号处理
 
 - asyncio 线程执行 GUI 信号回调
-- 持有应用与人设定稿任务句柄，串行化配置应用防重入
+- 持有配置应用与人设定稿两个任务句柄，同一时间只跑一次配置应用
 """
 
 import asyncio
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 class SignalHandler:
     """信号处理器
 
-    - 与 BotManager 一对一绑定，全部方法跑在 asyncio 线程
+    - 所有方法都跑在同一个事件循环线程
     """
 
     def __init__(self, host: "BotManager") -> None:

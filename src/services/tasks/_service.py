@@ -129,7 +129,7 @@ def configure_task_service(
 ) -> TaskService:
     """按本次注册交来的处理清单装配服务
 
-    - 重复装配换整套处理清单，旧实例里在跑的协程归上一次收尾管
+    - 重复装配换整套处理清单
     """
     global _service
     _service = TaskService(handlers, ledger=ledger, on_fault=on_fault)

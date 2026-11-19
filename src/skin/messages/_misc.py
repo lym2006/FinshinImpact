@@ -4,7 +4,7 @@
 class MiscMessage:
     """全局杂项文案
 
-    - 跨窗口的零散话术与工具栏装配数据聚合入口
+    - 跨窗口的零散话术与工具栏按钮表
     """
 
     # 用：ui/_windows/_assembly.py 装配期崩溃弹窗

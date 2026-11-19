@@ -3,7 +3,7 @@
 - 引导锁内完成身份选择与启动结算，再抢实例锁
 - 非正常启动结果分别提示并给出退出码
 - 抢到实例锁才导入主程序，路径常量在导入期随身份码确定
-- utils 与引擎重依赖后台线程导入，主线程全程泵事件让提示卡秒表连走
+- 工具层与引擎的导入交后台线程，主线程全程泵事件让提示卡秒表连走
 """
 
 import importlib
@@ -47,7 +47,8 @@ class _SlotResult(IntEnum):
 def _acquire_slot() -> _SlotResult:
     """取得本实例的启动资格
 
-    - 引导锁内先选身份再抢实例锁，两锁交接无间隙
+    - 引导锁内先选身份再抢实例锁
+    - 插件目录与状态指纹不符时先开面板，再结算依赖并补装缺库
     - 引导锁被占说明已有选择窗打开，本进程直接退出
     - 选窗关闭即释放引导锁，运行期间双击启动器仍可再开选择窗
     """
@@ -120,7 +121,7 @@ def _handle(result: _SlotResult) -> int | None:
 def _pump() -> None:
     """泵一轮事件让提示卡应答重绘
 
-    - 秒表与重绘由本函数泵出，泵点越密跳秒越顺
+    - 泵一轮界面事件，提示卡秒表随之跳秒
     """
     from ui import pump_events
 
@@ -144,7 +145,7 @@ def _preload_engine_async() -> threading.Thread:
 
 
 def _preload_engine_worker() -> None:
-    """子线程里付 utils 与引擎导入费
+    """子线程导入工具层与引擎
 
     - utils 先落位发信号，导入失败也放行，交主线程兜底重导
     - 引擎预热按清单逐份走，一份失败不拦其余
@@ -182,7 +183,7 @@ def _wait_preload(thread: threading.Thread) -> None:
 
 
 def _pump_imports() -> threading.Thread:
-    """后台预热打底，主线程分步导入装配链并步间泵事件
+    """分步导入装配链并在步间泵事件
 
     - utils 与引擎交后台线程，主线程泵到 utils 落位才续导 GUI 链
     - GUI 链与 aiogram 预热并行
@@ -219,7 +220,6 @@ def main() -> int:
 def _pop_crash(exc: Exception) -> None:
     """把启动炸点报给人看
 
-    - 这一段日志器还没挂上，只能靠屏幕那一句报给人
     - 带类名与消息那一行，调用链不上屏
     """
     from skin.messages import MiscMessage
@@ -229,7 +229,7 @@ def _pop_crash(exc: Exception) -> None:
 
 
 def _guide() -> int:
-    """资格判定、提示卡与主程序装配
+    """启动引导
 
     - 完成资格判定后，持锁进程才导入主程序
     - 须先写入身份码环境变量，再导入路径常量
@@ -253,7 +253,10 @@ def _guide() -> int:
         wait.close()
 
     def on_ready() -> None:
-        """主窗就绪，收起提示卡并预热字节码"""
+        """主窗就绪
+
+        - 收起提示卡并预热字节码
+        """
         dismiss_wait()
         start_warmup()
 

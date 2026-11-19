@@ -104,7 +104,11 @@ def _render_config(config_data: AppConfigData, *, notes: NotesBySection) -> str:
 
 
 def _identities(names: Iterable[str]) -> list[str]:
-    """按首次出现排出的来源身份码，不带前缀的段不算"""
+    """来源身份码序列
+
+    - 按首次出现的顺序排
+    - 不带前缀的段不算
+    """
     found: list[str] = []
     for name in names:
         identity = name.rpartition(".")[0]
@@ -116,8 +120,9 @@ def _identities(names: Iterable[str]) -> list[str]:
 def _section_units(
     header: tuple[str, ...], values: TabData, note: SectionNotes | None
 ) -> list[str]:
-    """一段的表头块，带说明子表则紧随其后
+    """段的表头块
 
+    - 带说明子表则紧随其后
     - 没键值又带说明的段不写父表头，只写说明那一层
     """
     units: list[str] = []
@@ -141,8 +146,9 @@ def _pair(key: str, value: Any) -> str:
 
 
 def _render_value(value: Any) -> str:
-    """值的 TOML 写法，成员值即落盘值
+    """值的 TOML 写法
 
+    - 成员值即落盘值
     - 空值没有 TOML 写法，连同不认识的类型一并抛错，由保存处整份拒写
     """
     if isinstance(value, str):
@@ -169,7 +175,11 @@ def _quoted_key(key: str) -> str:
 
 
 def _quoted_str(value: str) -> str:
-    """basic string 单形：非 ASCII 原样出，控制符转义"""
+    """加双引号的 basic string
+
+    - 非 ASCII 原样出
+    - 控制符转义
+    """
     parts: list[str] = []
     for char in value:
         escape = _STRING_ESCAPES.get(char)
@@ -184,8 +194,9 @@ def _quoted_str(value: str) -> str:
 
 
 def _sources(document: Mapping[str, Any]) -> dict[str, Any]:
-    """只认来源块，摊成段名到键值表
+    """来源块摊平
 
+    - 摊成段名到键值表
     - 段名写作「身份码.段名」
     - 块内除身份码还有别的直接键：整块不进配置，那几个键按身份码另立一段保留
     - 身份码为空时那段取 `source.序号`
@@ -253,8 +264,9 @@ def _flatten(
 
 
 def _write_order(names: Iterable[str]) -> list[str]:
-    """输出顺序跟随传入顺序，只把父段插到子段之前
+    """段的输出顺序
 
+    - 跟随传入顺序，只把父段插到子段之前
     - 段名与说明子表同名，先去重
     """
     ordered: list[str] = []

@@ -2,7 +2,7 @@
 
 - 面板的保存请求在这里算变更、起校验轮并暂存候选
 - 候选先只进内存，校验通过那一次才写磁盘
-- 对话身份是否变动记在这里，收尾文案由面板侧取用
+- 记下对话身份是否变动，收尾按它选文案
 """
 
 from typing import TYPE_CHECKING
@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 class SaveCoordinator:
     """保存流程协调器
 
-    - 与配置控制器一对一绑定，读它的面板、模式与就绪缓存
+    - 读宿主的面板、模式与就绪缓存
     - 落盘失败只解锁面板，候选原样留着待下次保存
     """
 
@@ -87,7 +87,7 @@ class SaveCoordinator:
         self.start_verify(dialog, new_config)
 
     def start_recheck(self, dialog: SettingsDialog) -> None:
-        """向导态下未改动仍保存，起一轮纯复验
+        """向导态下未改动仍起复验
 
         - 复验不落盘，通过后只收检测窗
         """
@@ -130,7 +130,7 @@ class SaveCoordinator:
     def write_pending(self, candidate: AppConfigData) -> bool:
         """落盘本次校验通过的候选
 
-        - 先验后存的落盘时刻：内存早已就位，磁盘只给验证过的内容
+        - 只把校验通过的候选写入磁盘
         """
         verify = self._host._verify
         verify.pending_candidate = None

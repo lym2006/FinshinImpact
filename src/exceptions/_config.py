@@ -47,7 +47,7 @@ class ConfigPathMissingError(ConfigError):
 class ConfigAttrError(ConfigError):
     """配置取值异常
 
-    - 类型不匹配
+    - 取值类型与期望类型不符
     """
 
     def __init__(

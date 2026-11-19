@@ -83,9 +83,10 @@ def component_rows(catalog: Catalog | None) -> tuple[ComponentRow, ...]:
 
 
 def present_platforms() -> frozenset[str]:
-    """本机装着适配器包的那些平台码，接口包那行不算平台
+    """本机装着适配器包的平台码
 
-    - 源码仓挂着但没装进环境的不算可用，代码取不到
+    - 接口包那行不算平台
+    - 源码仓挂着但没装进环境的不算可用
     """
     return frozenset(
         row.platform for row in _rows(None) if row.platform and row.installed
@@ -93,7 +94,10 @@ def present_platforms() -> frozenset[str]:
 
 
 def _rows(catalog: Catalog | None) -> tuple[ComponentRow, ...]:
-    """按本机在场件与目录行排出组件行，接口包在最前"""
+    """按本机在场件与目录行排出组件行
+
+    - 接口包在最前
+    """
     installed = _installed_by_platform()
     requires = _declared_requires()
     tree = {str(platform): name for platform, name in tree_distributions().items()}
@@ -132,14 +136,20 @@ def _rows(catalog: Catalog | None) -> tuple[ComponentRow, ...]:
 
 
 def _sdk_tree_name() -> str:
-    """挂载的接口包仓在场即交出它声明的发行件名，不在场交出空串"""
+    """挂载接口包仓声明的发行件名
+
+    - 挂载仓不在场交出空串
+    """
     return project_value("name", ROOT_DIR / _SDK_TREE_DIR / DECLARATION_FILE_NAME)
 
 
 def _distribution_name(
     tree_name: str, item: InstalledAdapter | None, release: ReleaseRow | None
 ) -> str:
-    """发行件名，挂载仓那份、已装包元数据、目录行三处取到哪个算哪个"""
+    """取发行件名
+
+    - 挂载仓那份、已装包元数据、目录行三处取到哪个算哪个
+    """
     if tree_name:
         return tree_name
     if item is not None:
@@ -156,7 +166,10 @@ def _row(
     requires: str,
     release: ReleaseRow | None,
 ) -> ComponentRow:
-    """拼一行组件，归属档由来路、本机版本与目录行比出来"""
+    """拼一行组件
+
+    - 归属档由来路、本机版本与目录行比出来
+    """
     return ComponentRow(
         platform=platform,
         distribution=distribution,
@@ -191,7 +204,10 @@ def _bucket_of(
 
 
 def _source_of(in_tree: bool, has_package: bool) -> ComponentSource:
-    """代码与声明从哪来，挂载仓那份与已装包各记各的"""
+    """代码与声明的来路
+
+    - 挂载仓那份与已装包各记各的
+    """
     if in_tree:
         return (
             ComponentSource.TREE_INSTALLED if has_package else ComponentSource.TREE_ONLY
@@ -203,7 +219,10 @@ def _source_of(in_tree: bool, has_package: bool) -> ComponentSource:
 
 
 def _releases_by_code(catalog: Catalog | None) -> dict[str, ReleaseRow]:
-    """目录行按平台码归表，接口包那行记在空位下"""
+    """目录行按平台码归表
+
+    - 接口包那行记在空位下
+    """
     if catalog is None:
         return {}
     rows = {str(platform): release for platform, release in catalog.adapters.items()}
@@ -219,7 +238,10 @@ def _installed_by_platform() -> dict[str, InstalledAdapter]:
 
 
 def _declared_requires() -> dict[str, str]:
-    """本机在场适配器声明的接口包版本要求，按平台码归表"""
+    """本机在场适配器声明的接口包版本要求
+
+    - 按平台码归表
+    """
     return {
         str(dto.platform): dto.requires_sdk for dto in load_adapter_manifests().values()
     }

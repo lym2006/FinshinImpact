@@ -46,7 +46,7 @@ class ConfigApplier:
         """应用当前配置
 
         - 校验通过才重启服务
-        - 没过即把内存回退并交向导说话
+        - 没过即把内存回退并请用户重填配置
         """
         host = self._host
         if host._shutdown:
@@ -100,7 +100,7 @@ class ConfigApplier:
     async def _settle_failure(self, from_candidate: bool) -> None:
         """校验没过的收尾
 
-        - 候选轮把内存退回盘上的可信值，非候选轮内存本就和盘一致
+        - 候选轮按盘上的值重载配置
         - 代理不通作废断连周期，配置问题只由向导说话
         """
         host = self._host
@@ -124,6 +124,7 @@ class ConfigApplier:
         """向订阅了配置校验通过时机的件交代
 
         - 同时发就绪旗，界面据此收尾
+        - 逐个跑订阅了校验通过时机的件
         - 跳过重启与真重启两支都走这里，订阅侧不必自己分辨
         """
         gui_bridge.config_ready_changed.emit(True)
@@ -143,7 +144,7 @@ class ConfigApplier:
         return (owner.strip(), applied_persona_text())
 
     async def commit_persona(self, text: str, source: str) -> None:
-        """人设正文一次独立落盘
+        """人设正文落盘并按正文变化清历史
 
         - 文件与存档都写成才换正文
         - 正文与生效值相同即只结清文件，不动历史
@@ -168,7 +169,7 @@ class ConfigApplier:
         gui_bridge.request_persona_applied.emit(tip)
 
     async def reset_identity(self) -> bool:
-        """清掉全部会话与落盘记录
+        """跑订阅了「身份变了」时机的件并记下新身份
 
         - 没件订阅「身份变了」即不清也不落基准，下一轮或读取侧对账补上
         """
@@ -182,7 +183,7 @@ class ConfigApplier:
         return True
 
     async def _reset_stale_identity(self) -> None:
-        """人设正文或主人变更后立即清掉对话历史
+        """按身份变化清掉对话历史
 
         - 首次应用只记基准，不动已有历史
         """

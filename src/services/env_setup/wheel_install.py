@@ -1,7 +1,7 @@
 """wheel 发行件装进运行环境
 
 - 一条命令带全部 wheel 与 --find-links，本地包互相喂依赖
-- 逐只点名重装，盘上已有一只同名的旧件也要换成手上这只
+- 逐只点名重装
 - 整批失败转逐只重试，收集装不进的发行件
 - 装完按本机读到的版本复核，对不上即点名，不报成功
 """
@@ -30,7 +30,10 @@ class WheelFile:
 
 
 def _install_flags(files: Sequence[WheelFile]) -> list[str]:
-    """拼一次装 wheel 的 uv 参数，逐只点名重装"""
+    """拼一次装 wheel 的 uv 参数
+
+    - 逐只点名重装
+    """
     return [
         "pip",
         "install",
@@ -47,8 +50,9 @@ def _install_flags(files: Sequence[WheelFile]) -> list[str]:
 def install_releases(
     files: Sequence[WheelFile], on_line: ProgressCallback | None = None
 ) -> list[str]:
-    """把 wheel 装进运行环境，交出装不进的说明行
+    """把 wheel 装进运行环境
 
+    - 交出装不进的说明行
     - 一条命令带全部件，本地包互相喂依赖，逐只点名重装
     - 整批失败转逐只重试，逐只点名
     - 装完按本机读到的版本复核，对不上即点名

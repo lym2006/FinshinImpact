@@ -68,7 +68,10 @@ class LinkWatcher(QObject):
         self._show(status)
 
     def _block_reason(self) -> str:
-        """当前压住弹窗的原因，没压住交空串"""
+        """当前压住弹窗的原因
+
+        - 没压住交空串
+        """
         if self._muted:
             return EngineMessage.BLOCK_MUTED
         if self._dismissed:
@@ -99,7 +102,10 @@ class LinkWatcher(QObject):
         self._dialog = dialog
 
     def _on_close(self) -> None:
-        """收起本次断连弹窗，再断连再弹"""
+        """收起本次断连弹窗
+
+        - 只压本次断连，恢复后再断连照弹
+        """
         self._dismissed = True
         self._dialog = None
 

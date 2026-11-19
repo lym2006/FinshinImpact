@@ -2,8 +2,8 @@
 
 - 镜像按序优先、官方直链兜底，代理地址原样递下去
 - 目录行对应的件已在盘上且指纹对得上即不重取
-- 核过指纹的件把指纹留在同目录一份索引里，目录取不到时仍认得这份件
-- 按发行件名盘点什么件已在这台机器上，不读内容
+- 核过指纹的件把指纹记进同目录一份索引
+- 按发行件名盘点盘上属于它的件
 - 先落 .part 再改名，半截件不留盘
 - 每个源的坏法各记一句，合进一条点名到发行件的说明
 """
@@ -46,7 +46,10 @@ class DownloadOutcome:
 
 
 def file_name_of(url: str) -> str:
-    """取直链末段的 wheel 文件名，形态不对交出空串"""
+    """取直链末段的 wheel 文件名
+
+    - 形态不对交出空串
+    """
     name = PurePosixPath(urlsplit(url).path).name
     if not name.endswith(_WHEEL_SUFFIX) or "\\" in name:
         return ""
@@ -54,13 +57,19 @@ def file_name_of(url: str) -> str:
 
 
 def version_in_name(name: str) -> str:
-    """取 wheel 文件名第二段版本号，段数不对交出空串"""
+    """取 wheel 文件名第二段版本号
+
+    - 段数不对交出空串
+    """
     parts = name.split("-")
     return parts[1] if len(parts) >= _WHEEL_PARTS else ""
 
 
 def _recorded_digests(target_dir: Path) -> dict[str, str]:
-    """本机记过的件与指纹，索引不在场或读不出即空"""
+    """本机记过的件与指纹
+
+    - 索引不在场或读不出即空
+    """
     path = target_dir / _INDEX_NAME
     if not path.is_file():
         return {}
@@ -79,7 +88,11 @@ def _recorded_digests(target_dir: Path) -> dict[str, str]:
 
 
 def _record_digest(target_dir: Path, name: str, sha256: str) -> bool:
-    """把核过的指纹记进本机索引，写不进即不记，读数按没记处理"""
+    """把核过的指纹记进本机索引
+
+    - 写不进即不记
+    - 读数按没记处理
+    """
     table = _recorded_digests(target_dir)
     table[name] = sha256
     try:
@@ -94,8 +107,9 @@ def _record_digest(target_dir: Path, name: str, sha256: str) -> bool:
 
 
 def local_release(distribution: str, name: str, target_dir: Path) -> ReleaseRow | None:
-    """本机记过指纹的那份件拼成一行可装目标，没记或读不出版本即不交出
+    """本机记过指纹的那份件拼成一行可装目标
 
+    - 没记或读不出版本即不交出
     - 盘上那份件与记下的指纹不符即不算
     """
     sha256 = _recorded_digests(target_dir).get(name, "")
@@ -115,7 +129,10 @@ def local_release(distribution: str, name: str, target_dir: Path) -> ReleaseRow 
 
 
 def _sources(url: str, mirrors: Sequence[str]) -> list[str]:
-    """按镜像优先、官方直链兜底排出取件源"""
+    """排出取件源
+
+    - 镜像按序优先，官方直链兜底
+    """
     return [f"{mirror}{url}" for mirror in mirrors] + [url]
 
 
@@ -130,8 +147,10 @@ def is_cached(row: ReleaseRow, target_dir: Path) -> bool:
 
 
 def disk_files(distribution: str, target_dir: Path) -> tuple[str, ...]:
-    """盘上属于这只发行件的 wheel 文件名，按名升序，目录不在场即空
+    """盘上属于这只发行件的 wheel 文件名
 
+    - 按名升序
+    - 目录不在场即空
     - 下载没跑完的 .part 不算一份件
     """
     if not target_dir.is_dir():

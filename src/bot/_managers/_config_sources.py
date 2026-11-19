@@ -52,8 +52,9 @@ _DATA_SECTION = SectionSpec(
 
 
 def config_sources() -> tuple[ConfigSource, ...]:
-    """按平台、已启用插件、本体的顺序拼出本实例的来源清单
+    """配置来源清单拼装
 
+    - 平台、已启用插件、本体依次成序
     - 来源顺序即面板大类的行序，段内顺序照交出者给的顺序
     """
     return (_adapter_source(), *_plugin_sources(), _core_source())
@@ -80,7 +81,10 @@ def _core_source() -> ConfigSource:
 
 
 def _plugin_sources() -> tuple[ConfigSource, ...]:
-    """各已启用插件自己交出的来源，按启用序列排"""
+    """已启用插件交出的来源
+
+    - 按启用序列排
+    """
     sources: list[ConfigSource] = []
     for manifest in enabled_manifests(PROFILE_DIR / PluginFileName.STATE):
         try:

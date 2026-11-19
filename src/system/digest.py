@@ -1,7 +1,7 @@
 """指纹计算
 
 - 文件、字节、文本与行清单四种口径各一个出口
-- 行清单的连接符只有这一处定义
+- 行清单按换行符连接后取指纹
 """
 
 import hashlib
@@ -13,7 +13,10 @@ _LINES_JOIN = "\n"
 
 
 def file_digest(path: Path) -> str:
-    """算文件字节指纹，读不出交出空串"""
+    """算文件字节指纹
+
+    - 读不出交出空串
+    """
     try:
         return _bytes_digest(path.read_bytes())
     except OSError:
@@ -31,5 +34,8 @@ def text_digest(text: str) -> str:
 
 
 def lines_digest(lines: Sequence[str]) -> str:
-    """算行清单的指纹，行序参与取值"""
+    """算行清单的指纹
+
+    - 行序参与取值
+    """
     return text_digest(_LINES_JOIN.join(lines))

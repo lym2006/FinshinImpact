@@ -2,7 +2,7 @@
 
 - 向导调度、二次确认与热重载
 - 面板与业务弹窗同为窗口模态：EDIT/SETUP 同实例原地切换
-- 重启等待窗原地换成结果，一路只出这一只窗
+- 重启等待窗原地换成结果
 - 保存与落盘、校验轮各交一只协调器
 """
 
@@ -74,7 +74,7 @@ class SettingsController(BaseController):
     def _on_service_restarting(self, restarting: bool) -> None:
         """起收热重启等待窗
 
-        - 重启只在保存配置校验通过后发生，窗全程不给用户出口
+        - 窗全程不给用户出口
         - 成功不收窗，结果由就绪那条写进同一只窗
         """
         if restarting:
@@ -83,9 +83,10 @@ class SettingsController(BaseController):
         close_restart_wait()
 
     def _on_config_ready_changed(self, ready: bool) -> None:
-        """更新就绪缓存
+        """就绪后收尾本轮校验
 
-        - 校验通过自动关闭进度窗，失败保留窗口供查看
+        - 未就绪时按需起启动等待窗
+        - 就绪后写盘候选、收检测窗并按结果关面板
         """
         self._config_ready = ready
         if not ready:

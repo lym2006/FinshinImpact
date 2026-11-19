@@ -2,7 +2,7 @@
 
 - 只由信号驱动的开与收，重启进行中窗上不给用户出口
 - 重启成功把窗原地换成结果，等用户点确定才走
-- 进程级唯一实例，重复开窗原地返回同一只
+- 重复开窗返回同一只
 """
 
 from typing import TYPE_CHECKING
@@ -20,7 +20,7 @@ _window: WaitDialog | None = None  # 进程级唯一实例，窗关了即交还�
 def show_restart_wait(owner: "QWidget | None") -> None:
     """起一只热重启等待窗
 
-    - 窗已在则原地返回，双信号不会叠窗
+    - 窗已在即不开第二只
     """
     global _window
     if _window is not None:
@@ -33,7 +33,7 @@ def show_restart_wait(owner: "QWidget | None") -> None:
 def finish_restart_wait(text: str) -> bool:
     """把等待窗原地换成结果
 
-    - 没窗即返回 False，结果话术由调用方另找地方说
+    - 没窗即返回 False
     """
     if _window is None:
         return False
@@ -51,6 +51,6 @@ def close_restart_wait() -> None:
 
 
 def _give_back(_result: int) -> None:
-    """窗关了交还对象，免得留着已销毁的窗"""
+    """窗关了即交还对象"""
     global _window
     _window = None

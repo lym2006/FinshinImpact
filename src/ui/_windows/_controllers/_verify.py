@@ -1,6 +1,6 @@
 """校验轮协调
 
-- 驱动进程级唯一校验进度窗，校验轮之间互斥
+- 驱动共享的校验进度窗，校验轮之间互斥
 - 等待窗等首个进度帧才开，免测轮全程无窗
 - 维护复验与保存状态标记、待落盘配置、开窗前的帧缓存
 """
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 class VerifyCoordinator:
     """校验轮协调器
 
-    - 与配置控制器一对一绑定，读取其面板与就绪缓存
+    - 读宿主的面板与就绪缓存
     - 面板重建后重新设置从属浮窗关系
     """
 
@@ -53,8 +53,9 @@ class VerifyCoordinator:
         return win if win is not None and win.round == Round.VERIFY else None
 
     def start_round(self, aborts: bool) -> bool:
-        """开一轮校验，等待窗留给首个进度帧
+        """开一轮校验
 
+        - 等待窗不在本轮开，留给首个进度帧
         - 其他轮次进行中则记日志并返回 False
         - 免测轮不发进度帧，窗口一次也不会开
         - 返回是否成功起轮
@@ -74,7 +75,7 @@ class VerifyCoordinator:
         return True
 
     def open_wait(self, aborts: bool) -> bool:
-        """在唯一窗上开校验轮并补播缓存帧
+        """开校验轮并补播缓存帧
 
         - 其他轮次抢占则缓存帧作废，返回是否成功开窗
         """
@@ -140,7 +141,7 @@ class VerifyCoordinator:
         self.save_pending = False
 
     def drop_pending(self) -> None:
-        """校验未过原地转向导时弃掉待落盘项
+        """校验未过转强制向导时弃掉待落盘项
 
         - 连复验标记一起清
         """
@@ -150,8 +151,6 @@ class VerifyCoordinator:
     def follow_panel(self) -> None:
         """在途的检查窗常驻在当前面板之上
 
-        - 校验轮与诊断轮同挂，强制向导后出场压不住结论
-        - 面板重建后需再次调用
         - 窗已隐藏则不挂，免得凭空逼出原生句柄
         """
         wait = current_check_window()

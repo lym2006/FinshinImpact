@@ -52,7 +52,10 @@ def _io() -> ConfigIO:
 
 
 def _plan() -> ConfigPlan:
-    """取本次装配的段表，装配没发生即空表"""
+    """装配段表
+
+    - 装配没发生即空表
+    """
     return current_plan() or ConfigPlan(())
 
 

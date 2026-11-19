@@ -40,7 +40,7 @@ def write_text_atomic(target: Path, text: str) -> None:
 def write_bytes_atomic(target: Path, data: bytes) -> None:
     """原子写入字节
 
-    - 供模板副本这类整份覆盖的二进制原文使用
+    - 整份覆盖写入二进制原文
     """
     directory = target.parent
     directory.mkdir(parents=True, exist_ok=True)
@@ -65,7 +65,7 @@ def write_bytes_atomic(target: Path, data: bytes) -> None:
 def _discard(temp_name: str) -> None:
     """清掉失败残留的临时件
 
-    - 清不动也不改写主流程结论
+    - 删不掉也不抛错
     """
     try:
         os.unlink(temp_name)

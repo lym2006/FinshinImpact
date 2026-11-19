@@ -1,6 +1,6 @@
 """断连计时弹窗
 
-- 只锁主窗展示断线时长与重连次数
+- 展示断线时长与重连次数
 """
 
 from collections.abc import Callable
@@ -20,8 +20,9 @@ from ._base import BaseDialog
 class LinkDialog(BaseDialog):
     """断连计时弹窗
 
-    - 常驻回写数字，它开着时主窗点不动，收掉才恢复
-    - 叉号只压本次断连，「本次不提示」按钮压本次运行
+    - 数字随时回写
+    - 叉号只静音本次断连
+    - 「本次不提示」静音到本次运行结束
     """
 
     def __init__(

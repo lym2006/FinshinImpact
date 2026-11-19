@@ -16,8 +16,8 @@ def _has_help_flag(command: CommandDTO) -> bool:
 class CommandMatch:
     """命令头匹配
 
-    - 只比命令头，命令额外认哪些开关看插件清单
-    - 带 -h 一律让行给帮助插件
+    - 只比命令头
+    - 带 -h 一律不命中
     """
 
     def __init__(self, name: str) -> None:

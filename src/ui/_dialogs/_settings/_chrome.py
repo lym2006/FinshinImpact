@@ -169,7 +169,7 @@ class ChromeBuilder:
             item.setText(f"{mark}{title}")
 
     def lock_nav(self, locked: bool) -> None:
-        """校验期间锁住两级导航，防换页重入"""
+        """锁住两级导航"""
         self._categories.setEnabled(not locked)
         for group_tabs in self._group_tabs.values():
             group_tabs.setEnabled(not locked)
@@ -210,7 +210,7 @@ class ChromeBuilder:
 
         - 仅系统代理与仅直连两档用不到代理项，整行隐藏
         - 标题、输入框与恢复钮同消，值保留在控件里切回即现
-        - 本页缺代理项或模式项即不接线，缺件说明字段表已改键
+        - 本页缺代理项或模式项即不接线
         """
         by_key = {field.key: field for field in tab.fields}
         mode_field = by_key.get(ConfigKey.PROXY_MODE)
@@ -240,7 +240,7 @@ class ChromeBuilder:
     ) -> None:
         """人设入口行挂载
 
-        - 本页取不到主人输入控件即不挂载，缺件说明字段表已改键
+        - 本页取不到主人输入控件即不挂载
         """
         owner = next((f for f in tab.fields if f.key == ConfigKey.OWNER), None)
         if owner is None:

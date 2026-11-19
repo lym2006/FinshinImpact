@@ -1,7 +1,7 @@
 """QSS 基础件
 
 - Qss 串类型与各弹窗共用的通用片段
-- 装配公共弹窗三件并追加各面专属尾巴
+- 基础、标签、按钮三段公共样式由各窗拼装时统一打头
 """
 
 from typing import NewType
@@ -122,5 +122,5 @@ QLabel#{ObjectName.WAIT_SPINNER} {{
 
 
 def with_dialog_base(*tail: str) -> Qss:
-    """以基本、标题、主按钮三件打头拼装弹窗 QSS"""
+    """拼装弹窗 QSS"""
     return Qss("\n".join([DIALOG_BASE_QSS, DIALOG_LABEL_QSS, DIALOG_BUTTON_QSS, *tail]))

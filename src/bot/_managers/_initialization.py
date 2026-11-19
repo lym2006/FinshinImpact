@@ -37,7 +37,7 @@ class InitializationManager(BaseManager):
     def _init_files(self) -> None:
         """建好路径并按磁盘正文装填生效正文
 
-        - 正文必须在配置应用前就位，对话身份的基准才不是空正文
+        - 建好路径并按盘上正文装填生效正文
         """
         self.logger.info("正在创建路径...")
         init_project_files()
@@ -59,7 +59,7 @@ class InitializationManager(BaseManager):
     def detect_external_persona(self) -> None:
         """比对实例文件与上次生效存档
 
-        - 文件读不出即不打扰，装填那处已报过
+        - 文件读不出即直接返回
         - 两份不一致才发信号，由界面开合一拍板窗
         """
         disk = read_persona_file()

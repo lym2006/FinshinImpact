@@ -2,7 +2,7 @@
 
 - 定义通知类弹窗的尺寸、文案与配色
 - 弹窗话术字段一律代理引用文案表
-- 诊断窗与校验窗共用五态基类，同款渲染令牌一处一源
+- 诊断窗与校验窗的表格、符号与颜色同款
 """
 
 from dataclasses import dataclass
@@ -54,10 +54,7 @@ class ShutdownDialogTheme:
 
 @dataclass(frozen=True)
 class FiveStateDialogTheme:
-    """五态行表格弹窗共用配置
-
-    - 诊断窗与校验窗同款表格、同款符号与颜色，渲染令牌收在基类一处
-    """
+    """五态行表格弹窗共用配置"""
 
     # 尺寸配置
     width: int = 520
@@ -84,10 +81,7 @@ class FiveStateDialogTheme:
 
 @dataclass(frozen=True)
 class CheckDialogTheme(FiveStateDialogTheme):
-    """检查进度窗专属配置
-
-    - 校验轮与诊断轮共用同一实例
-    """
+    """检查进度窗专属配置"""
 
     # 动画配置
     spinner_frames: str = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
@@ -143,7 +137,7 @@ class WaitDialogTheme:
 class NoticeDialogTheme:
     """通知弹窗专属配置
 
-    - 提示与致命两态共用
+    - 提示与致命两态共用一套尺寸与文案
     """
 
     # 尺寸配置
@@ -173,7 +167,7 @@ class NoticeDialogTheme:
 class ReleaseNotesDialogTheme:
     """版本变化弹窗专属配置
 
-    - 左列版本清单，右侧正文走只读文本框，超出高度由滚动条接住
+    - 版本清单列宽与正文区尺寸
     """
 
     # 尺寸配置
@@ -258,7 +252,7 @@ class ChangeDialogTheme:
 class PlatformDialogTheme:
     """平台组件面板专属配置
 
-    - 三档各带段名，档内逐只组件一块
+    - 组件块内边距与段名字号
     """
 
     # 尺寸配置

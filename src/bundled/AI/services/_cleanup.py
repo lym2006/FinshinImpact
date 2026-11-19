@@ -30,7 +30,7 @@ _wakeup = asyncio.Event()
 async def _sleep_or_wake(seconds: float) -> None:
     """睡等清理间隔
 
-    - 配置生效那一叫即提前醒
+    - 配置生效时提前醒来
     """
     _wakeup.clear()
     with contextlib.suppress(TimeoutError):
@@ -46,7 +46,7 @@ def _purge_records(deadline: float) -> tuple[SessionKey, ...]:
     """清除过期落盘记录
 
     - 一群一份、一私聊一份，文件时间即最后一次问答时间
-    - 交出被清文件的会话键，同键上下文交调用者一并作废
+    - 交出被清文件的会话键
     """
     expired: list[SessionKey] = []
     for path in ai_config.record_dir.glob("*.md"):
@@ -74,7 +74,7 @@ async def _release_inflight() -> None:
 
 
 async def cleanup_loop() -> NoReturn:
-    """后台清理闲置记录
+    """后台清理过期记录与闲置会话
 
     - 记录按文件时间清，库内上下文按最后问答时间清
     - 起手先按记号补完上次断掉的历史清理

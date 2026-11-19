@@ -1,6 +1,6 @@
 """检查进度窗
 
-- 校验轮与诊断轮共用的唯一表格窗，换轮原地重置
+- 校验轮与诊断轮共用一只表格窗
 - 窗口可关性在首显前定死，进行中只留「取消」出口
 - 启动轮进行中无按钮并屏蔽 Esc，跑完才结束
 """
@@ -29,7 +29,7 @@ from ._table import RowTable
 class Round:
     """检查窗轮次协议串
 
-    - 单实例上的身份标记，禁止跨模块裸写
+    - 装校验轮与诊断轮两个轮次名
     """
 
     VERIFY = "verify"
@@ -40,7 +40,7 @@ _window: "CheckDialog | None" = None  # 进程级唯一实例：谁开轮谁取�
 
 
 def open_check_window(parent: QWidget) -> "CheckDialog":
-    """取得唯一检查窗
+    """取得检查窗
 
     - 无则创建并常驻，有则原地返回
     """
@@ -51,9 +51,9 @@ def open_check_window(parent: QWidget) -> "CheckDialog":
 
 
 def current_check_window() -> "CheckDialog | None":
-    """查询当前唯一实例
+    """查询当前检查窗
 
-    - 轮次守卫与跨控制器判空用
+    - 无窗时返回 None
     """
     return _window
 
@@ -161,7 +161,7 @@ class CheckDialog(BaseDialog):
     ) -> None:
         """把本窗提到本程序窗口最前
 
-        - 让位与提顶的判据在层序工具那一只手里
+        - 可选抢焦点，也可让位给指定窗
         """
         bring_front(self, grab_focus, owner)
 
@@ -234,12 +234,12 @@ class CheckDialog(BaseDialog):
     def force_apply(self, frame: dict) -> None:
         """绕过结束状态直接更新单行
 
-        - 仅用于验证通过后原地更新为通过
+        - 已有结果的行同样接受这一帧
         """
         self._view.apply(frame)
 
     def _finish(self, passed: bool) -> None:
-        """停止动画并显示结果按钮
+        """结束本轮并显示结果按钮
 
         - 重复调用只认首次
         """
@@ -271,16 +271,13 @@ class CheckDialog(BaseDialog):
     def reject(self) -> None:
         """中断关闭
 
-        - 取消按钮走此路径，先复位运行标志再关窗
+        - 关窗前先复位运行标志
         """
         self._running = False
         return super().reject()
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
-        """结果未出时拒绝关闭
-
-        - 防止探测任务失去窗口宿主
-        """
+        """结果未出时拒绝关闭"""
         if not self._done:
             event.ignore()
             return

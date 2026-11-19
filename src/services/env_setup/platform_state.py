@@ -84,9 +84,10 @@ class WheelLine:
 
 
 def update_targets(rows: Sequence[ComponentRow]) -> list[ReleaseRow]:
-    """一键更新的那批目录行，只收在线比本机新的
+    """一键更新的那批目录行
 
-    - 本机没装过的不进这一批，装哪个平台由逐行的按钮定
+    - 只收在线比本机新的
+    - 本机没装过的不进这一批
     - 接口包推不出在场适配器要求的那批不进这一批
     """
     targets: list[ReleaseRow] = []
@@ -101,8 +102,9 @@ def update_targets(rows: Sequence[ComponentRow]) -> list[ReleaseRow]:
 
 
 def update_target(rows: Sequence[ComponentRow], row: ComponentRow) -> ReleaseRow | None:
-    """这一行该装的那一版，没得更动交出 None
+    """这一行该装的那一版
 
+    - 没得更动交出 None
     - 适配器那行取目录最新一版
     - 接口包那行取满足在场每只适配器要求里最新的一版，本机没装过时不比本机
     """
@@ -122,8 +124,9 @@ def update_target(rows: Sequence[ComponentRow], row: ComponentRow) -> ReleaseRow
 def release_blocked(
     rows: Sequence[ComponentRow], row: ComponentRow, release: ReleaseRow
 ) -> str:
-    """装这一版该不该挡，交出那句理由，能装交出空串
+    """这一版的挡装理由
 
+    - 能装交出空串
     - 适配器那行按本机接口包落在不在它声明的要求之内判
     - 接口包那行按这一版满不满足在场每只适配器声明的要求判
     """
@@ -136,7 +139,10 @@ def release_blocked(
 
 
 def _declared_ranges(rows: Sequence[ComponentRow]) -> tuple[str, ...]:
-    """在场适配器各自声明的接口包要求，没装进环境的不算在场"""
+    """在场适配器各自声明的接口包要求
+
+    - 没装进环境的不算在场
+    """
     return tuple(
         row.requires for row in rows if row.platform and row.installed and row.requires
     )
@@ -153,8 +159,9 @@ def _sdk_in_range(rows: Sequence[ComponentRow], version: str) -> bool:
 
 
 def _install_blocked(rows: Sequence[ComponentRow], row: ComponentRow) -> str:
-    """这只组件现在不该给安装，交出那句下一步，能装交出空串
+    """这只组件的挡装下一步
 
+    - 能装交出空串
     - 适配器要接口包已在本机，且落在它声明的版本要求之内
     - 接口包自己不受这条限制
     - 版本串读不懂算没到位
@@ -173,8 +180,9 @@ def _install_blocked(rows: Sequence[ComponentRow], row: ComponentRow) -> str:
 
 
 def source_origin(rows: Sequence[ComponentRow], row: ComponentRow) -> ComponentOrigin:
-    """一行摆的内容从哪儿取到，按该装的那一版的件在不在盘上定
+    """一行内容的来路
 
+    - 按该装的那一版的件在不在盘上定
     - 没有该装的那一版时，源码仓挂着只说明声明读得到
     """
     target = update_target(rows, row)
@@ -193,10 +201,10 @@ def source_origin(rows: Sequence[ComponentRow], row: ComponentRow) -> ComponentO
 def older_versions(
     rows: Sequence[ComponentRow], row: ComponentRow
 ) -> tuple[VersionLine, ...]:
-    """版本清单里除最新一版外的每一版，装旧版即回退
+    """版本清单里最新一版以外的每一版
 
     - 没有目录行即没有清单可列
-    - 逐版各判一次挡不挡，接口包那行的旧版可能正落在在场适配器要求之外
+    - 逐版各判一次挡不挡
     """
     if row.release is None:
         return ()
@@ -215,8 +223,9 @@ def older_versions(
 def local_wheels(
     rows: Sequence[ComponentRow], row: ComponentRow
 ) -> tuple[WheelLine, ...]:
-    """盘上属于这只发行件的每一份件，按目录与本机记录两样定来路
+    """盘上属于这只发行件的每一份件
 
+    - 按目录行与本机指纹记录定来路
     - 目录取不到时，本机记过指纹的那几份仍算可装
     - 两样都没有即没有权威值可核，那一份不给装
     """
@@ -245,7 +254,11 @@ def local_wheels(
 def _origin_of(
     name: str, listed: dict[str, ReleaseRow], release: ReleaseRow | None
 ) -> WheelOrigin:
-    """那份件的来路，目录里有即按目录那一版，只有本机记过即按本机"""
+    """那份件的来路
+
+    - 目录里有即按目录那一版
+    - 只有本机记过即按本机
+    """
     if name in listed:
         return WheelOrigin.CATALOG
     if release is not None:
@@ -255,8 +268,9 @@ def _origin_of(
 
 
 def deps_text(row: ComponentRow) -> str:
-    """接口包要求那一行的正文，按本机接口包版本定说法
+    """接口包要求那一行的正文
 
+    - 说法按本机接口包版本定
     - 接口包那行没有要求可报，本机没在场的行也一样
     """
     if not row.platform or row.source == ComponentSource.NONE:

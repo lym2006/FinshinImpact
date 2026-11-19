@@ -226,7 +226,7 @@ _SETTINGS_LIST_QSS = f"{_LIST_BTN_QSS}\n{_LIST_ITEM_QSS}"
 
 
 def build_settings_dialog_qss() -> Qss:
-    """构建弹窗 QSS"""
+    """构建配置编辑弹窗 QSS"""
     return Qss(_SETTINGS_DIALOG_QSS)
 
 

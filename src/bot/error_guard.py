@@ -61,7 +61,10 @@ def _route_unexpected(exc: Exception, stage: str) -> None:
 
 
 def _handle(exc: Exception, stage: str) -> None:
-    """收异常本体与哪一步，按两级分发"""
+    """异常两级分发
+
+    - 异常本体与出错环节一并收下
+    """
     if isinstance(exc, BotError):
         _route(exc, stage)
     else:

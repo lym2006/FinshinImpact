@@ -1,7 +1,7 @@
 """会话仓储实装
 
 - 按会话键读写 session 与 session_message 两表
-- 会话行删掉时消息行随外键级联走
+- 删会话行即连同其消息一起删
 """
 
 import aiosqlite
@@ -46,7 +46,8 @@ class SqliteSessionRepository(SessionRepository):
     ) -> SessionDTO:
         """应用会话增量
 
-        - 重置先清空历史，追加按当前最大序号续排
+        - 重置即清空历史
+        - 追加按当前最大序号续排
         """
         await self._ensure_session(session_key)
 
@@ -83,7 +84,7 @@ class SqliteSessionRepository(SessionRepository):
         return await self.load(session_key)
 
     async def delete(self, session_key: SessionKey) -> int:
-        """按会话键清除一串会话与消息"""
+        """按会话键清除会话及其消息"""
         async with self._conn.execute(
             "DELETE FROM session WHERE key = ?", (session_key,)
         ) as cursor:
@@ -99,7 +100,7 @@ class SqliteSessionRepository(SessionRepository):
     async def delete_idle(self, before: float) -> int:
         """清除最后问答时间早于界限的会话
 
-        - 没消息的会话按 0 计，一并清掉
+        - 没有消息的会话一并清掉
         """
         async with self._conn.execute(
             "DELETE FROM session WHERE COALESCE("

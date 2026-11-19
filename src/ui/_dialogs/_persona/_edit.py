@@ -84,7 +84,7 @@ class PersonaEditorDialog(BaseDialog):
         """用内置模板替换正文
 
         - 读不出模板只提示，一个字不改
-        - 有差异开拍板窗，定稿后本窗收起
+        - 有差异时先收起本窗再开拍板窗
         """
         template = read_template_text()
         if not template:

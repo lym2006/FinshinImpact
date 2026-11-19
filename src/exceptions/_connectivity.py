@@ -1,6 +1,6 @@
 """连接性异常文案表
 
-- 键是那族异常类本身，定义在接口包
+- 定义接口包连接异常到文案的映射
 """
 
 from finshin_sdk.exceptions import (

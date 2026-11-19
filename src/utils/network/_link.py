@@ -95,7 +95,10 @@ class _LinkReport:
             )
 
     def recovered(self) -> None:
-        """记录一次成功，收尾断连周期"""
+        """记录一次成功
+
+        - 收尾断连周期
+        """
         if self._fails >= _DOWN_THRESHOLD:
             _logger.info(
                 EngineMessage.RECOVERED.format(span=self._span(), n=self._retries())

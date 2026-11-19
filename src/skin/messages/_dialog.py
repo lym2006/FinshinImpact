@@ -6,7 +6,7 @@ from ._misc import MiscMessage
 class DialogMessage:
     """弹窗装配文案
 
-    - 各弹窗的标题、按钮与提示语，供主题令牌代理引用
+    - 各弹窗的标题、按钮与提示语
     - 成员以所属弹窗子域为前缀，表格状态符号归 MARK_ 段
     """
 

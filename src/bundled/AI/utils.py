@@ -2,7 +2,7 @@
 
 - 消息构建与发言人标注拼装
 - 会话窗口归一与人设版本判定
-- 上下文体量折算，每条消息的打包开销由端点读数倒推
+- 上下文体量折算，含每条消息的打包开销
 """
 
 import re
@@ -55,7 +55,7 @@ def build_message(role: str, content: str) -> dict[str, str]:
 def make_session_key(principal: PrincipalDTO) -> SessionKey:
     """取会话键
 
-    - 键只到平台与容器两段，同群共用一串上下文
+    - 键由平台与容器拼成
     """
     return SessionKey(f"{principal.platform}{KEY_SEP}{principal.container}")
 
@@ -104,8 +104,8 @@ def split_rounds(rows: _Rows, keep_rounds: int) -> tuple[_Rows, _Rows]:
 class _TurnOverhead:
     """每条消息的打包开销现值
 
-    - 只由端点回报的读数倒推，换模型下一轮就换成新口径
-    - 没拿到过读数即按 0 算，此时窗口只可能刚起头
+    - 打包开销由端点回报的读数倒推
+    - 没拿到过读数即按 0 算
     """
 
     def __init__(self) -> None:
@@ -114,7 +114,7 @@ class _TurnOverhead:
     def refresh(self, content: int, actual: int, turns: int) -> None:
         """刷新消息打包开销的折算值
 
-        - 读数不大于正文折算即视为口径变了，不折进负数
+        - 读数不大于正文折算时不更新现值
         """
         # 模型侧给每条消息还补一个角色记号，正文里看不见，只能从读数倒推
         if turns and actual > content:
@@ -145,7 +145,7 @@ def _estimate_turns(turns: _Turns) -> int:
 def learn_turn_overhead(turns: _Turns, actual: int) -> None:
     """用端点读数倒推每条消息的打包开销
 
-    - 读数已经含齐发言人标注、引用块与媒体标记，扣掉正文折算就只剩打包那截
+    - 用读数扣掉正文折算得到打包开销
     """
     _turn_overhead.refresh(_content_tokens(turns), actual, len(turns))
 
@@ -153,7 +153,7 @@ def learn_turn_overhead(turns: _Turns, actual: int) -> None:
 def estimate_window(window: _Rows, summary: str, prompt: str) -> int:
     """估算一轮请求的上下文体量
 
-    - 走实际发出的那份消息列表折算，人设、摘要、标注与引用块一字不漏
+    - 按实际发出的那份消息列表折算，人设与摘要一并计入
     """
     return _estimate_turns(
         build_turns(
@@ -173,7 +173,7 @@ def _content_tokens(turns: _Turns) -> int:
 def render_history(rows: _Rows) -> str:
     """渲染交模型压缩的问答文本
 
-    - 发言人标注逐字带上，名称与 id 的对应关系原样进压缩请求
+    - 发言人标注逐字带上
     """
     return "\n".join(
         _render_turn(message)["content"]
@@ -193,7 +193,7 @@ def build_turns(
 
     - 人设轮按当前正文现取，库里那行人设不重复发
     - 摘要固定作第一条独立 user 轮紧跟人设，后面不配 assistant 回复
-    - 交出去的正文与摘要里的网址换成占位标记，库里与落盘记录留着原文
+    - 发给模型的正文与摘要里的网址换成占位标记
     """
     turns = [build_message(ChatRole.SYSTEM, persona)]
     if summary:
@@ -275,7 +275,7 @@ def _quote_block(event: InboundEventDTO) -> str:
     """拼引用块
 
     - 被引的是机器人自身即只写 assistant 位，不带 id
-    - 种类顶在引文之前，与正文那一侧同形
+    - 种类顶在引文之前，与问句正文同形
     """
     kind_mark = (
         "" if event.reply_kind == ContentKind.TEXT else media_mark(event.reply_kind)

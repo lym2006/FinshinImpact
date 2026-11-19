@@ -52,7 +52,7 @@ def _channel_probe() -> ChannelProbe:
 
 
 def _label_of(schema: AppSchema, item: ConfigPath | str) -> str:
-    """配置项身份映射界面标题"""
+    """按配置项身份取界面标题"""
     for tab in schema:
         for fld in tab.fields:
             if tab.path_of(fld) == item:
@@ -97,7 +97,7 @@ class SettingsManager(BaseManager):
         - 网络参数全未变、上轮连通通过且引擎不在断连周期时只跑本地校验
         - 通过则记录生效通道与连通结论
         - 单路模式只测选定通道，缺席不发探测
-        - 每种模式首轮全挂都等待预热后重检一轮
+        - 每种模式首轮全挂时等预热结束再重检一轮
         """
         t0 = time.monotonic()
         schema = get_schema()
@@ -150,7 +150,7 @@ class SettingsManager(BaseManager):
         """读取连通校验用的网络参数
 
         - 配置代理串、代理模式与系统代理地址三项
-        - 用得到系统代理的档位才计入它，另两档的开关变化与连通校验无关
+        - 只有用系统代理的档位才把系统代理地址计入
         """
         proxy = (
             config_manager.get_all().get(
@@ -241,7 +241,7 @@ class SettingsManager(BaseManager):
         - 探测交出的是异常，这里取成给人看的那句
         - 多候选聚合为一句引导，单候选保留原始错误
         - 尾句指引用户自查代理软件
-        - 红点行由档位单源判据给出
+        - 失败行按代理档位落到对应的那一行
         """
         errors: FieldErrors = {
             key: describe_error(value) for key, value in outcome.errors.items()

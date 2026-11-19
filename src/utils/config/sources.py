@@ -120,13 +120,19 @@ def assemble(sources: Sequence[ConfigSource]) -> ConfigPlan:
 
 
 def use_plan(plan: ConfigPlan) -> None:
-    """记下本次装配的段表，供取值、渲染与写回取用"""
+    """段表留存
+
+    - 取值、渲染与写回都从这里取这份表
+    """
     global _PLAN
     _PLAN = plan
 
 
 def current_plan() -> ConfigPlan | None:
-    """取最近一次装配的段表，还没装配即无值"""
+    """最近装配的段表
+
+    - 还没装配即无值
+    """
     return _PLAN
 
 
@@ -139,7 +145,10 @@ def section_name(source: str, section: ConfigSection) -> str:
 
 
 def _identity(source: ConfigSource) -> str:
-    """来源的身份码整串，本体侧只有来源类型一段"""
+    """来源身份码
+
+    - 本体侧只有来源类型一段
+    """
     return (
         str(source.kind)
         if source.kind == SourceKind.CORE
@@ -148,7 +157,10 @@ def _identity(source: ConfigSource) -> str:
 
 
 def _unique_fields(identity: str, spec: SectionSpec) -> SectionSpec:
-    """段内重复的键只留先出现的一项，后出现的点名拒收"""
+    """段内重键去重
+
+    - 后出现的那项点名拒收
+    """
     kept: list[FieldSpec] = []
     seen: set[ConfigKey] = set()
     for field in spec.fields:

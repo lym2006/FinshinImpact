@@ -46,7 +46,7 @@ def find_uv() -> Path | None:
     """定位可用 uv 可执行文件
 
     - 依次查找嵌入式运行目录、虚拟环境目录与系统搜索路径
-    - 全部找不到返回 None，装库降级为打印手动命令
+    - 全部找不到返回 None
     """
     exe = RUNTIME_DIR / _UV_EXE_NAME
     if exe.is_file():
@@ -86,6 +86,6 @@ def uv_cmd(pip_args: str) -> str:
 def py_cmd(args: list[str]) -> str:
     """生成开发模式下供手动执行的 python -m 命令
 
-    - 解释器路径写作 python，可直接粘贴进终端执行
+    - 解释器路径写作 python
     """
     return " ".join(["python", *args[1:]])

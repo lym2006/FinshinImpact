@@ -70,7 +70,7 @@ class HotQueue:
             return count
 
     def _release(self, container_key: SessionKey) -> None:
-        """抹掉一个容器的两本账
+        """清掉一个容器的排队项与到达序计数
 
         - 调用方必须持锁
         """

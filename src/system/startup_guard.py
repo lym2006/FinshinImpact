@@ -1,7 +1,4 @@
-"""发布包入口的最后兜底
-
-- 主程序导入之前就炸时，双击本没有任何出口，这里补一句系统弹窗
-"""
+"""发布包入口的最后兜底"""
 
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -15,7 +12,10 @@ _GUARD_HEAD = "程序启动失败，包文件可能不完整"
 
 @contextmanager
 def startup_guard() -> Iterator[None]:
-    """接住入口脚本里的异常，弹一句再按失败退出"""
+    """兜住入口异常
+
+    - 弹系统消息后以失败码退出
+    """
     try:
         yield
     except Exception as exc:

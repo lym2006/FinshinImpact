@@ -18,9 +18,9 @@ _LedgerFault = Callable[[TaskItem, Exception], None]
 
 
 class TaskLedger:
-    """主体级粗账
+    """主体级任务账
 
-    - 库里看不出这一串欠几条，中间某条单独失败只进上报
+    - 中间某条单独失败只进上报
     """
 
     def __init__(self, db_path: Path, *, on_fault: _LedgerFault) -> None:
@@ -87,9 +87,9 @@ class TaskLedger:
         await self._patch(item, TaskPatchDTO(status=status))
 
     def reset(self) -> None:
-        """抹掉内存里的两本账
+        """清空在途计数与已开答集合
 
-        - 库里那行原样留着，欠下的问答由下次启动交代
+        - 库里那行原样留着
         """
         self._inflight.clear()
         self._began.clear()

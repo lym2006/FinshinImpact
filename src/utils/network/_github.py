@@ -58,7 +58,10 @@ class GitClient(BaseClient):
         timeout: float,
         proxy: str | None,
     ) -> Any:
-        """取一份内容，建连失败或超时重发一次"""
+        """取一份内容
+
+        - 建连失败或超时重发一次
+        """
         try:
             return await cls._once(kind, base_url, path, timeout, proxy)
         except (ConnectionFailedError, RequestTimeoutError):
@@ -74,7 +77,10 @@ class GitClient(BaseClient):
         timeout: float,
         proxy: str | None,
     ) -> Any:
-        """发一次请求，异常原样上抛"""
+        """发一次请求
+
+        - 异常原样上抛
+        """
         return await cls.get_content(
             method=kind,
             base_url=base_url,

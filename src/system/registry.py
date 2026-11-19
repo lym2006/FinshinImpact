@@ -15,7 +15,7 @@ _PROXY_PRI_VALUE = "PriProxy"
 
 
 class _ProxyRegistry(NamedTuple):
-    """系统代理注册表原始值对"""
+    """系统代理注册表的原始读数"""
 
     enable: int | None  # None 代表读取失败或非 Windows，按未开启处理
     server: str
@@ -25,7 +25,7 @@ def read_proxy_registry() -> _ProxyRegistry:
     """读注册表系统代理开关与地址
 
     - 任一环节失败按 (None, "") 回退
-    - ProxyServer 与 PriProxy 皆有值时取先命中的 ProxyServer
+    - 两个地址值都有时取 ProxyServer
     """
     if sys.platform != "win32":
         return _ProxyRegistry(None, "")

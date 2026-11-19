@@ -40,17 +40,14 @@ class _SafeSignalInstance:
             self._connected.discard(tag)
 
     def emit(self, *args: Any) -> None:
-        """发射信号
-
-        - 仅触达本信号的槽
-        """
+        """发射信号"""
         self._instance.emit(*args)
 
 
 class SafeSignal:
     """防重连信号描述符
 
-    - 按签名自动在宿主类上创建 _signal_<name> 真实信号并包装为入口
+    - 按签名在宿主类上建真实信号并包成入口
     """
 
     def __init__(self, *types: type) -> None:

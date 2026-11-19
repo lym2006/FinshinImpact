@@ -1,7 +1,7 @@
 """弹窗基类
 
 - 统一「只锁调出它的窗」的共有窗口行为
-- 窗显示出来即记一行，供对着按钮那行查窗没弹出来
+- 窗每次显示打一行调试日志
 """
 
 from PySide6.QtCore import Qt
@@ -34,7 +34,7 @@ class BaseDialog(QDialog):
         """切换标题栏关闭按钮可用态
 
         - 置灰态无悬停与按下反馈，防用户误以为可点
-        - 改 flag 会重建原生窗口，需原位重新显示
+        - 重设后按原位置重新显示
         """
         flags = self.windowFlags()
         flags |= Qt.WindowType.WindowCloseButtonHint

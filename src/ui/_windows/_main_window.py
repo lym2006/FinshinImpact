@@ -1,6 +1,6 @@
 """主窗口
 
-- BotGUI 纯渲染与指令执行层
+- BotGUI 渲染与指令执行层
 """
 
 import logging
@@ -36,9 +36,10 @@ def _result_owner(fallback: QWidget) -> QWidget | None:
     """结果窗该挂的那只窗
 
     - 有模态窗开着就挂它，结果浮在它上面，也只拦它
-    - 交回 None 表示此刻该等，判据见 BaseDialog.RESULT_WINDOW
+    - 交回 None 表示此刻该等
     """
     modal = QApplication.activeModalWidget()
+    # 判据见 BaseDialog.RESULT_WINDOW
     if isinstance(modal, BaseDialog) and modal.RESULT_WINDOW:
         return None
     return modal or fallback
@@ -171,7 +172,7 @@ class BotGUI(QMainWindow):
 
         - critical 为致命通知，确认后直接退出
         - bold 加粗正文，给当场生效、容易被看漏的提示用
-        - 多行长文只进弹窗
+        - 多行长文整段交弹窗
         """
         owner = _result_owner(self)
         if owner is None:

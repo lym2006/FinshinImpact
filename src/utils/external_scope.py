@@ -37,8 +37,9 @@ def check_external_imports(
     make_error: Callable[[str, str, str], Exception],
     bundled_root: str | None = None,
 ) -> None:
-    """扫这份件的源码，引了本体内部即按交来的错法报错
+    """本体引用检查
 
+    - 引了本体内部即按交来的错法报错
     - 顶层包名撞上 bundled_root 即随包树，不查
     - 没给 bundled_root 即这一族没有随包那一份，一律照查
     - 只定位目录不执行，定位不到即放过，缺件那步自有另一句报
@@ -51,8 +52,9 @@ def check_external_imports(
 
 
 def _first_body_import(module: str) -> tuple[str, str] | None:
-    """取这份件里第一处伸向本体的导入，交出「引了谁」与出处
+    """首处本体导入
 
+    - 交出「引了谁」与出处
     - 只数会被装载的源码，作者放在 tests 目录里的用例不参与
     """
     spec = importlib.util.find_spec(module)
@@ -93,7 +95,10 @@ def _file_body_import(file: Path, label: Path) -> tuple[str, str] | None:
 
 
 def _imported_names(node: ast.Import | ast.ImportFrom) -> tuple[str, ...]:
-    """一条导入语句交出的绝对名，相对导入没有"""
+    """导入语句的绝对名
+
+    - 相对导入没有
+    """
     if isinstance(node, ast.ImportFrom):
         return () if node.level or not node.module else (node.module,)
     if isinstance(node, ast.Import):

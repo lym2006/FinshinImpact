@@ -2,7 +2,7 @@
 
 - 目录与已装包两路读声明，同名平台认目录里那份
 - 接口包版本要求两路都从依赖声明里取，声明段只自报平台码
-- 适配器代码一律从环境里那只包取，装载侧不改搜索路径
+- 适配器代码一律取下进环境的那只包
 - 声明缺失或字段非法的适配器不进表
 """
 
@@ -55,9 +55,10 @@ def load_adapter_manifests() -> dict[Platform, AdapterManifestDTO]:
 
 
 def tree_distributions() -> dict[Platform, str]:
-    """挂载仓里在场的那些适配器，交出平台码到声明发行件名的表
+    """挂载仓适配器的发行件名表
 
-    - 同一平台目录里那份优先于已装包，声明从哪来认这个
+    - 交出平台码到声明发行件名的表
+    - 同平台目录里那份优先，表里只收目录这份
     """
     return {dto.platform: name for dto, name in _scan_dirs()}
 
@@ -65,7 +66,7 @@ def tree_distributions() -> dict[Platform, str]:
 def adapter_deps_union(exclude: Platform | None = None) -> list[str]:
     """汇总各适配器声明的依赖
 
-    - 各适配器全进表，没有启用集能筛
+    - 全部适配器的依赖都进表，与启用集无关
     - 点名排除即只把那一平台的那份摘掉
     """
     return [
@@ -94,7 +95,7 @@ def installed_adapter_pins(exclude: Platform | None = None) -> list[str]:
 
 
 def _excluded(name: str, exclude: Platform | None) -> bool:
-    """入口点名的是不是要点名排除的那一平台
+    """判入口点是否属点名排除的平台
 
     - 没点名排除即一律不排，平台标识认不出的也留下
     """
@@ -111,7 +112,7 @@ def _adapters_dir() -> Path | None:
 
 
 def _scan_dirs() -> list[tuple[AdapterManifestDTO, str]]:
-    """挂载仓里每份认下来的声明，与它声明的发行件名"""
+    """扫描挂载仓里认下来的声明与它声明的发行件名"""
     root = _adapters_dir()
     if root is None:
         return []
@@ -132,7 +133,7 @@ def _read_dir(adapter_dir: Path) -> tuple[AdapterManifestDTO, str] | None:
     - 必填项缺失、字段空值、平台标识非法则整份拒收
     - 数组字段缺省为空表，出现非字符串或空串项同样整份拒收
     - 入口点没点名本平台、或属性名不合本体规定，整份拒收
-    - 认下来交出声明与项目名，代码仍取环境里那只包
+    - 认下来交出声明与项目名
     """
     data = read_toml(adapter_dir / ADAPTER_DECLARATION_FILE)
     if data is None:
@@ -164,7 +165,10 @@ def _read_dir(adapter_dir: Path) -> tuple[AdapterManifestDTO, str] | None:
 
 
 def _project_name(data: dict[str, Any]) -> str:
-    """声明里的项目名，缺键或非串交出空串"""
+    """声明里的项目名
+
+    - 缺键或非串交出空串
+    """
     value = _dig(data, "project.name")
     return value if isinstance(value, str) else ""
 
@@ -287,7 +291,7 @@ def installed_adapters() -> tuple[InstalledAdapter, ...]:
 
 
 def _installed_points() -> tuple[EntryPoint, ...]:
-    """取本体规定的入口点组里在场的那些"""
+    """取本体规定的入口点组里在场的入口点"""
     return tuple(entry_points(group=ADAPTER_ENTRY_GROUP))
 
 

@@ -23,7 +23,7 @@ def make_button(
 def fill_combo(combo: QComboBox, options: Iterable[tuple[object, str]]) -> None:
     """按取值与文本重灌一个下拉框的项
 
-    - 每项 addItem 存显示文本与取值
+    - 每项存显示文本与取值
     """
     combo.clear()
     for value, text in options:

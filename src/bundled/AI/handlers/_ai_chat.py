@@ -37,7 +37,7 @@ async def _triggers_chat(ctx: HandlerContext) -> bool:
     """判定这条消息要交给 AI 应答
 
     - 命令与非法形态一律让行，命令路由优先
-    - 群聊按 @ 点名、引用本机器人、触发词三档降级命中
+    - 群聊按 @ 点名、引用本机器人、触发词任一命中
     """
     event = ctx.event
 

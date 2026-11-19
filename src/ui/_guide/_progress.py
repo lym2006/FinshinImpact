@@ -2,7 +2,7 @@
 
 - 后台线程执行装卸任务，子进程输出逐行滚动展示
 - 心跳行按协议标记在末行原位刷新，静默期表现为跳秒而非刷屏
-- 任务未完 × 摘除、按钮停在"进行中"，做完才放行关闭
+- 任务未完时不带关闭钮，按钮停在"进行中"，做完才放行关闭
 """
 
 from collections.abc import Callable
@@ -73,7 +73,10 @@ class _Task(QThread):
 
 
 class _ProgressDialog(QDialog):
-    """模态进度窗，任务未完禁关"""
+    """模态进度窗
+
+    - 任务未完禁关
+    """
 
     def __init__(self, title: str, fn: _TaskCallback) -> None:
         """起窗即启动任务线程"""
@@ -120,7 +123,10 @@ class _ProgressDialog(QDialog):
         self._seen = len(self._task.lines)
 
     def _write(self, line: str) -> None:
-        """向日志区写一行，心跳行原位刷新"""
+        """向日志区写一行
+
+        - 心跳行在末行原位刷新
+        """
         if not line.startswith(PluginMessage.HEARTBEAT_MARK):
             self._log.appendPlainText(line)
             return
@@ -158,7 +164,11 @@ class _ProgressDialog(QDialog):
 
 
 def run_with_progress(title: str, fn: _TaskCallback) -> list[Any]:
-    """模态起进度窗跑任务，返回失败项列表"""
+    """起进度窗跑任务
+
+    - 模态，任务做完才交回
+    - 返回失败项列表
+    """
     ensure_app()
     dialog = _ProgressDialog(title, fn)
     dialog.exec()

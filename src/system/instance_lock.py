@@ -1,6 +1,6 @@
 """单实例守卫
 
-- 命名互斥体锁定同账号唯一实例，避免双开争抢配置与 Telegram 长轮询
+- 命名互斥体按身份码锁定同账号的一个实例
 """
 
 import ctypes
@@ -26,8 +26,8 @@ _bootstrap_handle: int | None = None  # 同上，由 release_bootstrap_lock 主�
 def _instance_mutex_name() -> str:
     """实例锁名
 
-    - 统一入口保证锁名前身份码已就位
-    - 身份码为空时锁后缀为空，全机共用一把锁，误拦优先
+    - 锁名由前缀与当前身份码拼成
+    - 身份码为空时锁名只剩前缀，误拦当成同实例
     """
     return _MUTEX_PREFIX + get_profile()
 
@@ -36,7 +36,7 @@ def _create(name: str) -> tuple[int | None, bool]:
     """创建命名互斥体
 
     - 返回 (持有的句柄, 是否抢到)
-    - 创建失败视为异常环境，放行优先
+    - 创建失败按已抢到处理
     """
     handle = _CreateMutexW(None, False, name)
     if not handle:
@@ -75,7 +75,7 @@ def acquire_bootstrap_lock() -> bool:
 def release_bootstrap_lock() -> None:
     """释放引导锁
 
-    - 身份确定后即释放，程序运行期间双击启动器仍可打开选择窗
+    - 引导锁在身份确定后释放
     """
     global _bootstrap_handle
     if _bootstrap_handle is None:

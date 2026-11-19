@@ -38,7 +38,10 @@ _ORIGIN_TEXT = {
 
 
 def name_text(row: ComponentRow) -> str:
-    """块首行的组件名，两类都接各自声明的发行件名"""
+    """块首行的组件名
+
+    - 适配器与接口包各用一句模板填发行件名
+    """
     template = (
         PlatformMessage.NAME_SDK if not row.platform else PlatformMessage.NAME_ADAPTER
     )
@@ -46,18 +49,27 @@ def name_text(row: ComponentRow) -> str:
 
 
 def source_text(row: ComponentRow) -> str:
-    """来源那一句，按源码仓在不在场与包装没装进环境定"""
+    """来源那一句
+
+    - 按源码仓在不在场与包有没有装进环境选句
+    """
     return _SOURCE_TEXT[row.source]
 
 
 def origin_text(origin: ComponentOrigin, version: str) -> str:
-    """来路那句，点名取的是哪一版，本机没得取的内容即交出空串"""
+    """来路那一句
+
+    - 点名取的是哪一版，没这一档即交空串
+    """
     template = _ORIGIN_TEXT.get(origin)
     return template.format(version=version) if template else ""
 
 
 def version_text(row: ComponentRow) -> str:
-    """版本行的正文，在线那一档说目录里最新的那一版"""
+    """版本行正文
+
+    - 在线那档说目录里最新的那一版
+    """
     newest = row.release
     if newest is None:
         return row.installed or PlatformMessage.LINE_ABSENT
@@ -70,7 +82,10 @@ def version_text(row: ComponentRow) -> str:
 
 
 def version_line_text(line: VersionLine, blocked: str, note: str) -> str:
-    """版本清单里那一版的一行，版本号后面跟本机来路与挡它那句"""
+    """版本清单里那一版的一行
+
+    - 版本号后面跟本机已装或已缓存的标记，再接挡它那句
+    """
     state = ""
     if line.installed:
         state = PlatformMessage.LOCAL_INSTALLED
@@ -83,7 +98,10 @@ def version_line_text(line: VersionLine, blocked: str, note: str) -> str:
 
 
 def wheel_text(line: WheelLine, blocked: str, note: str) -> str:
-    """盘上那一份件的一行，按目录里有、本机记过、两样都没有三档说"""
+    """盘上安装包的一行
+
+    - 按目录里有、本机记录过、两处都没有分三档说
+    """
     template = {
         WheelOrigin.CATALOG: PlatformMessage.WHEEL_LISTED,
         WheelOrigin.RECORDED: PlatformMessage.WHEEL_RECORDED,
@@ -97,15 +115,19 @@ def wheel_text(line: WheelLine, blocked: str, note: str) -> str:
 
 
 def _gap(blocked: str, note: str) -> str:
-    """挡那一版那句，与整行同一句的不重复报"""
+    """取挡装那句
+
+    - 与整行重复即交空串
+    """
     return blocked if blocked and blocked != note else ""
 
 
 def row_note(
     rows: Sequence[ComponentRow], row: ComponentRow, target: ReleaseRow | None
 ) -> str:
-    """这一行现在装不了那句，能装交出空串
+    """装不了的那句原因
 
+    - 能装就交空串
     - 该装的那版被在场适配器挡住即点名那一版
     - 目录里没有一版满足即说没有
     """
@@ -118,7 +140,7 @@ def row_note(
 
 
 def action_text(row: ComponentRow) -> str:
-    """动作栏那颗的文案，本机没装过即安装"""
+    """动作栏按钮的文案"""
     return (
         PlatformMessage.BTN_INSTALL if not row.installed else PlatformMessage.BTN_APPLY
     )

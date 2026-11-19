@@ -1,7 +1,7 @@
 """网络异常族
 
 - 定义 HTTP 请求细分异常与映射表
-- 状态码里认得出原因的补一句，整页响应不进界面
+- 状态码认得出原因的补一句原因
 """
 
 from finshin_sdk.exceptions import BotError
@@ -32,7 +32,8 @@ _CAUSE_MISSING = "（GitHub 上没找到那份内容）"
 class HTTPStatusError(NetworkError):
     """HTTP 状态码异常
 
-    - cause 交出归类后的那句原因，认不出即空串
+    - cause 交出按状态码与正文信号归类的原因
+    - 认不出时为空串
     """
 
     def __init__(self, status_code: int, msg: str) -> None:

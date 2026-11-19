@@ -38,7 +38,7 @@ def disable_failed(code: str, failed: list[str]) -> list[str]:
 
     - 失败项按顶层包名或资源声明命中哪个插件就禁哪个
     - 命中不了具体插件（整轮异常）时启用集全禁
-    - 只改启用集，不动已装库
+    - 落盘只写启用集与目录指纹
     """
     roots = plugins_roots()
     if not roots:

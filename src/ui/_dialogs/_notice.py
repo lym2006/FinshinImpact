@@ -1,6 +1,6 @@
 """通用提示弹窗
 
-- 单消息 + 确认按钮的家族化小窗
+- 一行正文配一颗确认按钮
 """
 
 from PySide6.QtCore import Qt
@@ -17,9 +17,9 @@ from ._base import BaseDialog
 class NoticeDialog(BaseDialog):
     """统一通知弹窗
 
-    - 提示/致命共用，critical 区分标题与确认语义
+    - critical 为真时改标题与按钮文案
     - 标题缺省按 critical 取通用提示或致命错误，调用点可覆盖
-    - bold 只加粗正文，给那种当场不生效、容易被看漏的提示用
+    - bold 为真时正文加粗
     """
 
     RESULT_WINDOW = True

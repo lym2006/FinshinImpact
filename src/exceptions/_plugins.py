@@ -1,7 +1,7 @@
 """插件异常族
 
 - 定义插件注册与生命周期异常
-- 注册失败的定性文案按异常类收进同文件文案表，异常本体走调试日志
+- 定义插件异常文案表，键为异常类
 """
 
 from finshin_sdk.exceptions import BotError
@@ -20,7 +20,7 @@ class PluginsMissingError(PluginsError):
 class PluginEntryError(PluginsError):
     """插件入口类不对
 
-    - 判因写明是模块里没有子类，还是不止一只
+    - 写明是模块里没有子类，还是有多个
     """
 
     def __init__(self, detail: str) -> None:
@@ -39,7 +39,7 @@ class PluginDependencyError(PluginsError):
 class PluginLoadError(PluginsError):
     """插件加载抛错
 
-    - 面板只报到哪一类
+    - 只交出错类别
     """
 
     def __init__(self, kind: str) -> None:

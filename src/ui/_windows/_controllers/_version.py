@@ -1,7 +1,6 @@
 """版本控制器
 
 - 版本检查入口与结果透出
-- 探测走独立线程，不占 GUI 线程
 """
 
 import asyncio
@@ -32,6 +31,7 @@ class _VersionWorker(QThread):
     - 发现新版顺带拉发布说明，拉不到即留空清单
     """
 
+    # 探测走独立线程，不占 GUI 线程
     done = Signal(str, list, str, bool)
 
     def run(self) -> None:
@@ -52,7 +52,10 @@ class _VersionWorker(QThread):
             )
 
     def _notes(self) -> list[ReleaseNote]:
-        """发布说明清单，拉不到即空"""
+        """发布说明清单
+
+        - 拉不到即空
+        """
         try:
             return list(asyncio.run(release_history()))
         except Exception:
@@ -70,7 +73,8 @@ class VersionController(BaseController):
         """版本检查
 
         - 等待窗可取消，关窗即弃用线程
-        - 带得到本版正文即直接开双栏弹窗，否则走通知窗文案
+        - 找到本版正文即开双栏弹窗
+        - 找不到只走通知窗文案
         """
         # 面板只记首行摘要，新版提示文案与成败态一并透出
         dialog = WaitDialog(WAIT_DIALOG.check_text, parent=self.gui, cancelable=True)

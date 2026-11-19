@@ -3,10 +3,9 @@
 - 勾选即启用、取消即禁用，保存只写状态与目录指纹
 - 命令名被在场插件拿走的行不给勾选框，改挂冲突按钮写明被谁拿走
 - 名字撞上先读到的那份插件即整只不装载，面板上单开一行写明被谁顶掉
-- 冲突明细窗定宽，一行一句，放不下即在行内循环滚
+- 冲突明细与命令明细共一只定宽小窗，一行一句，放不下即在行内循环滚
 - 冲突明细里的插件名与命令名都按用户看得见的那份写
 - 行尾一颗看命令的按钮，点开逐条列出这份清单声明的命令名与说明
-- 那两只明细小窗同一套行件：定宽、一句一行、放不下即循环滚、超出最多露的那几行改走竖向滚动
 - 依赖与资源的安装由启动结算负责，禁用不删已装库
 - 清库只走选窗「环境维护」同步，面板保存无删除动作
 """
@@ -79,7 +78,7 @@ def _status_label(manifest: dict[str, Any]) -> str:
 
 
 class _PluginPanelDialog(QDialog):
-    """插件选择弹窗"""
+    """插件设置面板"""
 
     def __init__(self, code: str, *, mode: str = MODE_AUTO) -> None:
         """按实例与来源装配面板"""
@@ -92,7 +91,12 @@ class _PluginPanelDialog(QDialog):
         self._build()
 
     def _build(self) -> None:
-        """装配标题、列表与底栏按钮"""
+        """装配面板版面
+
+        - 标题、样式与尺寸一并定下
+        - 列表自带搜索行，行内容按清单与实例状态填充
+        - 底栏只摆一颗保存钮，文案随模式换
+        """
         self.setWindowTitle(PluginMessage.TITLE.format(code=self._code))
         self.setStyleSheet(build_bootstrap_qss())
         self.resize(PANEL.width, PANEL.height)
@@ -120,7 +124,7 @@ class _PluginPanelDialog(QDialog):
     def _build_rows(self) -> None:
         """按清单与实例状态填充插件行
 
-        - 首屏就按抢占结果定勾选位形态，同一行只拼一遍
+        - 首屏就按抢占结果定勾选位形态
         - 被同名顶掉的那一份排在整张清单末尾
         """
         self._list.clear()
@@ -155,7 +159,10 @@ class _PluginPanelDialog(QDialog):
         taken_by: str = "",
         label: str = PluginMessage.BTN_CONFLICT,
     ) -> None:
-        """拼一行挂进清单，冲突明细、按钮名与顶掉它的那份插件名都随行走"""
+        """拼一行挂进清单
+
+        - 冲突明细、按钮名与顶掉它的那份插件名挂在行上
+        """
         item = QListWidgetItem()
 
         # item 默认高 25，行 widget 高 44，不显式对齐则选中高亮画在错位矩形上
@@ -222,9 +229,9 @@ class _PluginPanelDialog(QDialog):
     def _apply_clashes(self) -> None:
         """按当前勾选重算命令名抢占
 
-        - 只重拼明细有变的行，行数与行高不动，滚动位置不变
-        - 随包行与名字顶掉的行不参与重算，两种都不跟勾选走
-        - 重拼会把行上那件换成新控件，交搜索件按当前输入补一次筛
+        - 随包行与被同名顶掉的行不参与重算，都不跟勾选走
+        - 重拼后按当前输入补一次筛
+        - 只重拼明细有变的行
         """
         _, conflicts = resolve_claims(
             claims_of(self._manifests), frozenset(self._checked_names())
@@ -251,7 +258,7 @@ class _PluginPanelDialog(QDialog):
         return bool(check and check.isChecked())
 
     def _checked_names(self) -> list[str]:
-        """取当前勾选的表外插件名"""
+        """取当前勾选的非随包插件名"""
         names: list[str] = []
         for row in range(self._list.count()):
             item = self._list.item(row)

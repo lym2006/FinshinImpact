@@ -110,7 +110,10 @@ class SqliteTaskRepository(TaskRepository):
         return self._to_dto(row) if row is not None else None
 
     async def list_all_unfinished(self) -> tuple[TaskDTO, ...]:
-        """列出全部主体的未完成任务"""
+        """列出全部主体的未完成任务
+
+        - 按主体键与入队序升序
+        """
         async with self._conn.execute(
             f"SELECT {_TASK_COLUMNS} FROM task WHERE status IN (?, ?)"
             " ORDER BY principal, sequence",
@@ -156,7 +159,7 @@ def _encode_payload(payload: TaskPayload) -> str:
 
 
 def _decode_payload(raw: str) -> TaskPayload:
-    """JSON 解码为对话轮次"""
+    """JSON 还原为对话轮次"""
     return tuple((ChatRole(role), text) for role, text in json.loads(raw))
 
 

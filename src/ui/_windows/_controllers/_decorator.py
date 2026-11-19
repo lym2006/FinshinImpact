@@ -1,7 +1,6 @@
 """控制器异常装饰器
 
-- 业务异常拦截，保障 GUI 线程存活
-- 兜住调用那一半走本体公共件，这里只留日志那一句
+- 异常兜底交给公共守卫，本件只交日志文案
 """
 
 from collections.abc import Callable
@@ -19,7 +18,10 @@ T = TypeVar("T")
 
 
 def _report(exc: Exception, stage: str) -> None:
-    """拦截的报错只落日志，按钮事件不外弹"""
+    """报错落日志
+
+    - 按钮事件不外弹
+    """
     _logger.send_error(stage, exc)
 
 
@@ -27,7 +29,7 @@ def gui_guard(func: Callable[P, T]) -> Callable[P, T]:
     """GUI 按钮事件安全装饰器
 
     - 拦截业务异常并记日志
-    - 日志点名是哪只控制器，按钮派发都叫同名，只写方法名分不开
+    - 日志按控制器与方法名点名
     """
     return guard(
         lambda self, *_args: MiscMessage.GUARD_EXEC_ERROR.format(

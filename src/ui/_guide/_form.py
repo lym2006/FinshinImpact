@@ -26,7 +26,10 @@ from ._popup import show_popup
 
 
 def _platform_items() -> list[tuple[Platform, str]]:
-    """下拉项＝本机装着适配器包的那些平台，按平台码升序"""
+    """本机装着适配器包的平台下拉项
+
+    - 按平台码升序
+    """
     return [
         (Platform(code), PickerMessage.PLATFORM_NAMES.get(code, code))
         for code in sorted(present_platforms())
@@ -37,7 +40,6 @@ class _ProfileFormDialog(QDialog):
     """实例表单窗
 
     - 收 token 与备注名，token 提示常显于输入框下方
-    - 新建与编辑共用此表单，校验落盘各自实现
     """
 
     def __init__(self, title: str) -> None:
@@ -81,10 +83,13 @@ class _ProfileFormDialog(QDialog):
         self._token.setFocus()
 
     def _build_head(self, form: QVBoxLayout) -> None:
-        """表单顶部扩展位，默认空，子类按需覆盖"""
+        """表单顶部扩展位"""
 
     def _on_ok(self) -> None:
-        """校验 token 并落盘，子类实现各自策略"""
+        """校验 token 并落盘
+
+        - 由子类实现
+        """
         raise NotImplementedError
 
     def _warn(self, body: str) -> None:
@@ -102,7 +107,7 @@ class NewProfileDialog(_ProfileFormDialog):
         super().__init__(PickerMessage.NEW_TITLE)
 
     def _build_head(self, form: QVBoxLayout) -> None:
-        """平台下拉与平台组件入口
+        """装配平台下拉与平台组件入口
 
         - 下拉只列本机装着适配器包的平台
         """
@@ -118,7 +123,10 @@ class NewProfileDialog(_ProfileFormDialog):
         form.addLayout(head)
 
     def _open_platform(self) -> None:
-        """开平台组件面板，关回来按装机结果重灌下拉"""
+        """开平台组件面板
+
+        - 关回来按装机结果重灌下拉
+        """
         open_platform_dialog(parent=self)
         fill_combo(self._platform, _platform_items())
 

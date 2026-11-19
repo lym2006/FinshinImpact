@@ -1,7 +1,7 @@
-"""选 bot 窗口
+"""实例选择窗口
 
 - 引导期选择、编辑或新建实例
-- 环境维护菜单含平台组件，管本机不受选中门槛限制
+- 环境维护菜单管本机，不受选中限制
 """
 
 from PySide6.QtWidgets import (
@@ -41,7 +41,7 @@ def _label_of(code: str, remark: str) -> str:
 def _run_sync(button: QPushButton, dialog: "_ProfilePickerDialog") -> None:
     """弹出全局环境维护菜单
 
-    - 同步对象是所有实例共享的 runtime 依赖层
+    - 菜单里的同步作用于全实例共用的 runtime 依赖层
     """
     open_maintain_menu(button, dialog)
 
@@ -140,14 +140,20 @@ class _ProfilePickerDialog(QDialog):
         open_panel(code, mode=MODE_EDIT)
 
     def _on_new(self) -> None:
-        """转入新建窗，建成后回列表并选中"""
+        """转入新建窗
+
+        - 建成后刷新列表并选中新实例
+        """
         dialog = NewProfileDialog()
         if dialog.exec() and dialog.code:
             self._reload()
             self._select_code(dialog.code)
 
     def _on_edit(self) -> None:
-        """编辑选中实例，改完刷新列表保持选中"""
+        """编辑选中实例
+
+        - 改完刷新列表并保持选中
+        """
         code, remark = self._selected()
         if not code:
             return

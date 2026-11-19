@@ -1,6 +1,6 @@
-"""抹掉会话表上没人写值的列
+"""抹掉会话表的废弃列
 
-- 逐列先核在不在，重跑迁移不报错
+- 逐列核过在不在再删
 """
 
 import aiosqlite
@@ -14,7 +14,7 @@ _DEAD_COLUMNS: tuple[tuple[str, str], ...] = (
 
 
 async def apply(conn: aiosqlite.Connection) -> None:
-    """逐列删除会话表的空列"""
+    """逐列删除会话表的废弃列"""
     for table, column in _DEAD_COLUMNS:
         if await _has_column(conn, table, column):
             await conn.execute(f"ALTER TABLE {table} DROP COLUMN {column}")

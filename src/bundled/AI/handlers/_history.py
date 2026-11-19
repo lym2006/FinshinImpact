@@ -27,7 +27,7 @@ def _get_file_path(key: SessionKey) -> Path:
 async def _show_history(platform_raw: object, ctx: HandlerContext) -> None:
     """发送历史记录
 
-    - 人设或主人换过即先清干净，旧记录不会越过这次变更发出去
+    - 人设或主人换过即先清干净再取记录
     """
     key = make_session_key(ctx.event.principal)
     await purge_stale(ai_config.init[0]["content"], key)

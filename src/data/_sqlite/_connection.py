@@ -2,7 +2,8 @@
 
 - 按事件循环与库文件缓存连接
 - 统一开启 WAL 与外键约束
-- 退出时合并 WAL 并逐条关闭
+- 退出时把 WAL 合并回主文件
+- 逐条关闭连接
 """
 
 import asyncio
@@ -17,7 +18,8 @@ _connections: dict[tuple[asyncio.AbstractEventLoop, Path], aiosqlite.Connection]
 async def get_connection(db_path: Path) -> aiosqlite.Connection:
     """取出当前事件循环的库连接
 
-    - 同一循环同一库复用一条，首次打开即设连接级参数
+    - 同一循环同一库复用一条连接
+    - 首次打开即设连接级参数
     """
     key = (asyncio.get_running_loop(), db_path)
     cached = _connections.get(key)
@@ -35,7 +37,7 @@ async def get_connection(db_path: Path) -> aiosqlite.Connection:
 async def close_all() -> None:
     """合并并关闭全部库连接
 
-    - 已提交内容落回主文件后把 -wal 截成 0
+    - 把 -wal 文件截成 0 字节
     """
     for key, conn in list(_connections.items()):
         _connections.pop(key, None)

@@ -1,7 +1,6 @@
 """项目声明读取
 
-- 根声明与开发工具清单的解析走这一处
-- 配置表缺键即报错，代码里不写第二份默认值
+- 配置表缺键即报错
 - 插件目录那份声明只取依赖表，每次现读
 """
 
@@ -21,8 +20,9 @@ _CACHE: dict[Path, dict[str, Any]] = {}
 
 
 def declaration(path: Path = _ROOT_DECLARATION) -> dict[str, Any]:
-    """取一份声明的解析结果，读不出交出空表
+    """取一份声明的解析结果
 
+    - 读不出交出空表
     - 同一路径只读一次
     """
     if path not in _CACHE:
@@ -31,7 +31,10 @@ def declaration(path: Path = _ROOT_DECLARATION) -> dict[str, Any]:
 
 
 def project_value(key: str, path: Path = _ROOT_DECLARATION) -> str:
-    """取声明项目段里的文本值，缺键或非串交出空串"""
+    """取声明项目段里的文本值
+
+    - 缺键或非串交出空串
+    """
     project = declaration(path).get("project")
     value = project.get(key) if isinstance(project, dict) else None
     return value if isinstance(value, str) else ""
@@ -40,7 +43,7 @@ def project_value(key: str, path: Path = _ROOT_DECLARATION) -> str:
 def tool_setting(key: str) -> Any:
     """取根声明配置表里的键值
 
-    - 表名即项目名，缺键即报错，代码不写第二份默认值
+    - 表名即项目名，缺键即报错
     """
     tool = declaration().get("tool")
     table = tool.get(project_value("name")) if isinstance(tool, dict) else None
@@ -50,9 +53,9 @@ def tool_setting(key: str) -> Any:
 
 
 def declared_dependencies(path: Path) -> tuple[str, ...] | None:
-    """取一份声明的依赖表，读不出或形状不合交出 None
+    """取一份声明的依赖表
 
-    - 每次现读，盘上改了即跟着变
+    - 读不出或形状不合交出 None
     """
     data = read_toml(path)
     project = data.get("project") if data else None

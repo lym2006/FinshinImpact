@@ -2,7 +2,7 @@
 
 - 子进程驱动 uv 装卸插件依赖
 - 同步依赖先 compile 闭包再 sync，已装 dev 工具与解释器基建并入保留清单
-- 装完即编字节码，下次启动导入直接命中缓存
+- 装完即编字节码
 """
 
 import tempfile
@@ -32,8 +32,9 @@ _REQUIREMENTS_LOCK = "requirements.txt"
 def remove_distributions(
     names: Sequence[str], on_line: ProgressCallback | None = None
 ) -> list[str]:
-    """从运行环境卸掉点名的发行件，交出卸不掉的说明行
+    """从运行环境卸掉点名的发行件
 
+    - 交出卸不掉的说明行
     - 一条命令带全部名，整批失败转逐只重试并逐只点名
     - 开发模式只交等效手动命令
     """
@@ -60,8 +61,8 @@ def remove_distributions(
 def install_deps(pins: list[str], on_line: ProgressCallback | None = None) -> list[str]:
     """安装依赖并返回失败清单
 
-    - 整批安装走换源序列，整批失败转逐包重试收集差集
-    - uv 会跳过已安装的包，重复调用即自动续装
+    - 整批安装走换源序列，整批失败转逐包重试并逐只点名
+    - 已装的包跳过，可重复调用续装
     """
     if not pins:
         return []
@@ -89,8 +90,7 @@ def install_deps(pins: list[str], on_line: ProgressCallback | None = None) -> li
 def _installed_dev_pins() -> list[str]:
     """取 dev 可选依赖里已安装的 pin
 
-    - 同步属环境运维，装了的开发工具不许被删
-    - 未安装者不追加，避免 sync 顺带强装
+    - 未安装的条目不追加
     """
     return [pin for pin in dev_dependencies() if is_pin_installed(pin)]
 
@@ -113,7 +113,8 @@ def _interpreter_pins() -> list[str]:
 def _editable_project_pin() -> list[str]:
     """取项目自身的 editable 安装条目
 
-    - 发布 runtime 无此元数据，返回空表即不追加
+    - 没有该项目元数据时交出空表
+    - 项目自身没装进环境时同样交出空表
     """
     name = project_value("name")
     if not name:

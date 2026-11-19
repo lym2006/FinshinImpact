@@ -184,7 +184,11 @@ def _collect(
     tuple[QueuedAction, ...],
     tuple[MomentSubscription, ...],
 ]:
-    """收入口类交出的四样清单，形态不对当场报错"""
+    """入口类清单收取
+
+    - 交出路由、协程、动作与时机四样
+    - 路由与动作的形态不对当场报错
+    """
     return (
         _checked_routes(plugin.message_routes()),
         _checked_hooks(plugin.background_loops(), "background_loops"),
@@ -242,7 +246,10 @@ def _grouped_moments(
 
 
 def _report_moment(exc: Exception, stage: str) -> None:
-    """时机件的报错只落调试日志，不外弹"""
+    """时机件的报错记录
+
+    - 只落日志，不外弹
+    """
     _logger.send_error(f"{stage}的件出错", exc)
 
 

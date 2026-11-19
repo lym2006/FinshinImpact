@@ -27,7 +27,7 @@ from .._primitives import MarqueeLabel, ThemedList, make_button
 def _fit_rows(rows: ThemedList) -> None:
     """把行宽定成视口实宽
 
-    - 竖向滚动条一出现就吃掉一段宽度，行按实宽决定滚不滚
+    - 行宽跟着视口实宽走，滚动条占的宽也算在内
     """
     for index in range(rows.count()):
         item = rows.item(index)
@@ -37,8 +37,9 @@ def _fit_rows(rows: ThemedList) -> None:
 
 
 def _show_conflicts(parent: QWidget, anchor: QWidget, lines: list[str]) -> None:
-    """贴着锚点弹出明细，屏幕下缘放不下即翻到上缘
+    """锚点旁弹出明细
 
+    - 屏幕下缘放不下即翻到上缘
     - 窗高随条数长到最多露的那几行，装不下的条目由竖向滚动条接住
     """
     popup = QWidget(parent, Qt.WindowType.Popup)
@@ -76,7 +77,10 @@ def _show_conflicts(parent: QWidget, anchor: QWidget, lines: list[str]) -> None:
 
 
 def clash_lines(taken: tuple[CommandTaken, ...], titles: dict[str, str]) -> list[str]:
-    """逐条写成一句冲突明细，抢走那一只报显示名，不报目录名"""
+    """写成冲突明细句
+
+    - 抢占者报显示名，不报目录名
+    """
     return [
         PluginMessage.CONFLICT_TAKEN.format(cmd=one.cmd, owner=titles[one.owner])
         for one in taken
@@ -84,7 +88,7 @@ def clash_lines(taken: tuple[CommandTaken, ...], titles: dict[str, str]) -> list
 
 
 def claims_of(manifests: list[dict[str, Any]]) -> list[PluginClaim]:
-    """按清单行交出命令名抢占的入参"""
+    """交出各插件声明的命令名"""
     return [
         PluginClaim(
             name=manifest[ManifestKey.NAME],
@@ -95,7 +99,11 @@ def claims_of(manifests: list[dict[str, Any]]) -> list[PluginClaim]:
 
 
 def _command_lines(manifest: dict[str, Any]) -> list[str]:
-    """逐条写成一行命令明细，一条都没声明时交一句说明"""
+    """写命令明细
+
+    - 一条命令占一行
+    - 一条都没声明时交一句说明
+    """
     lines = [
         PluginMessage.COMMAND_LINE.format(cmd=cmd, desc=desc)
         for cmd, desc in manifest[HelpKey.COMMANDS]
@@ -104,15 +112,19 @@ def _command_lines(manifest: dict[str, Any]) -> list[str]:
 
 
 def make_clash_button(parent: QWidget, lines: list[str], label: str) -> QPushButton:
-    """勾选位是一颗写明冲突类型的按钮，点开逐条列出被谁拿走"""
+    """冲突明细按钮
+
+    - 点开逐条列出被谁拿走
+    """
     button = make_button(label, ButtonStyle.CONFLICT)
     button.clicked.connect(lambda: _show_conflicts(parent, button, lines))
     return button
 
 
 def make_command_button(parent: QWidget, manifest: dict[str, Any]) -> QPushButton:
-    """行尾一只看命令的按钮，点开逐条列出这份清单声明的命令名与说明
+    """命令明细按钮
 
+    - 点开逐条列出这份清单声明的命令名与说明
     - 宽度只由样式表给，代码再定一次会被描边顶掉
     """
     button = make_button(PluginMessage.BTN_COMMAND, ButtonStyle.COMMAND)

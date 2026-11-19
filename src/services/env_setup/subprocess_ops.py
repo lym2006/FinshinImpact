@@ -112,7 +112,7 @@ class _Heartbeat(threading.Thread):
     """子进程静默心跳
 
     - 持续无输出按间隔发一行等待提示
-    - 原位刷新由进度窗渲染层负责，主侧收到任何输出即重置计时
+    - 收到非噪音行即重置计时
     """
 
     def __init__(self, on_line: ProgressCallback | None) -> None:
@@ -202,7 +202,6 @@ def capture_output(argv: list[str]) -> str:
     """执行子进程并回取全部输出
 
     - 探测类短命令专用：不落日志、不起心跳，失败一律回空串
-    - 调用方按输出内容判定，退出码不单独表达结论
     """
     try:
         done = run_hidden(argv)

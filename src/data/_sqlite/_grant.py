@@ -1,7 +1,6 @@
 """命令授权仓储实装
 
 - 按用户在本平台的 id 读写 grant 表
-- 库随实例分开，同一个 id 在不同实例各存一份
 """
 
 import time
@@ -53,7 +52,7 @@ class SqliteGrantRepository(GrantRepository):
     async def list_active(self) -> tuple[UserId, ...]:
         """列出未到期的授权
 
-        - 按授权先后升序，同一时刻进来的按写入先后补排
+        - 按授权时间与写入顺序升序
         """
         async with self._conn.execute(
             "SELECT user_key FROM grant"
@@ -65,7 +64,7 @@ class SqliteGrantRepository(GrantRepository):
         return tuple(UserId(row[0]) for row in rows)
 
     async def contains(self, user: UserId) -> bool:
-        """判定是否命中
+        """判断用户是否持有未过期授权
 
         - 过期时间已到不算命中
         """

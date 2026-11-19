@@ -63,7 +63,7 @@ def _char_diff(old: str, new: str) -> tuple[_Line, _Line]:
 
 
 def split_diff(old: list[str], new: list[str]) -> tuple[list[_Line], list[_Line]]:
-    """行级对齐并做配对行字符级比对
+    """行级对齐比对
 
     - 修改行只高亮改动处
     - 增删行整行标记，另一栏不补位
@@ -77,7 +77,7 @@ def split_diff_aligned(
     skip_text: str,
     context: int | None,
 ) -> tuple[list[_Line], list[_Line]]:
-    """两栏逐行等高的比对，长段未改动折成一行提示
+    """两栏等高的比对
 
     - 增删行在另一栏补占位行，同一行落在同一高度
     - context 给 None 即整份铺开，一行也不折
@@ -93,7 +93,7 @@ def _diff_rows(
     context: int | None,
     skip_text: str,
 ) -> tuple[list[_Line], list[_Line]]:
-    """按 opcode 铺两栏，pad 与 context 分别管补位与折叠"""
+    """按 opcode 铺两栏"""
     sm = difflib.SequenceMatcher(a=old, b=new, autojunk=False)
     left: list[_Line] = []
     right: list[_Line] = []
@@ -114,7 +114,7 @@ def _emit_equal(
     context: int | None,
     skip_text: str,
 ) -> None:
-    """未改动段入两栏，够长即折成头尾各留 context 行"""
+    """未改动段入两栏"""
     rows = old[i1:i2]
     if context is not None:
         omitted = len(rows) - context * 2
@@ -133,7 +133,7 @@ def _emit_fold(
     omitted: int,
     skip_text: str,
 ) -> None:
-    """头尾各留 context 行，中间换成一行省略提示"""
+    """折起长的未改动段"""
     head, tail = rows[:context], rows[-context:]
     hint = skip_text.format(n=omitted)
     for side in (left, right):
@@ -143,7 +143,7 @@ def _emit_fold(
 
 
 def _same_rows(lines: list[str]) -> list[_Line]:
-    """整段未改动的行，两栏各取一份"""
+    """整段未改动的行"""
     return [[("same", line)] for line in lines]
 
 
@@ -159,7 +159,7 @@ def _emit_change(
     j2: int,
     pad: bool,
 ) -> None:
-    """增删与替换行入栏，pad 为真时给对侧补等长占位"""
+    """增删与替换行入栏"""
     if tag == "delete":
         removed = [[("del", line)] for line in old[i1:i2]]
         left += removed
@@ -185,18 +185,18 @@ def _emit_change(
 
 
 def _blanks(count: int) -> list[_Line]:
-    """对侧占位行，只撑高度不带内容"""
+    """对侧占位行"""
     return [[("blank", _BLANK_MARK)] for _ in range(count)]
 
 
 def diff_html(lines: list[_Line], mono: str) -> str:
-    """一栏正文的 HTML，一行一个 div"""
+    """一栏正文的 HTML"""
     body = "".join(_line_html(seg) for seg in lines) or "&nbsp;"
     return f"<div style=\"font-family: '{mono}';\">{body}</div>"
 
 
 def _line_html(seg: _Line) -> str:
-    """一行的 HTML，空行补占位撑住高度"""
+    """一行的 HTML"""
     parts = "".join(_span_html(kind, text) for kind, text in seg)
     return f"<div>{parts or '&nbsp;'}</div>"
 
@@ -223,7 +223,7 @@ def make_long_diff_cell(mono: str) -> QTextEdit:
     """长文比对单元格
 
     - 只读、不折行，纵向滚动条不画但滚轮照旧
-    - 正文由调用方 setHtml 填，折叠与展开两态共用一条路径
+    - 正文由调用方另行填入
     """
     view = QTextEdit()
     view.setObjectName(ObjectName.CHANGE_CELL)

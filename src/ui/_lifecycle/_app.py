@@ -1,6 +1,6 @@
-"""应用实例与事件泵
+"""QApplication 取用处
 
-- 全进程 QApplication 的出生口，建实例即挂图标
+- 建实例时挂图标
 - 单轮事件泵供导入期垫住界面重绘
 """
 
@@ -24,7 +24,6 @@ def ensure_app() -> QApplication:
     """取得应用实例
 
     - 不存在则新建并挂图标，全进程图标只在出生这一刻设置
-    - instance 静态类型是基类，收窄为 QApplication
     """
     instance = QApplication.instance()
     if instance:
@@ -37,6 +36,6 @@ def ensure_app() -> QApplication:
 def pump_events() -> None:
     """泵一轮事件让已建界面应答重绘
 
-    - 排除用户输入，半初始化界面收不到点击
+    - 泵事件时排除用户输入
     """
     QCoreApplication.processEvents(QEventLoop.ProcessEventsFlag.ExcludeUserInputEvents)

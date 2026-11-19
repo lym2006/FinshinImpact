@@ -55,10 +55,7 @@ def code_for_token(platform: Platform, token: str) -> str:
 
 
 def _code_for_telegram(token: str) -> str:
-    """Telegram 身份码推导
-
-    - 重新生成令牌后机器人数字标识不变，实例资产仍可定位
-    """
+    """Telegram 身份码推导"""
     match = _TG_TOKEN_PATTERN.fullmatch(token.strip())
     return make_profile_code(Platform.TELEGRAM, match.group(1)) if match else ""
 
@@ -94,7 +91,6 @@ def list_profiles() -> list[tuple[str, str]]:
 def touch_profile(code: str) -> None:
     """记录实例最近使用时间
 
-    - 选窗确认启动时调用，下次打开选窗该实例置顶
     - 整份读改写，文件损坏或写不进一律静默放弃，不阻断启动
     """
     data = read_profile_data(code)
@@ -115,7 +111,7 @@ def remark_of(code: str) -> str:
 def create_profile(code: str, token: str, remark: str) -> None:
     """新建实例文件夹
 
-    - 只建目录、人设与自描述文件，配置文件由首次启动的向导生成
+    - 只建目录、人设与自描述文件
     - 令牌与备注名写进自描述文件
     - 创建即计入最近使用，新实例在选窗置顶
     """
@@ -141,7 +137,6 @@ def update_profile(code: str, token: str, remark: str) -> None:
     """就地改写已有实例
 
     - 只覆盖自描述文件的令牌与备注名，目录与配置原样保留
-    - 身份码须与既有目录一致，换机器人属新建而非编辑
     - 合并改写，保留最近使用时间等既有字段
     """
     data = read_profile_data(code)

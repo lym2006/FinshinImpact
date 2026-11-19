@@ -1,6 +1,6 @@
 """版本变化弹窗
 
-- 左列版本清单，右侧正文按选中版本渲染，超出高度由滚动条接住
+- 左列版本清单配右侧正文
 """
 
 from collections.abc import Sequence
@@ -56,7 +56,7 @@ class ReleaseNotesDialog(BaseDialog):
         self.setFixedSize(RELEASE_NOTES_DIALOG.width, RELEASE_NOTES_DIALOG.height)
 
     def _build_list(self, notes: Sequence[ReleaseNote], focus_tag: str) -> ThemedList:
-        """按版本建左侧清单，选中行决定右侧正文"""
+        """按版本建左侧清单"""
         listing = ThemedList(parent=self)
         listing.setObjectName(ObjectName.LIST_WIDGET)
         listing.setFixedWidth(RELEASE_NOTES_DIALOG.list_width)

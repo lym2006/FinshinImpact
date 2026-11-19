@@ -30,7 +30,7 @@ _logger = get_logger("Service")
 class AdapterRuntime:
     """适配器运行时
 
-    - 一个平台一条线程一个事件循环
+    - 每个平台各用一条线程托管一个事件循环
     """
 
     def __init__(
@@ -136,7 +136,7 @@ class AdapterRuntime:
     async def _polling_task(self) -> None:
         """执行自动重连轮询
 
-        - 常驻协程与轮询同一条命
+        - 常驻协程与轮询同起同停
         """
         register_lifecycle(
             self._adapter.close, f"{self._adapter.platform} session", "hook_async"
@@ -163,7 +163,10 @@ class AdapterRuntime:
             self._idle_event.set()
 
     async def _run_before_run(self) -> None:
-        """轮到「引擎开跑前」，逐个跑订阅了它的件"""
+        """开跑前钩子
+
+        - 订阅了它的件逐个跑
+        """
         for hook in self._before_run:
             await hook(self._capability)
 

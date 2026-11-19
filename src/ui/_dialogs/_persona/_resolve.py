@@ -81,8 +81,9 @@ class PersonaResolveDialog(BaseDialog):
         new_label: str,
         parent: QWidget | None = None,
     ) -> None:
-        """两份一致即只提示一句，不一致才开窗拍板
+        """两份不一致才开窗比对
 
+        - 两份一致只弹一句提示
         - 拍完的正文由窗自己发信号，调用方不取回值
         """
         if old == new:
@@ -101,11 +102,10 @@ class PersonaResolveDialog(BaseDialog):
         return row
 
     def _make_columns(self, old_label: str, new_label: str) -> QHBoxLayout:
-        """左旧右新两栏 diff，栏底各一颗「用这份」
+        """两栏 diff 与栏底按钮
 
-        - 右栏是改动的那份，吃主按钮档并拿默认焦点
+        - 右栏按钮走主按钮档并拿默认焦点
         - 左栏走次要档，与右栏并列但不抢默认档
-        - 正文按折叠态重画填入，折叠与展开两态共用一条路径
         """
         columns = QHBoxLayout()
         columns.setSpacing(SETTINGS_DIALOG.tab_spacing)
@@ -139,7 +139,10 @@ class PersonaResolveDialog(BaseDialog):
         return column, cell
 
     def _repaint(self) -> None:
-        """按折叠态重画两栏，开关的字面与在场一起换"""
+        """按折叠态重画两栏
+
+        - 折叠开关的字面与可见性一并更新
+        """
         context = SETTINGS_DIALOG.persona_resolve_context if self._folded else None
         left, right = split_diff_aligned(
             to_lines(self._old),
@@ -165,10 +168,10 @@ class PersonaResolveDialog(BaseDialog):
         self._repaint()
 
     def _link_scroll(self) -> None:
-        """两栏横竖滚动手拉手
+        """两栏横竖滚动联动
 
         - 补位之后两栏行数相同，值相等即同一行落在同一高度
-        - 长行不折行，横向也一起走才不会一边看行首一边看行尾
+        - 两栏纵横各一对滚动条互抄数值
         """
         pairs = (
             (
@@ -187,7 +190,7 @@ class PersonaResolveDialog(BaseDialog):
                 )
 
     def _follow_scroll(self, value: int, target: QScrollBar) -> None:
-        """一栏滚了即把值抄给另一栏，抄的过程不回手"""
+        """一栏滚动值抄给另一栏"""
         if self._syncing:
             return
         self._syncing = True
@@ -195,8 +198,9 @@ class PersonaResolveDialog(BaseDialog):
         self._syncing = False
 
     def _make_confirm_row(self) -> QWidget:
-        """二次确认行，拍板前收起
+        """二次确认行
 
+        - 初始收起，选好一份才现
         - 只给「再看看」与「确认」两颗钮
         """
         row = QWidget(self)
@@ -218,7 +222,11 @@ class PersonaResolveDialog(BaseDialog):
         return row
 
     def _on_use(self, button: QPushButton) -> None:
-        """记下选中的那份正文与其栏名，进二次确认"""
+        """记下选中的那份正文
+
+        - 栏名随正文一并记入
+        - 记完转进二次确认段
+        """
         is_new = button is self._btn_new
         self._chosen = (
             (self._new, self._new_label) if is_new else (self._old, self._old_label)
@@ -237,7 +245,7 @@ class PersonaResolveDialog(BaseDialog):
         """切换比对与确认两段
 
         - 两栏的「用这份」与确认行不会同时在场
-        - 折叠开关两段都在场，收掉会把提示行压矮一截
+        - 折叠开关两段都留着
         """
         self._confirm_row.setVisible(confirm)
         self._btn_old.setVisible(not confirm)
@@ -253,11 +261,14 @@ class PersonaResolveDialog(BaseDialog):
         self.accept()
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
-        """拦下标题栏关闭，拍板前不许走"""
+        """拦下标题栏关闭
+
+        - 关闭事件一律忽略，收窗只走确认按钮
+        """
         event.ignore()
 
     def keyPressEvent(self, event: QKeyEvent) -> None:  # noqa: N802
-        """拦下 Esc，只留两颗钮里的出路"""
+        """拦下 Esc"""
         if event.key() == Qt.Key.Key_Escape:
             event.accept()
             return

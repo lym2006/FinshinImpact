@@ -1,7 +1,7 @@
 """平台组件面板
 
 - 开窗先出等待读数并按秒正计时，在线目录取到才按三档摆读数
-- 面板只摆读数与发起动作，读数与装卸全在 services 那侧
+- 面板只摆读数与发起动作
 - 取数失败只在屏上留一行原因，装卸才走进度窗
 """
 
@@ -43,7 +43,6 @@ _RUNNING: set[CatalogTask] = set()
 class _PlatformDialog(QDialog):
     """平台组件面板
 
-    - 在线目录取回来之前只出等待读数，取到才按三档摆
     - 动作按钮就地起装卸，跑完按最新读数重灌
     - 在线目录缺位时只出本机已有那一档
     """
@@ -85,7 +84,7 @@ class _PlatformDialog(QDialog):
         self._task.start()
 
     def _advance(self) -> None:
-        """等待读数跳秒，取数回来即停泵"""
+        """等待读数跳秒"""
         if not self._reading:
             self._ticker.stop()
             return
@@ -93,7 +92,7 @@ class _PlatformDialog(QDialog):
             self._wait_label.setText(self._waiting_text())
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
-        """关窗时取数还没回来即把线程交给模块持有"""
+        """关窗时取数未回则把线程交给模块级集合持有"""
         if self._task.isRunning():
             task = self._task
             _RUNNING.add(task)
@@ -101,7 +100,10 @@ class _PlatformDialog(QDialog):
         super().closeEvent(event)
 
     def _on_reported(self, catalog: object, note: str) -> None:
-        """取数回来即停正计时，目录与原因各摆各的，重灌读数"""
+        """取数回来后重灌读数
+
+        - 同时停掉正计时，目录与失败原因各摆一处
+        """
         self._catalog = catalog if isinstance(catalog, Catalog) else None
         self._note = note
         self._reading = False
@@ -109,17 +111,26 @@ class _PlatformDialog(QDialog):
         self._render()
 
     def _rows(self) -> tuple[ComponentRow, ...]:
-        """当前读数，目录没在场即只有本机那一档"""
+        """当前读数"""
         return component_rows(self._catalog)
 
     def _waiting_text(self) -> str:
-        """等待读数的正文，取数期间只出这一行"""
+        """等待读数正文
+
+        - 带起窗至今的秒数
+        - 取数期间正文只出这一行
+        """
         return PlatformMessage.WAIT_CATALOG.format(
             seconds=int(time.monotonic() - self._start)
         )
 
     def _render(self) -> None:
-        """按三档重建组件块，段内没行即整段不出，没得更新即一键不出"""
+        """按三档重建组件块
+
+        - 段内没行即整段不出
+        - 失败原因行与拒收条目照样摆出
+        - 没有可更新项即藏掉全部更新按钮
+        """
         self._clear_body()
         self._all.setVisible(False)
         if self._reading:
@@ -158,6 +169,9 @@ class _PlatformDialog(QDialog):
 
 
 def open_platform_dialog(parent: QWidget | None = None) -> None:
-    """打开平台组件面板，在线目录在窗内后台取"""
+    """打开平台组件面板
+
+    - 在线目录在窗内后台取
+    """
     ensure_app()
     _PlatformDialog(parent).exec()

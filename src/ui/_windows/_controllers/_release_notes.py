@@ -54,7 +54,7 @@ class ReleaseNotesController(BaseController):
         """拉取版本变化内容
 
         - 等待窗可取消，关窗即弃用线程
-        - 版本清单交双栏弹窗，面板只记一行摘要
+        - 版本清单交双栏弹窗，日志只记一行摘要
         """
         dialog = WaitDialog(
             RELEASE_NOTES_DIALOG.loading, parent=self.gui, cancelable=True

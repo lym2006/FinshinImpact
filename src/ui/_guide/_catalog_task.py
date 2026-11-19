@@ -1,7 +1,7 @@
 """平台组件面板的在线目录取数线程
 
 - 取到交出目录，取不到交出一行给人看的原因
-- 失败原文进运行日志，屏上那句只到异常族给的为止
+- 失败原文进运行日志，屏上只留异常族给的那句原因
 """
 
 import asyncio
@@ -21,7 +21,10 @@ class CatalogTask(QThread):
     reported = Signal(object, str)
 
     def run(self) -> None:
-        """取一次在线目录，两种坏法各落一行原因"""
+        """取一次在线目录
+
+        - 取不到时交回一行原因
+        """
         try:
             self.reported.emit(asyncio.run(load_catalog()), "")
         except NetworkError as e:

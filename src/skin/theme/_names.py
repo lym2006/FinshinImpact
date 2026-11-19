@@ -8,7 +8,7 @@ from enum import StrEnum
 
 
 class ObjectName(StrEnum):
-    """QSS 选择器与控件对象名共用的单源"""
+    """QSS 选择器与控件共用的对象名"""
 
     WAIT_SPINNER = "wait_spinner"
     CHANGE_TABLE = "change_table"

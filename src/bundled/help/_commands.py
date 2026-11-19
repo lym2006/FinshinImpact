@@ -4,7 +4,7 @@
 - /命令 -h：单命令帮助查询
 - 菜单内命令带了清单没认的输入：私聊与群里都给用法，群里引用发起人那条消息
 - 未知命令名与非法形态只在私聊回执，频道静默无视
-- 清单顺序即匹配优先级，回执判定排最前才压得住命令侧
+- 回执判定排最前，其后是单命令帮助与菜单
 """
 
 import asyncio
@@ -68,7 +68,6 @@ async def _is_illegal_command(ctx: HandlerContext) -> bool:
 
     - 私聊里形态非法、菜单外命令名与清单没认的输入都回执
     - 群聊与频道只接菜单内命令的多余输入，命令侧拿不到
-    - 回执发给谁与发什么由拒绝那条路由决定
     """
     command = ctx.event.command
     listed = command.matched and command.head in help_list

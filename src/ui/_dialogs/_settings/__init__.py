@@ -106,10 +106,7 @@ class SettingsDialog(BaseDialog):
         self._fields.refresh_resets()
 
     def keyPressEvent(self, event: QKeyEvent) -> None:  # noqa: N802
-        """SETUP 屏蔽 Esc
-
-        - 防绕过不可关闭约束
-        """
+        """SETUP 屏蔽 Esc"""
         if self._is_setup() and event.key() == Qt.Key.Key_Escape:
             event.accept()
             return
@@ -118,7 +115,7 @@ class SettingsDialog(BaseDialog):
     def _on_exit_clicked(self) -> None:
         """退出程序
 
-        - 保留本窗请求退出
+        - 取消退出时本窗原样保留
         """
         # 确认框取消时本窗与已填内容原样保留
         gui_bridge.request_exit.emit(self)
@@ -135,7 +132,7 @@ class SettingsDialog(BaseDialog):
         """原地刷新校验结果
 
         - 标红或清除字段错误
-        - 增撤页签与大类的 ⚠ 标记
+        - 挂上或撤掉页签与大类的 ⚠ 标记
         """
         self._field_errors = dict(field_errors or {})
         bad = self._resolve_error_sections(self._schema)

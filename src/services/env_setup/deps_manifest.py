@@ -44,8 +44,9 @@ _COMMAND_KEYS = frozenset({HelpKey.CMD, HelpKey.DESC})
 
 
 def plugins_roots() -> list[_PluginRoot]:
-    """列出插件根与各自的顶层包名，随包在前外部在后
+    """列出插件根与各自的顶层包名
 
+    - 随包在前外部在后
     - 外部目录不存在即不进表
     """
     roots: list[_PluginRoot] = []
@@ -66,7 +67,7 @@ def _scan_rows(roots: Sequence[_PluginRoot]) -> list[dict[str, Any]]:
 
     - 无清单或名称非法的子目录跳过
     - 外部那份的自家依赖表读不出即整份不认
-    - 每行带帮助段声明的命令名与说明，命令名供抢占判定取用
+    - 每行带上帮助段声明的命令名与说明
     """
     rows: list[dict[str, Any]] = []
     for plugins_path, pkg in roots:
@@ -90,8 +91,9 @@ def _scan_rows(roots: Sequence[_PluginRoot]) -> list[dict[str, Any]]:
 
 
 def _deps_of(plugin_dir: Path, pkg: str) -> tuple[str, ...] | None:
-    """一只插件的库，随包那份按根声明算即空表
+    """取一只插件的依赖表
 
+    - 随包插件交出空表
     - 外部那份交出 None 即自家声明的依赖表读不出，整份不认
     """
     if pkg == PLUGINS_PKG:
@@ -118,9 +120,8 @@ def shadowed_manifests(
 ) -> list[tuple[dict[str, Any], str]]:
     """读出被同名前一份顶掉的插件行
 
-    - 回 (被顶掉的清单, 顶掉它的那份的名字) 序列
-    - 名字先被哪一根目录读到，后一根目录里的同名那份即整只不装载
-    - 面板据此给被顶掉的那一份补一行冲突明细
+    - 交出 (被顶掉的清单, 插件名) 序列
+    - 同一名字只在先读到的根里算一条
     """
     claimed: set[str] = set()
     shadowed: list[tuple[dict[str, Any], str]] = []
@@ -137,7 +138,7 @@ def shadowed_manifests(
 def catalog_digest(manifests: list[dict[str, Any]]) -> str:
     """计算目录指纹
 
-    - 只摘要名称、依赖与资源，展示文案变化不触发弹面板
+    - 只摘要名称、依赖与资源
     - 行序与扫描顺序无关，同集合必同摘要
     """
     items = sorted(
@@ -154,7 +155,7 @@ def _sort_key(row: dict[str, Any]) -> tuple[Any, ...]:
 
     - 先分来源组，组内按显示名的拼音序
     - 显示名取标题列，没填标题时退化成目录名
-    - 同拼音按显示名整串，再同按目录名
+    - 拼音相同再比显示名整串，仍相同比目录名
     """
     display = row[ManifestKey.TITLE] or row[ManifestKey.NAME]
     return (
@@ -222,11 +223,11 @@ def save_state(code: str, enabled: list[str], catalog: str) -> None:
 
     - 随包插件不写进启用集，读取侧恒并入
     - 引导期写入，运行期只读不写
-    - 两项取值是目录名与摘要串，都不含要转义的字符
     """
     names = ", ".join(f'"{name}"' for name in enabled)
     target = state_path_of(code)
     target.parent.mkdir(parents=True, exist_ok=True)
+    # 两项取值是目录名与摘要串，都不含要转义的字符
     write_text_atomic(
         target,
         f'{StateKey.ENABLED} = [{names}]\n{StateKey.CATALOG} = "{catalog}"\n',

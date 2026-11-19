@@ -1,6 +1,6 @@
 """外部目录挂包
 
-- 只造包模块与搜索位置，不执行目录里的代码
+- 造包模块并把搜索位置指向目录
 """
 
 import importlib.machinery
@@ -10,9 +10,9 @@ from pathlib import Path
 
 
 def mount_package(pkg: str, code_dir: Path) -> str:
-    """按给定包名把外部目录挂成包并回包名
+    """把外部目录挂成指定包名
 
-    - 包模块只带搜索位置，不执行目录里的代码
+    - 包模块只登记搜索位置，不加载子模块
     - 包内相对引用走得通，跨出目录引不到随包私有件
     - 包名由调用方交出，不取目录名
     """
@@ -24,9 +24,9 @@ def mount_package(pkg: str, code_dir: Path) -> str:
 
 
 def mount_module(pkg: str, code_dir: Path) -> None:
-    """按代码目录执行插件包并登记到给定包名
+    """把代码目录装成指定包名的模块
 
-    - 目录名与包名不一致时靠它接上导入树
+    - 目录名与包名不一致时按给定包名登记
     - 件内报错原样抛出，由装载侧记这只插件失败
     """
     init = code_dir / "__init__.py"

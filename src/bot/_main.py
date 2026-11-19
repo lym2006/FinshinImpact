@@ -68,7 +68,7 @@ class Main:
         self._loop_thread: threading.Thread | None = None
 
     def main(self) -> int:
-        """主函数"""
+        """装配主窗与后台服务并进入事件循环"""
         try:
             # 实例锁由引导层统一抢占
             app = ensure_app()
@@ -126,7 +126,10 @@ class Main:
             self._cleanup()
 
     def _report_adapter_failure(self, exc: AdapterError) -> int:
-        """取件被拒那句上屏，缺件那条再开面板"""
+        """适配器取件失败上报
+
+        - 缺件那类另开平台组件面板
+        """
         detail = describe_error(exc)
         self.logger.send_error(f"程序启动异常：{detail}", exc)
 
@@ -141,7 +144,7 @@ class Main:
     def _pop_failure(self, body: str) -> None:
         """报错上屏
 
-        - 先收引导提示卡，别让「就绪后自动进入主窗口」挂在报错后面继续计时
+        - 先收起引导提示卡，再弹报错窗
         """
         if self._close_wait is not None:
             self._close_wait()

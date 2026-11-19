@@ -26,7 +26,10 @@ _SECTION_ADAPTER = "adapter"
 
 
 class _RowKey(StrEnum):
-    """目录行键位，值即目录里的键名"""
+    """目录行键位
+
+    - 成员值即目录行里的键名
+    """
 
     PLATFORM = "platform"
     DISTRIBUTION = "distribution"
@@ -46,7 +49,7 @@ _VERSION_KEYS = (_RowKey.VERSION, _RowKey.URL, _RowKey.SHA256)
 class ReleaseRow:
     """目录里的一只发行件
 
-    - url 是独立整串，不由分发名拼出
+    - url 是目录行给出的整条直链
     - sha256 归一成小写十六进制串
     - versions 是可装版本清单，最新一版在最前且自身不带清单
     """
@@ -72,7 +75,10 @@ class Catalog:
 
 
 def _text_of(values: dict[str, Any], key: _RowKey) -> str:
-    """取字段文本值，非字符串与空串交出空值"""
+    """取字段文本值
+
+    - 非字符串与空串交出空值
+    """
     raw = values.get(key)
     return raw if isinstance(raw, str) and raw.strip() else ""
 
@@ -83,7 +89,10 @@ def _is_sha(text: str) -> bool:
 
 
 def _row_note(values: dict[str, Any], keys: tuple[_RowKey, ...]) -> str:
-    """交出一行的拒收说明，字段全合形态即交出空串"""
+    """交出一行的拒收说明
+
+    - 字段全合形态即交出空串
+    """
     name = _text_of(values, _RowKey.DISTRIBUTION) or CatalogMessage.NO_NAME
     for key in keys:
         if not _text_of(values, key):
@@ -102,7 +111,10 @@ def _row_note(values: dict[str, Any], keys: tuple[_RowKey, ...]) -> str:
 
 
 def _build_row(values: dict[str, Any]) -> ReleaseRow:
-    """按已验过的字段拼发行件，行内版本清单一并带上"""
+    """按已验过的字段拼发行件
+
+    - 行内版本清单一并带上
+    """
     newest = ReleaseRow(
         distribution=_text_of(values, _RowKey.DISTRIBUTION),
         version=_text_of(values, _RowKey.VERSION),
@@ -114,7 +126,10 @@ def _build_row(values: dict[str, Any]) -> ReleaseRow:
 
 
 def _older_rows(values: dict[str, Any], newest: ReleaseRow) -> tuple[ReleaseRow, ...]:
-    """行内的旧版条目，形态不合或版本号与已有的重复即只丢那一条"""
+    """行内的旧版条目
+
+    - 形态不合或版本号与已有的重复即只丢那一条
+    """
     listed = values.get(_RowKey.VERSIONS)
     if not isinstance(listed, list):
         return ()
@@ -132,7 +147,10 @@ def _older_rows(values: dict[str, Any], newest: ReleaseRow) -> tuple[ReleaseRow,
 
 
 def _version_row(item: Any, distribution: str) -> ReleaseRow | None:
-    """一条旧版条目，字段或形态不合即不交出"""
+    """一条旧版条目
+
+    - 字段或形态不合即不交出
+    """
     if not isinstance(item, dict) or _row_note(item, _VERSION_KEYS):
         return None
 
@@ -169,7 +187,10 @@ def _read_sdk(data: dict[str, Any]) -> tuple[ReleaseRow | None, list[str]]:
 def _read_adapters(
     data: dict[str, Any],
 ) -> tuple[dict[Platform, ReleaseRow], list[str]]:
-    """逐行读适配器条目，交出按平台码归的表与拒收说明"""
+    """逐行读适配器条目
+
+    - 交出按平台码归的表与拒收说明
+    """
     rows = data.get(_SECTION_ADAPTER)
     if not isinstance(rows, list):
         return {}, []
@@ -220,7 +241,7 @@ async def load_catalog(proxy: str | None = None) -> Catalog:
     """读取在线目录
 
     - 一次请求取文本，字段逐行验
-    - 交出代理地址即走代理取
+    - 传入代理地址即走代理取
     """
     text = await GitClient.get_pages(CATALOG_PATH, _TIMEOUT, proxy)
 

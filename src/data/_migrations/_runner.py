@@ -1,7 +1,8 @@
 """迁移运行器
 
-- 按版本号顺序补做未应用的脚本，库里已经有表才先备份整库
-- 校验库结构是否在当前代码可读范围
+- 按版本号顺序补做未应用的脚本
+- 首次补做前备份整库
+- 判断库结构是否在代码支持范围内
 - 把未跑完的任务判死
 """
 
@@ -43,8 +44,8 @@ async def run_migrations(
 ) -> None:
     """把库结构补到当前代码支持的版本
 
-    - 一支脚本一个事务，落定才记版本号
-    - 动手前整库备份一份，空文件没东西可丢即不备份
+    - 一支脚本一个事务
+    - 首次补做前备份整库，库内没有表即跳过
     """
     current = await _current_version(conn)
     backed_up = not await _has_tables(conn)
@@ -64,7 +65,7 @@ async def run_migrations(
 
 
 async def check_schema_compatible(conn: aiosqlite.Connection) -> bool:
-    """判断库结构版本是否不高于代码支持版本"""
+    """判断库结构版本是否在代码支持范围内"""
     return await _current_version(conn) <= SUPPORTED_SCHEMA
 
 
@@ -110,7 +111,10 @@ async def _has_tables(conn: aiosqlite.Connection) -> bool:
 
 
 async def _backup(db_path: Path, backup_dir: Path, conn: aiosqlite.Connection) -> None:
-    """迁移前复制整库文件，并删到只剩保留份数"""
+    """复制整库备份文件
+
+    - 只保留最近三份
+    """
     # WAL 中的已提交内容先落回主文件，复制出的库才完整
     # 这行 pragma 会回一行，不取空就锁着结构，随后的删列当场被拒
     async with conn.execute("PRAGMA wal_checkpoint(FULL)") as cursor:

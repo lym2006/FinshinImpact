@@ -1,6 +1,6 @@
 """布局边距与重灌
 
-- 四边同值的边距、拆干净再重灌、滚动容器三种摆法只在这一处
+- 四边同值的边距、拆干净再重灌、滚动容器三种摆法
 """
 
 from PySide6.QtWidgets import QLayout, QScrollArea, QWidget
@@ -10,7 +10,10 @@ _EDGES = 4
 
 
 def set_margins(layout: QLayout, pad: int, *, bottom: int | None = None) -> None:
-    """四边摆同一个边距，给了 bottom 即只换底边"""
+    """四边摆同一个边距
+
+    - 单独指定底边即只换底边
+    """
     sides = [pad] * _EDGES
     if bottom is not None:
         sides[-1] = bottom
@@ -18,7 +21,7 @@ def set_margins(layout: QLayout, pad: int, *, bottom: int | None = None) -> None
 
 
 def clear_layout(layout: QLayout) -> None:
-    """拆掉上一轮摆的控件，防重绘留残块
+    """拆掉布局里的控件
 
     - 布局本身留着，容器由调用方处置
     """

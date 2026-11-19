@@ -1,6 +1,5 @@
 """发行件族名与在场读数
 
-- 接口包分发名只在这一处写
 - 已装版本取包元数据，不在场交出空串
 - 依赖声明串里取指定发行件的版本要求
 """
@@ -36,7 +35,10 @@ def _normalized(name: str) -> str:
 
 
 def installed_version(distribution: str) -> str:
-    """取已装包的版本，不在场交出空串"""
+    """取已装包的版本
+
+    - 不在场交出空串
+    """
     try:
         return importlib.metadata.version(distribution)
     except importlib.metadata.PackageNotFoundError:
@@ -44,10 +46,11 @@ def installed_version(distribution: str) -> str:
 
 
 def requires_of(pins: Sequence[str], distribution: str) -> str:
-    """从依赖声明里取指定发行件的版本要求，没声明交出空串
+    """取依赖声明里指定发行件的版本要求
 
+    - 没声明交出空串
+    - 多条约束按下限在前、上限在后排
     - 一条声明里的多条约束整串交出，比较符照原样留着
-    - 多条约束按下限在前、上限在后排，包元数据里的来路次序不作数
     - 没带比较符即没写版本要求，交出空串
     - 附加功能名与整条外面的括号不算版本要求
     """
@@ -70,7 +73,10 @@ def _ordered(spec: str) -> str:
 
 
 def _clause_rank(clause: str) -> int:
-    """一条约束排第几档，认不出的写法排最后"""
+    """约束的排序档位
+
+    - 认不出的写法排最后
+    """
     return next(
         (index for index, op in enumerate(_CLAUSE_OPS) if clause.startswith(op)),
         len(_CLAUSE_OPS),

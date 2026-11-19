@@ -83,7 +83,10 @@ class _ConfigManager:
         return cast(T, value)
 
     def _schema_default(self, item: ConfigPath) -> ConfigValue:
-        """按来源、段与键取 schema 默认值"""
+        """schema 默认值
+
+        - 按来源、段与键定位字段
+        """
         for tab in self.schema:
             if tab.group != item.source or tab.section_id != item.section:
                 continue

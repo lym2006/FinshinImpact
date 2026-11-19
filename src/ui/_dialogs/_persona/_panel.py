@@ -1,8 +1,7 @@
 """人设正文入口
 
-- 面板给预览、编辑与从文件重新加载三个入口
-- 预览纯读生效正文，编辑确认与重载都当场落盘
-- 重载按钮现读实例文件那份，交比对窗拍板
+- 面板给预览、编辑与按文件重载三个入口
+- 预览只读生效正文，编辑与重载都交拍板窗
 """
 
 from typing import TypeAlias
@@ -77,7 +76,7 @@ class _PersonaPreviewDialog(BaseDialog):
 class PersonaPreviewRow(QWidget):
     """人设正文入口行
 
-    - 标签占位与对齐同字段行，按钮才与其他输入框左对齐
+    - 标签列宽与对齐同字段行
     - 预览与编辑各开一窗
     """
 
@@ -131,7 +130,7 @@ class PersonaPreviewRow(QWidget):
         _PersonaPreviewDialog(owner_id, parent=self.window()).exec()
 
     def _on_edit_clicked(self) -> None:
-        """编辑正文，确认即开拍板窗当场落盘"""
+        """编辑正文后交拍板窗"""
         applied = applied_persona_text()
         edited = PersonaEditorDialog.edit(applied, parent=self.window())
         if edited is None:
@@ -145,7 +144,7 @@ class PersonaPreviewRow(QWidget):
         )
 
     def _on_reload_clicked(self) -> None:
-        """现读实例文件那份，交拍板窗当场落盘
+        """现读实例文件那份交拍板窗
 
         - 读不出只提示，两份一致由拍板窗统一提示
         """

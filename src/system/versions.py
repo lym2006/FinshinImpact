@@ -1,7 +1,6 @@
 """版本比对
 
-- PEP440 口径只在这一处使用
-- 比要求与比新旧都把读不懂的串交成 None，拒不拒由调用方判
+- 读不懂的版本串一律交出 None，由调用方决定怎么处理
 """
 
 from packaging.specifiers import InvalidSpecifier, SpecifierSet
@@ -26,7 +25,7 @@ def requires_met(actual: str, requires: str) -> bool | None:
     """实际版本是否落在要求的区间内
 
     - 要求串按逗号分成多条约束，差一条即不合
-    - 任一侧读不懂交出 None，拒不拒由调用方判
+    - 任一侧读不懂交出 None
     """
     try:
         return Version(actual) in SpecifierSet(requires)

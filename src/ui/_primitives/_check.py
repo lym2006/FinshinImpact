@@ -27,7 +27,8 @@ _CHECK_STROKE = 2
 class TickedCheckBox(QCheckBox):
     """描边方框内绘对勾的勾选框
 
-    - 边长与文字间距由构造参数传入，颜色取自调色板
+    - 边长与文字间距由构造参数传入
+    - 颜色取自调色板
     """
 
     def __init__(self, size: int, spacing: int) -> None:
@@ -44,7 +45,12 @@ class TickedCheckBox(QCheckBox):
         return QSize(max(hint.width(), own_width), max(hint.height(), self._size))
 
     def paintEvent(self, event: QPaintEvent) -> None:  # noqa: N802
-        """按勾选与禁用状态绘制方框、对勾与标签文字"""
+        """绘制勾选框
+
+        - 描边色按禁用、勾选、未选三档取
+        - 勾选态在框内再画一道对勾
+        - 有标签文字就挨着框画，禁用时转灰
+        """
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 

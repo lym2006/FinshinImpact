@@ -2,9 +2,9 @@
 
 
 class CatalogMessage:
-    """在线目录异常说明
+    """在线目录异常文案
 
-    - 目录坏段、坏行与取件坏步的聚合入口
+    - 目录坏段、坏行与取件各步失败的原因句
     """
 
     # 用：services/adapter_catalog.py 整份目录读不出内容时的说明行

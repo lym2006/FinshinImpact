@@ -4,7 +4,7 @@
 - /ungrant：主人撤销授权
 - /admin：主人查看授权名单，群内只报条数，明细只在私聊给出
 - 不带 id 时挂起待输入，下一条只认发起人自己发来的 id
-- 这一轮没办成不终止，提示问题接着等，直到发对或发 -1 取消
+- 没办成不终止，重发提示后接着等，直到发对或发 -1 取消
 """
 
 from enum import StrEnum
@@ -94,7 +94,7 @@ def _ask_target(ctx: HandlerContext, step: _GrantStep) -> str:
 
 
 async def _take_command(ctx: HandlerContext, step: _GrantStep, usage: str) -> None:
-    """按命令带的参数决定执行、提问还是报用法
+    """命令参数分流
 
     - 恰好一个参数即直接办，没办成留在待输入里等重发
     - 没带参数挂起待输入

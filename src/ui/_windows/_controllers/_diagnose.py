@@ -1,7 +1,7 @@
 """网络诊断控制器
 
 - 连通性自助排查入口
-- 诊断轮驱动进程级共享的检查窗，与他轮互斥不并发
+- 诊断轮占用共享的检查窗，与别的轮次互斥
 """
 
 import asyncio
@@ -112,7 +112,7 @@ class DiagnoseController(BaseController):
         self._startup_settled = True
 
     def _execute(self) -> None:
-        """在唯一窗上开诊断轮
+        """开一轮诊断
 
         - 启动校验未结束或其他轮次进行中时记日志返回
         - 路线与红点行都按当前代理模式定
@@ -177,7 +177,6 @@ class DiagnoseController(BaseController):
         """窗口关闭回调
 
         - 进行中被中断则弃用诊断线程
-        - 单例只 hide 不销毁
         """
         if result == QDialog.DialogCode.Rejected:
             self._abandon_workers()
@@ -204,7 +203,7 @@ class DiagnoseController(BaseController):
     def _abandon_workers(self) -> None:
         """弃用仍在运行的诊断线程
 
-        - 断开结果信号并解除父级，移交给模块级列表防止被回收
+        - 断开结果信号并解除父级，移交给模块级列表
         """
         for worker in self._workers:
             worker.requestInterruption()

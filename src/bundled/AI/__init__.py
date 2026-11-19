@@ -3,7 +3,7 @@
 - 对话与记忆命令入口
 - 声明随 Bot 起停的过期记录清理循环与问答动作
 - 订阅引擎开跑前、身份变更与配置校验通过三个平台机会
-- 交出本插件认领的来源标题与模型、主人两段的配置字段表
+- 交出本插件的来源声明与配置字段表
 """
 
 from finshin_sdk import (
@@ -48,7 +48,7 @@ class AIPlugin(BasePlugin):
         )
 
     def source_declaration(self) -> SourceDeclaration:
-        """来源标题与模型、主人两段的字段表"""
+        """来源声明与配置字段表"""
         return CONFIG_SOURCE
 
 

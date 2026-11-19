@@ -10,7 +10,11 @@ from ..._dialogs import WaitDialog
 def run_waiting_worker(
     dialog: WaitDialog, worker: QThread, done: SignalInstance
 ) -> list[tuple[Any, ...]]:
-    """起线程跑一轮回执，等窗关闭后收尾并交出攒下的帧
+    """起线程收回执
+
+    - 回执到一条即存一帧，顺手把窗收掉
+    - 窗关闭后摘回执、中断线程并等它退场
+    - 攒下的帧整表交回
 
     - 帧的第一项是文案、末项是成败，中间项由各自的线程自定
     - 用户先行关窗时交回空表

@@ -23,7 +23,6 @@ class ThemedList(QListWidget):
         """设定滚轮一轮挪几像素
 
         - 滚轮挪的量是这一格乘 Qt 每轮的三格
-        - 按整行走的话一轮即跨三行，长清单一下刷过去
         """
         self.setVerticalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
         self.verticalScrollBar().setSingleStep(step)

@@ -45,7 +45,7 @@ class SessionRepository(ABC):
     async def delete(self, session_key: SessionKey) -> int:
         """按会话键清除一串会话与消息
 
-        - 键不在库内即零
+        - 键不在库内返回 0
         - 返回清除条数
         """
 
@@ -64,7 +64,7 @@ class SessionRepository(ABC):
 class TaskRepository(ABC):
     """任务仓储
 
-    - 主体与类型合起来定一行，读写都按任务号
+    - 任务号由主体键与类型拼成
     """
 
     @abstractmethod
@@ -83,7 +83,7 @@ class TaskRepository(ABC):
     async def list_all_unfinished(self) -> tuple[TaskDTO, ...]:
         """列出全部主体的未完成任务
 
-        - 按主体键与入队序升序，同主体的挨在一起
+        - 按主体键与入队序升序
         """
 
 
@@ -106,7 +106,7 @@ class MediaRepository(ABC):
 class GrantRepository(ABC):
     """命令授权仓储
 
-    - 键为用户在本平台的 id，库随实例分开
+    - 键为用户在本平台的 id
     """
 
     @abstractmethod
@@ -138,4 +138,4 @@ class GrantRepository(ABC):
 
     @abstractmethod
     async def contains(self, user: UserId) -> bool:
-        """判定是否命中"""
+        """判断用户是否持有未过期授权"""

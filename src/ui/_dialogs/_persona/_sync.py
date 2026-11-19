@@ -45,7 +45,7 @@ class PersonaSyncDialog(BaseDialog):
     def notify_update(parent: QWidget | None = None) -> None:
         """模态展示人设更新提示
 
-        - 关窗即记本版已提示，保留原样与关窗同义
+        - 记下本版已提示，确认后覆盖副本并提示结果
         """
         dialog = PersonaSyncDialog(parent=parent)
         dialog.raise_()
@@ -62,7 +62,7 @@ class PersonaSyncDialog(BaseDialog):
         NoticeDialog.notify(detail, parent=parent)
 
     def _make_buttons(self) -> QHBoxLayout:
-        """保留我的人设 / 用内置模板覆盖"""
+        """建两颗选择按钮"""
         btn_layout = QHBoxLayout()
         btn_layout.addStretch()
         btn_keep = QPushButton(NOTICE_DIALOG.persona_keep_text)

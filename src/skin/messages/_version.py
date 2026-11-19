@@ -6,7 +6,7 @@ from ._misc import MiscMessage
 class VersionMessage:
     """版本检测文案
 
-    - 升级检查回执与异常填充话术的聚合入口
+    - 升级检查回执与异常填充话术
     """
 
     # 用：ui/_windows/_controllers/_version.py 回执通知窗标题

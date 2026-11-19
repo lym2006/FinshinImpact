@@ -1,6 +1,6 @@
 """自家窗之间的层序
 
-- 提顶要看的三个条件收在这一处
+- 提顶按窗可见与模态占用判，抢不抢焦点另由调用点定
 - 系统层挂跟随关系，再盯住被跟窗的激活事件补上浮
 """
 
@@ -22,7 +22,10 @@ class _LiftOnActivate(QObject):
         self._top = top
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802
-        """被跟窗拿到激活即浮回一次，不抢它的焦点"""
+        """被跟窗激活即上浮
+
+        - 浮回一次，不抢它的焦点
+        """
         if event.type() == QEvent.Type.WindowActivate:
             bring_front(self._top, False, cast(QWidget, watched))
         return super().eventFilter(watched, event)
@@ -33,10 +36,10 @@ def bring_front(
 ) -> None:
     """把一只窗提到本程序窗口最前
 
-    - 藏着的窗不参与排序，提它没意义
-    - 有别的模态窗开着就让位，免得抢走它正在收的输入
-    - 被跟的那只窗自己模态不算拦路，照样提顶
-    - 只排序不抢焦点填 False：向导里正在打字，不该被浮顶打断
+    - 藏着的窗不参与排序
+    - 有别的模态窗开着就让位
+    - 被跟的那只窗自己模态不算占用
+    - 只排序不抢焦点
     """
     modal = QApplication.activeModalWidget()
     if not win.isVisible() or (modal is not None and modal is not owner):

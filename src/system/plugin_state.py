@@ -12,7 +12,8 @@ from .toml_read import read_toml
 def load_instance_enabled(state_path: Path, enabled_key: str) -> frozenset[str] | None:
     """读取实例启用集
 
-    - 文件不存在或解析失败返回 None，前者即实例从未保存过插件选择
+    - 读不到文件或解析失败时返回 None
+    - 文件不存在即实例从未保存过插件选择
     - 名单成员按字符串收，非串成员取它的字面值
     """
     data = read_toml(state_path)

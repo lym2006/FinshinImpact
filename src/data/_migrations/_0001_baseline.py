@@ -1,6 +1,5 @@
 """基线建表
 
-- 建立主体、会话、会话消息、群流水、任务、媒体、授权与版本表
 - 全部语句在同一事务内执行
 """
 
@@ -114,6 +113,6 @@ _TABLES: tuple[str, ...] = (
 
 
 async def apply(conn: aiosqlite.Connection) -> None:
-    """执行基线建表与建索引"""
+    """执行基线建表与建索引语句"""
     for ddl in _TABLES:
         await conn.execute(ddl)

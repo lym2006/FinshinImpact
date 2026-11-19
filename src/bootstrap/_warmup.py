@@ -1,7 +1,6 @@
 """字节码预热
 
-- 主窗就绪后后台补编源码与三方库字节码，下次启动导入直接命中缓存
-- compileall 增量按 mtime 跳过已编项，装库旗标编过的不重编
+- 后台补编源码与三方库字节码
 """
 
 import compileall
@@ -26,7 +25,10 @@ def _compile_dirs() -> list[Path]:
 
 
 def _compile_src() -> None:
-    """增量编译预热目录为字节码，失败静默"""
+    """预热目录的增量编译
+
+    - 编译失败静默
+    """
     for path in _compile_dirs():
         try:
             compileall.compile_dir(path, quiet=_QUIET)
@@ -35,8 +37,5 @@ def _compile_src() -> None:
 
 
 def start_warmup() -> None:
-    """后台线程启动字节码预热
-
-    - 守护线程随进程退出，不阻塞也不影响本次启动
-    """
+    """后台线程启动字节码预热"""
     threading.Thread(target=_compile_src, daemon=True, name=_THREAD_NAME).start()

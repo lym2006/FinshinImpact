@@ -24,8 +24,9 @@ from ._progress import run_with_progress
 
 
 def install_flow(on_done: Callable[[], None], releases: Sequence[ReleaseRow]) -> None:
-    """进度窗里装一批发行件，装完交回面板重灌
+    """进度窗里装一批发行件
 
+    - 装完交回面板重灌
     - 失败行逐条上屏，一条没报出来即点名未报原因
     """
     wanted = list(releases)
@@ -57,7 +58,7 @@ def install_flow(on_done: Callable[[], None], releases: Sequence[ReleaseRow]) ->
 
 
 def uninstall_flow(parent: QWidget, on_done: Callable[[], None], platform: str) -> None:
-    """先查实例，再二次确认，最后在进度窗里卸包
+    """在进度窗里卸一只平台的包装
 
     - 还有实例即只弹那一句拦路话
     """
@@ -96,6 +97,6 @@ def uninstall_flow(parent: QWidget, on_done: Callable[[], None], platform: str) 
 
 
 def _report_done(on_done: Callable[[], None], body: str) -> None:
-    """摆出坏的那一侧，再交回面板重灌读数"""
+    """弹出失败明细并交回面板重灌"""
     show_popup(PLATFORM_DIALOG.title, body)
     on_done()

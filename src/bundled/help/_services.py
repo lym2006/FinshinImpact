@@ -60,7 +60,7 @@ _ROLE_NOTE: dict[CommandRole, str] = {
 def _flag_label(flag: HelpFlagDTO) -> str:
     """拼开关在帮助图与回执上的左列文本
 
-    - 带默认值的开关在名后跟默认值，缺省一眼看得见
+    - 带默认值的开关在名后跟默认值
     - 纯开关只列名
     """
     return flag.name if flag.default is None else f"{flag.name} {flag.default}"
@@ -69,7 +69,7 @@ def _flag_label(flag: HelpFlagDTO) -> str:
 def _build_menu_data() -> list[_MenuRow]:
     """聚合帮助菜单数据源
 
-    - 插件段按启用序列拼接，与路由注册同序
+    - 插件段按启用序列拼接
     - 段名或说明为空时省略对应行
     - 命令行带上清单原条目
     - 每个有内容的插件块之前插一行空行
@@ -125,7 +125,7 @@ def _menu_digest() -> str:
     """计算菜单内容指纹
 
     - 启用集与帮助文案全量参与，行序影响摘要
-    - 排版参数一并参与，改行距也能触发重画
+    - 排版参数一并参与
     """
     lines = [f"{item_type}|{label}|{note}" for item_type, label, note in _display_order]
     lines.insert(0, _layout_stamp())
@@ -161,7 +161,7 @@ def _cache_hit(digest: str) -> bool:
 def resolve_single_help(name: str) -> str:
     """取单命令帮助文案
 
-    - 命令名取自入站事件的命令载体
+    - 名字不在清单里即回格式错误
     - 开关与参数各占描述下面的一行
     """
     desc = help_list.get(name)
@@ -176,7 +176,7 @@ def resolve_single_help(name: str) -> str:
 def resolve_usage_hint(name: str) -> str:
     """取单命令的用法提示
 
-    - 头一行点命令名，开关与参数两行同单命令帮助
+    - 头一行点命令名，其下是参数行与开关块
     - 清单没这条命令时退回格式错误
     """
     spec = command_specs.get(name)
@@ -237,7 +237,6 @@ def generate_image() -> Path:
 def _render_menu(digest: str) -> Path:
     """按菜单行序出图并写指纹文件
 
-    - 仅缓存未命中时调用
     - 图与指纹成对落盘，缺一即判缓存未命中
     """
     draw_menu(_menu_cells(), _HELP, _FONT_PATH, _SAVE_PATH)

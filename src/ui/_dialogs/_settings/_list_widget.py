@@ -93,7 +93,7 @@ class _ConfigListWidget(QWidget):
     def get_values(self) -> list[str]:
         """获取非空文本值
 
-        - 丢弃空项，防止触发词匹配全部消息
+        - 只交非空文本
         """
         return [
             text
@@ -106,7 +106,7 @@ class _ConfigListDialog(BaseDialog):
     """列表项编辑弹窗
 
     - 由入口行按钮打开，确认才交出列表
-    - 列表自带双击改文字，弹窗里点一句用法
+    - 列表可双击改文字，窗底给一行用法提示
     """
 
     def __init__(
@@ -183,13 +183,16 @@ class ConfigListRow(QWidget):
     def set_items(self, items: list[str]) -> None:
         """整体替换列表内容
 
-        - 供恢复默认回填，不广播：回填方随后统一重估显隐
+        - 只换内容，不发信号
         """
         self._items = list(items)
         self._button.setText(self._button_text())
 
     def _button_text(self) -> str:
-        """按钮文案，带当前条数"""
+        """按钮文案
+
+        - 带当前条数
+        """
         return ConfigMessage.LIST_EDIT_TEXT.format(count=len(self._items))
 
     def _on_edit(self) -> None:
