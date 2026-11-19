@@ -165,7 +165,10 @@ class ChromeBuilder:
             group_tabs.setEnabled(not locked)
 
     def _make_tip(self) -> QLabel:
-        """构造 SETUP 模式的提示行"""
+        """构造 SETUP 模式的提示行
+
+        - 向导只会带着字段级错误开窗，提示恒指 ⚠ 页签
+        """
         tip_label = QLabel(SETTINGS_DIALOG.setup_tip)
         tip_label.setStyleSheet(self._error_qss)
         tip_label.setFont(self._error_font)

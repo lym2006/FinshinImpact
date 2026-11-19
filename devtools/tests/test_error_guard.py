@@ -1,7 +1,7 @@
 """error_guard 装饰器单元测试
 
 - fatal 异常走 request_notice(critical=True) 且不上抛
-- 可恢复 ConfigError 走 request_force_setup 且不上抛
+- 能落到字段的配置错误走 request_force_setup，其余 BotError 按未预期异常处理
 - 非 BotError 原样抛出
 - async 函数形态同样生效
 - 文案查询沿继承链找最近一句，缺字段与认不出的都有确定落点
@@ -30,7 +30,7 @@ from exceptions import (  # noqa: E402
     PluginsMissingError,
     describe_error,
 )
-from finshin_sdk.exceptions import BotError, ProxyAddressError, TokenError  # noqa: E402
+from finshin_sdk.exceptions import BotError, ProxyAddressError  # noqa: E402
 from ui import gui_bridge  # noqa: E402
 
 
@@ -42,8 +42,8 @@ class TestErrorGuard(unittest.TestCase):
         gui_bridge._is_shutdown_pending = False
         self.received: dict = {}
         gui_bridge.request_notice.connect(
-            lambda msg, critical: self.received.update(fatal=(msg, critical)),
-            tag="test-fatal",
+            lambda msg, critical: self.received.update(notice=(msg, critical)),
+            tag="test-notice",
         )
         gui_bridge.request_force_setup.connect(
             lambda errors: self.received.update(setup=errors), tag="test-setup"
@@ -51,7 +51,7 @@ class TestErrorGuard(unittest.TestCase):
 
     def tearDown(self) -> None:
         """摘除测试槽避免泄漏到后续用例"""
-        gui_bridge.request_notice.disconnect(tag="test-fatal")
+        gui_bridge.request_notice.disconnect(tag="test-notice")
         gui_bridge.request_force_setup.disconnect(tag="test-setup")
 
     def test_fatal_routes_to_fatal_dialog(self) -> None:
@@ -66,19 +66,9 @@ class TestErrorGuard(unittest.TestCase):
             raise ConfigInputError()
 
         boom()
-        self.assertIn("fatal", self.received)
+        self.assertIn("notice", self.received)
+        self.assertTrue(self.received["notice"][1])
         self.assertNotIn("setup", self.received)
-
-    def test_recoverable_routes_to_setup(self) -> None:
-        """可恢复配置异常发 request_force_setup 且不上抛"""
-
-        @error_guard("测试")
-        def boom() -> None:
-            raise ConfigError(proxy="x")
-
-        boom()
-        self.assertIn("setup", self.received)
-        self.assertNotIn("fatal", self.received)
 
     def test_path_missing_carries_field_error(self) -> None:
         """缺键异常发向导时带字段身份与必填文案
@@ -98,6 +88,24 @@ class TestErrorGuard(unittest.TestCase):
         self.assertEqual(list(self.received["setup"]), [item])
         self.assertIn("必填", self.received["setup"][item])
 
+    def test_attr_error_carries_field_identity(self) -> None:
+        """取值类型不符也按字段标红
+
+        - 键是配置项身份，悬浮文案取异常那句
+        """
+        from exceptions import ConfigAttrError
+        from finshin_sdk.domain import ConfigKey, ConfigSection
+
+        item = ConfigKey.PROXY_MODE.path("adapter.tg", ConfigSection.PROXY)
+
+        @error_guard("测试")
+        def boom() -> None:
+            raise ConfigAttrError(item, str, ["auto"])
+
+        boom()
+        self.assertEqual(list(self.received["setup"]), [item])
+        self.assertIn("期望类型：str", self.received["setup"][item])
+
     def test_missing_section_error_carries_identity(self) -> None:
         """整段缺失场景
 
@@ -114,16 +122,6 @@ class TestErrorGuard(unittest.TestCase):
 
         boom()
         self.assertEqual(list(self.received["setup"]), [item])
-
-    def test_connectivity_routes_to_setup(self) -> None:
-        """连接性异常走向导信号"""
-
-        @error_guard("测试")
-        def boom() -> None:
-            raise TokenError()
-
-        boom()
-        self.assertIn("setup", self.received)
 
     def test_plain_exception_propagates(self) -> None:
         """非 BotError 原样上抛"""
@@ -150,7 +148,7 @@ class TestErrorGuard(unittest.TestCase):
             loop.run_until_complete(boom())
         finally:
             loop.close()
-        self.assertIn("setup", self.received)
+        self.assertIn("notice", self.received)
 
     def test_shutdown_pending_suppresses_all(self) -> None:
         """关闭流程中全部静默吞掉
@@ -177,7 +175,7 @@ class TestErrorGuard(unittest.TestCase):
             raise ValueError("unexpected")
 
         boom()
-        self.assertIn("fatal", self.received)
+        self.assertIn("notice", self.received)
 
     def test_reraise_emits_and_propagates(self) -> None:
         """重抛模式
@@ -191,7 +189,7 @@ class TestErrorGuard(unittest.TestCase):
 
         with self.assertRaises(ConfigError):
             boom()
-        self.assertIn("setup", self.received)
+        self.assertIn("notice", self.received)
 
 
 class TestDescribeError(unittest.TestCase):

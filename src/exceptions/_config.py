@@ -61,7 +61,7 @@ class ConfigAttrError(ConfigError):
 
 
 CONFIG_MAP = {
-    ConfigMissingError: "缺少配置文件，自动打开面板填写",
+    ConfigMissingError: "缺少配置文件",
     ProfileMissingError: "实例身份缺失\n无法定位实例目录",
     ConfigInputError: "配置读取错误",
     ConfigOutputError: "配置写入错误",
