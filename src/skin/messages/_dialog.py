@@ -12,8 +12,9 @@ class DialogMessage:
 
     # 用：skin/theme/_settings.py 配置编辑弹窗的文案字段
     SETUP_TITLE = MiscMessage.ENTRY_SETTINGS
-    SETUP_TIP = "检测到配置有误，请修正后继续"
-    SETUP_HINT = "留意带 ⚠ 的标签页，标题标红的即为出错字段"
+    SETUP_TIP = (
+        "检测到配置有误，请修正后继续。留意带 ⚠ 的标签页，标题标红的即为出错字段"
+    )
     SETUP_VERIFIED_OK = "新配置已生效"
     SETUP_RECHECK_OK = "没改动，只重验了一遍"
     SETUP_HISTORY_RESET = "主人已变更，全部对话历史与记录文件已清空"

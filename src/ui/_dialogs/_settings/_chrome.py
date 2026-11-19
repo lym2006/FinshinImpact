@@ -1,6 +1,6 @@
 """骨架装配
 
-- 构建根布局、左侧大类列表、上排页签与底部按钮条
+- 构建根布局、左侧大类列表、上排页签与底排的提示和按钮条
 - 承载 EDIT 与 SETUP 两模式的原地拆装
 """
 
@@ -64,10 +64,9 @@ class ChromeBuilder:
         self._on_cancel = on_cancel
         self._on_save = on_save
 
-        # 根布局/按钮条/提示行引用：原地切模式只拆可再生部件，表单永不重建
+        # 根布局/按钮条引用：原地切模式只拆可再生部件，表单永不重建
         self.root_layout: QVBoxLayout | None = None
         self.bottom_layout: QHBoxLayout | None = None
-        self.tip_labels: list[QLabel] = []
 
         # 导航引用：复验结果原地刷新用（免关窗重开的闪烁）
         # 页段 -> (大类, 页签序号, 无标记标题)，大类 -> (列表项, 无标记文案)
@@ -91,32 +90,18 @@ class ChromeBuilder:
         )
         root_layout.setSpacing(SETTINGS_DIALOG.tab_spacing)
 
-        # SETUP 提示：出错标签页带 ⚠，出错字段标题标红
-        if is_setup:
-            self.tip_labels = self._make_tips()
-            for tip in self.tip_labels:
-                root_layout.addWidget(tip)
-
         root_layout.addLayout(self._build_nav(schema), stretch=1)
         self.set_error_marks(error_sections)
         self.bottom_layout = self._build_bottom_buttons(is_setup)
         root_layout.addLayout(self.bottom_layout)
 
     def rebuild(self, is_setup: bool) -> None:
-        """拆建提示行与底部按钮条"""
+        """拆建底排提示与按钮条"""
         if self.root_layout is None:
             return
-        for tip in self.tip_labels:
-            self.root_layout.removeWidget(tip)
-            tip.deleteLater()
-        self.tip_labels.clear()
         if self.bottom_layout is not None:
             self.root_layout.removeItem(self.bottom_layout)
             clear_layout(self.bottom_layout)
-        if is_setup:
-            self.tip_labels = self._make_tips()
-            self.root_layout.insertWidget(0, self.tip_labels[0])
-            self.root_layout.insertWidget(1, self.tip_labels[1])
         self.bottom_layout = self._build_bottom_buttons(is_setup)
         self.root_layout.addLayout(self.bottom_layout)
 
@@ -179,14 +164,12 @@ class ChromeBuilder:
         for group_tabs in self._group_tabs.values():
             group_tabs.setEnabled(not locked)
 
-    def _make_tips(self) -> list[QLabel]:
-        """构造 SETUP 模式的两行提示"""
+    def _make_tip(self) -> QLabel:
+        """构造 SETUP 模式的提示行"""
         tip_label = QLabel(SETTINGS_DIALOG.setup_tip)
         tip_label.setStyleSheet(self._error_qss)
         tip_label.setFont(self._error_font)
-        hint_label = QLabel(SETTINGS_DIALOG.setup_hint)
-        hint_label.setStyleSheet(self._error_qss)
-        return [tip_label, hint_label]
+        return tip_label
 
     def _create_tab(self, tab_schema: TabSchema) -> QWidget:
         """创建一个 Tab"""
@@ -295,5 +278,7 @@ class ChromeBuilder:
         self.save_btn = bar.buttons[-1]
         btn_layout = QHBoxLayout()
         btn_layout.setContentsMargins(0, 0, 0, 0)
-        btn_layout.addWidget(bar)
+        if is_setup:
+            btn_layout.addWidget(self._make_tip())
+        btn_layout.addWidget(bar, 1)
         return btn_layout

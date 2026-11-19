@@ -100,7 +100,6 @@ class SettingsDialogTheme:
 
     # SETUP 提示文案
     setup_tip: str = DialogMessage.SETUP_TIP
-    setup_hint: str = DialogMessage.SETUP_HINT
 
     # 窗口标题
     title: str = DialogMessage.SETUP_TITLE
@@ -108,7 +107,7 @@ class SettingsDialogTheme:
     # 错误标注
     error_color: str = "#E06C75"
     pending_color: str = "#D7BA7D"  # 待检字段/标签页的标注色
-    error_font_size: int = 11  # SETUP 提示语字号
+    error_font_size: int = 10  # SETUP 提示语字号
     error_font_family: str = "Microsoft YaHei"  # SETUP 提示语字体
 
 
