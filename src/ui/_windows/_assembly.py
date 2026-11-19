@@ -6,7 +6,7 @@
 
 from skin.messages import MiscMessage
 from skin.qss import build_global_qss
-from skin.theme import BODY, FONT, TOOLBAR, WINDOW
+from skin.theme import BODY, FONT, WINDOW
 from utils.logger import GUI_FORMATTER
 
 from ._controllers import BaseController, DiagnoseFlow, build_controllers
@@ -21,7 +21,7 @@ def create_gui(
     botgui = BotGUI(
         qss=build_global_qss(),
         buttons=MiscMessage.TOOLBAR_BUTTONS,
-        configs=(FONT, WINDOW, BODY, TOOLBAR),
+        configs=(FONT, WINDOW, BODY),
         formatter=GUI_FORMATTER,
     )
 
@@ -38,12 +38,10 @@ def create_gui(
     if missing := valid_ui_keys - registered_keys:
         raise ValueError(MiscMessage.CTRL_MISSING.format(keys=missing))
 
-    # 注入依赖并返回
     botgui.set_action_map(dict(controllers))
     botgui.set_logger_handler()
     LinkWatcher(botgui).start()
 
-    # 将实例列表转换为以 BTN_KEY 为键的字典，方便装配上层查找
     instance_map = {inst.BTN_KEY: inst for inst in instances}
 
     return botgui, instance_map

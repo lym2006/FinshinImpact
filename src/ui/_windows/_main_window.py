@@ -21,7 +21,6 @@ from skin.theme import (
     ButtonStyle,
     FontTheme,
     ObjectName,
-    ToolbarTheme,
     WindowTheme,
 )
 from utils import get_logger
@@ -65,7 +64,7 @@ class BotGUI(QMainWindow):
         self,
         qss: str,
         buttons: list[tuple[str, str]],
-        configs: tuple[FontTheme, WindowTheme, BodyTheme, ToolbarTheme],
+        configs: tuple[FontTheme, WindowTheme, BodyTheme],
         formatter: logging.Formatter,
     ) -> None:
 
@@ -73,7 +72,7 @@ class BotGUI(QMainWindow):
         self._qss = qss
         self._buttons = buttons
 
-        self._fonts, self._windows, self._body, self._toolbar = configs
+        self._fonts, self._windows, self._body = configs
 
         self._hidden_actions = {"shutdown"}  # 不渲染只回调的按钮
         self._logger = get_logger("GUI")
@@ -100,45 +99,52 @@ class BotGUI(QMainWindow):
         central.setObjectName(ObjectName.CENTRAL)
         self.setCentralWidget(central)
 
-        # 主布局（垂直排列，工具栏在上，仪表盘在下）
         main_layout = QVBoxLayout(central)
         main_layout.setSpacing(self._body.padding)
 
         self._build_toolbar(main_layout)
 
-        # 仪表盘区域
         main_layout.addWidget(self._dashboard)
 
         self.setStyleSheet(self._qss)
 
     def _build_toolbar(self, parent_layout: QVBoxLayout) -> None:
-        """渲染顶部工具栏及按钮控件"""
+        """渲染顶部工具栏
+
+        - 清空单独贴右，其余靠左
+        """
         toolbar = QWidget()
         toolbar.setObjectName(ObjectName.TOOLBAR)
-        toolbar.setFixedHeight(self._toolbar.height)
-        toolbar_layout = QHBoxLayout(toolbar)
-        toolbar_layout.setSpacing(self._body.padding)
+        row = QHBoxLayout(toolbar)
+        row.setSpacing(self._body.padding)
 
-        # 遍历配置列表，动态生成按钮
-        for text, key in self._buttons:
+        visible = [
+            (text, key)
+            for text, key in self._buttons
+            if key not in self._hidden_actions
+        ]
+
+        def add(text: str, key: str) -> None:
             btn_id = f"btn_{key}"
-
-            if key in self._hidden_actions:
-                continue  # 直接跳过按钮的创建和布局添加
-
             style = (
                 ButtonStyle.DANGER if key in _DANGER_ACTIONS else ButtonStyle.NEUTRAL
             )
-            btn = make_button(
-                text,
-                style,
-                size=ButtonSize.COMPACT,
-                on_click=lambda checked=False, bid=btn_id: self._handle_button(bid),
+            row.addWidget(
+                make_button(
+                    text,
+                    style,
+                    size=ButtonSize.COMPACT,
+                    on_click=lambda checked=False, bid=btn_id: self._handle_button(bid),
+                )
             )
 
-            toolbar_layout.addWidget(btn)
-
-        toolbar_layout.addStretch()  # 把按钮推到左侧
+        for text, key in visible:
+            if key not in _DANGER_ACTIONS:
+                add(text, key)
+        row.addStretch()
+        for text, key in visible:
+            if key in _DANGER_ACTIONS:
+                add(text, key)
 
         parent_layout.addWidget(toolbar)
 

@@ -27,6 +27,11 @@ class MiscMessage:
     ENTRY_DIAGNOSE = "网络诊断"
     ENTRY_NOTES = "版本变化"
 
+    # 只作按钮文案，不挂窗口标题
+    BTN_CLEAR = "清空仪表盘"
+    BTN_LOG = "查看日志"
+    BTN_SHUTDOWN = "关闭机器人"
+
     # 用：bootstrap 单实例冲突弹窗
     ALREADY_RUNNING = (
         "机器人已在运行，请勿重复启动\n"
@@ -49,12 +54,12 @@ class MiscMessage:
         "内置模板已更新，实例人设从未改动，已自动换成新版\n全部对话历史与记录文件已清空"
     )
 
-    # 用：ui/_windows/_assembly.py 主窗口工具栏（文案, 按钮键）
+    # 用：ui/_windows/_assembly.py 主窗口工具栏（文案, 按钮键），顺序即排布顺序
     TOOLBAR_BUTTONS: list[tuple[str, str]] = [
         (ENTRY_SETTINGS, "settings"),
         (ENTRY_DIAGNOSE, "diagnose"),
-        ("查看日志", "log"),
+        (BTN_LOG, "log"),
         (ENTRY_NOTES, "release_notes"),
-        ("清空仪表盘", "clear"),
-        ("关闭机器人", "shutdown"),  # 该按钮应被隐藏
+        (BTN_CLEAR, "clear"),
+        (BTN_SHUTDOWN, "shutdown"),  # 该按钮应被隐藏
     ]

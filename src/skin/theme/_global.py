@@ -64,7 +64,6 @@ class ToolbarTheme:
     """工具栏配置"""
 
     bg: str = PALETTE.input_bg  # 背景色
-    height: int = 50  # 高度
     border_width: int = 1  # 底部分割线宽度
     border_color: str = PALETTE.border_color  # 底部分割线颜色
 
