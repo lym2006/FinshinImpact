@@ -113,7 +113,6 @@ class ResetRegistry:
 
         - 回填后重估按钮显隐
         """
-        # 本行按钮随之消失
         widget = self._inputs.get(item)
         if widget is None:
             return
@@ -126,4 +125,7 @@ class ResetRegistry:
                 widget.setPlainText(text)
             case QLineEdit():
                 widget.setText(text)
+                widget.setCursorPosition(0)
+
+        # 本行按钮随之消失
         self.refresh()

@@ -87,7 +87,6 @@ class FieldBuilder:
 
     def value_of(self, item: ConfigPath, field: FieldSchema) -> ConfigValue:
         """从控件提取字段当前值"""
-        # float 解析失败返回原文，判定必不等于默认
         widget = self.inputs.get(item)
         if widget is None:
             return None
@@ -104,7 +103,7 @@ class FieldBuilder:
                     try:
                         return float(text)
                     except ValueError:
-                        return text
+                        return text  # 交回原文：比较必判改过，保存前校验会报错
                 return text
         return None
 
@@ -193,7 +192,9 @@ class FieldBuilder:
             editor.setPlainText(current_value)
             return editor
         display = str(current_value) if current_value is not None else ""
-        return QLineEdit(display)
+        line = QLineEdit(display)
+        line.setCursorPosition(0)  # 光标从头部对齐
+        return line
 
     def _build_input_block(
         self,
