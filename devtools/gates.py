@@ -135,10 +135,11 @@ def _match_int(pattern: str, text: str) -> str:
 def _step_ruff() -> _StepResult:
     """格式与静态检查两步合一，都只检查不改写"""
     ruff = _venv_tool("ruff")
-    code_fmt, text_fmt = _execute([ruff, "format", "--check", "."])
-    code_chk, text_chk = _execute([ruff, "check", "."])
+    targets = (*_source_targets(_ROOT), *_pytest_targets(_ROOT))
+    code_fmt, text_fmt = _execute([ruff, "format", "--check", *targets])
+    code_chk, text_chk = _execute([ruff, "check", *targets])
     combined = f"{text_fmt}\n{text_chk}".strip()
-    fmt = text_fmt.count("Would reformat:") if code_fmt else 0
+    fmt = _match_int(r"(\d+) files? would be reformatted", text_fmt) if code_fmt else 0
     chk = _match_int(r"Found (\d+) error", text_chk) if code_chk else 0
     ok = code_fmt == 0 and code_chk == 0
     return _StepResult(ok, f"format {fmt} / check {chk}", combined)
